@@ -43,6 +43,7 @@ import { Sparkles } from 'lucide-react';
 import { NevaAssistant } from './components/NevaAssistant';
 import { DashboardConfig } from './components/dashboard/DashboardHeader';
 import DataTable from './views/Table/DataTable';
+import { PivotTable } from './views/PivotTable/PivotTable';
 
 interface BoardViewProps {
     board: Board;
@@ -211,6 +212,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard }) =>
         { label: 'Chart', icon: PieChart, id: 'chart', description: 'Analyze data' },
         { label: 'File gallery', icon: ImageIcon, id: 'file_gallery', description: 'View all files' },
         { label: 'Form', icon: FileEdit, id: 'form', description: 'Collect data' },
+        { label: 'Pivot Table', icon: Table, id: 'pivot_table', description: 'Analyze Data' },
     ];
 
     const renderView = () => {
@@ -239,6 +241,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard }) =>
                 return <ListBoard key={board.id} roomId={board.id} viewId="listboard-main" />;
             case 'calendar':
                 return <CalendarView key={board.id} roomId={board.id} />;
+            case 'pivot_table':
+                return <PivotTable key={board.id} roomId={board.id} />;
             default:
                 return <KanbanBoard key={board.id} boardId={board.id} />;
         }

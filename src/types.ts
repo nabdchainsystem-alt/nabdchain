@@ -20,7 +20,7 @@ export interface BoardColumn {
   type: 'text' | 'person' | 'status' | 'date';
 }
 
-export type BoardViewType = 'kanban' | 'table' | 'list' | 'doc' | 'listboard' | 'discussion' | 'calendar' | 'taskboard' | 'gantt' | 'chart' | 'file_gallery' | 'form';
+export type BoardViewType = 'kanban' | 'table' | 'list' | 'doc' | 'listboard' | 'discussion' | 'calendar' | 'taskboard' | 'gantt' | 'chart' | 'file_gallery' | 'form' | 'pivot_table';
 
 export interface Board {
   id: string;

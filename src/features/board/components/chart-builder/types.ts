@@ -25,6 +25,7 @@ export interface ChartBuilderConfig {
         operator: string;
         value: any;
     }[];
+    includedRowIds?: string[];
 }
 
 export interface ChartValidationError {

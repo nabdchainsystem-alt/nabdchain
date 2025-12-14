@@ -25,6 +25,8 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
     // --- State ---
     const [title, setTitle] = useState(initialConfig?.title || 'New Analysis');
     const [chartType, setChartType] = useState<ChartType>(initialConfig?.chartType || 'bar');
+    const [selectedRowIds, setSelectedRowIds] = useState<string[]>(initialConfig?.includedRowIds || rows.map(r => r.id));
+    const [filterSearch, setFilterSearch] = useState('');
 
     // Auto-select smart defaults if not provided - REMOVED per user request
     // const defaultX = columns.find(c => c.type === 'status' || c.type === 'select')?.id || columns[0]?.id || '';
@@ -39,13 +41,15 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
         chartType,
         xAxisColumnId: xAxisColId,
         yAxisColumnId: yAxisColId,
-        aggregation
+        aggregation,
+        includedRowIds: selectedRowIds.length === rows.length ? undefined : selectedRowIds
     };
 
     const validation = useMemo(() => {
         if (!xAxisColId) return { isValid: false, message: 'Please select a Group By column to start.' };
+        if (selectedRowIds.length === 0) return { isValid: false, message: 'Please select at least one row.' };
         return ChartDataTransformer.validateConfig(config, columns);
-    }, [config, columns, xAxisColId]);
+    }, [config, columns, xAxisColId, selectedRowIds]);
 
     const chartOption = useMemo(() => {
         if (!validation.isValid) return null;
@@ -138,41 +142,72 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
 
                             {/* Y-Axis & Aggregation */}
                             <div className="space-y-1.5">
-                                <label className="text-[12px] font-normal text-[#676879] dark:text-gray-400">Y Axis (Values)</label>
-                                <div className="space-y-3 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
-                                    {/* Agg Function */}
-                                    <div className="flex bg-stone-200 dark:bg-stone-900 rounded-md p-1">
-                                        {['count', 'sum', 'avg'].map(op => (
-                                            <button
-                                                key={op}
-                                                onClick={() => setAggregation(op as any)}
-                                                className={`
-                                                    flex-1 py-1 text-[12px] font-medium rounded-sm transition-all
-                                                    ${aggregation === op
-                                                        ? 'bg-white dark:bg-stone-700 shadow-sm text-[#323338] dark:text-gray-100'
-                                                        : 'text-[#676879] hover:text-[#323338] dark:text-gray-500'
-                                                    }
-                                                `}
-                                            >
-                                                {op.charAt(0).toUpperCase() + op.slice(1)}
-                                            </button>
-                                        ))}
-                                    </div>
+                            </div>
+                        </div>
 
-                                    {/* Column Selector (Hidden for Count) */}
-                                    {aggregation !== 'count' && (
-                                        <select
-                                            value={yAxisColId}
-                                            onChange={(e) => setYAxisColId(e.target.value)}
-                                            className="w-full h-9 px-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-[13px] outline-none focus:border-[#0073ea]"
-                                        >
-                                            <option value="" disabled>Select Number Column...</option>
-                                            {columns.filter(c => c.type === 'number').map(col => (
-                                                <option key={col.id} value={col.id}>{col.label}</option>
-                                            ))}
-                                        </select>
-                                    )}
+                        {/* Section 2.5: Filter Data */}
+                        <div className="p-6 border-b border-stone-100 dark:border-stone-800 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-[13px] font-semibold text-[#323338] dark:text-gray-200">Filter Data</h3>
+                                <div className="text-[11px] text-[#676879] dark:text-gray-400">
+                                    {selectedRowIds.length} / {rows.length}
                                 </div>
+                            </div>
+
+                            {/* Search & Actions */}
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Search rows..."
+                                    value={filterSearch}
+                                    onChange={(e) => setFilterSearch(e.target.value)}
+                                    className="flex-1 h-8 px-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded text-[12px] outline-none focus:border-[#0073ea]"
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (selectedRowIds.length === rows.length) {
+                                            setSelectedRowIds([]);
+                                        } else {
+                                            setSelectedRowIds(rows.map(r => r.id));
+                                        }
+                                    }}
+                                    className="px-2 h-8 text-[11px] font-medium text-[#0073ea] hover:bg-stone-50 dark:hover:bg-stone-800 rounded border border-transparent hover:border-stone-200 dark:hover:border-stone-700 transition-all"
+                                >
+                                    {selectedRowIds.length === rows.length ? 'None' : 'All'}
+                                </button>
+                            </div>
+
+                            {/* Row List */}
+                            <div className="h-32 overflow-y-auto border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50/50 dark:bg-stone-800/30 p-1 space-y-0.5">
+                                {rows
+                                    .filter(row => (row.name || '').toLowerCase().includes(filterSearch.toLowerCase()))
+                                    .map(row => (
+                                        <label
+                                            key={row.id}
+                                            className="flex items-center gap-2 px-2 py-1.5 hover:bg-white dark:hover:bg-stone-700 rounded cursor-pointer transition-colors group"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedRowIds.includes(row.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedRowIds([...selectedRowIds, row.id]);
+                                                    } else {
+                                                        setSelectedRowIds(selectedRowIds.filter(id => id !== row.id));
+                                                    }
+                                                }}
+                                                className="w-3.5 h-3.5 rounded border-stone-300 text-[#0073ea] focus:ring-[#0073ea]"
+                                            />
+                                            <span className="text-[12px] text-[#323338] dark:text-gray-300 truncate select-none group-hover:text-black dark:group-hover:text-white">
+                                                {row.name || 'Untitled Row'}
+                                            </span>
+                                        </label>
+                                    ))}
+                                {rows.filter(row => (row.name || '').toLowerCase().includes(filterSearch.toLowerCase())).length === 0 && (
+                                    <div className="p-4 text-center text-[11px] text-stone-400 italic">
+                                        No matches found
+                                    </div>
+                                )}
                             </div>
                         </div>
 

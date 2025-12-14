@@ -44,7 +44,9 @@ export class ChartDataTransformer {
     static transformData(rows: Row[], config: ChartBuilderConfig): { xData: string[], yData: number[] } {
         // 1. Filter
         let filteredRows = rows;
-        // (Filter logic can be added here if we pass filter config)
+        if (config.includedRowIds && config.includedRowIds.length > 0) {
+            filteredRows = rows.filter(r => config.includedRowIds!.includes(r.id));
+        }
 
         // 2. Group
         const groups: Record<string, number[]> = {};

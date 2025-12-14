@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+// Force Sidebar Update
 import { Thread, Board, Priority, Language } from '../types';
 import { Search, Plus, MoreHorizontal, Sparkles, FolderPlus, Trash2, Calendar, Flag, ChevronDown, CornerDownLeft } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -104,21 +105,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="w-60 h-full flex flex-col bg-[#f7f9fa] dark:bg-monday-dark-secondary_background border-e border-[#d0d4e4] dark:border-monday-dark-border flex-shrink-0">
-      <div className="p-4 pb-2">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <h2 className="font-sans font-bold text-xl text-[#323338] dark:text-gray-100">Discussion</h2>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setIsCapturing(true)} className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 transition-colors">
-              <Sparkles size={16} />
-            </button>
-            <button onClick={onNewBoard} className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 transition-colors">
-              <FolderPlus size={16} />
-            </button>
-          </div>
+      <div className="p-3 space-y-2">
+        <div className="mb-2 px-1">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Discussion</h2>
         </div>
 
+        <button
+          onClick={onNewBoard}
+          className="w-full bg-monday-blue hover:bg-blue-600 text-white py-1.5 px-4 rounded shadow-sm flex items-center justify-center gap-2 transition-colors"
+          title="Create a new discussion group"
+        >
+          <FolderPlus size={14} />
+          <span className="font-medium text-xs">New Group</span>
+        </button>
+        <button
+          onClick={() => setIsCapturing(true)}
+          className="w-full bg-white dark:bg-transparent border border-gray-200 dark:border-monday-dark-border hover:bg-gray-50 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text py-1.5 px-4 rounded shadow-sm flex items-center justify-center gap-2 transition-colors"
+        >
+          <Sparkles size={14} className="text-monday-blue" />
+          <span className="font-medium text-xs">Capture</span>
+        </button>
+
         {isCapturing && (
-          <div ref={captureContainerRef} className="mb-3 animate-in slide-in-from-top-2 fade-in">
+          <div ref={captureContainerRef} className="animate-in slide-in-from-top-2 fade-in pt-1">
             <form onSubmit={handleQuickCaptureSubmit}>
               <textarea
                 ref={captureInputRef}

@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/ChatArea';
 import { RightSidebar } from './components/RightSidebar';
 import { CaptureModal } from './components/CaptureModal';
+import { NewBoardModal } from './components/NewBoardModal';
 import { Thread, Message, ViewMode, Board, Task, Note } from './types';
 import { BoardTemplate } from '../board/data/templates';
 import { createChatSession, sendMessageStream, Chat } from './services/geminiService';
@@ -80,6 +81,7 @@ export default function DiscussionPage() {
 
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
     const [isCaptureOpen, setIsCaptureOpen] = useState(false);
+    const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
 
     // Data State
     const [boards, setBoards] = useState<Board[]>(INITIAL_BOARDS);
@@ -221,7 +223,69 @@ export default function DiscussionPage() {
     };
 
     const handleNewBoard = () => {
-        // Global creation handled by App Sidebar
+        setIsNewBoardModalOpen(true);
+    };
+
+    const handleCreateBoard = (boardData: Partial<Board>, template?: BoardTemplate) => {
+        if (boardData.name) {
+            const newBoardId = Date.now().toString();
+            const newBoard: Board = {
+                id: newBoardId,
+                name: boardData.name,
+                description: boardData.description,
+                members: boardData.members,
+                theme: boardData.theme,
+                defaultView: boardData.defaultView
+            };
+            setBoards([...boards, newBoard]);
+
+            // Switch to new board view
+            setActiveBoardId(newBoardId);
+            setMainViewMode('board');
+
+            // Persist Default View Preference
+            if (boardData.defaultView) {
+                localStorage.setItem(`board-default-view-${newBoardId}`, boardData.defaultView);
+            }
+
+            // Initialize Template Data
+            if (template) {
+                try {
+                    const mappedColumns = template.columns.map(col => ({
+                        id: col.id,
+                        label: col.label,
+                        type: col.type,
+                        width: col.width,
+                        minWidth: 100,
+                        resizable: true,
+                        options: col.options,
+                        pinned: col.id === 'name' || col.id === 'select'
+                    }));
+
+                    localStorage.setItem(`room-table-columns-v3-${newBoardId}-table`, JSON.stringify(mappedColumns));
+                    localStorage.setItem(`room-table-columns-v3-${newBoardId}-default`, JSON.stringify(mappedColumns));
+
+                    if (template.groups.length > 0) {
+                        const statusOptions = template.groups.map(g => g.title);
+                        localStorage.setItem(`board-statuses-${newBoardId}`, JSON.stringify(statusOptions));
+                    }
+
+                } catch (error) {
+                    console.error("Failed to initialize template", error);
+                }
+            } else {
+                const defaultColumns = [
+                    { id: 'select', label: '', type: 'select', width: 40, pinned: true },
+                    { id: 'name', label: 'Task Name', type: 'text', width: 300, pinned: true },
+                    { id: 'status', label: 'Status', type: 'status', width: 140 },
+                    { id: 'priority', label: 'Priority', type: 'priority', width: 140 },
+                    { id: 'dueDate', label: 'Due Date', type: 'date', width: 140 },
+                    { id: 'assignees', label: 'Owner', type: 'person', width: 140 }
+                ];
+                localStorage.setItem(`room-table-columns-v3-${newBoardId}-table`, JSON.stringify(defaultColumns));
+                localStorage.setItem(`room-table-columns-v3-${newBoardId}-default`, JSON.stringify(defaultColumns));
+            }
+        }
     };
 
     const handleDeleteBoard = (id: string) => {
@@ -348,6 +412,13 @@ export default function DiscussionPage() {
                 isOpen={isCaptureOpen}
                 onClose={() => setIsCaptureOpen(false)}
                 onCapture={handleAddTask}
+            />
+
+            <NewBoardModal
+                isOpen={isNewBoardModalOpen}
+                onClose={() => setIsNewBoardModalOpen(false)}
+                onCreate={handleCreateBoard}
+                availableUsers={MOCK_USERS}
             />
         </div>
     );
