@@ -19,6 +19,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
     id: string;
     title: string;
     createdAt: number;
+    scheduledAt?: number;
   }
 
   const [activePhase, setActivePhase] = useState<GTDPhase>('capture');
@@ -56,7 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
     setActivePhase('clarify');
   };
 
-  const handleProcess = (id: string, action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done') => {
+  const handleProcess = (id: string, action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done', date?: number) => {
     const itemToMove = inboxItems.find(item => item.id === id);
     if (!itemToMove) return;
 
@@ -81,7 +82,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
         setReference(prev => [itemToMove, ...prev]);
         break;
       case 'scheduled':
-        setScheduled(prev => [itemToMove, ...prev]);
+        const scheduledItem = date ? { ...itemToMove, scheduledAt: date } : itemToMove;
+        setScheduled(prev => [scheduledItem, ...prev]);
+        setActivePhase('organize');
         break;
       case 'done':
         setCompleted(prev => [itemToMove, ...prev]);

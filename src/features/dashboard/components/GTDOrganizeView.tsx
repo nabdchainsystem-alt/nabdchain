@@ -5,6 +5,7 @@ interface OrganizedItem {
     id: string;
     title: string;
     createdAt: number;
+    scheduledAt?: number;
 }
 
 interface GTDOrganizeViewProps {
@@ -42,13 +43,21 @@ const ListCard: React.FC<{
                 {items.length > 0 ? (
                     items.map(item => (
                         <div key={item.id} className="group relative flex items-center justify-between text-xs p-2 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors cursor-pointer">
-                            <span className="truncate flex-1">{item.title}</span>
+                            <div className="flex flex-col flex-1 min-w-0 mr-2">
+                                <span className="truncate font-medium">{item.title}</span>
+                                {item.scheduledAt && (
+                                    <span className="text-[9px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                        <Calendar size={8} />
+                                        {new Date(item.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </span>
+                                )}
+                            </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onDelete(item.id);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all text-gray-400 hover:text-red-500"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all text-gray-400 hover:text-red-500 shrink-0"
                             >
                                 <Trash2 size={12} />
                             </button>

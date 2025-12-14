@@ -1,15 +1,16 @@
-import React from 'react';
-import { ThumbsUp, ThumbsDown, ArrowRight, ArrowLeft, Layers, CheckCircle, User, Calendar, CheckSquare } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { ThumbsUp, ThumbsDown, ArrowRight, ArrowLeft, Layers, CheckCircle, User, Calendar as CalendarIcon, CheckSquare, ChevronLeft, ChevronRight, Clock, FileText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GTDClarifyViewProps {
     items: { id: string; title: string; createdAt: number }[];
     initialItemId?: string | null;
-    onProcess: (id: string, action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done') => void;
+    onProcess: (id: string, action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done', date?: number) => void;
 }
 
 export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialItemId, onProcess }) => {
-    // ... (rest of state items unchanged)
+    // ... state ...
     const [currentIndex, setCurrentIndex] = React.useState(() => {
         if (initialItemId) {
             const index = items.findIndex(item => item.id === initialItemId);
@@ -18,9 +19,18 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
         return 0;
     });
 
-    const [step, setStep] = React.useState<'decision' | 'non-actionable' | 'actionable'>('decision');
+    const [step, setStep] = React.useState<'decision' | 'non-actionable' | 'actionable' | 'schedule'>('decision');
+    const [currentMonth, setCurrentMonth] = React.useState(new Date());
+    const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
 
-    // Clamp index when items array shrinks
+    // Reset selected date when entering schedule step
+    React.useEffect(() => {
+        if (step === 'schedule') {
+            setSelectedDate(new Date());
+        }
+    }, [step]);
+
+    // Clamp index
     React.useEffect(() => {
         if (currentIndex >= items.length && items.length > 0) {
             setCurrentIndex(Math.max(0, items.length - 1));
@@ -28,6 +38,19 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
     }, [items.length, currentIndex]);
 
     const currentItem = items[currentIndex];
+
+    // Calendar Helpers
+    const getDaysInMonth = (date: Date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const days = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay();
+        return { days, firstDay };
+    };
+
+    const calendarData = useMemo(() => {
+        return getDaysInMonth(currentMonth);
+    }, [currentMonth]);
 
     const handleNext = () => {
         if (currentIndex < items.length - 1) {
@@ -43,9 +66,18 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
         }
     };
 
-    const handleProcess = (action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done') => {
-        onProcess(currentItem.id, action);
+    const handleProcess = (action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done', date?: number) => {
+        onProcess(currentItem.id, action, date);
         setStep('decision');
+    };
+
+    const handleDateClick = (day: number) => {
+        const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+        setSelectedDate(newDate);
+    };
+
+    const changeMonth = (delta: number) => {
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
     };
 
     return (
@@ -148,7 +180,13 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 exit={{ opacity: 0, y: -10 }}
                                 className="w-full max-w-2xl bg-white dark:bg-[#111] rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
                             >
-                                <h4 className="text-center font-serif italic text-base text-gray-500 mb-6">Organize non-actionables</h4>
+                                <div className="flex items-center justify-between mb-6 px-2">
+                                    <button onClick={() => setStep('decision')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                                        <ArrowLeft size={16} />
+                                    </button>
+                                    <h4 className="text-center font-serif italic text-base text-gray-500">Organize non-actionables</h4>
+                                    <div className="w-4" /> {/* Spacer */}
+                                </div>
 
                                 <div className="grid grid-cols-3 gap-3 mb-2">
                                     <button
@@ -156,7 +194,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 dark:border-white/10 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
                                     >
                                         <div className="w-6 h-6 rounded-full border border-gray-300 group-hover:border-red-500 flex items-center justify-center mb-2 text-gray-400 group-hover:text-red-500 transition-colors">
-                                            <Trash2Icon />
+                                            <Trash2 size={16} />
                                         </div>
                                         <span className="font-bold text-xs text-gray-800 dark:text-white mb-0.5">Trash</span>
                                     </button>
@@ -166,7 +204,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 dark:border-white/10 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
                                     >
                                         <div className="w-6 h-6 rounded-full border border-gray-300 group-hover:border-blue-500 flex items-center justify-center mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">
-                                            <FileTextIcon />
+                                            <FileText size={16} />
                                         </div>
                                         <span className="font-bold text-xs text-gray-800 dark:text-white mb-0.5">Reference</span>
                                         <span className="text-[10px] text-gray-400 scale-90">File away for info</span>
@@ -177,7 +215,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 dark:border-white/10 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all group"
                                     >
                                         <div className="w-6 h-6 rounded-full border border-gray-300 group-hover:border-orange-500 flex items-center justify-center mb-2 text-gray-400 group-hover:text-orange-500 transition-colors">
-                                            <ClockIcon />
+                                            <Clock size={16} />
                                         </div>
                                         <span className="font-bold text-xs text-gray-800 dark:text-white mb-0.5">Someday / Maybe</span>
                                     </button>
@@ -193,7 +231,13 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 exit={{ opacity: 0, y: -10 }}
                                 className="w-full max-w-2xl bg-white dark:bg-[#111] rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
                             >
-                                <h4 className="text-center font-serif italic text-base text-gray-500 mb-6">What is the next step?</h4>
+                                <div className="flex items-center justify-between mb-6 px-2">
+                                    <button onClick={() => setStep('decision')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                                        <ArrowLeft size={16} />
+                                    </button>
+                                    <h4 className="text-center font-serif italic text-base text-gray-500">What is the next step?</h4>
+                                    <div className="w-4" /> {/* Spacer */}
+                                </div>
 
                                 {/* Project Banner */}
                                 <button
@@ -244,16 +288,167 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                         </div>
                                         <span className="font-bold text-xs text-gray-800 dark:text-white mb-0.5">Next Actions</span>
                                     </button>
-
                                     <button
-                                        onClick={() => handleProcess('scheduled')}
+                                        onClick={() => setStep('schedule')}
                                         className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 dark:border-white/10 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
                                     >
                                         <div className="w-6 h-6 rounded-full border border-gray-300 group-hover:border-blue-400 flex items-center justify-center mb-2 text-gray-400 group-hover:text-blue-400 transition-colors">
-                                            <Calendar size={14} />
+                                            <CalendarIcon size={14} />
                                         </div>
                                         <span className="font-bold text-xs text-gray-800 dark:text-white mb-0.5">Defer (Calendar)</span>
                                     </button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 'schedule' && (
+                            <motion.div
+                                key="schedule"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="w-full max-w-3xl max-h-[500px] bg-white dark:bg-[#111] rounded-3xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row relative"
+                            >
+                                {/* LEFT SIDEBAR - Quick Actions */}
+                                <div className="w-full md:w-48 bg-gray-50/50 dark:bg-black/20 border-r border-gray-100 dark:border-white/5 flex flex-col">
+                                    <div className="p-3 flex-1 overflow-y-auto space-y-1">
+                                        {[
+                                            { label: 'Today', date: new Date(), sub: new Date().toLocaleDateString('en-US', { weekday: 'short' }) },
+                                            { label: 'Tomorrow', date: new Date(Date.now() + 86400000), sub: new Date(Date.now() + 86400000).toLocaleDateString('en-US', { weekday: 'short' }) },
+                                            { label: 'Next week', date: new Date(Date.now() + 7 * 86400000), sub: new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+                                            { label: 'Next weekend', date: (() => { const d = new Date(); d.setDate(d.getDate() + (6 - d.getDay() + 7) % 7); return d; })(), sub: (() => { const d = new Date(); d.setDate(d.getDate() + (6 - d.getDay() + 7) % 7); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); })() },
+                                            { label: '2 weeks', date: new Date(Date.now() + 14 * 86400000), sub: new Date(Date.now() + 14 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+                                            { label: '4 weeks', date: new Date(Date.now() + 28 * 86400000), sub: new Date(Date.now() + 28 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+                                        ].map((option, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    setSelectedDate(option.date);
+                                                    setCurrentMonth(new Date(option.date));
+                                                }}
+                                                className={`w-full text-left px-3 py-1.5 rounded-lg flex items-center justify-between group transition-colors ${selectedDate && option.date.toDateString() === selectedDate.toDateString()
+                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                                    : 'hover:bg-gray-200 dark:hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                <span className={`text-xs font-medium ${selectedDate && option.date.toDateString() === selectedDate.toDateString() ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}>{option.label}</span>
+                                                <span className={`text-[10px] ${selectedDate && option.date.toDateString() === selectedDate.toDateString() ? 'text-blue-400 dark:text-blue-300' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>{option.sub}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="p-3 border-t border-gray-100 dark:border-white/5">
+                                        <button className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-200 transition-colors">
+                                            <span>Set Recurring</span>
+                                            <ArrowRight size={12} className="opacity-50" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* RIGHT CONTENT - Calendar */}
+                                <div className="flex-1 p-5 flex flex-col">
+                                    {/* Close Button Mobile / Desktop Absolute */}
+                                    <button
+                                        onClick={() => setStep('actionable')}
+                                        className="absolute right-3 top-3 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400"
+                                    >
+                                        <ArrowLeft size={16} />
+                                    </button>
+
+                                    {/* Inputs Mockup */}
+                                    <div className="flex gap-3 mb-6 pr-8">
+                                        <div className="flex-1 bg-gray-50 dark:bg-white/5 rounded-lg flex items-center px-2.5 py-1.5 gap-2 opacity-50 cursor-not-allowed">
+                                            <CalendarIcon size={14} className="text-gray-400" />
+                                            <span className="text-xs text-gray-400 font-medium">Start date</span>
+                                        </div>
+                                        <div className="flex-1 bg-white dark:bg-black/20 border border-blue-100 dark:border-blue-500/30 rounded-lg flex items-center px-2.5 py-1.5 gap-2 shadow-sm">
+                                            <CalendarIcon size={14} className="text-blue-500" />
+                                            <span className="text-xs font-bold text-gray-800 dark:text-white">
+                                                {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Due date'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Calendar Header */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-lg font-bold text-gray-900 dark:text-white font-serif">
+                                                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                            </span>
+                                            <button
+                                                onClick={() => setCurrentMonth(new Date())}
+                                                className="text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-blue-500 transition-colors"
+                                            >
+                                                Today
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500">
+                                                <ChevronLeft size={16} />
+                                            </button>
+                                            <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500">
+                                                <ChevronRight size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Grid */}
+                                    <div className="flex-1">
+                                        <div className="grid grid-cols-7 mb-2 text-center">
+                                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                                <div key={day} className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{day}</div>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-y-1 gap-x-1">
+                                            {Array.from({ length: calendarData.firstDay }).map((_, i) => (
+                                                <div key={`empty-${i}`} />
+                                            ))}
+                                            {Array.from({ length: calendarData.days }).map((_, i) => {
+                                                const day = i + 1;
+                                                const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+                                                const isToday = d.toDateString() === new Date().toDateString();
+                                                const isSelected = selectedDate && d.toDateString() === selectedDate.toDateString();
+
+                                                return (
+                                                    <div key={day} className="flex items-center justify-center">
+                                                        <button
+                                                            onClick={() => handleDateClick(day)}
+                                                            className={`
+                                                                w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200
+                                                                ${isSelected
+                                                                    ? 'bg-blue-500 text-white shadow-lg scale-110'
+                                                                    : isToday
+                                                                        ? 'bg-red-50 text-red-500 border border-red-200 dark:bg-red-900/20 dark:border-red-500/30'
+                                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {day}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 flex justify-end gap-2">
+                                        <button
+                                            onClick={() => setStep('actionable')}
+                                            className="px-4 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-xs font-bold text-gray-500 transition-colors uppercase tracking-wider"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (selectedDate) {
+                                                    handleProcess('scheduled', selectedDate.getTime());
+                                                }
+                                            }}
+                                            disabled={!selectedDate}
+                                            className="px-4 py-1.5 bg-[#1A1A1A] dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold shadow-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase tracking-wider"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -262,16 +457,4 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
             )}
         </div>
     );
-
 };
-
-// Helper icons for the non-actionable section since I removed the SVGs to keep code clean
-const Trash2Icon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-);
-const FileTextIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-);
-const ClockIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-);

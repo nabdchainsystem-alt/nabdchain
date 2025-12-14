@@ -6,6 +6,7 @@ import { BoardView } from './features/board/BoardView';
 import { InboxView } from './features/inbox/InboxView';
 import DiscussionPage from './features/discussion/DiscussionPage';
 import { VaultView } from './features/vault/VaultView';
+import FlowHubPage from './features/flowHub/FlowHubPage';
 import { MyWorkPage } from './features/myWork/MyWorkPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './features/auth/LoginPage';
@@ -320,6 +321,8 @@ const AppContent: React.FC = () => {
             <TeamsPage />
           ) : activeView === 'vault' ? (
             <VaultView />
+          ) : activeView === 'flow_hub' ? (
+            <FlowHubPage />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
               {activeView === 'board' && !activeBoard && "No board selected"}

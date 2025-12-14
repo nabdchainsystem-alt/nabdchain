@@ -7,7 +7,7 @@ import {
     Heart, Smile, Globe, Cpu, Database, Cloud, Code, Terminal,
     Command, Hash, Image, Music, Video, PenTool, Box, Package, Layers,
     ChevronLeft, LayoutDashboard, FileSpreadsheet, GitMerge, Puzzle,
-    Download, Wand2, Table, LayoutTemplate, BriefcaseBusiness, List, KanbanSquare, MessageSquare, CheckSquare
+    Download, Wand2, Table, LayoutTemplate, BriefcaseBusiness, List, KanbanSquare, MessageSquare, CheckSquare, Sparkles
 } from 'lucide-react';
 import { Board, Workspace, ViewState } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -208,6 +208,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                     <Home size={18} />
                     {!isCollapsed && <span className="font-normal text-sm truncate">{t('home')}</span>}
+                </button>
+                <button
+                    onClick={() => onNavigate('flow_hub')}
+                    title="Flow Hub"
+                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'flow_hub' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                >
+                    <Sparkles size={18} />
+                    {!isCollapsed && <span className="font-normal text-sm truncate">Flow Hub</span>}
                 </button>
                 <button
                     onClick={() => onNavigate('my_work')}

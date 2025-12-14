@@ -1589,6 +1589,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, dashboardConfig, 
 
             </div > {/* This closes the main scrollable div for the table content */}
 
+            < TablePagination
+                totalItems={filteredRows.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+            />
+
 
             {/* Dropdown Config Modal */}
             {

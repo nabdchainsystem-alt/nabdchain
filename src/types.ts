@@ -42,4 +42,4 @@ export interface Workspace {
   color: string;
 }
 
-export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work';
+export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work' | 'flow_hub';

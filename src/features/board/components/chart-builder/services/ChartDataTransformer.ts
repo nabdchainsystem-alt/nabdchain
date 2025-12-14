@@ -44,8 +44,41 @@ export class ChartDataTransformer {
     static transformData(rows: Row[], config: ChartBuilderConfig): { xData: string[], yData: number[] } {
         // 1. Filter
         let filteredRows = rows;
+
+        // Apply Structured Filters
+        if (config.filter && config.filter.length > 0) {
+            filteredRows = filteredRows.filter(row => {
+                return config.filter!.every(f => {
+                    const rowValue = row[f.columnId];
+                    const filterValue = f.value;
+                    const val = rowValue === null || rowValue === undefined ? '' : String(rowValue).toLowerCase();
+                    const fVal = String(filterValue).toLowerCase();
+
+                    // Handle Operators
+                    switch (f.operator) {
+                        case 'contains': return val.includes(fVal);
+                        case 'is': return val === fVal;
+                        case 'isNot': return val !== fVal;
+                        case 'startsWith': return val.startsWith(fVal);
+                        case 'endsWith': return val.endsWith(fVal);
+                        case 'isEmpty': return val === '';
+                        case 'isNotEmpty': return val !== '';
+                        // Number ops (basic)
+                        case 'gt': return Number(val) > Number(fVal);
+                        case 'lt': return Number(val) < Number(fVal);
+                        case 'match': return val === fVal; // Alias for is
+                        default: return true;
+                    }
+                });
+            });
+        }
+
+        // Apply Manual Row Selection (Intersection)
         if (config.includedRowIds && config.includedRowIds.length > 0) {
-            filteredRows = rows.filter(r => config.includedRowIds!.includes(r.id));
+            // If includedRowIds is set, it means we ONLY show these. 
+            // If the user manually UNCHECKED some rows, the passed includedRowIds will be the subset of ALL rows.
+            // If we combine this with filters, we should probably respect the Intersection.
+            filteredRows = filteredRows.filter(r => config.includedRowIds!.includes(r.id));
         }
 
         // 2. Group
