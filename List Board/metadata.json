@@ -1,5 +1,0 @@
-{
-  "name": "Project Board Replica",
-  "description": "A pixel-perfect recreation of a project management board interface featuring task groups, status tracking, and AI-powered task generation using Gemini.",
-  "requestFramePermissions": []
-}

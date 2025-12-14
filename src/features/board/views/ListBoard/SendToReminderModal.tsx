@@ -10,5 +10,5 @@ export const SendToReminderModal: React.FC<any> = ({ onClose }) => (
 );
 
 export const remindersService = {
-    sendTask: () => console.log('Task sent to reminders')
+    sendTask: () => { }
 };

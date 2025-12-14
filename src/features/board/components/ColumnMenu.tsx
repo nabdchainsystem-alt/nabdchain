@@ -61,7 +61,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'timeline', label: 'Timeline', icon: Calendar, color: 'bg-purple-500', description: 'Visual timeline' },
         { id: 'connect_boards', label: 'Connect...', icon: Link2, color: 'bg-rose-400', description: 'Connect boards' },
         { id: 'checkbox', label: 'Checkbox', icon: CheckSquare, color: 'bg-orange-400', description: 'Check/Uncheck' },
-        { id: 'doc', label: 'monday Doc', icon: FileText, color: 'bg-rose-400', description: 'Embed docs' },
+        { id: 'doc', label: 'NABD Doc', icon: FileText, color: 'bg-rose-400', description: 'Embed docs' },
         { id: 'formula', label: 'Formula', icon: Calculator, color: 'bg-teal-500', description: 'Calculations' },
         { id: 'location', label: 'Location', icon: MapPin, color: 'bg-rose-500', description: 'Add a location' },
         { id: 'progress_manual', label: 'Progress', icon: Minus, color: 'bg-emerald-500', description: 'Track progress' },

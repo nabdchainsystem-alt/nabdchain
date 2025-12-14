@@ -1,84 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MondayClone.ai</title>
-    <!-- Google Fonts: Poppins and Figtree -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              monday: {
-                blue: '#0073ea',
-                'blue-hover': '#0060b9',
-                purple: '#6c4df6',
-                bg: '#eceff8',
-                surface: '#ffffff',
-                text: '#323338',
-                secondary: '#676879',
-                border: '#d0d4e4',
-                hover: '#dcdfec',
-                // Updated Dark Mode Colors (Pure Neutral Grey)
-                'dark-bg': '#141414',
-                'dark-surface': '#242424',
-                'dark-hover': '#333333',
-                'dark-border': '#424242',
-                'dark-text': '#e0e0e0',
-                'dark-text-secondary': '#a0a0a0'
-              }
-            },
-            fontFamily: {
-              sans: ['Figtree', 'Inter', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-              poppins: ['Poppins', 'sans-serif'],
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NABD Chain System</title>
+  <!-- Google Fonts: Poppins and Figtree -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+    rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            monday: {
+              blue: '#0073ea',
+              'blue-hover': '#0060b9',
+              purple: '#6c4df6',
+              bg: '#eceff8',
+              surface: '#ffffff',
+              text: '#323338',
+              secondary: '#676879',
+              border: '#d0d4e4',
+              hover: '#dcdfec',
+              // Updated Dark Mode Colors (Pure Neutral Grey)
+              'dark-bg': '#141414',
+              'dark-surface': '#242424',
+              'dark-hover': '#333333',
+              'dark-border': '#424242',
+              'dark-text': '#e0e0e0',
+              'dark-text-secondary': '#a0a0a0'
             }
+          },
+          fontFamily: {
+            sans: ['Figtree', 'Inter', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            poppins: ['Poppins', 'sans-serif'],
           }
         }
       }
-    </script>
-    <style>
-      html {
-        font-size: 100%;
-      }
-      html, body {
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-        overscroll-behavior: none;
-      }
-      #root {
-        height: 100%;
-        width: 100%;
-      }
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #c3c6d4;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #aeb2c6;
-      }
-      /* Dark mode scrollbar */
-      .dark ::-webkit-scrollbar-thumb {
-        background: #424242;
-      }
-      .dark ::-webkit-scrollbar-thumb:hover {
-        background: #616161;
-      }
-    </style>
+    }
+  </script>
+  <style>
+    html {
+      font-size: 100%;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    #root {
+      height: 100%;
+      width: 100%;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #c3c6d4;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aeb2c6;
+    }
+
+    /* Dark mode scrollbar */
+    .dark ::-webkit-scrollbar-thumb {
+      background: #424242;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #616161;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -91,10 +103,13 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-monday-bg dark:bg-monday-dark-bg text-monday-text dark:text-monday-dark-text transition-colors duration-200">
-    <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
+
+<body
+  class="bg-monday-bg dark:bg-monday-dark-bg text-monday-text dark:text-monday-dark-text transition-colors duration-200">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
+
 </html>

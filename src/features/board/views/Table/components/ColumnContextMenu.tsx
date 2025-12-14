@@ -7,7 +7,8 @@ import {
     Pin,
     ArrowLeft,
     ArrowRight,
-    Trash2
+    Trash2,
+    Edit2
 } from 'lucide-react';
 import { useClickOutside } from '../../../../../hooks/useClickOutside';
 
@@ -27,6 +28,7 @@ export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({ onClose, o
         { id: 'insert_right', label: 'Insert right', icon: ArrowRightToLine },
         { id: 'autosize', label: 'Autosize this column', icon: MoveHorizontal },
         { id: 'pin', label: 'Pin column', icon: Pin },
+        { id: 'rename', label: 'Rename column', icon: Edit2 },
         { separator: true },
         { id: 'move_start', label: 'Move to start', icon: ArrowLeft },
         { id: 'move_end', label: 'Move to end', icon: ArrowRight },

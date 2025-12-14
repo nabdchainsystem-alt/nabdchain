@@ -85,7 +85,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   return (
     <div
       className={`
-        bg-stone-50 dark:bg-stone-900 border-s border-stone-200 dark:border-stone-800 transition-all duration-300 ease-in-out flex flex-col relative z-30
+        bg-[#f7f8fa] dark:bg-monday-dark-surface border-s border-gray-200 dark:border-monday-dark-border transition-all duration-300 ease-in-out flex flex-col relative z-30
         ${isOpen ? 'w-80 opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full overflow-hidden'}
       `}
     >
@@ -95,8 +95,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           onClick={() => setActiveTab('notes')}
           className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium font-sans flex items-center justify-center gap-2 transition-all
             ${activeTab === 'notes'
-              ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm border border-stone-200 dark:border-stone-700'
-              : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'}
+              ? 'bg-white dark:bg-monday-dark-bg text-monday-blue shadow-sm border border-gray-200 dark:border-monday-dark-border'
+              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}
           `}
         >
           <StickyNote size={14} />
@@ -106,8 +106,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           onClick={() => setActiveTab('tasks')}
           className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium font-sans flex items-center justify-center gap-2 transition-all
             ${activeTab === 'tasks'
-              ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm border border-stone-200 dark:border-stone-700'
-              : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'}
+              ? 'bg-white dark:bg-monday-dark-bg text-monday-blue shadow-sm border border-gray-200 dark:border-monday-dark-border'
+              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}
           `}
         >
           <ListTodo size={14} />
@@ -158,7 +158,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   onDrop={(e) => onDrop(e, status)}
                   className="min-h-[50px] transition-colors rounded-lg"
                 >
-                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3 font-sans sticky top-0 bg-stone-50 dark:bg-stone-900 py-1 z-10">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans sticky top-0 bg-[#f7f8fa] dark:bg-monday-dark-surface py-1 z-10">
                     {t(`discussion.tasks.${status}`)} <span className="text-stone-300 font-normal ms-1 text-[10px]">{statusTasks.length}</span>
                   </h3>
                   <div className="space-y-2 pb-4">

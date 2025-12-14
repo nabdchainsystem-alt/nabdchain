@@ -1,0 +1,74 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Board {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  groups         Group[]
+  columns        BoardColumn[]
+  
+  availableViews String[] 
+  defaultView    String?
+}
+
+model Group {
+  id        String   @id @default(uuid())
+  title     String
+  color     String   @default("#579bfc")
+  order     Int      @default(0)
+  isPinned  Boolean  @default(false)
+  
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  
+  tasks     Task[]
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String   @default("New Task")
+  
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  // Standard fields
+  status      String?  
+  priority    String?
+  personId    String?
+  dueDate     DateTime?
+  
+  // Flexible fields (JSON)
+  textValues  Json?    @default("{}") 
+  
+  // Meta
+  order       Int      @default(0)
+  selected    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BoardColumn {
+  id        String   @id @default(uuid())
+  fieldId   String   
+  title     String
+  type      String   
+  width     Int      @default(150)
+  order     Int      @default(0)
+  isPinned  Boolean  @default(false)
+  options   Json?    
+  resizable Boolean  @default(true)
+  minWidth  Int      @default(100)
+  
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}

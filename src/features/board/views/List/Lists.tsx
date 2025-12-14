@@ -110,16 +110,16 @@ const INITIAL_STATUSES: StatusColumn[] = [
     { id: 'Done', title: 'Done', color: '#22c55e', isCollapsed: false }
 ];
 
-const STORAGE_KEY_TASKS = 'lists-view-tasks-v2';
-const STORAGE_KEY_STATUSES = 'lists-view-statuses';
-const STORAGE_KEY_COLUMNS = 'lists-view-columns';
-
-const INITIAL_TASKS: Task[] = [];
-
 const STATUS_COLORS = [
     '#9ca3af', '#3b82f6', '#22c55e', '#eab308',
     '#ef4444', '#a855f7', '#ec4899', '#f97316',
 ];
+
+// --- Modified Lists Component to accept roomId ---
+interface ListsProps {
+    roomId: string;
+    viewId?: string;
+}
 
 // ----------------------------------------------------------------------
 // 2. SERVICES
@@ -129,21 +129,21 @@ const STATUS_COLORS = [
 const getApiKey = () => {
     return import.meta.env.VITE_GEMINI_API_KEY || '';
 };
-
+ 
 // Initialize only if key exists, otherwise handle gracefully
 const createAIClient = () => {
     const key = getApiKey();
     return key ? new GoogleGenAI({ apiKey: key }) : null;
 };
-
+ 
 const ai = createAIClient();
-
+ 
 const generateSubtasks = async (taskTitle: string): Promise<string[]> => {
     if (!ai) {
         console.warn("Gemini API Key not set. AI features disabled.");
         return [];
     }
-
+ 
     try {
         const model = 'gemini-2.0-flash-exp';
         const response = await ai.models.generateContent({
@@ -162,9 +162,9 @@ const generateSubtasks = async (taskTitle: string): Promise<string[]> => {
                 }
             }
         });
-
+ 
         const json = JSON.parse(response.text || '{"subtasks": []}');
-
+ 
         return json.subtasks || [];
     } catch (error) {
         console.error("Failed to generate subtasks:", error);
@@ -814,30 +814,44 @@ const TaskDetailModal: React.FC<{ task: Task; onClose: () => void }> = ({ task, 
 // 4. MAIN COMPONENT (TaskFlow)
 // ----------------------------------------------------------------------
 
-export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: string }) {
-    // Generate storage keys based on viewId if present, otherwise fallback to room-level (legacy)
+const STORAGE_KEY_TASKS = 'lists-view-tasks-v2';
+const STORAGE_KEY_STATUSES = 'lists-view-statuses';
+const STORAGE_KEY_COLUMNS = 'lists-view-columns';
+
+const INITIAL_TASKS: Task[] = [];
+
+// ----------------------------------------------------------------------
+// 2. SERVICES
+// ----------------------------------------------------------------------
+
+export default React.memo(function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: string }) {
+    // Shared Storage Keys
+    const storageKeyTasks = `board-tasks-${roomId}`;
+    const storageKeyStatuses = `board-statuses-${roomId}`;
     const getStorageKey = (base: string) => viewId ? `${base}-${roomId}-${viewId}` : `${base}-${roomId}`;
 
+    // ----------------------------------------------------------------------
+    // STATE: TASKS
+    // ----------------------------------------------------------------------
     const [tasks, setTasks] = useState<Task[]>(() => {
         try {
-            // Use shared storage key
-            const saved = localStorage.getItem(`board-tasks-${roomId}`);
+            const saved = localStorage.getItem(storageKeyTasks);
             if (saved) {
                 const rows = JSON.parse(saved);
                 if (Array.isArray(rows)) {
-                    // Map shared Row format to List Task format
                     return rows.map((row: any) => ({
                         id: row.id,
-                        title: row.name || 'Untitled',
-                        status: row.status || 'To Do',
-                        assignees: [MOCK_USER], // Default assignee
+                        title: row.name || row.title || 'Untitled',
+                        status: row.statusId || row.status || 'To Do',
+                        assignees: row.assignees || [],
                         dueDate: row.dueDate || undefined,
+                        startDate: row.startDate,
                         priority: row.priority as Priority || Priority.NONE,
-                        tags: [], // Row doesn't store tags yet
-                        subtasks: [], // Row doesn't store subtasks
+                        tags: row.tags || [],
+                        subtasks: row.subtasks || [],
                         isExpanded: false,
                         selected: false,
-                        customValues: {}
+                        customValues: row.customValues || {}
                     }));
                 }
             }
@@ -847,19 +861,52 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
             return INITIAL_TASKS;
         }
     });
+
+    const saveTasksToStorage = (newTasks: Task[]) => {
+        const genericTasks = newTasks.map(t => ({
+            id: t.id,
+            name: t.title,
+            title: t.title,
+            status: t.status,
+            statusId: t.status,
+            assignees: t.assignees,
+            dueDate: t.dueDate,
+            startDate: t.startDate,
+            priority: t.priority,
+            tags: t.tags,
+            subtasks: t.subtasks,
+            customValues: t.customValues
+        }));
+        localStorage.setItem(storageKeyTasks, JSON.stringify(genericTasks));
+    };
+
+    const handleTasksUpdate = (newTasks: Task[]) => {
+        setTasks(newTasks);
+        saveTasksToStorage(newTasks);
+    };
+
+    // ----------------------------------------------------------------------
+    // STATE: STATUSES
+    // ----------------------------------------------------------------------
     const [statuses, setStatuses] = useState<StatusColumn[]>(() => {
         try {
-            const saved = localStorage.getItem(`board-statuses-${roomId}`);
+            const saved = localStorage.getItem(storageKeyStatuses);
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) {
                     if (typeof parsed[0] === 'string') {
-                        return parsed.map((s: string) => ({ id: s.replace(/\s+/g, '-').toLowerCase(), title: s, color: '#3b82f6', isCollapsed: false }));
+                        return parsed.map((s: string) => {
+                            const lower = s.toLowerCase();
+                            let color = '#94a3b8';
+                            if (lower.includes('done') || lower.includes('complete')) color = '#22c55e';
+                            else if (lower.includes('progress') || lower.includes('working')) color = '#3b82f6';
+                            return { id: s.replace(/\s+/g, '-').toLowerCase(), title: s, color: color, isCollapsed: false };
+                        });
                     } else {
                         return parsed.map((s: any) => ({
-                            id: s.id || s.title.replace(/\s+/g, '-').toLowerCase(),
-                            title: s.title || s.id,
-                            color: s.color || '#3b82f6',
+                            id: s.id || s.label || s.title,
+                            title: s.label || s.title,
+                            color: s.color || '#94a3b8',
                             isCollapsed: s.isCollapsed || false
                         }));
                     }
@@ -872,55 +919,37 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
         }
     });
 
+    useEffect(() => {
+        try {
+            const sharedFormat = statuses.map(s => ({
+                id: s.id, // Keep ID for stability
+                title: s.title,
+                color: s.color,
+                isCollapsed: s.isCollapsed
+            }));
+            localStorage.setItem(storageKeyStatuses, JSON.stringify(sharedFormat));
+        } catch (e) {
+            console.error("Failed to save shared statuses", e);
+        }
+    }, [statuses, storageKeyStatuses]);
+
+    // ----------------------------------------------------------------------
+    // STATE: COLUMNS
+    // ----------------------------------------------------------------------
     const [extraColumns, setExtraColumns] = useState<CustomColumn[]>(() => {
         try {
             const saved = localStorage.getItem(getStorageKey(STORAGE_KEY_COLUMNS));
             return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            console.warn("Failed to parse extra columns", e);
-            return [];
-        }
+        } catch (e) { return []; }
     });
-
-    // Make extraColumns available to TaskRow (hacky but effective for preventing prop drilling deep down strictly for this demo)
-    (window as any).extraColumns = extraColumns;
-
 
     useEffect(() => {
         localStorage.setItem(getStorageKey(STORAGE_KEY_COLUMNS), JSON.stringify(extraColumns));
-    }, [extraColumns, roomId, viewId]);
+    }, [extraColumns, roomId, viewId]); // Depends on getStorageKey which depends on roomId/viewId
 
+    // Make extraColumns available to TaskRow (hacky but effective)
+    (window as any).extraColumns = extraColumns;
 
-    useEffect(() => {
-        // Save tasks to shared storage key in Row format
-        try {
-            const rows = tasks.map(t => ({
-                id: t.id,
-                name: t.title,
-                status: t.status,
-                dueDate: t.dueDate || null,
-                priority: t.priority
-                // Lost data warning: tags, subtasks, customValues are not persisted to shared storage yet
-            }));
-            localStorage.setItem(`board-tasks-${roomId}`, JSON.stringify(rows));
-        } catch (e) {
-            console.error("Failed to save shared tasks", e);
-        }
-    }, [tasks, roomId]);
-
-    useEffect(() => {
-        // Save statuses to shared key (simple format)
-        try {
-            const sharedFormat = statuses.map(s => ({
-                id: s.id,
-                title: s.title,
-                color: s.color
-            }));
-            localStorage.setItem(`board-statuses-${roomId}`, JSON.stringify(sharedFormat));
-        } catch (e) {
-            console.error("Failed to save shared statuses in Lista", e);
-        }
-    }, [statuses, roomId]);
     const [addingTaskToGroup, setAddingTaskToGroup] = useState<string | null>(null);
     const [addingTaskToGroupBottom, setAddingTaskToGroupBottom] = useState<string | null>(null);
     const [addingSubtaskTo, setAddingSubtaskTo] = useState<string | null>(null);
@@ -941,7 +970,7 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                 return t;
             });
         };
-        setTasks(toggleRecursive(tasks));
+        handleTasksUpdate(toggleRecursive(tasks));
     };
 
     const toggleSelection = (id: string) => {
@@ -952,6 +981,9 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                 return t;
             });
         };
+        // Selection state might not need to be persisted to shared storage (it's UI state), 
+        // but for simplicity and preventing mismatch, we use handleTasksUpdate.
+        // Actually, selection is usually transient. Let's just setTasks locally for selection.
         setTasks(toggleRecursive(tasks));
     };
 
@@ -961,8 +993,8 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
             subtasks: subtasksToAdd.map((st, i) => ({ id: `t-${Date.now()}-${i}`, title: st, status: statusId, assignees: [], priority: Priority.NONE, tags: [], subtasks: [], isExpanded: false, selected: false })),
             isExpanded: subtasksToAdd.length > 0, selected: false
         };
-        if (position === 'top') { setTasks([newTask, ...tasks]); setAddingTaskToGroup(null); }
-        else { setTasks([...tasks, newTask]); setAddingTaskToGroupBottom(null); }
+        if (position === 'top') { handleTasksUpdate([newTask, ...tasks]); setAddingTaskToGroup(null); }
+        else { handleTasksUpdate([...tasks, newTask]); setAddingTaskToGroupBottom(null); }
     };
 
     const addSubtask = (parentId: string, title: string, subtasksToAdd: string[] = []) => {
@@ -983,13 +1015,13 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                 return t;
             });
         };
-        setTasks(addRecursive(tasks));
+        handleTasksUpdate(addRecursive(tasks));
         setAddingSubtaskTo(null);
     };
 
     const deleteTask = (id: string) => {
         const deleteRecursive = (taskList: Task[]): Task[] => taskList.filter(t => t.id !== id).map(t => ({ ...t, subtasks: deleteRecursive(t.subtasks) }));
-        setTasks(deleteRecursive(tasks));
+        handleTasksUpdate(deleteRecursive(tasks));
     };
 
     const updateTask = (id: string, updates: Partial<Task>) => {
@@ -1000,16 +1032,26 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                 return t;
             });
         };
-        setTasks(updateRecursive(tasks));
+        handleTasksUpdate(updateRecursive(tasks));
     };
 
-    const handleAddStatus = (title: string, color: string) => {
-        setStatuses([...statuses, { id: title.toLowerCase().replace(/\s+/g, '-'), title: title, color: color, isCollapsed: false }]);
+    const addStatus = (title: string, color: string) => {
+        const newId = title.toLowerCase().replace(/\s+/g, '-');
+        if (statuses.some(s => s.id === newId)) return;
+        setStatuses([...statuses, { id: newId, title, color, isCollapsed: false }]);
         setIsCreatingStatus(false);
     };
 
-    const handleUpdateStatus = (id: string, newTitle: string, newColor: string) => {
-        setStatuses(statuses.map(s => s.id === id ? { ...s, title: newTitle, color: newColor } : s));
+    const updateStatus = (id: string, newTitle: string, newColor: string) => {
+        const newStatuses = statuses.map(s => s.id === id ? { ...s, title: newTitle, color: newColor } : s);
+        setStatuses(newStatuses);
+        // Persist statuses? Yes, we have a useEffect for that now.
+    };
+
+    const deleteStatus = (id: string) => {
+        // Move tasks from deleted status to 'To Do' or similar?
+        // For now just delete status.
+        setStatuses(statuses.filter(s => s.id !== id));
     };
 
     const toggleStatusCollapse = (id: string) => {
@@ -1065,9 +1107,9 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                 }
                 return result;
             };
-            setTasks(insertRecursive(treeWithoutSource));
+            handleTasksUpdate(insertRecursive(treeWithoutSource));
         } else if (targetStatusId) {
-            setTasks([{ ...(taskToMove as Task), status: targetStatusId, parentId: undefined }, ...treeWithoutSource]);
+            handleTasksUpdate([{ ...(taskToMove as Task), status: targetStatusId, parentId: undefined }, ...treeWithoutSource]);
         }
     };
 
@@ -1107,7 +1149,7 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-stone-950 text-gray-900 dark:text-stone-100 flex flex-col font-sans relative -mt-px">
+        <div className="h-full bg-white dark:bg-stone-950 text-gray-900 dark:text-stone-100 flex flex-col font-sans relative -mt-px">
             {openedTask && <TaskDetailModal task={openedTask} onClose={() => setOpenedTask(null)} />}
             {openedTask && <TaskDetailModal task={openedTask} onClose={() => setOpenedTask(null)} />}
             {/* Header removed as per user request */}
@@ -1130,7 +1172,7 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                                     <button onClick={() => toggleStatusCollapse(status.id)} className="text-gray-400 hover:bg-gray-100 p-1 rounded transition-colors">
                                         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${status.isCollapsed ? '-rotate-90' : ''}`} />
                                     </button>
-                                    <StatusBadge id={status.id} title={status.title} color={status.color} onUpdate={handleUpdateStatus} />
+                                    <StatusBadge id={status.id} title={status.title} color={status.color} onUpdate={updateStatus} />
                                     <span className="text-xs text-gray-400 font-medium ml-1">{groupTasks.length}</span>
                                     <div className="relative">
                                         <button onClick={() => setActiveGroupMenu(activeGroupMenu === status.id ? null : status.id)} className={`text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 ml-1 ${activeGroupMenu === status.id ? 'bg-gray-100 text-gray-600' : ''}`}><MoreHorizontal className="w-4 h-4" /></button>
@@ -1145,6 +1187,23 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                                                     <div className="my-1 border-t border-gray-100"></div>
                                                     <button onClick={() => toggleStatusCollapse(status.id)} className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm"><ChevronUp className="w-4 h-4 text-gray-400" /> Collapse group</button>
                                                     <button className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm"><EyeOff className="w-4 h-4 text-gray-400" /> Hide status</button>
+
+                                                    {/* Delete Option for Non-Default Statuses */}
+                                                    {!['To Do', 'In Progress', 'Done'].includes(status.title) && !['To Do', 'In Progress', 'Done', 'to-do', 'in-progress', 'done'].includes(status.id) && (
+                                                        <>
+                                                            <div className="my-1 border-t border-gray-100"></div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setStatuses(statuses.filter(s => s.id !== status.id));
+                                                                    setActiveGroupMenu(null);
+                                                                }}
+                                                                className="px-3 py-1.5 flex items-center gap-2 hover:bg-red-50 text-sm text-red-600"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" /> Delete status
+                                                            </button>
+                                                        </>
+                                                    )}
+
                                                     <div className="my-1 border-t border-gray-100"></div>
                                                     <button className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm"><CheckCheck className="w-4 h-4 text-gray-400" /> Select all</button>
                                                     <button onClick={collapseAllGroups} className="px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm"><ChevronsUp className="w-4 h-4 text-gray-400" /> Collapse all groups</button>
@@ -1155,7 +1214,7 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                                         )}
                                     </div>
                                     {!status.isCollapsed && (
-                                        <button onClick={() => setAddingTaskToGroup(status.id)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors ml-2"><Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Task</span></button>
+                                        <button onClick={() => setAddingTaskToGroup(status.id)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors ml-2"><Plus className="w-3.5 h-3.5" /></button>
                                     )}
                                     <div className="flex-1"></div>
                                 </div>
@@ -1232,7 +1291,7 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
                         {!isCreatingStatus ? (
                             <button onClick={() => setIsCreatingStatus(true)} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-md transition-colors text-sm font-medium"><Plus className="w-4 h-4" /> New status</button>
                         ) : (
-                            <NewStatusInput onAdd={handleAddStatus} onCancel={() => setIsCreatingStatus(false)} />
+                            <NewStatusInput onAdd={(title, color) => addStatus(title, color)} onCancel={() => setIsCreatingStatus(false)} />
                         )}
                     </div>
                 </div>
@@ -1283,4 +1342,4 @@ export default function TaskFlow({ roomId, viewId }: { roomId: string; viewId?: 
             )}
         </div>
     );
-}
+});

@@ -40,10 +40,79 @@ import {
 import { ColumnMenu } from '../../components/ColumnMenu';
 import { DropdownConfigModal } from '../../components/DropdownConfigModal';
 import { ColumnContextMenu } from './components/ColumnContextMenu';
+import { NevaAssistant } from '../../components/NevaAssistant';
+import { DashboardHeader, DashboardConfig, ChartConfig } from '../../components/dashboard/DashboardHeader';
+import { ChartBuilderModal } from '../../components/chart-builder/ChartBuilderModal';
+import { ChartDataTransformer } from '../../components/chart-builder/services/ChartDataTransformer';
+import { ChartBuilderConfig } from '../../components/chart-builder/types';
+import { Sparkles } from 'lucide-react';
+import { TablePagination } from './components/TablePagination';
+import { TableFilter, FilterItem } from './components/TableFilter';
+import {
+    DndContext,
+    DragOverlay,
+    closestCorners,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragStartEvent,
+    DragOverEvent,
+    DragEndEvent,
+    defaultDropAnimationSideEffects,
+    DropAnimation
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+    horizontalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// --- Filter Logic Helper ---
+const checkFilterMatch = (rowValue: any, operator: string, filterValue: any, colType: string): boolean => {
+    const val = rowValue === null || rowValue === undefined ? '' : String(rowValue).toLowerCase();
+    const filterVal = String(filterValue).toLowerCase();
+
+    // Empty checks
+    if (operator === 'isEmpty') return val === '';
+    if (operator === 'isNotEmpty') return val !== '';
+
+    // Numeric checks
+    if (colType === 'number') {
+        const numVal = Number(rowValue);
+        const numFilter = Number(filterValue);
+        if (isNaN(numVal)) return false; // or handle as empty?
+
+        switch (operator) {
+            case 'eq': return numVal === numFilter;
+            case 'gt': return numVal > numFilter;
+            case 'lt': return numVal < numFilter;
+            case 'gte': return numVal >= numFilter;
+            case 'lte': return numVal <= numFilter;
+            default: return false;
+        }
+    }
+
+    // Default text/select checks
+    switch (operator) {
+        case 'contains': return val.includes(filterVal);
+        case 'is': return val === filterVal;
+        case 'isNot': return val !== filterVal;
+        case 'startsWith': return val.startsWith(filterVal);
+        case 'endsWith': return val.endsWith(filterVal);
+        case 'before': return rowValue < filterValue; // String comparison works for ISO dates
+        case 'after': return rowValue > filterValue;
+        default: return true;
+    }
+};
 
 // --- Types ---
 
-interface Column {
+export interface Column {
     id: string;
     label: string;
     type: string;
@@ -54,7 +123,7 @@ interface Column {
     options?: { id: string; label: string; color: string }[]; // For status/priority/select
 }
 
-interface Row {
+export interface Row {
     id: string;
     [key: string]: any;
 }
@@ -62,6 +131,16 @@ interface Row {
 interface RoomTableProps {
     roomId: string;
     viewId: string;
+    dashboardConfig?: DashboardConfig | null;
+    onDashboardUpdate?: (config: DashboardConfig) => void;
+    defaultColumns?: Column[];
+    renderCustomActions?: (props: {
+        setRows: React.Dispatch<React.SetStateAction<Row[]>>;
+        setColumns: React.Dispatch<React.SetStateAction<Column[]>>;
+        rows: Row[];
+        columns: Column[];
+    }) => React.ReactNode;
+    enableColumnReorder?: boolean;
 }
 
 // --- Helpers ---
@@ -242,12 +321,105 @@ const SelectPicker: React.FC<{
     );
 };
 
+// --- Sortable Row Component ---
+// We extract this to use useSortable hook
+interface SortableRowProps {
+    row: Row;
+    columns: Column[];
+    getStickyStyle: (colId: string) => React.CSSProperties;
+    renderCellContent: (col: Column, row: Row) => React.ReactNode;
+    handleDeleteRow: (id: string) => void;
+    activeCell: { rowId: string, colId: string, rect?: DOMRect } | null;
+    enableColumnReorder?: boolean;
+    handleDragStart?: (e: React.DragEvent<HTMLDivElement>, index: number) => void; // Legacy/Native
+    isDraggingNative?: boolean;
+}
+
+const SortableRowComponent: React.FC<SortableRowProps> = ({
+    row,
+    columns,
+    getStickyStyle,
+    renderCellContent,
+    handleDeleteRow,
+    activeCell
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: row.id, data: { type: 'row', row } });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+        position: 'relative' as const,
+        zIndex: isDragging ? 50 : 'auto',
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`
+                group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50
+                hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors relative min-w-max
+                ${isDragging ? 'bg-indigo-50 dark:bg-indigo-900/20 z-50' : 'bg-white dark:bg-stone-900'}
+            `}
+        >
+            {columns.map(col => (
+                <div
+                    key={col.id}
+                    style={{ width: col.width, ...getStickyStyle(col.id) }}
+                    className={`
+                        h-full shrink-0 border-e border-stone-200/50 dark:border-stone-800 group-hover:border-stone-200 dark:group-hover:border-stone-700
+                        ${activeCell?.rowId === row.id && activeCell?.colId === col.id ? 'z-10' : ''}
+                        ${(col.id === 'select' || col.pinned) ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}
+                        ${col.id === 'select' ? 'flex justify-center items-center' : ''}
+                        ${isDragging && (col.id === 'select' || col.pinned) ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''} 
+                    `}
+                >
+                    {col.id === 'select' ? (
+                        <div className="flex items-center gap-1 px-1">
+                            <div
+                                {...attributes}
+                                {...listeners}
+                                className="cursor-grab active:cursor-grabbing p-1 text-stone-300 hover:text-stone-500 transition-colors"
+                            >
+                                <GripVertical size={14} />
+                            </div>
+                            <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 cursor-pointer" />
+                        </div>
+                    ) : (
+                        renderCellContent(col, row)
+                    )}
+                </div>
+            ))}
+
+            {/* Fixed Actions Column (Delete) */}
+            <div className="w-8 h-full flex items-center justify-center text-stone-300 border-s border-stone-100/50 dark:border-stone-800">
+                <button
+                    onClick={() => handleDeleteRow(row.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                >
+                    <Trash2 size={14} />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // --- Main RoomTable Component ---
 
-const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
+const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, dashboardConfig, onDashboardUpdate, defaultColumns, renderCustomActions, enableColumnReorder }) => {
     // Keys for persistence
-    const storageKeyColumns = `room-table-columns-v2-${roomId}-${viewId}`;
-    const storageKeyRows = `board-tasks-${roomId}`; // Shared with Kanban
+    // Keys for persistence
+    const storageKeyColumns = `room-table-columns-v3-${roomId}-${viewId}`;
+    // Use separate storage for DataTable to avoid overwriting main board tasks
+    const storageKeyRows = viewId.includes('datatable') ? `datatable-rows-${roomId}-${viewId}` : `board-tasks-${roomId}`;
     const storageKeyStatuses = `board-statuses-${roomId}`; // Shared Status Definitions
 
     // Shared Statuses State
@@ -280,20 +452,31 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
     // --- State ---
 
     const [columns, setColumns] = useState<Column[]>(() => {
-        console.log('RoomTable rendering - v2 fix check');
+
         try {
             const saved = localStorage.getItem(storageKeyColumns);
-            return saved ? JSON.parse(saved) : [
+            // If we have saved columns, use them.
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            // If defaultColumns prop is provided, use it as the default.
+            if (defaultColumns) {
+                return defaultColumns;
+            }
+            // Otherwise use the standard default.
+            return [
                 { id: 'select', label: '', type: 'select', width: 48, minWidth: 40, resizable: false, pinned: true },
                 { id: 'name', label: 'Name', type: 'text', width: 320, minWidth: 200, resizable: true, pinned: true },
+                { id: 'assignees', label: 'Person', type: 'person', width: 140, minWidth: 60, resizable: true },
                 { id: 'status', label: 'Status', type: 'status', width: 140, minWidth: 100, resizable: true },
                 { id: 'dueDate', label: 'Due date', type: 'date', width: 140, minWidth: 100, resizable: true },
                 { id: 'priority', label: 'Priority', type: 'priority', width: 140, minWidth: 100, resizable: true },
             ];
         } catch {
-            return [
+            return defaultColumns || [
                 { id: 'select', label: '', type: 'select', width: 40, minWidth: 40, resizable: false, pinned: true },
                 { id: 'name', label: 'Name', type: 'text', width: 200, minWidth: 100, resizable: true, pinned: true },
+                { id: 'assignees', label: 'Person', type: 'person', width: 140, minWidth: 60, resizable: true },
                 { id: 'status', label: 'Status', type: 'status', width: 140, minWidth: 100, resizable: true },
                 { id: 'dueDate', label: 'Due date', type: 'date', width: 140, minWidth: 100, resizable: true },
                 { id: 'priority', label: 'Priority', type: 'priority', width: 140, minWidth: 100, resizable: true },
@@ -315,11 +498,104 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
     const [activeColumnMenu, setActiveColumnMenu] = useState<{ rect: DOMRect } | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, colId: string } | null>(null);
     const [dropdownConfig, setDropdownConfig] = useState<{ isOpen: boolean; type: string; defaultLabel: string }>({ isOpen: false, type: '', defaultLabel: '' });
+    const [showAIMenu, setShowAIMenu] = useState<{ rect: DOMRect } | null>(null);
+    const [showChartBuilder, setShowChartBuilder] = useState(false);
+    const [localDashboardConfig, setLocalDashboardConfig] = useState<DashboardConfig | null>(null);
 
-    // Drag & Drop State
-    const dragItem = useRef<number | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dropTarget, setDropTarget] = useState<{ index: number, position: 'top' | 'bottom' } | null>(null);
+    // Effective config (Prop takes precedence)
+    const effectiveDashboardConfig = dashboardConfig || localDashboardConfig;
+    const handleSetDashboardConfig = (config: DashboardConfig) => {
+        if (onDashboardUpdate) {
+            onDashboardUpdate(config);
+        } else {
+            setLocalDashboardConfig(config);
+        }
+    };
+
+    const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null);
+    const [tempColName, setTempColName] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    // Search, User Filter, Pagination State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilters, setActiveFilters] = useState<FilterItem[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+
+    // --- Derived State ---
+
+    const filteredRows = React.useMemo(() => {
+        return rows.filter(row => {
+            // Search
+            if (searchQuery) {
+                const searchLower = searchQuery.toLowerCase();
+                const matchesSearch = columns.some(col =>
+                    String(row[col.id] || '').toLowerCase().includes(searchLower)
+                );
+                if (!matchesSearch) return false;
+            }
+
+            // Advanced Filters
+            if (activeFilters.length > 0) {
+                return activeFilters.every(filter => {
+                    const col = columns.find(c => c.id === filter.columnId);
+                    if (!col) return true;
+                    return checkFilterMatch(row[filter.columnId], filter.operator, filter.value, col.type);
+                });
+            }
+            return true;
+        });
+    }, [rows, searchQuery, activeFilters, columns]);
+
+    const sortedRows = React.useMemo(() => {
+        if (!sortConfig) return filteredRows;
+        return [...filteredRows].sort((a, b) => {
+            const aVal = a[sortConfig.key];
+            const bVal = b[sortConfig.key];
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredRows, sortConfig]);
+
+    const paginatedRows = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        // Effect-like check for page out of bounds
+        if (currentPage > 1 && sortedRows.length > 0 && startIndex >= sortedRows.length) {
+            // We can't set state directly in useMemo, but we can return the last page? 
+            // Ideally use useEffect for this sync, but for now just clamp.
+            return sortedRows.slice(0, pageSize);
+        }
+        return sortedRows.slice(startIndex, startIndex + pageSize);
+    }, [sortedRows, currentPage, pageSize]);
+
+    // Sync page if out of bounds (safe side effect)
+    useEffect(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        if (currentPage > 1 && filteredRows.length > 0 && startIndex >= filteredRows.length) {
+            setCurrentPage(1);
+        }
+    }, [filteredRows.length, currentPage, pageSize]);
+
+    // Drag & Drop State (dnd-kit)
+    // We separate logic for Row Drag vs Column Drag to avoid conflicts.
+    // Row Drag State
+    const [activeRowDragId, setActiveRowDragId] = useState<string | null>(null);
+
+    // Column Drag State
+    const [activeColDragId, setActiveColDragId] = useState<string | null>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // slight tolerance
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
 
     // Column Resize State
     const resizingColId = useRef<string | null>(null);
@@ -334,6 +610,30 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
     useEffect(() => {
         localStorage.setItem(storageKeyRows, JSON.stringify(rows));
     }, [rows, storageKeyRows]);
+
+    // Force migration of Person column width
+    useEffect(() => {
+        setColumns(cols => cols.map(c => {
+            if (c.id === 'assignees' && c.width < 140) {
+                return { ...c, width: 140 };
+            }
+            return c;
+        }));
+    }, []);
+
+    // Force unpin 'name' column in Data Table (enableColumnReorder mode) to ensure it is draggable.
+    // This fixes the issue where 'name' is pinned by default/import and thus locked.
+    useEffect(() => {
+        if (enableColumnReorder) {
+            setColumns(cols => {
+                const needsUpdate = cols.some(c => c.id === 'name' && c.pinned);
+                if (needsUpdate) {
+                    return cols.map(c => c.id === 'name' ? { ...c, pinned: false } : c);
+                }
+                return cols;
+            });
+        }
+    }, [enableColumnReorder]);
 
     // Click Outside logic is now handled by components themselves or dedicated hooks, 
     // but we can add a global one if we want to ensure everything clears on "blank" clicks
@@ -364,11 +664,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
             name: newTaskName,
             status: 'To Do',
             dueDate: null,
-            priority: null
+            priority: null,
+            assignees: ['M'] // Default assignee
         };
         // Initialize other columns with null/empty
         columns.forEach(col => {
-            if (!['select', 'name', 'status', 'dueDate', 'priority'].includes(col.id)) {
+            if (!['select', 'name', 'status', 'dueDate', 'priority', 'assignees'].includes(col.id)) {
                 newRow[col.id] = null;
             }
         });
@@ -406,46 +707,61 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
             options: options
         };
         setColumns([...columns, newCol]);
+        // Immediately start renaming the new column
+        setRenamingColumnId(newCol.id);
+        setTempColName(label);
     };
 
-    // Drag and Drop
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        dragItem.current = index;
-        setIsDragging(true);
-        e.dataTransfer.effectAllowed = "move";
+    // --- Row DnD Handlers ---
+    const handleRowDragStart = (event: DragStartEvent) => {
+        setActiveRowDragId(String(event.active.id));
     };
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        e.preventDefault();
-        if (dragItem.current === null || dragItem.current === index) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const mid = (rect.bottom - rect.top) / 2;
-        const clientY = e.clientY - rect.top;
-        const position = clientY < mid ? 'top' : 'bottom';
-        if (dropTarget?.index !== index || dropTarget?.position !== position) {
-            setDropTarget({ index, position });
+    const handleRowDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setRows((items) => {
+                const oldIndex = items.findIndex(i => i.id === active.id);
+                const newIndex = items.findIndex(i => i.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
         }
+        setActiveRowDragId(null);
     };
 
-    const handleDragEnd = () => {
-        dragItem.current = null;
-        setIsDragging(false);
-        setDropTarget(null);
+    // --- Column DnD Handlers ---
+    const handleColDragStart = (event: DragStartEvent) => {
+        setActiveColDragId(String(event.active.id));
     };
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        if (dragItem.current !== null && dropTarget) {
-            const copy = [...rows];
-            const [draggedItem] = copy.splice(dragItem.current, 1);
-            let insertIndex = dropTarget.index;
-            if (dropTarget.position === 'bottom') insertIndex += 1;
-            if (dragItem.current < insertIndex) insertIndex -= 1;
-            copy.splice(insertIndex, 0, draggedItem);
-            setRows(copy);
+    const handleColDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) {
+            setActiveColDragId(null);
+            return;
         }
-        handleDragEnd();
+
+        if (active.id !== over.id) {
+            // Reorder Columns
+            const activeIdStr = String(active.id);
+            setColumns((cols) => {
+                const oldIndex = cols.findIndex(c => c.id === activeIdStr);
+                const newIndex = cols.findIndex(c => c.id === over.id);
+                return arrayMove(cols, oldIndex, newIndex);
+            });
+        }
+        setActiveColDragId(null);
     };
+
+    // Helper for Column resizing to stop propagation
+    const handleResizeMouseDown = (e: React.MouseEvent, colId: string, width: number) => {
+        // Stop bubbling so dnd-kit doesn't think we are dragging the header
+        e.stopPropagation();
+        startResize(e, colId, width);
+    };
+
+    // Legacy Native DnD Removed
+
 
     // Column Resize
     const startResize = (e: React.MouseEvent, colId: string, currentWidth: number) => {
@@ -475,6 +791,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
         }));
     }, []);
 
+
+
     const onMouseUp = useCallback(() => {
         resizingColId.current = null;
         document.removeEventListener('mousemove', onMouseMove);
@@ -482,7 +800,29 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
         document.body.style.cursor = 'default';
     }, [onMouseMove]);
 
+    const handleChartSave = (config: ChartBuilderConfig) => {
+        // Transform the config into an ECharts option immediately
+        const data = ChartDataTransformer.transformData(rows, config);
+        const option = ChartDataTransformer.generateOption(data, config);
+
+        const newChart: ChartConfig = {
+            id: Date.now().toString(),
+            title: config.title,
+            type: config.chartType as any,
+            data: option
+        };
+
+        const currentConfig = effectiveDashboardConfig || { kpis: [], charts: [] };
+        handleSetDashboardConfig({
+            ...currentConfig,
+            charts: [...currentConfig.charts, newChart]
+        });
+
+        setShowChartBuilder(false);
+    };
+
     const handleColumnAction = (action: string, colId: string) => {
+        setContextMenu(null);
         if (action === 'delete') {
             handleDeleteColumn(colId);
         } else if (action === 'pin') {
@@ -490,10 +830,31 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
                 // Toggle pin state
                 const newCols = prev.map(c => c.id === colId ? { ...c, pinned: !c.pinned } : c);
                 // Ensure 'select' is always pinned? It's hardcoded pinned: true in state init, but let's enforce or let it be. 
-                // Currently I initialized select with pinned:true.
                 return newCols;
             });
+        } else if (action === 'rename') {
+            setRenamingColumnId(colId);
+            const col = columns.find(c => c.id === colId);
+            setTempColName(col?.label || '');
+        } else if (action === 'sort') {
+            handleSort(colId);
         }
+    };
+
+    const handleSort = (colId: string) => {
+        setSortConfig(current => {
+            if (current?.key === colId && current.direction === 'asc') {
+                return { key: colId, direction: 'desc' };
+            }
+            return { key: colId, direction: 'asc' };
+        });
+    };
+
+    const handleRenameSubmit = () => {
+        if (renamingColumnId && tempColName.trim()) {
+            setColumns(cols => cols.map(c => c.id === renamingColumnId ? { ...c, label: tempColName.trim() } : c));
+        }
+        setRenamingColumnId(null);
     };
 
     // calculate sticky offsets
@@ -518,10 +879,243 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
         };
     };
 
+    // SortableRow Component
+    interface SortableRowProps {
+        row: Row;
+        columns: Column[];
+        getStickyStyle: (colId: string) => React.CSSProperties;
+        renderCellContent: (col: Column, row: Row) => React.ReactNode;
+        handleDeleteRow: (id: string) => void;
+        activeCell: { rowId: string, colId: string, rect?: DOMRect } | null;
+    }
+
+    const SortableRowComponent: React.FC<SortableRowProps> = ({
+        row,
+        columns,
+        getStickyStyle,
+        renderCellContent,
+        handleDeleteRow,
+        activeCell,
+    }) => {
+        const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging,
+        } = useSortable({ id: row.id, data: { type: 'row', row } });
+
+        const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            zIndex: isDragging ? 100 : 'auto',
+            opacity: isDragging ? 0.5 : 1,
+        };
+
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+                className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max"
+            >
+                {columns.map((col) => (
+                    <div
+                        key={col.id}
+                        style={{ width: col.width, ...getStickyStyle(col.id) }}
+                        className={`
+                            h-full flex items-center shrink-0
+                            ${(col.id === 'select' || col.pinned) ? 'bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800' : ''}
+                            ${col.id === 'select' ? 'justify-center' : ''}
+                            ${activeCell?.rowId === row.id && activeCell?.colId === col.id ? 'z-30' : ''}
+                        `}
+                    >
+                        {col.id === 'select' ? (
+                            <div className="flex items-center justify-center w-full h-full relative group/handle cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+                                <div className="absolute left-1 opacity-0 group-hover/handle:opacity-100 text-stone-300 transition-opacity">
+                                    <GripVertical size={14} />
+                                </div>
+                                <div className="w-4 h-4 rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center hover:border-indigo-500 transition-colors z-10">
+                                    {/* Checkbox visualization - placeholder or functional? Native checkbox style match */}
+                                </div>
+                            </div>
+                        ) : (
+                            renderCellContent(col, row)
+                        )}
+                    </div>
+                ))}
+                <button
+                    onClick={() => handleDeleteRow(row.id)}
+                    className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                    title="Delete Row"
+                >
+                    <Trash2 size={12} />
+                </button>
+            </div>
+        );
+    };
+
+    // --- Sortable Header Component ---
+    interface SortableHeaderProps {
+        col: Column;
+        index: number;
+        getStickyStyle: (colId: string) => React.CSSProperties;
+        handleResizeMouseDown: (e: React.MouseEvent, colId: string, width: number) => void;
+        handleHeaderClick: (colId: string) => void;
+        renamingColumnId: string | null;
+        setRenamingColumnId: (id: string | null) => void;
+        tempColName: string;
+        setTempColName: (name: string) => void;
+        handleRenameSubmit: () => void;
+        handleDeleteColumn: (id: string) => void;
+        handleSort: (id: string) => void;
+        sortConfig: { key: string; direction: 'asc' | 'desc' } | null;
+        setContextMenu: (e: React.MouseEvent, colId: string) => void;
+        enableColumnReorder?: boolean;
+    }
+
+    const SortableHeader: React.FC<SortableHeaderProps> = ({
+        col,
+        index,
+        getStickyStyle,
+        handleResizeMouseDown,
+        renamingColumnId,
+        setRenamingColumnId,
+        tempColName,
+        setTempColName,
+        handleRenameSubmit,
+        handleDeleteColumn,
+        handleSort,
+        sortConfig,
+        setContextMenu,
+        enableColumnReorder
+    }) => {
+        const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging
+        } = useSortable({
+            id: col.id,
+            data: { type: 'col', col },
+            // Enable reorder by default unless explicitly disabled, or if column is locked (select/pinned)
+            disabled: (enableColumnReorder === false) || col.id === 'select' || col.pinned
+        });
+
+        const style = {
+            transform: CSS.Translate.toString(transform),
+            transition,
+            opacity: isDragging ? 0.3 : 1,
+            zIndex: isDragging ? 50 : (col.id === 'select' || col.pinned ? 30 : 'auto'),
+            width: col.width,
+            ...getStickyStyle(col.id)
+        };
+
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+                className={`
+                  h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
+                  ${(col.id === 'select' || col.pinned) ? 'bg-stone-50 dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800' : 'px-3'}
+                  border-e border-stone-200/50 dark:border-stone-800
+                  ${col.id === 'select' ? 'justify-center' : ''}
+                  hover:bg-stone-100 dark:hover:bg-stone-800 cursor-default transition-colors select-none relative group
+                `}
+                onContextMenu={(e) => setContextMenu(e, col.id)}
+                {...attributes}
+                /* Remove global listeners from container, apply only to handle for unpinned cols */
+                {...(col.id === 'select' || col.pinned ? listeners : {})}
+            >
+                {col.id === 'select' && (
+                    <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
+                )}
+
+                {col.id !== 'select' && (
+                    <div className="flex items-center justify-between w-full px-3">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            {/* Drag Handle for Unpinned Columns */}
+                            {!col.pinned && (
+                                <div
+                                    {...listeners}
+                                    className="cursor-grab active:cursor-grabbing p-0.5 text-stone-300 hover:text-stone-500 transition-colors rounded hover:bg-stone-100 dark:hover:bg-stone-800"
+                                >
+                                    <GripVertical size={12} />
+                                </div>
+                            )}
+
+                            {renamingColumnId === col.id ? (
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    value={tempColName}
+                                    onChange={(e) => setTempColName(e.target.value)}
+                                    onBlur={handleRenameSubmit}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleRenameSubmit();
+                                        if (e.key === 'Escape') setRenamingColumnId(null);
+                                    }}
+                                    onMouseDown={(e) => e.stopPropagation()} // Allow clicking input without drag
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-full bg-white dark:bg-stone-800 border border-indigo-500 rounded px-1 py-0.5 text-xs text-stone-700 dark:text-stone-200 focus:outline-none"
+                                />
+                            ) : (
+                                <span
+                                    className="truncate cursor-text font-medium text-stone-600 dark:text-stone-300"
+                                    onDoubleClick={(e) => {
+                                        setRenamingColumnId(col.id);
+                                        setTempColName(col.label);
+                                    }}
+                                    title="Double click to rename"
+                                >
+                                    {col.label}
+                                </span>
+                            )}
+                            <button
+                                onClick={(e) => { handleSort(col.id); }}
+                                className={`p-0.5 rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${sortConfig?.key === col.id ? 'opacity-100 text-stone-600 dark:text-stone-300' : 'opacity-0 group-hover:opacity-100 text-stone-300'}`}
+                            >
+                                <ArrowUpDown size={12} />
+                            </button>
+                        </div>
+                        {!['name', 'select'].includes(col.id) && (
+                            <button
+                                onClick={(e) => { handleDeleteColumn(col.id); }}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                                title="Delete Column"
+                            >
+                                <Trash2 size={12} />
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {col.resizable && (
+                    <div
+                        className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
+                        onMouseDown={(e) => handleResizeMouseDown(e, col.id, col.width)}
+                    />
+                )}
+            </div>
+        );
+    };
+
     // --- Rendering Helpers ---
 
     const renderCellContent = (col: Column, row: Row) => {
         const value = row[col.id];
+
+        if (col.type === 'person') {
+            return (
+                <div className="relative w-full h-full flex items-center justify-center p-1">
+                    <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm" title="Assignee: Max">
+                        M
+                    </div>
+                </div>
+            );
+        }
 
         if (col.type === 'status') {
             return (
@@ -699,13 +1293,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
             );
         }
 
-        if (col.id === 'name') {
-            return (
-                <div className="h-full flex items-center px-3 overflow-hidden">
-                    <span className="text-sm font-serif text-stone-800 dark:text-stone-200 truncate w-full">{value}</span>
-                </div>
-            )
-        }
+        // 'name' column now falls through to default text cell for editing capabilities
 
         // Default Text Cell
         if (activeCell?.rowId === row.id && activeCell?.colId === col.id) {
@@ -738,7 +1326,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
     };
 
     return (
-        <div className="flex flex-col w-full h-[calc(100vh-220px)] bg-stone-50 dark:bg-stone-900/50 font-sans">
+        <div className="flex flex-col w-full h-full bg-stone-50 dark:bg-stone-900/50 font-sans overflow-hidden">
+
 
             {/* Secondary Toolbar (Group/Subtasks) */}
             <div className="flex items-center justify-between py-3 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4 shrink-0">
@@ -752,14 +1341,55 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
                         <ListTree size={12} />
                         <span>Subtasks</span>
                     </button>
+
+                    <button
+                        onClick={() => setShowChartBuilder(true)}
+                        className="flex items-center gap-2 px-2 py-0.5 text-[12px] font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors mr-2"
+                    >
+                        <Sparkles size={12} className="text-indigo-500" />
+                        <span>New Report</span>
+                    </button>
+
+                    <button
+                        onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setShowAIMenu(showAIMenu ? null : { rect });
+                        }}
+                        className={`flex items-center gap-2 px-2 py-0.5 text-[12px] font-medium border rounded-full transition-all ${showAIMenu
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300'
+                            : 'text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800'}`}
+                    >
+                        <Sparkles size={12} className={showAIMenu ? 'fill-current' : ''} />
+                        <span>AI</span>
+                    </button>
+
+                    {showAIMenu && (
+                        <PortalPopup
+                            triggerRef={{ current: { getBoundingClientRect: () => showAIMenu.rect } } as any}
+                            onClose={() => setShowAIMenu(null)}
+                            side="bottom"
+                            align="start"
+                        >
+                            <NevaAssistant
+                                onGenerate={(config) => handleSetDashboardConfig(config)}
+                                columns={columns.map(c => ({ id: c.id, label: c.label, type: c.type }))}
+                                rows={rows}
+                            />
+                        </PortalPopup>
+                    )}
                 </div>
 
                 {/* Right Tools */}
                 <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-2 py-0.5 text-[12px] font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <Filter size={12} />
-                        <span>Filter</span>
-                    </button>
+                    {/* Custom Actions */}
+                    {renderCustomActions && renderCustomActions({ setRows, setColumns, rows, columns })}
+
+                    <TableFilter
+                        columns={columns}
+                        filters={activeFilters}
+                        onChange={setActiveFilters}
+                    />
+
                     <button className="flex items-center gap-2 px-2 py-0.5 text-[12px] font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
                         <CheckCircle2 size={12} />
                         <span>Closed</span>
@@ -780,203 +1410,186 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
                         <input
                             type="text"
                             placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-transparent border-none outline-none text-[12px] text-stone-600 dark:text-stone-300 placeholder:text-stone-400 w-24 focus:w-40 transition-all font-sans"
                         />
                     </div>
                 </div>
             </div>
 
-
-
             {/* Table Body */}
             <div className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain">
 
-                {/* Table Header */}
-                <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
-                    {columns.map((col, index) => (
-                        <div
-                            key={col.id}
-                            style={{ width: col.width, ...getStickyStyle(col.id) }}
-                            className={`
-              h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
-              ${(col.id === 'select' || col.pinned) ? 'bg-stone-50 dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800' : 'px-3'}
-              ${index !== columns.length - 1 && col.id !== 'select' && !col.pinned ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
-              ${col.id === 'select' ? 'justify-center' : ''}
-              hover:bg-stone-100 dark:hover:bg-stone-800 cursor-default transition-colors select-none relative group
-            `}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                setContextMenu({ x: e.clientX, y: e.clientY, colId: col.id });
-                            }}
+                {/* Dashboard Section (Inside Scroll) */}
+                {effectiveDashboardConfig && (
+                    <div className="sticky left-0 z-10 w-[calc(100vw-300px)] bg-stone-50/50 dark:bg-stone-900/50 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+                        <DashboardHeader config={effectiveDashboardConfig} />
+                    </div>
+                )}
 
+                {/* Table Header Section with Column DndContext */}
+                <DndContext
+                    id="cols-dnd-context"
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleColDragStart}
+                    onDragEnd={handleColDragEnd}
+                >
+                    <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
+                        <SortableContext
+                            items={columns.map(c => c.id)}
+                            strategy={horizontalListSortingStrategy}
                         >
-                            {col.id === 'select' && (
-                                <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
-                            )}
-
-
-
-                            {col.id !== 'select' && (
-                                <div className="flex items-center justify-between w-full px-3">
-                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                        <span className="truncate">{col.label}</span>
-                                        <ArrowUpDown size={12} className="text-stone-300 group-hover:text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                    {!['name', 'select'].includes(col.id) && (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                                            title="Delete Column"
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {col.resizable && (
-                                <div
-                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
-                                    onMouseDown={(e) => startResize(e, col.id, col.width)}
+                            {columns.map((col, index) => (
+                                <SortableHeader
+                                    key={col.id}
+                                    col={col}
+                                    index={index}
+                                    getStickyStyle={getStickyStyle}
+                                    handleResizeMouseDown={handleResizeMouseDown}
+                                    handleHeaderClick={() => { }}
+                                    renamingColumnId={renamingColumnId}
+                                    setRenamingColumnId={setRenamingColumnId}
+                                    tempColName={tempColName}
+                                    setTempColName={setTempColName}
+                                    handleRenameSubmit={handleRenameSubmit}
+                                    handleDeleteColumn={handleDeleteColumn}
+                                    handleSort={handleSort}
+                                    sortConfig={sortConfig}
+                                    setContextMenu={(e, colId) => {
+                                        e.preventDefault();
+                                        setContextMenu({ x: e.clientX, y: e.clientY, colId: colId });
+                                    }}
+                                    enableColumnReorder={enableColumnReorder}
                                 />
+                            ))}
+                        </SortableContext>
+
+                        {/* Add Column Button */}
+                        <div className="relative h-full flex flex-col justify-center shrink-0">
+                            <button
+                                onClick={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setActiveColumnMenu({ rect });
+                                }}
+                                className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                            >
+                                <PlusIcon size={14} />
+                            </button>
+
+                            {activeColumnMenu && (
+                                <PortalPopup
+                                    triggerRef={{ current: { getBoundingClientRect: () => activeColumnMenu.rect } } as any}
+                                    onClose={() => setActiveColumnMenu(null)}
+                                    side="bottom"
+                                    align="end"
+                                >
+                                    <ColumnMenu
+                                        onSelect={(type, label, options) => {
+                                            handleAddColumn(type, label, options);
+                                            setActiveColumnMenu(null);
+                                        }}
+                                        onClose={() => setActiveColumnMenu(null)}
+                                    />
+                                </PortalPopup>
                             )}
                         </div>
-                    ))}
-
-                    {/* Add Column Button */}
-                    <div className="relative h-full flex flex-col justify-center shrink-0">
-                        <button
-                            onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setActiveColumnMenu({ rect });
-                            }}
-                            className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-                        >
-                            <PlusIcon size={14} />
-                        </button>
-                        {activeColumnMenu && (
-                            <PortalPopup
-                                triggerRef={{ current: { getBoundingClientRect: () => activeColumnMenu.rect } } as any}
-                                onClose={() => setActiveColumnMenu(null)}
-                                side="bottom"
-                            // Default align is start, which is what we want (normal), 
-                            // and PortalPopup handles collision if it goes off screen.
-                            >
-                                <ColumnMenu
-                                    onClose={() => setActiveColumnMenu(null)}
-                                    onSelect={(type, label, options) => {
-                                        setActiveColumnMenu(null);
-                                        if (type === 'dropdown' || type === 'status') {
-                                            setDropdownConfig({ isOpen: true, type, defaultLabel: label });
-                                        } else {
-                                            handleAddColumn(type, label, options);
-                                        }
-                                    }}
-                                />
-                            </PortalPopup>
-                        )}
                     </div>
-                </div>
+                    <DragOverlay>
+                        {activeColDragId ? (
+                            <div className="h-10 px-3 bg-indigo-500 text-white flex items-center rounded opacity-80 text-xs font-medium border border-indigo-600 shadow-lg cursor-grabbing">
+                                {columns.find(c => c.id === activeColDragId)?.label || 'Column'}
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
 
-                {/* Tasks */}
-                {
-                    rows.map((row, index) => (
-                        <div
-                            key={row.id}
-                            className={`
-                group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 
-                hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors relative min-w-max
-                ${isDragging && dragItem.current === index ? 'opacity-40' : ''}
-              `}
-                            onDrop={handleDrop}
-                            onDragOver={(e) => handleDragOver(e, index)}
-                        >
-                            {/* Drop Indicators */}
-                            {isDragging && dropTarget?.index === index && (
-                                <div
-                                    className={`absolute left-0 right-0 h-[2px] bg-stone-900 dark:bg-stone-100 z-50 pointer-events-none ${dropTarget.position === 'top' ? 'top-0' : 'bottom-0'}`}
-                                >
-                                    <div className="absolute left-0 w-1.5 h-1.5 bg-stone-900 dark:bg-stone-100 rounded-full -translate-x-1/2 -translate-y-[1px]" />
-                                </div>
-                            )}
+                {/* Tasks Section with Row DndContext */}
+                <DndContext
+                    id="rows-dnd-context"
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleRowDragStart}
+                    onDragEnd={handleRowDragEnd}
+                >
+                    <SortableContext
+                        items={filteredRows.map(r => r.id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="flex flex-col min-w-max">
+                            {
+                                paginatedRows.map((row, index) => (
+                                    <SortableRowComponent
+                                        key={row.id}
+                                        row={row}
+                                        columns={columns}
+                                        getStickyStyle={getStickyStyle}
+                                        renderCellContent={renderCellContent}
+                                        handleDeleteRow={handleDeleteRow}
+                                        activeCell={activeCell}
+                                    />
+                                ))
+                            }
 
-                            {columns.map(col => (
-                                <div
-                                    key={col.id}
-                                    style={{ width: col.width, ...getStickyStyle(col.id) }}
-                                    draggable={col.id === 'select'}
-                                    onDragStart={(e) => {
-                                        if (col.id === 'select') handleDragStart(e, index);
-                                    }}
-                                    onDragEnd={handleDragEnd}
-                                    className={`
-                                        h-full shrink-0 border-e border-stone-200/50 dark:border-stone-800 group-hover:border-stone-200 dark:group-hover:border-stone-700
-                                        ${activeCell?.rowId === row.id && activeCell?.colId === col.id ? 'z-10' : ''}
-                                        ${(col.id === 'select' || col.pinned) ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}
-                                        ${col.id === 'select' ? 'flex justify-center items-center cursor-grab active:cursor-grabbing' : ''}
-                                    `}
-                                >
-                                    {col.id === 'select' ? (
-                                        <>
-                                            <div className="hidden group-hover:flex text-stone-300">
-                                                <GripVertical size={14} />
+                            {/* Input Row */}
+                            <div className="sticky bottom-0 z-20 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max">
+                                {columns.map(col => {
+                                    if (col.id === 'select') {
+                                        return (
+                                            <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id), zIndex: 30 }} className="h-full flex items-center justify-center border-e border-r border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30">
+                                                <PlusIcon size={14} className="text-stone-400 dark:text-stone-500" />
                                             </div>
-                                            <div className="group-hover:hidden w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 cursor-pointer" />
-                                        </>
-                                    ) : (
-                                        renderCellContent(col, row)
-                                    )}
-                                </div>
-                            ))}
+                                        );
+                                    }
+                                    if (col.id === 'name') {
+                                        return (
+                                            <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id) }} className={`h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.pinned ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}`}>
+                                                <input
+                                                    type="text"
+                                                    value={newTaskName}
+                                                    onChange={(e) => setNewTaskName(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                                                    placeholder=""
+                                                    className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Empty placeholder for other columns
+                                    return (
+                                        <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id) }} className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.pinned ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}`} />
+                                    );
+                                })}
 
-                            {/* Fixed Actions Column (Delete) */}
-                            <div className="w-8 h-full flex items-center justify-center text-stone-300 border-s border-stone-100/50 dark:border-stone-800">
-                                <button
-                                    onClick={() => handleDeleteRow(row.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+                                <div className="w-8 h-full border-s border-stone-100/50 dark:border-stone-800" />
                             </div>
                         </div>
-                    ))
-                }
+                    </SortableContext>
 
-                {/* Input Row */}
-                <div className="sticky bottom-0 z-20 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max">
-                    {columns.map(col => {
-                        if (col.id === 'select') {
-                            return (
-                                <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id), zIndex: 30 }} className="h-full flex items-center justify-center border-e border-r border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30">
-                                    <PlusIcon size={14} className="text-stone-400 dark:text-stone-500" />
+                    <DragOverlay>
+                        {activeRowDragId ? (
+                            <div className="opacity-80 bg-white ring-1 ring-indigo-500 shadow-xl">
+                                <div className="flex items-center h-10 border-b border-stone-100 bg-white dark:bg-stone-900 pl-2">
+                                    <div className="flex items-center gap-2">
+                                        <GripVertical size={14} className="text-stone-400" />
+                                        <span className="text-sm">
+                                            {filteredRows.find(r => r.id === activeRowDragId)?.name || 'Moving Item'}
+                                        </span>
+                                    </div>
                                 </div>
-                            );
-                        }
-                        if (col.id === 'name') {
-                            return (
-                                <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id) }} className={`h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.pinned ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}`}>
-                                    <input
-                                        type="text"
-                                        value={newTaskName}
-                                        onChange={(e) => setNewTaskName(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                                        placeholder=""
-                                        className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
-                                    />
-                                </div>
-                            );
-                        }
-                        // Empty placeholder for other columns
-                        return (
-                            <div key={col.id} style={{ width: col.width, ...getStickyStyle(col.id) }} className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.pinned ? 'bg-white dark:bg-stone-900 group-hover:bg-stone-50 dark:group-hover:bg-stone-800/30 border-r border-stone-200 dark:border-stone-800' : ''}`} />
-                        );
-                    })}
-
-                    <div className="w-8 h-full border-s border-stone-100/50 dark:border-stone-800" />
-                </div>
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
 
 
-            </div >
+
+
+
+            </div > {/* This closes the main scrollable div for the table content */}
+
+
             {/* Dropdown Config Modal */}
             {
                 dropdownConfig.isOpen && createPortal(
@@ -993,31 +1606,44 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId }) => {
             }
 
             {/* Context Menu */}
-            {contextMenu && createPortal(
-                <>
-                    <div
-                        className="fixed inset-0 z-[100]"
-                        onMouseDown={() => setContextMenu(null)}
-                        onContextMenu={(e) => e.preventDefault()}
-                    />
-                    <div
-                        className="fixed z-[101]"
-                        style={{
-                            top: contextMenu.y,
-                            left: Math.min(contextMenu.x, window.innerWidth - 240) // Prevent right overflow (240px approx menu width)
-                        }}
-                    >
-                        <ColumnContextMenu
-                            columnId={contextMenu.colId}
-                            onClose={() => setContextMenu(null)}
-                            onAction={(action) => handleColumnAction(action, contextMenu.colId)}
+            {
+                contextMenu && createPortal(
+                    <>
+                        <div
+                            className="fixed inset-0 z-[100]"
+                            onMouseDown={() => setContextMenu(null)}
+                            onContextMenu={(e) => e.preventDefault()}
                         />
-                    </div>
-                </>,
-                document.body
-            )}
+                        <div
+                            className="fixed z-[101]"
+                            style={{
+                                top: contextMenu.y,
+                                left: Math.min(contextMenu.x, window.innerWidth - 240) // Prevent right overflow (240px approx menu width)
+                            }}
+                        >
+                            <ColumnContextMenu
+                                columnId={contextMenu.colId}
+                                onClose={() => setContextMenu(null)}
+                                onAction={(action) => handleColumnAction(action, contextMenu.colId)}
+                            />
+                        </div>
+                    </>,
+                    document.body
+                )
+            }
+            {
+                showChartBuilder && (
+                    <ChartBuilderModal
+                        isOpen={showChartBuilder}
+                        onClose={() => setShowChartBuilder(false)}
+                        onSave={handleChartSave}
+                        columns={columns}
+                        rows={rows}
+                    />
+                )
+            }
         </div >
     );
 };
 
-export default RoomTable;
+export default React.memo(RoomTable);

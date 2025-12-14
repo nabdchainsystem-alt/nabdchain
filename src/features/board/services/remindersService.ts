@@ -18,13 +18,10 @@ export const remindersService = {
         return [];
     },
     addReminder: (reminder: Omit<Reminder, 'id'>) => {
-        console.log('Reminder added', reminder);
     },
     deleteReminder: (id: string) => {
-        console.log('Reminder deleted', id);
     },
     updateReminder: (id: string, updates: Partial<Reminder>) => {
-        console.log('Reminder updated', id, updates);
     },
-    sendTask: () => console.log('Task sent to reminders')
+    sendTask: () => { }
 };

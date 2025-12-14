@@ -38,6 +38,7 @@ export interface Board {
   description?: string;
   members?: string[];
   theme?: string;
+  defaultView?: 'table' | 'data_table' | 'kanban' | 'list' | 'list_board';
 }
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';

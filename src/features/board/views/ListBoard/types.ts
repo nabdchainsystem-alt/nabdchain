@@ -1,9 +1,10 @@
+// Status is now dynamic, so we use string.
+export type Status = string;
 
-export enum Status {
-  WORKING_ON_IT = 'Working on it',
-  DONE = 'Done',
-  STUCK = 'Stuck',
-  EMPTY = ''
+export interface StatusOption {
+  id: string;
+  label: string;
+  color: string;
 }
 
 export interface TaskItem {

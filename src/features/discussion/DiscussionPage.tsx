@@ -3,11 +3,20 @@ import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/ChatArea';
 import { RightSidebar } from './components/RightSidebar';
 import { CaptureModal } from './components/CaptureModal';
-import { NewBoardModal } from './components/NewBoardModal';
 import { Thread, Message, ViewMode, Board, Task, Note } from './types';
+import { BoardTemplate } from '../board/data/templates';
 import { createChatSession, sendMessageStream, Chat } from './services/geminiService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUI } from '../../contexts/UIContext';
+
+const KanbanBoard = React.lazy(() => import('../board/views/Kanban/KanbanBoard'));
+const RoomTable = React.lazy(() => import('../board/views/Table/RoomTable')); // Default export?
+const DataTable = React.lazy(() => import('../board/views/Table/DataTable'));
+const ListBoard = React.lazy(() => import('../board/views/ListBoard/ListBoard'));
+// We suspect Lists.tsx might be messy (named DiscussionPage?). Assuming it has a default export or we use it as is.
+// Ideally check exports. For now assuming default.
+const Lists = React.lazy(() => import('../board/views/List/Lists'));
+
 
 
 // Mock initial data
@@ -69,11 +78,8 @@ export default function DiscussionPage() {
     const { language, t } = useLanguage();
     const { theme } = useUI(); // Access global theme if needed for specific logic, but mainly CSS handles it
 
-    const [sidebarWidth, setSidebarWidth] = useState(320);
-    const [isResizing, setIsResizing] = useState(false);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
     const [isCaptureOpen, setIsCaptureOpen] = useState(false);
-    const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
 
     // Data State
     const [boards, setBoards] = useState<Board[]>(INITIAL_BOARDS);
@@ -82,6 +88,9 @@ export default function DiscussionPage() {
     const [activeNote, setActiveNote] = useState<Note>({ content: '' });
 
     const [activeThreadId, setActiveThreadId] = useState<string | null>('1');
+    const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+    const [mainViewMode, setMainViewMode] = useState<'chat' | 'board'>('chat');
+
     const [chatSession, setChatSession] = useState<Chat | null>(null);
     const [isStreaming, setIsStreaming] = useState(false);
 
@@ -97,34 +106,9 @@ export default function DiscussionPage() {
         }
     }, [activeThreadId]);
 
-    // Resize Logic
-    const startResizing = useCallback(() => setIsResizing(true), []);
-    const stopResizing = useCallback(() => setIsResizing(false), []);
-    const resize = useCallback(
-        (mouseMoveEvent: MouseEvent) => {
-            if (isResizing) {
-                const direction = language === 'ar' ? 'rtl' : 'ltr';
-                const delta = direction === 'ltr' ? mouseMoveEvent.movementX : -mouseMoveEvent.movementX;
-                setSidebarWidth(prevWidth => {
-                    const newWidth = prevWidth + delta;
-                    if (newWidth > 200 && newWidth < 600) {
-                        return newWidth;
-                    }
-                    return prevWidth;
-                });
-            }
-        },
-        [isResizing, language]
-    );
 
-    useEffect(() => {
-        window.addEventListener('mousemove', resize);
-        window.addEventListener('mouseup', stopResizing);
-        return () => {
-            window.removeEventListener('mousemove', resize);
-            window.removeEventListener('mouseup', stopResizing);
-        };
-    }, [resize, stopResizing]);
+
+
 
 
     const handleSendMessage = async (text: string) => {
@@ -226,24 +210,18 @@ export default function DiscussionPage() {
 
     const handleThreadSelect = (id: string) => {
         setActiveThreadId(id);
+        setMainViewMode('chat');
         setMobileViewMode(ViewMode.MobileChat);
     };
 
-    const handleNewBoard = () => {
-        setIsNewBoardModalOpen(true);
+    const handleBoardSelect = (boardId: string) => {
+        setActiveBoardId(boardId);
+        setMainViewMode('board');
+        setMobileViewMode(ViewMode.MobileList); // Or equivalent for board
     };
 
-    const handleCreateBoard = (boardData: Partial<Board>) => {
-        if (boardData.name) {
-            const newBoard: Board = {
-                id: Date.now().toString(),
-                name: boardData.name,
-                description: boardData.description,
-                members: boardData.members,
-                theme: boardData.theme
-            };
-            setBoards([...boards, newBoard]);
-        }
+    const handleNewBoard = () => {
+        // Global creation handled by App Sidebar
     };
 
     const handleDeleteBoard = (id: string) => {
@@ -280,17 +258,16 @@ export default function DiscussionPage() {
     const activeThread = threads.find(t => t.id === activeThreadId);
 
     return (
-        <div className="flex h-full w-full overflow-hidden bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-sans">
+        <div className="flex h-full w-full overflow-hidden bg-white dark:bg-monday-dark-bg text-gray-900 dark:text-monday-dark-text font-sans">
 
             {/* Sidebar - Hidden on mobile if viewing chat */}
             <div
                 className={`
-          flex-shrink-0 h-full
-          ${mobileViewMode === ViewMode.MobileChat ? 'hidden md:block' : 'w-full md:w-auto'}
+          flex-shrink-0 h-full w-60
+          ${mobileViewMode === ViewMode.MobileChat ? 'hidden md:block' : 'w-full md:w-60'}
         `}
             >
                 <Sidebar
-                    width={window.innerWidth < 768 ? window.innerWidth : sidebarWidth}
                     boards={boards}
                     threads={threads}
                     activeThreadId={activeThreadId}
@@ -300,14 +277,9 @@ export default function DiscussionPage() {
                     onDeleteBoard={handleDeleteBoard}
                     onCapture={() => setIsCaptureOpen(true)}
                     onQuickCapture={handleAddTask}
+                    onSelectBoard={handleBoardSelect}
                 />
             </div>
-
-            {/* Resize Handle */}
-            <div
-                className="hidden md:flex w-1 h-full cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-700 active:bg-stone-400 z-50 transition-colors"
-                onMouseDown={startResizing}
-            />
 
             {/* Main Content */}
             <div
@@ -328,8 +300,31 @@ export default function DiscussionPage() {
                                 onToggleRightSidebar={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
                                 isRightSidebarOpen={isRightSidebarOpen}
                             />
+                        ) : mainViewMode === 'board' && activeBoardId ? (
+                            <React.Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Board...</div>}>
+                                {(() => {
+                                    const board = boards.find(b => b.id === activeBoardId);
+                                    const viewType = board?.defaultView || 'table';
+
+                                    // Render appropriate view based on selection
+                                    switch (viewType) {
+                                        case 'kanban':
+                                            return <KanbanBoard boardId={activeBoardId} />;
+                                        case 'list':
+                                            // Passing props that match Lists.tsx expectations
+                                            return <Lists roomId={activeBoardId} viewId="list" />;
+                                        case 'list_board': // Standalone ListBoard app
+                                            return <ListBoard />;
+                                        case 'data_table':
+                                            return <DataTable roomId={activeBoardId} viewId="data_table" />;
+                                        case 'table':
+                                        default:
+                                            return <RoomTable roomId={activeBoardId} viewId={viewType} />;
+                                    }
+                                })()}
+                            </React.Suspense>
                         ) : (
-                            <div className="flex-1 flex items-center justify-center bg-stone-50 dark:bg-stone-950 text-stone-400">
+                            <div className="flex-1 flex items-center justify-center bg-white dark:bg-monday-dark-bg text-gray-400">
                                 <p className="font-serif italic">{t('discussion.select_conversation')}</p>
                             </div>
                         )}
@@ -349,19 +344,10 @@ export default function DiscussionPage() {
                 </div>
             </div>
 
-            {/* Capture Modal */}
             <CaptureModal
                 isOpen={isCaptureOpen}
                 onClose={() => setIsCaptureOpen(false)}
                 onCapture={handleAddTask}
-            />
-
-            {/* New Board Modal */}
-            <NewBoardModal
-                isOpen={isNewBoardModalOpen}
-                onClose={() => setIsNewBoardModalOpen(false)}
-                onCreate={handleCreateBoard}
-                availableUsers={MOCK_USERS}
             />
         </div>
     );

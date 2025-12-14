@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -15,39 +14,21 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { GroupContainer } from './components/GroupContainer';
 import { TaskRow } from './components/TaskRow';
-import { GroupData, Status, TaskItem, ColumnWidths } from './types';
+import { GroupData, Status, StatusOption, TaskItem, ColumnWidths } from './types';
 
 interface ListBoardProps {
-    storageKey?: string;
+    roomId: string; // Changed to require roomId for sync
+    viewId?: string;
 }
 
-const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
-    const [groups, setGroups] = useState<GroupData[]>([
-        {
-            id: 'g1',
-            title: 'Group Title',
-            color: '#579bfc', // Monday blue
-            items: [
-                {
-                    id: '1',
-                    name: 'need to define',
-                    person: null,
-                    status: Status.WORKING_ON_IT,
-                    date: '',
-                    selected: false
-                },
-                {
-                    id: '2',
-                    name: 'max 1',
-                    person: null,
-                    status: Status.WORKING_ON_IT,
-                    date: '',
-                    selected: false
-                }
-            ]
-        }
-    ]);
+const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
+    // Shared Storage Keys
+    const storageKeyTasks = `board-tasks-${roomId}`;
+    const storageKeyStatuses = `board-statuses-${roomId}`;
 
+    // State
+    const [groups, setGroups] = useState<GroupData[]>([]);
+    const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]); // New State
     const [colWidths, setColWidths] = useState<ColumnWidths>({
         person: 100,
         status: 150,
@@ -57,6 +38,136 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeItem, setActiveItem] = useState<TaskItem | null>(null);
     const [activeGroupColor, setActiveGroupColor] = useState<string>('#ccc');
+
+    // --- Load Data from Shared Storage ---
+    useEffect(() => {
+        const loadData = () => {
+            try {
+                const mainGroup: GroupData = {
+                    id: 'main-group',
+                    title: 'Items',
+                    color: '#579bfc', // Monday-like blue
+                    items: []
+                };
+
+                // 2. Load Tasks (Rows)
+                const savedTasks = localStorage.getItem(storageKeyTasks);
+                if (savedTasks) {
+                    const rows = JSON.parse(savedTasks);
+                    if (Array.isArray(rows)) {
+                        rows.forEach((row: any) => {
+                            // Map Row -> TaskItem
+                            const item: TaskItem = {
+                                id: row.id,
+                                name: row.name || 'Untitled',
+                                person: row.assignees?.[0] || null, // Sync Assignee/Person
+                                status: row.statusId || row.status, // Store raw status string
+                                date: row.dueDate || '',
+                                selected: false
+                            };
+                            mainGroup.items.push(item);
+                        });
+                    }
+                }
+
+                // Load Status Definitions for Picker
+                const savedStatuses = localStorage.getItem(storageKeyStatuses);
+                let loadedOptions: StatusOption[] = [];
+
+                if (savedStatuses) {
+                    const parsed = JSON.parse(savedStatuses);
+                    if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+                        // Convert string statuses to Options
+                        loadedOptions = parsed.map((s: string) => {
+                            const lower = s.toLowerCase();
+                            let color = '#94a3b8'; // Default slate
+                            if (lower.includes('done') || lower.includes('complete')) color = '#22c55e';
+                            else if (lower.includes('progress') || lower.includes('working')) color = '#3b82f6';
+                            else if (lower.includes('stuck') || lower.includes('error')) color = '#ef4444';
+                            else if (lower.includes('review')) color = '#a855f7';
+                            else if (lower.includes('hold') || lower.includes('wait')) color = '#eab308';
+
+                            return { id: s, label: s, color: color };
+                        });
+                    } else if (Array.isArray(parsed) && typeof parsed[0] === 'object') {
+                        // Standard shared format
+                        loadedOptions = parsed.map((s: any) => {
+                            let color = s.color || '#c4c4c4';
+                            // Normalize color names to Hex if not hex
+                            if (!color.startsWith('#')) {
+                                const lower = color.toLowerCase();
+                                if (lower.includes('blue')) color = '#579bfc';
+                                else if (lower.includes('green') || lower.includes('emerald')) color = '#00c875';
+                                else if (lower.includes('red') || lower.includes('rose')) color = '#e2445c';
+                                else if (lower.includes('yellow') || lower.includes('orange') || lower.includes('amber')) color = '#fdab3d';
+                                else if (lower.includes('purple') || lower.includes('violet')) color = '#a855f7';
+                                else if (lower.includes('gray') || lower.includes('slate')) color = '#c4c4c4';
+                            }
+                            return {
+                                id: s.id,
+                                label: s.label || s.title || s.id,
+                                color: color
+                            };
+                        });
+                    }
+                }
+
+                // Ensure defaults if nothing
+                if (loadedOptions.length === 0) {
+                    loadedOptions = [
+                        { id: 'To Do', label: 'To Do', color: '#c4c4c4' },
+                        { id: 'In Progress', label: 'In Progress', color: '#fdab3d' },
+                        { id: 'Done', label: 'Done', color: '#00c875' }
+                    ];
+                }
+
+                setStatusOptions(loadedOptions);
+                setGroups([mainGroup]);
+
+            } catch (e) {
+                console.error("Failed to load ListBoard data", e);
+            }
+        };
+
+        loadData();
+    }, [roomId, storageKeyTasks, storageKeyStatuses]);
+
+
+    // --- Save Data to Shared Storage ---
+    // Helper to persist current groups back to Rows
+    const persistData = (currentGroups: GroupData[]) => {
+        try {
+            // We only have one group, but let's keep it generic enough
+            // We do NOT save Status Definitions (Groups) anymore since we are in "Single Group" mode.
+            // We ONLY sync the "columns" (rows data).
+
+            const existingRowsString = localStorage.getItem(storageKeyTasks);
+            let existingRows: any[] = existingRowsString ? JSON.parse(existingRowsString) : [];
+            const existingRowMap = new Map(existingRows.map(r => [r.id, r]));
+
+            const newRows: any[] = [];
+            currentGroups.forEach(g => {
+                g.items.forEach(item => {
+                    const oldRow = existingRowMap.get(item.id) || {};
+                    newRows.push({
+                        ...oldRow, // Keep extra fields
+                        id: item.id,
+                        name: item.name,
+                        status: item.status, // Status is now just a column value, not a group
+                        statusId: item.status,
+                        dueDate: item.date,
+                        assignees: item.person ? [item.person] : []
+                    });
+                });
+            });
+
+            localStorage.setItem(storageKeyTasks, JSON.stringify(newRows));
+
+        } catch (e) {
+            console.error("Failed to save ListBoard data", e);
+        }
+    };
+
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -70,7 +181,11 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
     );
 
     const findGroup = (id: string): GroupData | undefined => {
-        return groups.find(g => g.items.find(i => i.id === id));
+        // With a single group, we just return the first group if it exists and contains the item
+        if (groups.length > 0 && groups[0].items.find(i => i.id === id)) {
+            return groups[0];
+        }
+        return undefined;
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -101,6 +216,7 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
             return;
         }
 
+        // Cross-group logic (should happen rarely with 1 group but safe to keep)
         setGroups((prev) => {
             const activeGroupIndex = prev.findIndex(g => g.id === activeContainer.id);
             const overGroupIndex = prev.findIndex(g => g.id === overContainer.id);
@@ -143,16 +259,19 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
             const overIndex = activeContainer.items.findIndex((i) => i.id === over?.id);
 
             if (activeIndex !== overIndex) {
-                setGroups((prev) => {
-                    const groupIndex = prev.findIndex(g => g.id === activeContainer.id);
-                    const newGroups = [...prev];
-                    newGroups[groupIndex] = {
-                        ...newGroups[groupIndex],
-                        items: arrayMove(newGroups[groupIndex].items, activeIndex, overIndex)
-                    };
-                    return newGroups;
-                });
+                const groupIndex = groups.findIndex(g => g.id === activeContainer.id);
+                const newGroups = [...groups];
+                newGroups[groupIndex] = {
+                    ...newGroups[groupIndex],
+                    items: arrayMove(newGroups[groupIndex].items, activeIndex, overIndex)
+                };
+                setGroups(newGroups);
+                // Persist immediately on reorder
+                persistData(newGroups);
             }
+        } else {
+            // Check if we need to persist cross-group move (handled in DragOver, but simple persist here works)
+            persistData(groups);
         }
 
         setActiveId(null);
@@ -160,8 +279,24 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
     };
 
     const handleGroupUpdate = (updatedGroup: GroupData) => {
-        setGroups(groups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+        const newGroups = groups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
+        setGroups(newGroups);
+        persistData(newGroups);
     };
+
+    // Auto-persist effect (debounced or simple)
+    // We add this to ensure any state change (Drag, Edit) saves.
+    // Guard against writing empty groups initially?
+    const [isLoaded, setIsLoaded] = useState(false);
+    useEffect(() => {
+        if (groups.length > 0) {
+            if (isLoaded) {
+                persistData(groups);
+            } else {
+                setIsLoaded(true);
+            }
+        }
+    }, [groups]);
 
     return (
         <DndContext
@@ -181,27 +316,14 @@ const ListBoard: React.FC<ListBoardProps> = ({ storageKey }) => {
                             <GroupContainer
                                 key={group.id}
                                 group={group}
+                                statusOptions={statusOptions}
                                 colWidths={colWidths}
                                 onColResize={setColWidths}
                                 onGroupUpdate={handleGroupUpdate}
                             />
                         ))}
 
-                        <button
-                            className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors mt-4"
-                            onClick={() => {
-                                const newGroup: GroupData = {
-                                    id: Math.random().toString(),
-                                    title: 'New Group',
-                                    color: '#00c875', // Green
-                                    items: []
-                                };
-                                setGroups([...groups, newGroup]);
-                            }}
-                        >
-                            <div className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center">+</div>
-                            Add new group
-                        </button>
+
                     </div>
                 </div>
 

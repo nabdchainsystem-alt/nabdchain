@@ -387,7 +387,8 @@ interface ColumnProps {
     onDuplicateTask: (task: Task) => void;
     onClearColumn: (columnId: string) => void;
     onRenameColumn: (columnId: string, newTitle: string) => void;
-    onColorChange: (columnId: string, color: string) => void;
+    onColorChange: (columnId: string, newColor: string) => void;
+    onDeleteColumn: (columnId: string) => void;
 }
 
 // Rich Task Creation Form Component
@@ -542,7 +543,7 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
 
 const Column: React.FC<ColumnProps> = ({
     column, tasks, onTaskMove, onAddTask, onUpdateTask,
-    onDeleteTask, onDuplicateTask, onClearColumn, onRenameColumn, onColorChange
+    onDeleteTask, onDuplicateTask, onClearColumn, onRenameColumn, onColorChange, onDeleteColumn
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     const [isAddingBottom, setIsAddingBottom] = useState(false);
@@ -681,7 +682,18 @@ const Column: React.FC<ColumnProps> = ({
                     />
                 ) : (
                     <div className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wide flex items-center gap-2 font-serif text-stone-900 dark:text-stone-100`}>
-                        <div className={`w-2 h-2 rounded-full ${column.title === 'TO DO' ? 'bg-stone-300' : column.title === 'IN PROGRESS' ? 'bg-stone-500' : column.title === 'COMPLETED' ? 'bg-emerald-600/60' : 'bg-stone-400'}`}></div>
+                        <div
+                            className={`w-2 h-2 rounded-full`}
+                            style={{
+                                backgroundColor:
+                                    column.title.toLowerCase().includes('done') ? '#22c55e' :
+                                        column.title.toLowerCase().includes('progress') ? '#3b82f6' :
+                                            column.title.toLowerCase().includes('stuck') ? '#ef4444' :
+                                                column.title.toLowerCase().includes('review') ? '#a855f7' :
+                                                    column.color.startsWith('#') ? column.color :
+                                                        (column.color === 'emerald' ? '#22c55e' : column.color === 'blue' ? '#3b82f6' : '#94a3b8')
+                            }}
+                        ></div>
                         {column.title}
                         <span className="opacity-40 font-normal ml-1 font-sans text-stone-500">{tasks.length}</span>
                     </div>
@@ -716,6 +728,18 @@ const Column: React.FC<ColumnProps> = ({
                                 <button onClick={() => { onClearColumn(column.id); setShowMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm">
                                     <Archive size={16} className="text-stone-400" /> Archive all in this group
                                 </button>
+
+                                {!['To Do', 'In Progress', 'Done'].includes(column.title) && !['To Do', 'In Progress', 'Done', 'to-do', 'in-progress', 'done'].includes(column.id) && (
+                                    <>
+                                        <div className="h-px bg-stone-100 dark:bg-stone-800 my-1"></div>
+                                        <button
+                                            onClick={() => { onDeleteColumn(column.id); setShowMenu(false); }}
+                                            className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm text-red-600 hover:text-red-700"
+                                        >
+                                            <Trash2 size={16} /> Delete group
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -793,17 +817,40 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                 if (Array.isArray(parsed)) {
                     // Handle both simple string[] (from Table) and object[] (shared standard)
                     if (typeof parsed[0] === 'string') {
-                        loadedColumns = parsed.map((s: string) => ({
-                            id: s,
-                            title: s,
-                            color: 'gray' // Default color if specific not found
-                        }));
+                        loadedColumns = parsed.map((s: string) => {
+                            const lower = s.toLowerCase();
+                            let color = 'gray';
+                            if (lower.includes('done') || lower.includes('complete') || lower.includes('finished')) color = 'emerald';
+                            else if (lower.includes('progress') || lower.includes('working') || lower.includes('active')) color = 'blue';
+                            else if (lower.includes('stuck') || lower.includes('block') || lower.includes('error')) color = 'red';
+                            else if (lower.includes('review') || lower.includes('teat')) color = 'purple';
+                            else if (lower.includes('hold') || lower.includes('wait')) color = 'yellow';
+
+                            return {
+                                id: s,
+                                title: s,
+                                color: color
+                            };
+                        });
                     } else {
-                        loadedColumns = parsed.map((s: any) => ({
-                            id: s.id || s.title,
-                            title: s.title || s.id,
-                            color: s.color || 'gray'
-                        }));
+                        loadedColumns = parsed.map((s: any) => {
+                            const title = s.label || s.title || s.id;
+                            const lower = title.toLowerCase();
+                            let color = s.color || 'gray';
+
+                            // Enforce vibrant color names for Kanban
+                            if (lower.includes('done') || lower.includes('complete')) color = 'emerald';
+                            else if (lower.includes('progress') || lower.includes('working')) color = 'blue';
+                            else if (lower.includes('stuck') || lower.includes('error')) color = 'red';
+                            else if (lower.includes('review')) color = 'purple';
+                            else if (lower.includes('hold') || lower.includes('wait')) color = 'yellow';
+
+                            return {
+                                id: s.id || title,
+                                title: title,
+                                color: color
+                            };
+                        });
                     }
                 }
             }
@@ -819,7 +866,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                     loadedTasks = rows.map((row: any) => ({
                         id: row.id,
                         title: row.name || 'Untitled',
-                        statusId: row.status || 'To Do',
+                        statusId: row.statusId || row.status || 'To Do',
                         priority: row.priority ? row.priority.toLowerCase() : 'none',
                         dueDate: row.dueDate, // Keep string ISO
                         tags: [], // Rows don't store tags yet, defaulting empty or need to extend Row
@@ -844,6 +891,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                 id: t.id,
                 name: t.title,
                 status: t.statusId, // e.g. 'To Do'
+                statusId: t.statusId,
                 dueDate: t.dueDate || null,
                 priority: t.priority === 'none' ? null : (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)), // shared uses Title Case 'High'
                 // Preserve other fields? Table doesn't support them yet, but we shouldn't lose them if possible.
@@ -967,6 +1015,16 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
         t.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleDeleteColumn = (columnId: string) => {
+        if (confirm('Are you sure you want to delete this group? All tasks within it will be deleted.')) {
+            setData(prev => ({
+                ...prev,
+                columns: prev.columns.filter(c => c.id !== columnId),
+                tasks: prev.tasks.filter(t => t.statusId !== columnId)
+            }));
+        }
+    };
+
     return (
 
         <div className="flex flex-col h-full bg-white dark:bg-stone-950 text-stone-800 dark:text-stone-100 font-sans transition-colors duration-300">
@@ -1060,6 +1118,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                             onClearColumn={handleClearColumn}
                             onRenameColumn={handleRenameColumn}
                             onColorChange={handleColorChange}
+                            onDeleteColumn={handleDeleteColumn}
                         />
                     ))}
 

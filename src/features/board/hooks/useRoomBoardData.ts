@@ -7,8 +7,8 @@ const INITIAL_BOARD: IBoard = {
     name: 'Main Board',
     groups: [
         {
-            id: 'g1',
-            title: 'Group Title',
+            id: 'To Do',
+            title: 'To Do',
             color: '#579bfc',
             tasks: [
                 {

@@ -6,7 +6,7 @@ const translations: any = {
     en: {
         'discussion.title': 'DISCUSSIONS',
         'discussion.new_board': 'New Board',
-        'discussion.capture': 'Capture Thought',
+        'discussion.capture': 'Capture',
         'discussion.capture_your_thought': 'What is on your mind?',
         'discussion.search': 'Search discussions...',
         'discussion.new_discussion': 'New Discussion',

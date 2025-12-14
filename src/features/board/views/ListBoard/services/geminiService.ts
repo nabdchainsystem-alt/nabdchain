@@ -7,7 +7,7 @@ export interface AIUsageStats {
 }
 
 export const generateTasksForGroup = async (groupTitle: string): Promise<Array<{ name: string; status?: string }>> => {
-    console.log(`Generating tasks for group: ${groupTitle}`);
+
 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));

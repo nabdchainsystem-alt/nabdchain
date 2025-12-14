@@ -2,10 +2,11 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskRow } from './TaskRow';
-import { TaskItem, ColumnWidths } from '../types';
+import { TaskItem, StatusOption, ColumnWidths } from '../types';
 
 interface SortableTaskRowProps {
   item: TaskItem;
+  statusOptions: StatusOption[];
   groupColor: string;
   colWidths: ColumnWidths;
   onUpdate: (updatedItem: TaskItem) => void;
@@ -32,9 +33,9 @@ export const SortableTaskRow: React.FC<SortableTaskRowProps> = (props) => {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <TaskRow 
-        {...props} 
-        dragHandleProps={{...attributes, ...listeners}}
+      <TaskRow
+        {...props}
+        dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
   );

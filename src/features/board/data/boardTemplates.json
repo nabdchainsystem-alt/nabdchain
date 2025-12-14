@@ -1,0 +1,274 @@
+{
+    "boardTemplates": [
+        {
+            "id": "task-management",
+            "name": "Task Management",
+            "description": "Track daily work tasks.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Prepare weekly report",
+                    "Status": "In Progress",
+                    "Owner": "Alex"
+                },
+                {
+                    "Name": "Reply to client emails",
+                    "Status": "Todo",
+                    "Owner": "Sara"
+                },
+                {
+                    "Name": "Update task documentation",
+                    "Status": "Done",
+                    "Owner": "John"
+                }
+            ]
+        },
+        {
+            "id": "project-planning",
+            "name": "Project Planning",
+            "description": "Organize project-related work.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Define project scope",
+                    "Status": "Done",
+                    "Owner": "Mohamed"
+                },
+                {
+                    "Name": "Create timeline",
+                    "Status": "In Progress",
+                    "Owner": "Alex"
+                },
+                {
+                    "Name": "Assign responsibilities",
+                    "Status": "Todo",
+                    "Owner": "Lina"
+                }
+            ]
+        },
+        {
+            "id": "employee-workload",
+            "name": "Employee Workload",
+            "description": "Monitor employee assigned work.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Design homepage UI",
+                    "Status": "In Progress",
+                    "Owner": "UI Team"
+                },
+                {
+                    "Name": "Backend API integration",
+                    "Status": "Todo",
+                    "Owner": "Backend Team"
+                },
+                {
+                    "Name": "QA testing",
+                    "Status": "Todo",
+                    "Owner": "QA Team"
+                }
+            ]
+        },
+        {
+            "id": "meeting-tracker",
+            "name": "Meeting Tracker",
+            "description": "Track meetings and follow-ups.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Weekly team meeting",
+                    "Status": "Done",
+                    "Owner": "Manager"
+                },
+                {
+                    "Name": "Client kickoff meeting",
+                    "Status": "In Progress",
+                    "Owner": "Sales"
+                },
+                {
+                    "Name": "Retrospective meeting",
+                    "Status": "Todo",
+                    "Owner": "Scrum Master"
+                }
+            ]
+        },
+        {
+            "id": "hr-operations",
+            "name": "HR Operations",
+            "description": "Handle HR related tasks.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Review CVs",
+                    "Status": "In Progress",
+                    "Owner": "HR"
+                },
+                {
+                    "Name": "Schedule interviews",
+                    "Status": "Todo",
+                    "Owner": "HR"
+                },
+                {
+                    "Name": "Employee onboarding",
+                    "Status": "Done",
+                    "Owner": "HR"
+                }
+            ]
+        },
+        {
+            "id": "performance-review",
+            "name": "Performance Review",
+            "description": "Track employee performance reviews.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Q1 review - Alex",
+                    "Status": "Done",
+                    "Owner": "Manager"
+                },
+                {
+                    "Name": "Q1 review - Sara",
+                    "Status": "In Progress",
+                    "Owner": "Manager"
+                },
+                {
+                    "Name": "Q1 review - John",
+                    "Status": "Todo",
+                    "Owner": "Manager"
+                }
+            ]
+        },
+        {
+            "id": "training-plan",
+            "name": "Training Plan",
+            "description": "Organize employee training.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "React basics training",
+                    "Status": "Done",
+                    "Owner": "Tech Lead"
+                },
+                {
+                    "Name": "Security awareness",
+                    "Status": "In Progress",
+                    "Owner": "IT"
+                },
+                {
+                    "Name": "Leadership workshop",
+                    "Status": "Todo",
+                    "Owner": "HR"
+                }
+            ]
+        },
+        {
+            "id": "company-goals",
+            "name": "Company Goals",
+            "description": "Track company objectives.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Increase productivity",
+                    "Status": "In Progress",
+                    "Owner": "Management"
+                },
+                {
+                    "Name": "Reduce operational costs",
+                    "Status": "Todo",
+                    "Owner": "Finance"
+                },
+                {
+                    "Name": "Improve employee retention",
+                    "Status": "Done",
+                    "Owner": "HR"
+                }
+            ]
+        },
+        {
+            "id": "daily-standup",
+            "name": "Daily Standup",
+            "description": "Daily team check-ins.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "Yesterday's work summary",
+                    "Status": "Done",
+                    "Owner": "Team"
+                },
+                {
+                    "Name": "Today's plan",
+                    "Status": "In Progress",
+                    "Owner": "Team"
+                },
+                {
+                    "Name": "Blockers discussion",
+                    "Status": "Todo",
+                    "Owner": "Team"
+                }
+            ]
+        },
+        {
+            "id": "internal-requests",
+            "name": "Internal Requests",
+            "description": "Manage internal company requests.",
+            "columns": [
+                "Name",
+                "Status",
+                "Owner"
+            ],
+            "items": [
+                {
+                    "Name": "New laptop request",
+                    "Status": "In Progress",
+                    "Owner": "IT"
+                },
+                {
+                    "Name": "Access permission update",
+                    "Status": "Done",
+                    "Owner": "Admin"
+                },
+                {
+                    "Name": "Office supplies request",
+                    "Status": "Todo",
+                    "Owner": "Operations"
+                }
+            ]
+        }
+    ]
+}
