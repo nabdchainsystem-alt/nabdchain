@@ -1,28 +1,36 @@
 import React, { useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { useFlowSimulation, FlowNode, FlowConnection } from '../../visualLogic';
+import { useFlowSimulation, FlowNode, FlowConnection, ProcessType } from '../../visualLogic';
 import { EventNode } from './EventNode';
 import { ConnectionPath } from './ConnectionPath';
 import {
     Play, Pause, Zap,
     ZoomIn, ZoomOut, RotateCcw,
-    ChevronUp, ChevronDown, ChevronLeft, ChevronRight
+    ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+    Calculator, Wrench, Calendar
 } from 'lucide-react';
-// import { CommandDeck } from './CommandDeck'; // Removed
 import { InsightsPanel } from './InsightsPanel';
+import { ProductCostCalculator } from './ProductCostCalculator';
+import { AnimatePresence } from 'framer-motion';
+import { MaintenanceCalculator } from './MaintenanceCalculator';
+import { PlanningTool } from './PlanningTool';
 
 // Configuration
-// Configuration
-const X_Spacing = 160; // Reduced by ~11% (was 180)
-const Y_Spacing = 108; // Reduced by 10% (was 120)
+const X_Spacing = 160;
+const Y_Spacing = 108;
 const PADDING_LEFT = 120;
 const PADDING_TOP = 240;
 
-export const ProcessMap: React.FC = () => {
-    const { nodes, connections, isPaused, setIsPaused, speed, setSpeed } = useFlowSimulation();
+export const ProcessMap: React.FC<{ processType?: ProcessType }> = ({ processType = 'supply-chain' as ProcessType }) => {
+    const { nodes, connections, isPaused, setIsPaused, speed, setSpeed } = useFlowSimulation(processType);
+    // ...
     const [activeZoom, setActiveZoom] = React.useState(0.9);
     const showDetails = true;
     const [pan, setPan] = React.useState({ x: 0, y: 0 });
+    const [isPanelOpen, setIsPanelOpen] = React.useState(true);
+    const [isCalculatorOpen, setIsCalculatorOpen] = React.useState(false);
+    const [isMaintenanceOpen, setIsMaintenanceOpen] = React.useState(false);
+    const [isPlanningOpen, setIsPlanningOpen] = React.useState(false);
 
     // Map logical coordinates to pixels
     const getPos = (x: number, y: number) => ({
@@ -60,7 +68,10 @@ export const ProcessMap: React.FC = () => {
                     }}
                 >
                     <svg
-                    // ... (svg props)
+                        width={bounds.width}
+                        height={bounds.height}
+                        className="absolute top-0 left-0 overflow-visible z-0" // Z-0 to sit behind nodes
+                        style={{ pointerEvents: 'none' }}
                     >
                         {connections.map(conn => {
                             // ... (connection logic)
@@ -97,6 +108,19 @@ export const ProcessMap: React.FC = () => {
                             // Calculate path for the connection starting from EDGE of dot
                             const path = `M${startX},${startY} L${endX},${endY}`;
 
+                            // Check for Chain Success
+                            // Extract chain ID (e.g. "chain-0")
+                            const chainId = conn.sourceId.substring(0, conn.sourceId.lastIndexOf('-'));
+                            // Check if the FINAL node of this chain is completed. 
+                            // Generic check: Look for specific end nodes based on process type, or just the "Closed"/"Payment" labels.
+                            const finalNode = nodes.find(n => n.id.startsWith(chainId) && (
+                                n.label === 'Payment' ||
+                                n.label === 'Invoice Received' ||
+                                n.label === 'Closed' || // Maintenance
+                                n.label === 'Warehouse' // Production
+                            ));
+                            const isChainComplete = finalNode?.type === 'completed';
+
                             return (
                                 <Fragment key={conn.id}>
                                     <ConnectionPath
@@ -106,6 +130,7 @@ export const ProcessMap: React.FC = () => {
                                         x2={endX}
                                         y2={endY}
                                         icon={target.icon}
+                                        isChainComplete={isChainComplete}
                                     />
                                 </Fragment>
                             );
@@ -138,11 +163,20 @@ export const ProcessMap: React.FC = () => {
                 </div>
 
                 {/* Command Deck Removed - Tools integrated into footer */}
+                {/* Toggle Sidebar Button */}
+                <button
+                    onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    className="absolute top-6 right-6 z-20 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 transition-colors"
+                >
+                    {isPanelOpen ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                </button>
             </div >
 
             {/* Right Insights Panel (Block 2) */}
-            < div className="w-80 h-full bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 shadow-xl" >
-                <InsightsPanel nodes={nodes} />
+            < div className={`h-full bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 shadow-xl transition-all duration-300 ease-in-out border-l border-gray-200 dark:border-gray-800 overflow-hidden ${isPanelOpen ? 'w-80 opacity-100' : 'w-0 opacity-0'}`} >
+                <div className="w-80 h-full">
+                    <InsightsPanel nodes={nodes} />
+                </div>
             </div >
 
             {/* Integrated Footer Toolbar */}
@@ -204,13 +238,57 @@ export const ProcessMap: React.FC = () => {
 
                     <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-2"></div>
 
-                    {/* Server Time */}
+                    {/* Tools: Widgets based on type */}
+                    {processType === 'supply-chain' && (
+                        <button
+                            onClick={() => setIsCalculatorOpen(!isCalculatorOpen)}
+                            className={`md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hidden ${isCalculatorOpen ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}`}
+                        >
+                            <Calculator size={16} />
+                            <span className="text-xs font-medium">Costing</span>
+                        </button>
+                    )}
+
+                    {processType === 'maintenance' && (
+                        <button
+                            onClick={() => setIsMaintenanceOpen(!isMaintenanceOpen)}
+                            className={`md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hidden ${isMaintenanceOpen ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}`}
+                        >
+                            <Wrench size={16} />
+                            <span className="text-xs font-medium">Ops Cost</span>
+                        </button>
+                    )}
+
+                    {processType === 'production' && (
+                        <button
+                            onClick={() => setIsPlanningOpen(!isPlanningOpen)}
+                            className={`md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hidden ${isPlanningOpen ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}`}
+                        >
+                            <Calendar size={16} />
+                            <span className="text-xs font-medium">Planning</span>
+                        </button>
+                    )}
+
+
+                    <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-2"></div>
+
                     <div className="text-xs font-mono text-gray-400">
                         {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
 
                 </div>
             </div >
+            <AnimatePresence>
+                {isCalculatorOpen && (
+                    <ProductCostCalculator onClose={() => setIsCalculatorOpen(false)} />
+                )}
+                {isMaintenanceOpen && (
+                    <MaintenanceCalculator onClose={() => setIsMaintenanceOpen(false)} />
+                )}
+                {isPlanningOpen && (
+                    <PlanningTool onClose={() => setIsPlanningOpen(false)} />
+                )}
+            </AnimatePresence>
         </div >
     );
 };
