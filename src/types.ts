@@ -33,6 +33,7 @@ export interface Board {
   defaultView?: BoardViewType;
   availableViews?: BoardViewType[];
   icon?: string;
+  parentId?: string;
 }
 
 export interface Workspace {
@@ -42,4 +43,4 @@ export interface Workspace {
   color: string;
 }
 
-export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work' | 'flow_hub';
+export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work' | 'flow_hub' | 'process_map';

@@ -44,6 +44,7 @@ import { NevaAssistant } from './components/NevaAssistant';
 import { DashboardConfig } from './components/dashboard/DashboardHeader';
 import DataTable from './views/Table/DataTable';
 import { PivotTable } from './views/PivotTable/PivotTable';
+import { GanttView } from './views/GanttChart/GanttView';
 
 interface BoardViewProps {
     board: Board;
@@ -74,8 +75,22 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard }) =>
     // Track previous board ID to distinguish between board switch and update
     const prevBoardIdRef = useRef(board.id);
 
-    // Dashboard State (Lifted)
-    const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
+    // Dashboard State (Lifted & Persisted)
+    const dashboardStorageKey = `board-dashboard-config-${board.id}`;
+    const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(() => {
+        try {
+            const saved = localStorage.getItem(dashboardStorageKey);
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    useEffect(() => {
+        if (dashboardConfig) {
+            localStorage.setItem(dashboardStorageKey, JSON.stringify(dashboardConfig));
+        }
+    }, [dashboardConfig, dashboardStorageKey]);
 
     // Persist active view
     useEffect(() => {
@@ -243,6 +258,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard }) =>
                 return <CalendarView key={board.id} roomId={board.id} />;
             case 'pivot_table':
                 return <PivotTable key={board.id} roomId={board.id} />;
+            case 'gantt':
+                return <GanttView key={board.id} roomId={board.id} boardName={board.name} />;
             default:
                 return <KanbanBoard key={board.id} boardId={board.id} />;
         }

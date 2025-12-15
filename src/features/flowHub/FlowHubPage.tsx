@@ -36,7 +36,7 @@ const FlowHubPage: React.FC = () => {
 
     // --- Render Helpers ---
     const renderSystem = () => {
-        const props = { thought, onExit: handleExitSystem };
+        const props = { thought, onExit: handleExitSystem, systemId: activeSystemId || undefined };
 
         switch (activeSystemId) {
             case 'capture': return <CaptureSystem {...props} />;
@@ -54,26 +54,26 @@ const FlowHubPage: React.FC = () => {
 
     return (
         <div className="h-full w-full bg-[#F9FAFB] dark:bg-monday-dark-bg overflow-hidden relative">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
                 {mode === 'initial' ? (
                     <motion.div
                         key="initial"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
+                        exit={{ opacity: 0, pointerEvents: 'none' }}
                         transition={{ duration: 0.4 }}
-                        className="h-full w-full"
+                        className="h-full w-full absolute inset-0"
                     >
                         <InitialState onStartConfig={handleStartConfig} />
                     </motion.div>
                 ) : (
                     <motion.div
                         key="system"
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, pointerEvents: 'none' }}
                         transition={{ duration: 0.4 }}
-                        className="h-full w-full"
+                        className="h-full w-full absolute inset-0 z-10"
                     >
                         {renderSystem()}
                     </motion.div>

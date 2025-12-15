@@ -50,7 +50,7 @@ export const analyzeInput = (text: string): AnalysisResult => {
         return {
             type: 'question',
             suggestion: 'This sounds like a question to resolve.',
-            systemId: 'capture', // Or maybe a Question bank system if we had one? Default to Capture.
+            systemId: 'clarify', // Changed default to Clarify for questions
             confidence: 0.7
         };
     }
@@ -96,4 +96,31 @@ export const analyzeInput = (text: string): AnalysisResult => {
         systemId: 'organize',
         confidence: 0.5
     };
+};
+
+export const getSuggestionBasedOnTime = (): string => {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'plan'; // Morning -> Plan
+    if (hour < 18) return 'focus'; // Mid-day -> Focus
+    return 'reflect'; // Evening -> Reflect
+};
+
+export const getPlaceholders = (systemId: string | null): string => {
+    if (!systemId) {
+        const timeSuggestion = getSuggestionBasedOnTime();
+        if (timeSuggestion === 'plan') return "What is your main focus for today?";
+        if (timeSuggestion === 'reflect') return "How did the day go?";
+        return "What are you working on?";
+    }
+    switch (systemId) {
+        case 'capture': return "Write freely. No structure needed.";
+        case 'focus': return "What requires your deep attention?";
+        case 'plan': return "What are you trying to plan?";
+        case 'organize': return "What needs to be sorted?";
+        case 'clarify': return "What is confusing you?";
+        case 'reflect': return "How are you feeling about your progress?";
+        case 'idea': return "What's the core concept?";
+        case 'reset': return "What's blocking you right now?";
+        default: return "Type a thought...";
+    }
 };

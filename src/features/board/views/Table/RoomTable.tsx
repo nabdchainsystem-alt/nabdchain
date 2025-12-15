@@ -815,7 +815,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, dashboardConfig, 
         const currentConfig = effectiveDashboardConfig || { kpis: [], charts: [] };
         handleSetDashboardConfig({
             ...currentConfig,
-            charts: [...currentConfig.charts, newChart]
+            charts: [...(currentConfig.charts || []), newChart]
         });
 
         setShowChartBuilder(false);
@@ -1325,6 +1325,21 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, dashboardConfig, 
         )
     };
 
+    // --- Resize Observer for Sticky Header ---
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [headerWidth, setHeaderWidth] = useState<number | undefined>(undefined);
+
+    useEffect(() => {
+        if (!scrollContainerRef.current) return;
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                setHeaderWidth(entry.contentRect.width);
+            }
+        });
+        resizeObserver.observe(scrollContainerRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
+
     return (
         <div className="flex flex-col w-full h-full bg-stone-50 dark:bg-stone-900/50 font-sans overflow-hidden">
 
@@ -1419,11 +1434,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, dashboardConfig, 
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain">
+            <div
+                ref={scrollContainerRef}
+                className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain"
+            >
 
                 {/* Dashboard Section (Inside Scroll) */}
                 {effectiveDashboardConfig && (
-                    <div className="sticky left-0 z-10 w-[calc(100vw-300px)] bg-stone-50/50 dark:bg-stone-900/50 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+                    <div
+                        className="sticky left-0 z-10 bg-stone-50/50 dark:bg-stone-900/50 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800"
+                        style={{ width: headerWidth ? `${headerWidth}px` : '100%' }}
+                    >
                         <DashboardHeader config={effectiveDashboardConfig} />
                     </div>
                 )}

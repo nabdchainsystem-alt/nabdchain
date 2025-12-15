@@ -23,7 +23,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ config }) => {
     if (!config || (!config.kpis.length && !config.charts.length)) return null;
 
     return (
-        <div className="flex flex-col gap-8 p-8 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+        <div className="flex flex-col gap-6 p-6 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
             {/* KPI Grid */}
             {config.kpis.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -47,16 +47,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ config }) => {
                             <ReactECharts
                                 option={{
                                     ...chart.data,
+                                    title: { show: false }, // Hide internal title as we have external H4
                                     grid: {
                                         containLabel: true,
                                         left: 10,
                                         right: 10,
                                         bottom: 10,
-                                        top: 30,
+                                        top: 10, // Reduced top padding since title is gone
                                         ...(chart.data.grid || {})
                                     }
                                 }}
-                                style={{ height: '300px', width: '100%' }}
+                                style={{ height: '220px', width: '100%' }}
                                 theme="macarons" // Clean theme, can be customized
                             />
                         </div>

@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Shield, Key, FileText, CreditCard, StickyNote, Plus, Import, Search, ArrowRight } from 'lucide-react';
+import { Shield, Key, CreditCard, StickyNote, Plus, Import, Search, ArrowRight, Folder } from 'lucide-react';
 
 interface VaultEmptyStateProps {
-    type: 'empty-vault' | 'active-search' | 'empty-category';
+    type: 'empty-vault' | 'active-search' | 'empty-category' | 'empty-folder';
     category?: string;
     searchQuery?: string;
     onClearSearch?: () => void;
@@ -71,6 +71,43 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
         );
     }
 
+
+
+    // 4. Empty Folder State
+    if (type === 'empty-folder') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in-up">
+                <div className="w-20 h-20 bg-blue-50 dark:bg-monday-dark-hover rounded-full flex items-center justify-center mb-6">
+                    <Folder className="text-blue-500" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                    This folder is empty
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8">
+                    Add new items specifically to this folder.
+                </p>
+                {onCreateItem && (
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => onCreateItem('folder')}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md font-medium transition-all"
+                        >
+                            <Plus size={18} />
+                            <span>New Subfolder</span>
+                        </button>
+                        <button
+                            onClick={() => onCreateItem('note')}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-monday-blue hover:bg-blue-600 text-white rounded-md font-medium transition-all shadow-md"
+                        >
+                            <StickyNote size={18} />
+                            <span>New Note</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
     // 3. Global "Zero Page" - The Efficiency Dashboard
     return (
         <div className="flex flex-col items-center justify-center h-full p-8 animate-fade-in-up">
@@ -90,7 +127,7 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                 </div>
 
                 {/* efficiency Actions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                <div className="flex flex-wrap justify-center gap-4 mb-10">
                     <QuickAction
                         icon={<Key className="text-red-500" />}
                         title="Add Login"
@@ -99,11 +136,11 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                         onClick={() => onCreateItem && onCreateItem('login')}
                     />
                     <QuickAction
-                        icon={<CreditCard className="text-purple-500" />}
-                        title="Add Card"
-                        desc="Store payment methods"
-                        bg="bg-purple-50 dark:bg-purple-900/10"
-                        onClick={() => onCreateItem && onCreateItem('card')}
+                        icon={<Folder className="text-blue-500" />}
+                        title="New Folder"
+                        desc="Create a secure folder"
+                        bg="bg-blue-50 dark:bg-blue-900/10"
+                        onClick={() => onCreateItem && onCreateItem('folder')}
                     />
                     <QuickAction
                         icon={<StickyNote className="text-yellow-500" />}
@@ -112,13 +149,7 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                         bg="bg-yellow-50 dark:bg-yellow-900/10"
                         onClick={() => onCreateItem && onCreateItem('note')}
                     />
-                    <QuickAction
-                        icon={<FileText className="text-green-500" />}
-                        title="Upload File"
-                        desc="PDFs, Images & Docs"
-                        bg="bg-green-50 dark:bg-green-900/10"
-                        onClick={() => onCreateItem && onCreateItem('document')}
-                    />
+
                 </div>
 
                 {/* Footer Actions */}
@@ -145,12 +176,12 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
 const QuickAction = ({ icon, title, desc, bg, onClick }: { icon: React.ReactNode, title: string, desc: string, bg: string, onClick?: () => void }) => (
     <button
         onClick={onClick}
-        className="flex flex-col items-start p-5 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-xl hover:shadow-lg hover:border-monday-blue/30 dark:hover:border-monday-blue/30 transition-all text-left group"
+        className="flex flex-col items-center p-5 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-xl hover:shadow-lg hover:border-monday-blue/30 dark:hover:border-monday-blue/30 transition-all text-center group w-64"
     >
         <div className={`p-3 rounded-lg ${bg} mb-4 group-hover:scale-110 transition-transform duration-300`}>
             {React.cloneElement(icon as React.ReactElement, { size: 24 })}
         </div>
-        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-monday-blue transition-colors flex items-center gap-2">
+        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-monday-blue transition-colors flex items-center justify-center gap-2">
             {title}
             <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
         </h4>

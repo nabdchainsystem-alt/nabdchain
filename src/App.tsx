@@ -7,6 +7,7 @@ import { InboxView } from './features/inbox/InboxView';
 import DiscussionPage from './features/discussion/DiscussionPage';
 import { VaultView } from './features/vault/VaultView';
 import FlowHubPage from './features/flowHub/FlowHubPage';
+import ProcessMapPage from './features/flowHub/ProcessMapPage';
 import { MyWorkPage } from './features/myWork/MyWorkPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './features/auth/LoginPage';
@@ -18,6 +19,8 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { UIProvider } from './contexts/UIContext';
 import { NavigationProvider } from './contexts/NavigationContext';
 import TeamsPage from './features/teams/TeamsPage';
+import { FocusProvider } from './contexts/FocusContext';
+import { FocusWidget } from './components/features/focus/FocusWidget';
 
 // Mock Initial Data
 const INITIAL_WORKSPACES: Workspace[] = [
@@ -127,7 +130,7 @@ const AppContent: React.FC = () => {
     setActiveView('board');
   };
 
-  const handleQuickAddBoard = (name: string, icon?: string, template?: BoardTemplate, defaultView: BoardViewType = 'table') => {
+  const handleQuickAddBoard = (name: string, icon?: string, template?: BoardTemplate, defaultView: BoardViewType = 'table', parentId?: string) => {
     const newBoardId = Date.now().toString();
 
     // Determine columns based on template or default
@@ -232,7 +235,8 @@ const AppContent: React.FC = () => {
       tasks: [],
       defaultView: defaultView,
       availableViews: [defaultView],
-      icon: icon
+      icon: icon,
+      parentId: parentId
     };
     handleBoardCreated(newBoard);
   };
@@ -302,7 +306,7 @@ const AppContent: React.FC = () => {
           onToggleFavorite={handleToggleFavorite}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onAddBoard={(name, icon, template, defaultView) => handleQuickAddBoard(name, icon, template, defaultView as any)}
+          onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
         />
 
         {/* Main Content Area */}
@@ -323,6 +327,8 @@ const AppContent: React.FC = () => {
             <VaultView />
           ) : activeView === 'flow_hub' ? (
             <FlowHubPage />
+          ) : activeView === 'process_map' ? (
+            <ProcessMapPage />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
               {activeView === 'board' && !activeBoard && "No board selected"}
@@ -330,6 +336,7 @@ const AppContent: React.FC = () => {
           )}
         </main>
       </div>
+      <FocusWidget />
     </div>
   );
 };
@@ -369,7 +376,9 @@ const App: React.FC = () => {
         <UIProvider>
           <LanguageProvider>
             <NavigationProvider>
-              <AppRoutes />
+              <FocusProvider>
+                <AppRoutes />
+              </FocusProvider>
             </NavigationProvider>
           </LanguageProvider>
         </UIProvider>
