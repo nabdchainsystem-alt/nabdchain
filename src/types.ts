@@ -37,6 +37,7 @@ export interface Board {
   availableViews?: BoardViewType[];
   icon?: string;
   parentId?: string;
+  pinnedViews?: string[];
 }
 
 export interface Workspace {

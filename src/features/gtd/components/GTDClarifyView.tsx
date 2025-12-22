@@ -82,7 +82,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
 
     return (
         <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-            <h2 className="text-4xl font-black tracking-widest uppercase mb-6 text-[#1A1A1A] dark:text-white">Clarify</h2>
+            <h2 className="text-2xl font-black tracking-widest uppercase mb-6 text-[#1A1A1A] dark:text-white">Clarify</h2>
 
             {/* Safety check if no items */}
             {!currentItem ? (
@@ -124,7 +124,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 Item {currentIndex + 1} of {items.length}
                             </div>
 
-                            <h3 className="text-2xl font-serif italic text-[#1A1A1A] dark:text-gray-100 mb-4 px-4 leading-tight">
+                            <h3 className="text-lg font-serif italic text-[#1A1A1A] dark:text-gray-100 mb-4 px-4 leading-tight">
                                 "{currentItem.title || 'Untitled'}"
                             </h3>
 

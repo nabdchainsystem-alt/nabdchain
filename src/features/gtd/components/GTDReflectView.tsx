@@ -76,7 +76,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
     return (
         <div className="w-full max-w-6xl mx-auto flex flex-col items-center pb-12 relative">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Reflect</h2>
+                <h2 className="text-2xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Reflect</h2>
                 <p className="text-gray-400 font-serif italic tracking-widest text-sm uppercase">Review your system</p>
             </div>
 
@@ -156,7 +156,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                 {/* Header */}
                                 <div className="p-8 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-white/5">
                                     <div>
-                                        <h3 className="text-3xl font-serif italic text-[#1A1A1A] dark:text-white mb-2">{selectedCategory.title}</h3>
+                                        <h3 className="text-xl font-serif italic text-[#1A1A1A] dark:text-white mb-2">{selectedCategory.title}</h3>
                                         <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">{selectedCategory.items.length} Items</p>
                                     </div>
                                     <button
@@ -175,7 +175,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                                 <div key={item.id} className="group flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/5">
                                                     <div className="mt-1 w-2 h-2 rounded-full bg-gray-300 group-hover:bg-black dark:group-hover:bg-white transition-colors flex-shrink-0" />
                                                     <div className="flex-1">
-                                                        <h4 className="text-lg text-gray-800 dark:text-gray-200 font-serif leading-snug mb-1">{item.title}</h4>
+                                                        <h4 className="text-base text-gray-800 dark:text-gray-200 font-serif leading-snug mb-0.5">{item.title}</h4>
                                                         <span className="text-[10px] text-gray-400 uppercase tracking-wider">
                                                             {new Date(item.createdAt).toLocaleDateString(undefined, {
                                                                 weekday: 'short',

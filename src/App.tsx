@@ -135,9 +135,10 @@ const AppContent: React.FC = () => {
 
     // Determine columns based on template or default
     let initialColumns: BoardColumn[] = [
-      { id: 'c1', title: 'Owner', type: 'person' },
-      { id: 'c2', title: 'Status', type: 'status' },
-      { id: 'c3', title: 'Date', type: 'date' }
+      { id: 'name', title: 'Name', type: 'text' },
+      { id: 'status', title: 'Status', type: 'status' },
+      { id: 'dueDate', title: 'Due date', type: 'date' },
+      { id: 'priority', title: 'Priority', type: 'priority' }
     ];
 
     if (template) {
@@ -159,12 +160,12 @@ const AppContent: React.FC = () => {
           pinned: col.id === 'name' || col.id === 'select',
           options: col.options
         }));
-        // Save columns for RoomTable
-        localStorage.setItem(`room-table-columns-v3-${newBoardId}-table`, JSON.stringify(mappedColumns));
-        localStorage.setItem(`room-table-columns-v3-${newBoardId}-table-main`, JSON.stringify(mappedColumns));
-        localStorage.setItem(`room-table-columns-v3-${newBoardId}-default`, JSON.stringify(mappedColumns));
+        // Save columns for RoomTable (v4 keys matching RoomTable.tsx)
+        const v4ColsKey = `room-table-columns-v4-${newBoardId}-table-main`;
+        localStorage.setItem(v4ColsKey, JSON.stringify(mappedColumns));
+        localStorage.setItem(`room-table-columns-v4-${newBoardId}-default`, JSON.stringify(mappedColumns));
 
-        // Save status groups - Use standard defaults if not explicit in template (user simplified JSON didn't have groups)
+        // Save status groups - Use standard defaults
         const defaultGroups = [
           { id: 'To Do', label: 'To Do', color: '#c4c4c4' },
           { id: 'In Progress', label: 'In Progress', color: '#fdab3d' },

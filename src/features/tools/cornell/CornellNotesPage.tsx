@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { CornellLayout } from './CornellLayout';
-import { Save, Plus, FileText, Trash2, Search, Menu, X, Clock, CheckSquare, Tag, Link as LinkIcon, ChevronDown, MoreHorizontal, Filter, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { Save, Plus, FileText, Trash2, Search, Menu, X, Clock, CheckSquare, Tag, Link as LinkIcon, ChevronDown, MoreHorizontal, Filter, ArrowUp, ArrowDown, AlertCircle, Calendar } from 'lucide-react';
+import { SharedDatePicker } from '../../../components/ui/SharedDatePicker';
+import { PortalPopup } from '../../../components/ui/PortalPopup';
 
 // --- Types ---
 interface ActionItem {
@@ -99,6 +101,10 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
     const [linkInput, setLinkInput] = useState('');
     const [actionItems, setActionItems] = useState<ActionItem[]>([]);
     const [actionInput, setActionInput] = useState('');
+
+    // Popover Refs & State
+    const [activeDateSelector, setActiveDateSelector] = useState<{ id: 'note' | 'action', actionId?: string, rect: DOMRect } | null>(null);
+    const dateTriggerRef = useRef<HTMLButtonElement>(null);
 
     // Modal State
     const [confirmationModal, setConfirmationModal] = useState<{
@@ -342,6 +348,13 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
         handleSave();
     };
 
+    const handleActionDateSelect = (actionId: string, d: Date) => {
+        const newActions = actionItems.map(a => a.id === actionId ? { ...a, dueDate: d.toISOString().split('T')[0] } : a);
+        handleChange(setActionItems, newActions);
+        setActiveDateSelector(null);
+        handleSave();
+    };
+
 
     // --- Tags Logic ---
     const handleAddTag = (e: React.KeyboardEvent) => {
@@ -438,9 +451,26 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         <span className={`flex-1 ${item.done ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}`}>
                             {item.title}
                         </span>
-                        <button onClick={() => deleteAction(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1">
-                            <Trash2 size={13} />
-                        </button>
+
+                        <div className="flex items-center gap-2">
+                            {item.dueDate && (
+                                <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-500 px-1.5 py-0.5 rounded font-medium">
+                                    {new Date(item.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                </span>
+                            )}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDateSelector({ id: 'action', actionId: item.id, rect: e.currentTarget.getBoundingClientRect() });
+                                }}
+                                className={`p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${item.dueDate ? 'text-blue-500' : 'text-gray-400'}`}
+                            >
+                                <Calendar size={13} />
+                            </button>
+                            <button onClick={() => deleteAction(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity">
+                                <Trash2 size={13} />
+                            </button>
+                        </div>
                     </div>
                 ))}
                 {actionItems.length > 0 && (
@@ -643,14 +673,17 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         </div>
 
                         {/* Date */}
-                        <div className="w-[140px]">
-                            <input
-                                type="date"
-                                value={date}
-                                onChange={(e) => handleChange(setDate, e.target.value)}
-                                onBlur={handleSave}
-                                className="w-full px-2 py-1 text-xs bg-gray-50 dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded text-gray-600 focus:outline-none focus:border-blue-500"
-                            />
+                        <div className="w-[160px]">
+                            <button
+                                ref={dateTriggerRef}
+                                onClick={() => setActiveDateSelector({ id: 'note', rect: dateTriggerRef.current!.getBoundingClientRect() })}
+                                className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg text-gray-600 dark:text-gray-300 hover:border-blue-500 transition-colors shadow-sm"
+                            >
+                                <span className="font-medium">
+                                    {new Date(date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <Calendar size={14} className="text-gray-400" />
+                            </button>
                         </div>
 
                         {/* Links */}
@@ -759,6 +792,40 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Premium Date Picker Popover */}
+            {activeDateSelector && (
+                <PortalPopup
+                    triggerRef={{ current: { getBoundingClientRect: () => activeDateSelector.rect } } as any}
+                    onClose={() => setActiveDateSelector(null)}
+                    align="end"
+                >
+                    <SharedDatePicker
+                        selectedDate={activeDateSelector.id === 'note' ? date : actionItems.find(a => a.id === activeDateSelector.actionId)?.dueDate}
+                        onSelectDate={(d) => {
+                            if (activeDateSelector.id === 'note') {
+                                setDate(d.toISOString().split('T')[0]);
+                                setSaveStatus('unsaved');
+                                setActiveDateSelector(null);
+                                // Note: handleSave will be called via useEffect shortcut or manual save
+                            } else if (activeDateSelector.actionId) {
+                                handleActionDateSelect(activeDateSelector.actionId, d);
+                            }
+                        }}
+                        onClear={() => {
+                            if (activeDateSelector.id === 'note') {
+                                setDate(new Date().toISOString().split('T')[0]);
+                            } else if (activeDateSelector.actionId) {
+                                const newActions = actionItems.map(a => a.id === activeDateSelector.actionId ? { ...a, dueDate: undefined } : a);
+                                handleChange(setActionItems, newActions);
+                                handleSave();
+                            }
+                            setActiveDateSelector(null);
+                        }}
+                        onClose={() => setActiveDateSelector(null)}
+                    />
+                </PortalPopup>
             )}
         </div>
     );

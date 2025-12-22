@@ -11,13 +11,17 @@ import {
     Tag,
     Clock,
     AlertCircle,
-    MoreHorizontal
+    MoreHorizontal,
+    ChevronDown
 } from 'lucide-react';
+import { SharedDatePicker } from '../../../../components/ui/SharedDatePicker';
+import { PortalPopup } from '../../../../components/ui/PortalPopup';
 
 interface NewRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: any) => void;
+    existingTasks?: any[];
 }
 
 interface RequestItem {
@@ -28,7 +32,7 @@ interface RequestItem {
     dueDate: string;
 }
 
-export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClose, onSubmit }) => {
+export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClose, onSubmit, existingTasks = [] }) => {
     // Header State
     const [isManualReqId, setIsManualReqId] = useState(false);
     const [reqId, setReqId] = useState('');
@@ -37,6 +41,12 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
     const [warehouse, setWarehouse] = useState('');
     const [relatedTo, setRelatedTo] = useState('');
     const [status, setStatus] = useState('Low');
+
+    // UI State for Date Pickers
+    const [showMainDatePicker, setShowMainDatePicker] = useState(false);
+    const [activeItemDateId, setActiveItemDateId] = useState<string | null>(null);
+    const mainDateRef = React.useRef<HTMLDivElement>(null);
+    const itemDateRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
 
     // Items State
     const [items, setItems] = useState<RequestItem[]>([
@@ -48,11 +58,30 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
         if (isOpen) {
             const today = new Date();
             setDate(today.toISOString().split('T')[0]);
+
             if (!isManualReqId) {
-                setReqId(`REQ-${today.getFullYear()}000001`); // Mock Auto ID
+                // Calculate Next ID
+                const year = today.getFullYear();
+                const prefix = `REQ-${year}`;
+
+                // Find highest sequence number for this year
+                let maxSeq = 0;
+                existingTasks.forEach(task => {
+                    const id = task.id || '';
+                    if (id.startsWith(prefix)) {
+                        const seqStr = id.replace(prefix, '');
+                        const seq = parseInt(seqStr);
+                        if (!isNaN(seq) && seq > maxSeq) {
+                            maxSeq = seq;
+                        }
+                    }
+                });
+
+                const nextSeq = (maxSeq + 1).toString().padStart(6, '0');
+                setReqId(`${prefix}${nextSeq}`);
             }
         }
-    }, [isOpen, isManualReqId]);
+    }, [isOpen, isManualReqId, existingTasks]);
 
     const handleAddItem = () => {
         setItems([
@@ -138,8 +167,8 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                                         onChange={(e) => setReqId(e.target.value)}
                                         readOnly={!isManualReqId}
                                         className={`pl-9 w-full px-4 py-2.5 text-sm rounded-lg border outline-none transition-all duration-200 ${!isManualReqId
-                                                ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed'
-                                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm'
+                                            ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm'
                                             }`}
                                     />
                                 </div>
@@ -149,16 +178,30 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                                 <div className="flex items-center h-5 mb-1">
                                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</label>
                                 </div>
-                                <div className="relative group">
+                                <div className="relative group" ref={mainDateRef}>
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Calendar size={15} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
-                                    <input
-                                        type="date"
-                                        value={date}
-                                        readOnly
-                                        className="pl-9 w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 text-gray-500 border border-gray-200 dark:border-gray-700 rounded-lg outline-none cursor-not-allowed shadow-sm"
-                                    />
+                                    <div
+                                        onClick={() => setShowMainDatePicker(true)}
+                                        className="pl-9 w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg outline-none cursor-pointer shadow-sm flex items-center justify-between"
+                                    >
+                                        {date ? new Date(date).toLocaleDateString() : 'Select date'}
+                                        <ChevronDown size={14} className="text-gray-400" />
+                                    </div>
+
+                                    {showMainDatePicker && (
+                                        <PortalPopup
+                                            triggerRef={mainDateRef}
+                                            onClose={() => setShowMainDatePicker(false)}
+                                        >
+                                            <SharedDatePicker
+                                                selectedDate={date}
+                                                onSelectDate={(d) => setDate(d.toISOString().split('T')[0])}
+                                                onClose={() => setShowMainDatePicker(false)}
+                                            />
+                                        </PortalPopup>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -296,12 +339,28 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                                                 />
                                             </td>
                                             <td className="px-5 py-2">
-                                                <input
-                                                    type="date"
-                                                    value={item.dueDate}
-                                                    onChange={(e) => updateItem(item.id, 'dueDate', e.target.value)}
-                                                    className="w-full px-2 py-1.5 text-sm bg-transparent border-b border-transparent group-hover:border-blue-200 dark:group-hover:border-blue-800 focus:border-blue-500 rounded-none outline-none transition-all text-gray-600 dark:text-gray-300"
-                                                />
+                                                <div className="relative" ref={el => { if (el) itemDateRefs.current[item.id] = el; }}>
+                                                    <div
+                                                        onClick={() => setActiveItemDateId(item.id)}
+                                                        className="w-full px-2 py-1.5 text-sm bg-transparent border-b border-transparent group-hover:border-blue-200 dark:group-hover:border-blue-800 focus:border-blue-500 rounded-none outline-none transition-all text-gray-600 dark:text-gray-300 cursor-pointer flex items-center justify-between"
+                                                    >
+                                                        {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Set date'}
+                                                        <Calendar size={12} className="text-gray-400" />
+                                                    </div>
+
+                                                    {activeItemDateId === item.id && (
+                                                        <PortalPopup
+                                                            triggerRef={{ current: itemDateRefs.current[item.id] }}
+                                                            onClose={() => setActiveItemDateId(null)}
+                                                        >
+                                                            <SharedDatePicker
+                                                                selectedDate={item.dueDate}
+                                                                onSelectDate={(d) => updateItem(item.id, 'dueDate', d.toISOString().split('T')[0])}
+                                                                onClose={() => setActiveItemDateId(null)}
+                                                            />
+                                                        </PortalPopup>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-5 py-2">
                                                 <input
@@ -317,8 +376,8 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                                                     onClick={() => handleRemoveItem(item.id)}
                                                     disabled={items.length === 1}
                                                     className={`p-2 rounded-lg transition-colors ${items.length === 1
-                                                            ? 'text-gray-300 cursor-not-allowed opacity-50'
-                                                            : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                        ? 'text-gray-300 cursor-not-allowed opacity-50'
+                                                        : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                                                         }`}
                                                 >
                                                     <Trash2 size={16} />

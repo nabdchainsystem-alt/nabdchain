@@ -121,6 +121,15 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
 
     // Sync active view when board changes
     React.useEffect(() => {
+        // Migration: Reset corrupted column storage for the new 'table-main' isolated view
+        // This ensures the standard columns reappear if they were lost during a bad update
+        const migrationKey = `table-standard-reset-v4`;
+        if (!localStorage.getItem(migrationKey)) {
+            const targetKey = `room-table-columns-v4-${board.id}-table-main`;
+            localStorage.removeItem(targetKey);
+            localStorage.setItem(migrationKey, 'true');
+        }
+
         // If board ID changed, it means we switched boards -> reset to saved or default
         if (board.id !== prevBoardIdRef.current) {
             const newStorageKey = `board-active-view-${board.id}`;
@@ -231,9 +240,13 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
 
         // Cleanup storage for the deleted view
         try {
-            // 1. Clear Columns Config
-            const colsKey = `room-table-columns-v3-${board.id}-${viewToDelete}`;
-            localStorage.removeItem(colsKey);
+            // 1. Clear Columns Config (v3 legacy + v4 current)
+            const colsKeyV4 = viewToDelete === 'table'
+                ? `room-table-columns-v4-${board.id}-table-main`
+                : `room-table-columns-v4-${board.id}-${viewToDelete}`;
+
+            localStorage.removeItem(colsKeyV4);
+            localStorage.removeItem(`room-table-columns-v3-${board.id}-${viewToDelete}`);
 
             // 2. Clear Rows only if it's a DataTable (isolated storage)
             if (viewToDelete.startsWith('datatable')) {
@@ -249,6 +262,61 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
             setActiveView(newViews[0]);
         }
 
+        setContextMenu(null);
+    };
+
+    const handlePinView = () => {
+        if (!contextMenu || !onUpdateBoard) return;
+        const viewId = contextMenu.viewId;
+        const pinnedViews = [...(board.pinnedViews || [])];
+        const index = pinnedViews.indexOf(viewId);
+
+        if (index > -1) {
+            // Unpin
+            pinnedViews.splice(index, 1);
+        } else {
+            // Pin
+            pinnedViews.push(viewId);
+        }
+
+        onUpdateBoard(board.id, { pinnedViews });
+        setContextMenu(null);
+    };
+
+    const handleDuplicateView = () => {
+        if (!contextMenu || !onUpdateBoard) return;
+        const viewId = contextMenu.viewId;
+        const currentViews = [...(board.availableViews || [])];
+        currentViews.push(viewId);
+        onUpdateBoard(board.id, { availableViews: currentViews });
+        setContextMenu(null);
+    };
+
+    const handleRenameView = () => {
+        if (!contextMenu) return;
+        const newName = prompt('Enter new name for this view:', '');
+        if (newName) {
+            const storageKey = `board-view-names-${board.id}`;
+            const savedNames = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            savedNames[contextMenu.viewId] = newName;
+            localStorage.setItem(storageKey, JSON.stringify(savedNames));
+            window.location.reload();
+        }
+        setContextMenu(null);
+    };
+
+    const handleMoveView = (direction: 'left' | 'right') => {
+        if (!contextMenu || !onUpdateBoard) return;
+        const viewId = contextMenu.viewId;
+        const currentViews = [...(board.availableViews || [])];
+        const index = currentViews.indexOf(viewId);
+        if (index === -1) return;
+
+        const newIndex = direction === 'left' ? index - 1 : index + 1;
+        if (newIndex >= 0 && newIndex < currentViews.length) {
+            [currentViews[index], currentViews[newIndex]] = [currentViews[newIndex], currentViews[index]];
+            onUpdateBoard(board.id, { availableViews: currentViews });
+        }
         setContextMenu(null);
     };
 
@@ -279,7 +347,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
             case 'overview':
                 return board.id === 'procurement-main' ? (
                     <div className="w-full h-full overflow-hidden">
-                        <ProcurementOverview />
+                        <ProcurementOverview tasks={board.tasks} onUpdateTasks={onUpdateTasks} />
                     </div>
                 ) : (
                     <OverviewView boardId={board.id} />
@@ -293,7 +361,6 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
                         roomId={board.id}
                         viewId="table-main"
                         tasks={board.tasks}
-                        columns={mappedColumns.length > 0 ? mappedColumns : undefined}
                         onUpdateTasks={onUpdateTasks}
                     />
                 );
@@ -323,7 +390,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
             case 'workload':
                 return <WorkloadView boardId={board.id} fallbackTasks={board.tasks} />;
             case 'gtd':
-                return <GTDDashboard onBoardCreated={() => { }} />;
+                return <GTDDashboard key={board.id} boardId={board.id} onBoardCreated={() => { }} />;
             case 'cornell':
                 return <CornellNotesPage roomId={board.id} />;
             case 'automation_rules':
@@ -342,12 +409,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
         ? [...board.availableViews]
         : ['overview', 'table', 'kanban'] as BoardViewType[];
 
-    // Enforce Overview is always present and first for department boards (or generally if we want it everywhere)
-    // For now, let's just ensure if it exists, it's first. 
-    // If the board has 'overview' in availableViews, move it to index 0.
-    if (availableViews.includes('overview')) {
-        availableViews = ['overview', ...availableViews.filter(v => v !== 'overview')];
-    }
+    // Sort: Overview first, then Pinned views, then others
+    const pinned = board.pinnedViews || [];
+    availableViews.sort((a, b) => {
+        if (a === 'overview') return -1;
+        if (b === 'overview') return 1;
+        const aPinned = pinned.includes(a);
+        const bPinned = pinned.includes(b);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+    });
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
@@ -367,31 +439,38 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
 
                         {/* Board Info / Rename Popover */}
                         {showInfoMenu && (
-                            <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-50 p-4 animate-in fade-in zoom-in-95 duration-100">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-500">Board Settings</span>
+                            <div className="absolute top-full left-0 mt-2 w-80 bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-xl border border-blue-500/20 dark:border-blue-400/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] z-50 p-5 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="space-y-5">
+                                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Board Settings</span>
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                     </div>
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <Pencil size={12} className="text-blue-500" />
+                                                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Name</label>
+                                            </div>
                                             <input
                                                 type="text"
                                                 value={editName}
                                                 onChange={(e) => setEditName(e.target.value)}
                                                 onBlur={handleSave}
-                                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                                className="w-full px-3 py-2 text-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
                                                 placeholder="Board Name"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <FileText size={12} className="text-blue-500" />
+                                                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Description</label>
+                                            </div>
                                             <textarea
                                                 value={editDescription}
                                                 onChange={(e) => setEditDescription(e.target.value)}
                                                 onBlur={handleSave}
-                                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[80px]"
-                                                placeholder="Add a description..."
+                                                className="w-full px-3 py-2 text-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[100px] transition-all"
+                                                placeholder="Add a detailed description..."
                                             />
                                         </div>
                                     </div>
@@ -434,6 +513,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
                             if (!option) return null;
                             const Icon = option.icon;
 
+                            // Check for custom name
+                            const customNames = JSON.parse(localStorage.getItem(`board-view-names-${board.id}`) || '{}');
+                            const label = customNames[viewId] || option.label;
+
                             return (
                                 <button
                                     key={viewId}
@@ -444,8 +527,15 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
                                         : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                                         }`}
                                 >
-                                    <Icon size={16} />
-                                    <span>{option.label}</span>
+                                    <div className="relative">
+                                        <Icon size={16} />
+                                        {board.pinnedViews?.includes(viewId as any) && (
+                                            <div className="absolute -top-1.5 -right-1.5 bg-white dark:bg-[#1a1d24] rounded-full p-0.5 shadow-sm">
+                                                <Pin size={8} className="text-blue-500 fill-current" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span>{label}</span>
                                     {activeView === viewId && viewId !== 'overview' && (
                                         <div className="ml-1 p-0.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-400 hover:text-blue-600 transition-colors" onClick={(e) => { e.stopPropagation(); /* Context menu logic */ handleContextMenu(e, viewId as BoardViewType); }}>
                                             <MoreHorizontal size={14} />
@@ -474,84 +564,84 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
                                 side="bottom"
                                 align="end"
                             >
-                                <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl w-[800px] flex overflow-hidden animate-in fade-in zoom-in-95 duration-100 h-[500px]">
-                                    {/* Scrollable Content Container */}
-                                    <div className="w-full h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                        <div className="p-6 space-y-8">
-                                            {/* Basic Tools Section */}
-                                            <div>
-                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">Basic Tools</h3>
-                                                <div className="grid grid-cols-3 gap-x-8 gap-y-6">
-                                                    {VIEW_OPTIONS.filter(opt =>
-                                                        ['overview', 'table', 'kanban', 'list', 'calendar', 'doc', 'listboard', 'gantt', 'dashboards', 'whiteboard', 'workload'].includes(opt.id)
-                                                    ).map((option) => (
-                                                        <button
-                                                            key={option.id}
-                                                            onClick={() => {
-                                                                setShowAddViewMenu(false);
-                                                                const viewId = option.id as BoardViewType;
-
-                                                                if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                    onUpdateBoard(board.id, {
-                                                                        availableViews: [...board.availableViews, viewId]
-                                                                    });
-                                                                } else if (onUpdateBoard && !board.availableViews) {
-                                                                    onUpdateBoard(board.id, { availableViews: [viewId] });
-                                                                }
-
-                                                                setActiveView(viewId);
-                                                            }}
-                                                            className="flex gap-3 items-start text-left group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -ml-2 rounded-lg transition-colors"
-                                                        >
-                                                            <div className="shrink-0 mt-0.5 text-indigo-500 group-hover:text-indigo-600 transition-colors">
-                                                                <option.icon size={20} className="stroke-[1.5]" />
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 transition-colors">{option.label}</div>
-                                                                <div className="text-xs text-gray-500 mt-0.5">{option.description}</div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                <div className="bg-white/98 dark:bg-[#0d0d0e]/98 backdrop-blur-3xl border border-stone-200 dark:border-stone-800 rounded-3xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] w-[880px] flex overflow-hidden animate-in fade-in zoom-in-95 duration-500 relative">
+                                    <div className="w-full h-full overflow-y-auto no-scrollbar relative z-10">
+                                        <div className="p-8 space-y-10">
+                                            {/* Compact Header */}
+                                            <div className="flex flex-col gap-1 border-b border-stone-100 dark:border-stone-800 pb-5">
+                                                <h2 className="text-xl font-medium tracking-tight text-stone-900 dark:text-stone-100">Add View</h2>
+                                                <p className="text-[12px] text-stone-400 dark:text-stone-500 font-medium">Equip your workspace with specialized tools.</p>
                                             </div>
 
-                                            {/* Advanced Tools Section */}
-                                            <div>
-                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">Advanced Tools</h3>
-                                                <div className="grid grid-cols-3 gap-x-8 gap-y-6">
-                                                    {VIEW_OPTIONS.filter(opt =>
-                                                        ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring'].includes(opt.id)
-                                                    ).map((option) => (
-                                                        <button
-                                                            key={option.id}
-                                                            onClick={() => {
-                                                                setShowAddViewMenu(false);
-                                                                const viewId = option.id as BoardViewType;
+                                            {/* Sections */}
+                                            <div className="space-y-12">
+                                                {/* Basic Tools */}
+                                                <section>
+                                                    <div className="flex items-center gap-4 mb-6">
+                                                        <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Basic Tools</h3>
+                                                        <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {VIEW_OPTIONS.filter(opt => !['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring'].includes(opt.id)).map((option) => (
+                                                            <button
+                                                                key={option.id}
+                                                                onClick={() => {
+                                                                    setShowAddViewMenu(false);
+                                                                    const viewId = option.id as BoardViewType;
+                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
+                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
+                                                                    } else if (onUpdateBoard && !board.availableViews) {
+                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    }
+                                                                    setActiveView(viewId);
+                                                                }}
+                                                                className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
+                                                            >
+                                                                <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
+                                                                    <option.icon size={16} strokeWidth={1.5} />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
+                                                                    <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </section>
 
-                                                                if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                    onUpdateBoard(board.id, {
-                                                                        availableViews: [...board.availableViews, viewId]
-                                                                    });
-                                                                } else if (onUpdateBoard && !board.availableViews) {
-                                                                    onUpdateBoard(board.id, { availableViews: [viewId] });
-                                                                }
-
-                                                                setActiveView(viewId);
-                                                            }}
-                                                            className="flex gap-3 items-start text-left group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -ml-2 rounded-lg transition-colors"
-                                                        >
-                                                            <div className="shrink-0 mt-0.5 text-indigo-500 group-hover:text-indigo-600 transition-colors">
-                                                                <option.icon size={20} className="stroke-[1.5]" />
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 transition-colors">{option.label}</div>
-                                                                <div className="text-xs text-gray-500 mt-0.5">{option.description}</div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-
-                                                    {/* Visual Placeholders from User's Image - Moved to Advanced or kept separate? Keeping them here as per design niceness, maybe in a "Coming Soon" or just at bottom */}
-                                                </div>
+                                                {/* Advanced Tools */}
+                                                <section>
+                                                    <div className="flex items-center gap-4 mb-6">
+                                                        <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Advanced Tools</h3>
+                                                        <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring'].includes(opt.id)).map((option) => (
+                                                            <button
+                                                                key={option.id}
+                                                                onClick={() => {
+                                                                    setShowAddViewMenu(false);
+                                                                    const viewId = option.id as BoardViewType;
+                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
+                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
+                                                                    } else if (onUpdateBoard && !board.availableViews) {
+                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    }
+                                                                    setActiveView(viewId);
+                                                                }}
+                                                                className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
+                                                            >
+                                                                <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
+                                                                    <option.icon size={16} strokeWidth={1.5} />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
+                                                                    <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </section>
                                             </div>
                                         </div>
                                     </div>
@@ -578,49 +668,71 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
                         {/* Transparent overlay for click-outside handled by global listener, but this ensures z-index stacking is correct */}
                         <div
                             ref={contextMenuRef}
-                            className="absolute bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-2 w-60 pointer-events-auto"
+                            className="absolute bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl shadow-2xl py-2 w-64 pointer-events-auto border border-blue-500/20"
                             style={{ top: contextMenu.y, left: contextMenu.x }}
                         >
-                            <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
+                            <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tab Options</span>
+                            </div>
+                            <div
+                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors"
+                                onClick={handlePinView}
+                            >
                                 <Pin size={16} />
-                                <span className="text-sm">Pin view</span>
+                                <span className="text-[13px] font-medium">
+                                    {(board.pinnedViews || []).includes(contextMenu.viewId) ? 'Unpin view' : 'Pin view'}
+                                </span>
                             </div>
-                            <div className="my-1 border-t border-gray-100 dark:border-gray-800"></div>
-
-                            <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
-                                <Pencil size={16} />
-                                <span className="text-sm">Rename view</span>
-                            </div>
-                            <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
-                                <Copy size={16} />
-                                <span className="text-sm">Duplicate view</span>
-                            </div>
-                            <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
-                                <Share2 size={16} />
-                                <span className="text-sm">Share view</span>
-                            </div>
-                            <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
-                                <Unlock size={16} />
-                                <span className="text-sm">Unlock view</span>
-                            </div>
-
-                            <div className="my-1 border-t border-gray-100 dark:border-gray-800"></div>
-
-                            <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-not-allowed text-gray-400">
-                                <div className="flex items-center gap-3">
-                                    <ArrowUpDown size={16} />
-                                    <span className="text-sm">Reorder (for you only)</span>
-                                </div>
-                            </div>
-
-                            <div className="my-1 border-t border-gray-100 dark:border-gray-800"></div>
+                            <div className="my-1 border-t border-gray-100/50 dark:border-gray-800/50 mx-2"></div>
 
                             <div
-                                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400"
+                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors"
+                                onClick={handleRenameView}
+                            >
+                                <Pencil size={16} />
+                                <span className="text-[13px] font-medium">Rename view</span>
+                            </div>
+                            <div
+                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors"
+                                onClick={handleDuplicateView}
+                            >
+                                <Copy size={16} />
+                                <span className="text-[13px] font-medium">Duplicate view</span>
+                            </div>
+                            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors" onClick={() => { navigator.clipboard.writeText(window.location.href); setContextMenu(null); }}>
+                                <Share2 size={16} />
+                                <span className="text-[13px] font-medium">Share view</span>
+                            </div>
+                            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors" onClick={() => setContextMenu(null)}>
+                                <Unlock size={16} />
+                                <span className="text-[13px] font-medium">Unlock view</span>
+                            </div>
+
+                            <div className="my-1 border-t border-gray-100/50 dark:border-gray-800/50 mx-2"></div>
+
+                            <div className="flex items-center justify-between px-4 py-2.5 gap-2">
+                                <button
+                                    className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-400"
+                                    onClick={() => handleMoveView('left')}
+                                >
+                                    <ArrowLeftToLine size={14} /> Move Left
+                                </button>
+                                <button
+                                    className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-400"
+                                    onClick={() => handleMoveView('right')}
+                                >
+                                    Move Right <ArrowLeftToLine size={14} className="rotate-180" />
+                                </button>
+                            </div>
+
+                            <div className="my-1 border-t border-gray-100/50 dark:border-gray-800/50 mx-2"></div>
+
+                            <div
+                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/20 cursor-pointer text-gray-700 dark:text-gray-200 hover:text-rose-600 dark:hover:text-rose-400 transition-all font-medium"
                                 onClick={handleDeleteView}
                             >
                                 <Trash2 size={16} />
-                                <span className="text-sm">Delete view</span>
+                                <span className="text-[13px]">Delete view</span>
                             </div>
                         </div>
                     </div>

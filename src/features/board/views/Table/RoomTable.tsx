@@ -56,7 +56,13 @@ interface RoomTableProps {
 // --- Helpers ---
 const formatDate = (date: string | null): string => {
     if (!date) return '';
-    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(date));
+    try {
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return date; // Return raw string if invalid instead of crashing
+        return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(d);
+    } catch (e) {
+        return date || '';
+    }
 };
 
 const formatPriorityLabel = (value: string | null): PriorityLevel | null => normalizePriority(value);
@@ -236,7 +242,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         if (externalColumns && externalColumns.length > 0) return externalColumns;
         try {
             const saved = localStorage.getItem(storageKeyColumns);
-            if (saved) return JSON.parse(saved);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.length > 0) return parsed;
+            }
 
             return defaultColumns || [
                 { id: 'select', label: '', type: 'select', width: 48, minWidth: 40, resizable: false },
@@ -558,8 +567,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             onClose={() => setActiveCell(null)}
                         >
                             <SharedDatePicker
-                                value={value}
-                                onChange={(dueDate) => handleUpdateRow(row.id, { [col.id]: dueDate })}
+                                selectedDate={value}
+                                onSelectDate={(dueDate) => handleUpdateRow(row.id, { [col.id]: dueDate.toISOString() })}
+                                onClear={() => handleUpdateRow(row.id, { [col.id]: null })}
                                 onClose={() => setActiveCell(null)}
                             />
                         </PortalPopup>

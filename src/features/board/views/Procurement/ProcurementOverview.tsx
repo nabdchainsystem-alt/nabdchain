@@ -29,6 +29,9 @@ import {
 } from 'lucide-react';
 import { NewRequestModal } from './NewRequestModal';
 import { procurementService } from '../../../../services/procurementService';
+import { ConfirmDialog } from '../../../../components/ui/ConfirmDialog';
+import { RFQSection } from './RFQSection';
+import { NewRFQModal } from './NewRFQModal';
 
 // --- Empty / Initial State Data ---
 
@@ -129,18 +132,45 @@ const CHART_OPTION = {
 // Empty table data as requested
 // ... (We will keep imports, but replace the component logic)
 
-export const ProcurementOverview: React.FC = () => {
+interface ProcurementOverviewProps {
+    tasks?: any[];
+    onUpdateTasks?: (tasks: any[]) => void;
+}
+
+export const ProcurementOverview: React.FC<ProcurementOverviewProps> = ({ tasks: externalTasks, onUpdateTasks }) => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [isRFQModalOpen, setIsRFQModalOpen] = useState(false);
+    const [selectedRequestForRFQ, setSelectedRequestForRFQ] = useState<any>(null);
+    const [rfqs, setRfqs] = useState<any[]>([]);
+    const [loadingRfqs, setLoadingRfqs] = useState(false);
 
     // State for Table Data
     const [tableData, setTableData] = useState<any[]>([]);
 
-    // Fetch data on mount
+    // Sync external tasks to internal table data
     useEffect(() => {
-        loadData();
-    }, []);
+        if (externalTasks) {
+            setTableData([...externalTasks].reverse());
+        } else {
+            loadData();
+        }
+        loadRfqs();
+    }, [externalTasks]);
+
+    const loadRfqs = async () => {
+        setLoadingRfqs(true);
+        try {
+            const data = await procurementService.getAllRfqs();
+            setRfqs(data.reverse()); // Show most recent first
+        } catch (error) {
+            console.error("Failed to load RFQs", error);
+        } finally {
+            setLoadingRfqs(false);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -152,40 +182,178 @@ export const ProcurementOverview: React.FC = () => {
     };
 
     const handleCreateRequest = async (data: any) => {
-        // Map modal data to table structure
-        const newRequest = {
-            id: data.id,
+        // Map modal data to board task structure
+        const newTask = {
+            id: data.id || Date.now().toString(),
+            name: data.id, // Using ID as name if name is missing, or just name
             date: data.date,
             department: data.department,
             warehouse: data.warehouse,
             relatedTo: data.relatedTo,
-            status: "Pending", // Default workflow status
-            priority: data.status, // Mapped from modal "Status" (Priority)
-            isUrgent: data.status === 'Urgent'
+            status: "Pending",
+            priority: data.status,
+            isUrgent: data.status === 'Urgent',
+            items: data.items
         };
 
+        const updatedRows = [newTask, ...tableData];
+        // Note: tableData is reversed tasks, so [newTask, ...tableData] adds to the top of the UI list
+
+        if (onUpdateTasks) {
+            // Need to reverse back if sending to parent which expects original order, 
+            // or just append to externalTasks if it exists.
+            onUpdateTasks([newTask, ...(externalTasks || [])]);
+        } else {
+            setTableData(updatedRows);
+            try {
+                await procurementService.createRequest(newTask);
+            } catch (error) {
+                console.error("Local save failed", error);
+            }
+        }
+        setIsNewRequestOpen(false);
+    };
+    const handleDeleteRequest = async (id: string) => {
+        setDeleteConfirmId(id);
+    };
+
+    const executeDelete = async () => {
+        if (!deleteConfirmId) return;
+        const id = deleteConfirmId;
+
+        if (onUpdateTasks) {
+            // Update parent state (BoardView -> ProcurementPage)
+            const updatedRows = (externalTasks || []).filter(r => r.id !== id);
+            onUpdateTasks(updatedRows);
+        } else {
+            // Update local state and API
+            setTableData(prev => prev.filter(r => r.id !== id));
+            try {
+                await procurementService.deleteRequest(id);
+            } catch (error) {
+                console.error("Delete failed", error);
+            }
+        }
+        setDeleteConfirmId(null);
+    };
+
+    const handleOpenRFQModal = (request: any) => {
+        setSelectedRequestForRFQ(request);
+        setIsRFQModalOpen(true);
+    };
+
+    const handleCreateRFQ = async (rfq: any) => {
+        setIsRFQModalOpen(false); // Close immediately for reactivity
+
+        // Optimistic update
+        const optimisticId = `RFQ-OPT-${Date.now()}`;
+        const optimisticRfq = { ...rfq, id: optimisticId, isOptimistic: true };
+        setRfqs(prev => [optimisticRfq, ...prev]);
+
         try {
-            await procurementService.createRequest(newRequest);
-            await loadData(); // Reload to ensure sync
-            setIsNewRequestOpen(false); // Close modal after submit
+            const created = await procurementService.createRfq(rfq);
+            // Replace optimistic with real data
+            setRfqs(prev => prev.map(r => r.id === optimisticId ? created : r));
         } catch (error) {
-            console.error("Failed to create request", error);
-            alert("Failed to save request. Make sure the server is running (npm run server)");
+            console.error("Failed to create RFQ on server", error);
+            // Fallback: keep optimistic but mark as errored if we had that state, 
+            // for now just keep it so the user sees something happened.
         }
     };
 
+    // Calculate Dynamic KPIs
+    const kpis = React.useMemo(() => {
+        const total = tableData.length;
+        const open = tableData.filter(r => r.status && !['Done', 'Closed', 'Approved'].includes(r.status)).length;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const today = tableData.filter(r => r.date === todayStr || (r.createdAt && r.createdAt.startsWith(todayStr))).length;
+
+        const urgent = tableData.filter(r => r.priority === 'Urgent' || r.isUrgent).length;
+
+        return [
+            {
+                title: "Total Requests",
+                value: total.toString(),
+                trend: "+12%", // Mock trend for now
+                trendUp: true,
+                icon: Files,
+                description: "Year to Date"
+            },
+            {
+                title: "Open Requests",
+                value: open.toString(),
+                trend: "-5%",
+                trendUp: false,
+                icon: Inbox,
+                description: "Pending Action"
+            },
+            {
+                title: "Today's Requests",
+                value: today.toString(),
+                trend: "+8%",
+                trendUp: true,
+                icon: CalendarClock,
+                description: "New Incoming"
+            },
+            {
+                title: "Urgent Requests",
+                value: urgent.toString(),
+                trend: "+2%",
+                trendUp: true,
+                icon: Zap,
+                isUrgent: true,
+                description: "Needs Attention"
+            }
+        ];
+    }, [tableData]);
+
+    // Calculate Dynamic Chart Options
+    const chartOption = React.useMemo(() => {
+        const deptCounts: Record<string, number> = {};
+        tableData.forEach(r => {
+            const dept = r.department || 'Unassigned';
+            deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+        });
+
+        const depts = Object.keys(deptCounts);
+        const counts = Object.values(deptCounts);
+
+        return {
+            ...CHART_OPTION,
+            xAxis: [
+                {
+                    ...CHART_OPTION.xAxis[0],
+                    data: depts.length > 0 ? depts : ['No Data']
+                }
+            ],
+            series: [
+                {
+                    ...CHART_OPTION.series[0],
+                    data: counts.length > 0 ? counts : [0]
+                }
+            ]
+        };
+    }, [tableData]);
+
     return (
-        <div className="w-full h-full p-5 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f1115] space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="w-full h-full p-5 pb-20 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f1115] space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
             <NewRequestModal
                 isOpen={isNewRequestOpen}
                 onClose={() => setIsNewRequestOpen(false)}
                 onSubmit={handleCreateRequest}
+                existingTasks={tableData}
             />
+
+            <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Procurement Requests</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your procurement requisitions</p>
+            </div>
 
             {/* 1. KPIs Section */}
             <div className="grid grid-cols-4 gap-4">
-                {KPI_DATA.map((kpi, index) => (
+                {kpis.map((kpi, index) => (
                     <div
                         key={index}
                         className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -227,7 +395,7 @@ export const ProcurementOverview: React.FC = () => {
 
                 <div className="w-full -ml-2">
                     <ReactECharts
-                        option={CHART_OPTION}
+                        option={chartOption}
                         style={{ height: '300px', width: '100%' }}
                         theme={null}
                     />
@@ -363,10 +531,18 @@ export const ProcurementOverview: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <div className="flex items-center justify-center gap-1">
-                                                <button className="p-1.5 hover:bg-blue-50 text-gray-400 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg transition-colors" title="RFQ">
+                                                <button
+                                                    onClick={() => handleOpenRFQModal(row)}
+                                                    className="p-1.5 hover:bg-blue-50 text-gray-400 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg transition-colors"
+                                                    title="RFQ"
+                                                >
                                                     <FileText size={14} />
                                                 </button>
-                                                <button className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-lg transition-colors" title="Delete">
+                                                <button
+                                                    onClick={() => handleDeleteRequest(row.id)}
+                                                    className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-lg transition-colors"
+                                                    title="Delete"
+                                                >
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
@@ -411,6 +587,26 @@ export const ProcurementOverview: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={!!deleteConfirmId}
+                onClose={() => setDeleteConfirmId(null)}
+                onConfirm={executeDelete}
+                title="Delete Request"
+                message="Are you sure you want to delete this procurement request? This action cannot be undone."
+                confirmLabel="Delete Request"
+                variant="danger"
+            />
+
+            <NewRFQModal
+                isOpen={isRFQModalOpen}
+                onClose={() => setIsRFQModalOpen(false)}
+                onSubmit={handleCreateRFQ}
+                requestData={selectedRequestForRFQ}
+            />
+
+            <RFQSection rfqs={rfqs} />
         </div>
     );
 };

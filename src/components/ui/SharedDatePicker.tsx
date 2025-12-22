@@ -198,12 +198,13 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({ onSelectDate
                         And the "December 2025" header.
                     */}
                     <div className="flex gap-2 w-full mb-4">
-                        <div className="flex-1 bg-stone-100 dark:bg-stone-800 rounded px-3 py-2 text-xs text-stone-500 flex items-center gap-2">
-                            <span className="opacity-50">📅</span> Start date
-                        </div>
-                        <div className="flex-1 bg-white dark:bg-stone-800 rounded border-2 border-primary/20 px-3 py-2 text-xs text-stone-500 flex items-center gap-2 relative">
-                            <div className="absolute inset-0 border-2 border-indigo-500 rounded pointer-events-none opacity-20"></div>
-                            <span className="opacity-50">📅</span> {selectedDate ? new Date(selectedDate).toLocaleDateString() : 'Due date'}
+                        <div className="flex-1 bg-white dark:bg-stone-800 rounded border-2 border-indigo-500/20 px-3 py-2 text-xs text-stone-500 flex items-center justify-between relative group">
+                            <div className="flex items-center gap-2">
+                                <span className="opacity-50">📅</span>
+                                <span className="font-semibold text-stone-700 dark:text-stone-200">
+                                    {selectedDate ? new Date(selectedDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date'}
+                                </span>
+                            </div>
                         </div>
                         <button
                             type="button"
@@ -259,7 +260,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({ onSelectDate
                                 }}
                                 className={`
                                     w-8 h-8 rounded-full text-xs flex items-center justify-center transition-colors mx-auto
-                                    ${isSelected ? 'bg-indigo-600 text-white' : isToday ? 'bg-red-500 text-white' : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300'}
+                                    ${isSelected ? 'bg-indigo-600 text-white' : isToday ? 'border-2 border-indigo-500 text-indigo-600 font-bold' : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300'}
                                 `}
                             >
                                 {day}

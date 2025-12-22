@@ -79,7 +79,7 @@ export const GTDOrganizeView: React.FC<GTDOrganizeViewProps> = ({
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center pb-12">
             <div className="text-center mb-10">
-                <h2 className="text-5xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Organize</h2>
+                <h2 className="text-2xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Organize</h2>
                 <p className="text-gray-400 font-serif italic tracking-widest text-sm uppercase">Clarify outcomes & next actions</p>
             </div>
 

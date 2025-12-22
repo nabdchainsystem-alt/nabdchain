@@ -8,7 +8,54 @@
       "relatedTo": "",
       "status": "Pending",
       "priority": "Low",
-      "isUrgent": false
+      "isUrgent": false,
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "ITEM-001",
+          "description": "Spare Parts",
+          "quantity": 10,
+          "dueDate": "2025-12-25"
+        }
+      ]
+    },
+    {
+      "id": "REQ-2025000001",
+      "date": "2025-12-21",
+      "department": "Warehouse",
+      "warehouse": "26",
+      "relatedTo": "Krones",
+      "status": "Pending",
+      "priority": "Urgent",
+      "isUrgent": true,
+      "items": [
+        {
+          "id": "2",
+          "itemCode": "ITEM-002",
+          "description": "Conveyor Belt",
+          "quantity": 5,
+          "dueDate": "2025-12-30"
+        }
+      ]
+    },
+    {
+      "id": "REQ-2025000001",
+      "date": "2025-12-21",
+      "department": "IT",
+      "warehouse": "26",
+      "relatedTo": "",
+      "status": "Pending",
+      "priority": "Low",
+      "isUrgent": false,
+      "items": [
+        {
+          "id": "3",
+          "itemCode": "ITEM-003",
+          "description": "Laptops",
+          "quantity": 2,
+          "dueDate": "2025-12-28"
+        }
+      ]
     }
   ],
   "boards": [],
@@ -19,5 +66,24 @@
   "emails": [],
   "gtdCaptures": [],
   "cornellNotes": [],
-  "storage": []
+  "storage": [],
+  "rfqs": [
+    {
+      "id": "RFQ-887407",
+      "requestId": "REQ-2025000001",
+      "date": "2025-12-22",
+      "department": "Warehouse",
+      "warehouse": "24 - Rafaela",
+      "supplier": "SMT",
+      "value": 11500,
+      "dueDate": "2025-12-29",
+      "status": "Open",
+      "createdDate": "2025-12-22",
+      "unitPrice": 1,
+      "quantity": 10000,
+      "vatAmount": 1500,
+      "totalExVat": 10000,
+      "relatedTo": "Krones"
+    }
+  ]
 }

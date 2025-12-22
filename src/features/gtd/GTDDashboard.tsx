@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Info, ArrowLeft } from 'lucide-react';
 import { Board } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -11,10 +11,11 @@ import { GTDEngageView } from './components/GTDEngageView';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface DashboardProps {
+  boardId: string;
   onBoardCreated: (board: Board) => void;
 }
 
-export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
+export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated }) => {
   interface InboxItem {
     id: string;
     title: string;
@@ -22,21 +23,50 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
     scheduledAt?: number;
   }
 
-  const [activePhase, setActivePhase] = useState<GTDPhase>('capture');
+  const storageKey = `gtd-data-v1-${boardId}`;
+
+  const loadSavedData = () => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error('Failed to load GTD data', e);
+      return null;
+    }
+  };
+
+  const savedData = loadSavedData();
+
+  const [activePhase, setActivePhase] = useState<GTDPhase>(savedData?.activePhase || 'capture');
   const [inputText, setInputText] = useState('');
-  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-
-
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>(savedData?.inboxItems || []);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(savedData?.selectedItemId || null);
 
   // Organize Lists State
-  const [projects, setProjects] = useState<InboxItem[]>([]);
-  const [nextActions, setNextActions] = useState<InboxItem[]>([]);
-  const [waitingFor, setWaitingFor] = useState<InboxItem[]>([]);
-  const [scheduled, setScheduled] = useState<InboxItem[]>([]);
-  const [someday, setSomeday] = useState<InboxItem[]>([]);
-  const [reference, setReference] = useState<InboxItem[]>([]);
-  const [completed, setCompleted] = useState<InboxItem[]>([]);
+  const [projects, setProjects] = useState<InboxItem[]>(savedData?.projects || []);
+  const [nextActions, setNextActions] = useState<InboxItem[]>(savedData?.nextActions || []);
+  const [waitingFor, setWaitingFor] = useState<InboxItem[]>(savedData?.waitingFor || []);
+  const [scheduled, setScheduled] = useState<InboxItem[]>(savedData?.scheduled || []);
+  const [someday, setSomeday] = useState<InboxItem[]>(savedData?.someday || []);
+  const [reference, setReference] = useState<InboxItem[]>(savedData?.reference || []);
+  const [completed, setCompleted] = useState<InboxItem[]>(savedData?.completed || []);
+
+  // Persist State Changes
+  useEffect(() => {
+    const dataToSave = {
+      inboxItems,
+      projects,
+      nextActions,
+      waitingFor,
+      scheduled,
+      someday,
+      reference,
+      completed,
+      activePhase,
+      selectedItemId
+    };
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+  }, [inboxItems, projects, nextActions, waitingFor, scheduled, someday, reference, completed, activePhase, selectedItemId, storageKey]);
 
   const { t } = useAppContext();
 
@@ -181,7 +211,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
                 exit={{ opacity: 0, y: -20 }}
                 className="w-full max-w-5xl flex flex-col items-center"
               >
-                <h2 className="text-4xl font-black tracking-widest uppercase mb-8">Capture</h2>
+                <h2 className="text-2xl font-black tracking-widest uppercase mb-6">Capture</h2>
 
                 {/* Minimalist Input */}
                 <form onSubmit={handleCapture} className="relative w-full max-w-2xl mb-16 group">
@@ -197,7 +227,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
                       }
                     }}
                     placeholder="Write it down..."
-                    className="w-full bg-transparent border-b-2 border-gray-200 dark:border-white/10 py-3 text-center text-xl font-serif italic placeholder-gray-200 dark:placeholder-gray-700 focus:outline-none focus:border-black dark:focus:border-white transition-colors duration-300"
+                    className="w-full bg-transparent border-b-2 border-gray-200 dark:border-white/10 py-3 text-center text-lg font-serif italic placeholder-gray-200 dark:placeholder-gray-700 focus:outline-none focus:border-black dark:focus:border-white transition-colors duration-300"
                     autoFocus
                   />
                   <button
@@ -216,7 +246,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
                         {yesterdayItems.map(item => (
                           <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80">
-                            <div className="text-lg font-serif italic text-gray-800 dark:text-gray-200">{item.title}</div>
+                            <div className="text-base font-serif italic text-gray-800 dark:text-gray-200">{item.title}</div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wider">{formatTime(item.createdAt)}</div>
                           </div>
                         ))}
@@ -230,7 +260,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
                       <div className="w-full space-y-6 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-6 py-2">
                         {todayItems.map(item => (
                           <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80 transition-opacity">
-                            <div className="text-xl font-serif italic text-[#1A1A1A] dark:text-white mb-1">{item.title}</div>
+                            <div className="text-base font-serif italic text-[#1A1A1A] dark:text-white mb-0.5">{item.title}</div>
                             <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">{formatTime(item.createdAt)}</div>
                           </div>
                         ))}
@@ -244,7 +274,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ onBoardCreated }) => {
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
                         {pendingItems.map(item => (
                           <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80">
-                            <div className="text-lg font-serif italic text-gray-500">{item.title}</div>
+                            <div className="text-base font-serif italic text-gray-500">{item.title}</div>
                             <div className="text-[10px] text-gray-600 uppercase tracking-wider">{new Date(item.createdAt).toLocaleDateString()}</div>
                           </div>
                         ))}

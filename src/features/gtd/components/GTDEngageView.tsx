@@ -24,7 +24,7 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
 
         <div className="w-full max-w-3xl mx-auto flex flex-col items-center pb-12">
             <div className="text-center mb-8">
-                <h2 className="text-5xl font-black tracking-widest uppercase mb-8 text-[#1A1A1A] dark:text-white">Engage</h2>
+                <h2 className="text-2xl font-black tracking-widest uppercase mb-6 text-[#1A1A1A] dark:text-white">Engage</h2>
 
                 {/* Filter Tabs */}
                 <div className="inline-flex items-center gap-1 p-1 bg-[#1A1A1A] dark:bg-white/10 rounded-full">
@@ -68,7 +68,7 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
                                                     onClick={() => onComplete(item.id)}
                                                     className="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all flex-shrink-0"
                                                 />
-                                                <span className="text-base font-serif italic text-gray-800 dark:text-gray-200 truncate">{item.title}</span>
+                                                <span className="text-sm font-serif italic text-gray-800 dark:text-gray-200 truncate">{item.title}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest hidden sm:block">Next Action</span>
