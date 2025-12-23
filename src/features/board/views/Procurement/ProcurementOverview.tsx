@@ -26,7 +26,9 @@ import {
     Filter,
     ArrowUpDown,
     FileText,
-    CheckCircle
+    CheckCircle,
+    AlertTriangle,
+    Bell
 } from 'lucide-react';
 import { NewRequestModal } from './NewRequestModal';
 import { procurementService } from '../../../../services/procurementService';
@@ -167,14 +169,124 @@ const CHART_OPTION = {
     ]
 };
 
+type CalendarViewMode = 'daily' | '5days' | 'weekly' | 'monthly' | 'yearly';
+
 // Empty table data as requested
 // ... (We will keep imports, but replace the component logic)
+
+const RequestDetailsModal: React.FC<{ request: any | null; onClose: () => void }> = ({ request, onClose }) => {
+    if (!request) return null;
+    const items = Array.isArray(request.items) ? request.items : [];
+
+    const meta = [
+        { label: 'Status', value: request.status || 'Pending' },
+        { label: 'Approval', value: request.approvalStatus || 'Pending' },
+        { label: 'Priority', value: request.priority || 'Normal' },
+        { label: 'Department', value: request.department || '-' },
+        { label: 'Warehouse', value: request.warehouse || '-' },
+        { label: 'Date', value: request.date || '-' },
+        { label: 'Related To', value: request.relatedTo || '-' },
+        { label: 'RFQ', value: request.rfqSent ? 'Sent' : 'Not sent' }
+    ];
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white dark:bg-[#1a1d24] w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                    <div>
+                        <p className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wide">Request</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">#{request.id}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {request.relatedTo || 'No reference provided'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                        aria-label="Close request details"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="px-6 py-4 space-y-4 overflow-y-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {meta.map((entry) => (
+                            <div
+                                key={entry.label}
+                                className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2"
+                            >
+                                <p className="text-[11px] uppercase font-semibold text-gray-500 dark:text-gray-400 tracking-wide">
+                                    {entry.label}
+                                </p>
+                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
+                                    {entry.value}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Items ({items.length})</h4>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Each item in this request at a glance
+                            </span>
+                        </div>
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 dark:bg-gray-800/60 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                    <tr>
+                                        <th className="px-4 py-2">Item Code</th>
+                                        <th className="px-4 py-2">Description</th>
+                                        <th className="px-4 py-2">Quantity</th>
+                                        <th className="px-4 py-2">Due Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                    {items.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={4}
+                                                className="px-4 py-6 text-center text-gray-500 dark:text-gray-400 text-sm"
+                                            >
+                                                No items captured for this request.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        items.map((item: any) => (
+                                            <tr key={item.id || item.itemCode}>
+                                                <td className="px-4 py-2 font-semibold text-gray-900 dark:text-gray-100">{item.itemCode || '-'}</td>
+                                                <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.description || '-'}</td>
+                                                <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.quantity ?? '-'}</td>
+                                                <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                                    {item.dueDate || '-'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export const ProcurementOverview: React.FC = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [selectedRequestDetails, setSelectedRequestDetails] = useState<any | null>(null);
     const [isRFQModalOpen, setIsRFQModalOpen] = useState(false);
     const [selectedRequestForRFQ, setSelectedRequestForRFQ] = useState<any>(null);
     const [rfqs, setRfqs] = useState<any[]>([]);
@@ -187,6 +299,11 @@ export const ProcurementOverview: React.FC = () => {
     const [ordersStatusFilter, setOrdersStatusFilter] = useState('All');
     const [ordersPriorityFilter, setOrdersPriorityFilter] = useState('All');
     const [ordersFilterOpen, setOrdersFilterOpen] = useState(false);
+    const [kpiMode, setKpiMode] = useState<'total' | 'urgent' | 'calendar'>('total');
+    const [urgentRange, setUrgentRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+    const [calendarDate, setCalendarDate] = useState(new Date());
+    const [calendarView, setCalendarView] = useState<CalendarViewMode>('monthly');
+    const isScheduleView = calendarView === '5days' || calendarView === 'weekly';
 
     const [requestSearch, setRequestSearch] = useState('');
     const [requestStatusFilter, setRequestStatusFilter] = useState('All');
@@ -307,11 +424,16 @@ export const ProcurementOverview: React.FC = () => {
         setDeleteConfirmId(id);
     };
 
+    const handleViewRequestDetails = (request: any) => {
+        setSelectedRequestDetails(request);
+    };
+
     const executeDelete = async () => {
         if (!deleteConfirmId) return;
         const id = deleteConfirmId;
 
         setTableData(prev => prev.map(r => r.id === id ? { ...r, isDeleted: true } : r));
+        setSelectedRequestDetails(prev => prev?.id === id ? null : prev);
         try {
             await procurementService.updateRequest(id, { isDeleted: true });
         } catch (error) {
@@ -426,14 +548,20 @@ export const ProcurementOverview: React.FC = () => {
     };
 
     // Calculate Dynamic KPIs
-    const kpis = React.useMemo(() => {
-        const total = tableData.length;
-        const open = tableData.filter(r => r.status && !['Done', 'Closed', 'Approved'].includes(r.status)).length;
+    const totalKpis = React.useMemo(() => {
+        const activeRequests = tableData.filter(r => !r.isDeleted);
+        const total = activeRequests.length;
+        const open = activeRequests.filter(r => {
+            const status = (r.status || 'Pending').trim();
+            const isClosed = ['Done', 'Closed', 'Approved', 'Cancelled', 'Canceled'].includes(status);
+            const sentToRfq = !!r.rfqSent;
+            return !isClosed && !sentToRfq;
+        }).length;
 
         const todayStr = new Date().toISOString().split('T')[0];
-        const today = tableData.filter(r => r.date === todayStr || (r.createdAt && r.createdAt.startsWith(todayStr))).length;
+        const today = activeRequests.filter(r => r.date === todayStr || (r.createdAt && r.createdAt.startsWith(todayStr))).length;
 
-        const urgent = tableData.filter(r => r.priority === 'Urgent' || r.isUrgent).length;
+        const urgent = activeRequests.filter(r => r.priority === 'Urgent' || r.isUrgent).length;
 
         return [
             {
@@ -472,6 +600,91 @@ export const ProcurementOverview: React.FC = () => {
         ];
     }, [tableData]);
 
+    const urgentKpis = React.useMemo(() => {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const msPerDay = 1000 * 60 * 60 * 24;
+
+        const parseDate = (value?: string) => {
+            if (!value) return null;
+            const normalized = value.split('T')[0];
+            const d = new Date(normalized);
+            return isNaN(d.getTime()) ? null : d;
+        };
+
+        const diffFromToday = (value?: string) => {
+            const d = parseDate(value);
+            if (!d) return null;
+            const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+            const utcDate = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+            return Math.floor((utcToday - utcDate) / msPerDay);
+        };
+
+        const urgentRequests = tableData.filter(r => r.priority === 'Urgent' || r.isUrgent);
+        const createdDiff = (r: any) => diffFromToday(r.date || r.createdAt);
+
+        const rangeCounts = {
+            daily: urgentRequests.filter(r => createdDiff(r) === 0).length,
+            weekly: urgentRequests.filter(r => {
+                const diff = createdDiff(r);
+                return diff !== null && diff >= 0 && diff <= 6;
+            }).length,
+            monthly: urgentRequests.filter(r => {
+                const diff = createdDiff(r);
+                return diff !== null && diff >= 0 && diff <= 29;
+            }).length
+        };
+
+        const dueToday = urgentRequests.filter(r => (r.dueDate && r.dueDate.split('T')[0] === todayStr)).length;
+        const dueOver3Days = urgentRequests.filter(r => {
+            const diff = diffFromToday(r.dueDate);
+            return diff !== null && diff > 3;
+        }).length;
+
+        const followUpToday = urgentRequests.filter(r => {
+            const needsApproval = !['Approved', 'Rejected'].includes(r.approvalStatus);
+            const pendingStatus = ['Pending', 'On Hold'].includes(r.status);
+            const isToday = createdDiff(r) === 0;
+            return (needsApproval || pendingStatus) && isToday;
+        }).length;
+
+        return [
+            {
+                title: "Total Urgent",
+                value: rangeCounts[urgentRange].toString(),
+                trend: "+0%",
+                trendUp: true,
+                icon: AlertTriangle,
+                description: `${urgentRange.charAt(0).toUpperCase()}${urgentRange.slice(1)} urgent requests`,
+                rangeSelector: true
+            },
+            {
+                title: "New Urgent Today",
+                value: rangeCounts.daily.toString(),
+                trend: "+0%",
+                trendUp: true,
+                icon: Zap,
+                description: "Logged today"
+            },
+            {
+                title: "Due Today",
+                value: dueToday.toString(),
+                trend: dueOver3Days > 0 ? `${dueOver3Days} past 3d` : "On track",
+                trendUp: dueOver3Days === 0,
+                icon: CalendarClock,
+                description: "Mark > 3 days overdue"
+            },
+            {
+                title: "Follow Up Today",
+                value: followUpToday.toString(),
+                trend: "+0%",
+                trendUp: true,
+                icon: Bell,
+                description: "Approvals & holds"
+            }
+        ];
+    }, [tableData, urgentRange]);
+
     // Calculate Dynamic Chart Options
     const chartOption = React.useMemo(() => {
         const deptCounts: Record<string, number> = {};
@@ -499,6 +712,217 @@ export const ProcurementOverview: React.FC = () => {
             ]
         };
     }, [tableData]);
+
+    const urgentChartOption = React.useMemo(() => {
+        const deptCounts: Record<string, number> = {};
+        tableData
+            .filter(r => r.priority === 'Urgent' || r.isUrgent)
+            .forEach(r => {
+                const dept = r.department || 'Unassigned';
+                deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+            });
+
+        const depts = Object.keys(deptCounts);
+        const counts = Object.values(deptCounts);
+
+        return {
+            ...CHART_OPTION,
+            xAxis: [
+                {
+                    ...CHART_OPTION.xAxis[0],
+                    data: depts.length > 0 ? depts : ['No Urgent Data']
+                }
+            ],
+            series: [
+                {
+                    ...CHART_OPTION.series[0],
+                    data: counts.length > 0 ? counts : [0],
+                    itemStyle: {
+                        ...CHART_OPTION.series[0].itemStyle,
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: '#f43f5e' },
+                                { offset: 1, color: '#e11d48' }
+                            ]
+                        }
+                    }
+                }
+            ]
+        };
+    }, [tableData]);
+
+    const activeKpis = kpiMode === 'total' ? totalKpis : kpiMode === 'urgent' ? urgentKpis : [];
+    const activeChartOption = kpiMode === 'total' ? chartOption : urgentChartOption;
+    const requestCountsByDate = React.useMemo(() => {
+        const counts: Record<string, { total: number; urgent: number }> = {};
+        tableData.forEach(r => {
+            const key = (r.date || r.createdAt || '').split('T')[0];
+            if (!key) return;
+            const isUrgent = r.priority === 'Urgent' || r.isUrgent;
+            if (!counts[key]) counts[key] = { total: 0, urgent: 0 };
+            counts[key].total += 1;
+            if (isUrgent) counts[key].urgent += 1;
+        });
+        return counts;
+    }, [tableData]);
+
+    const requestsByDate = React.useMemo(() => {
+        const map: Record<string, any[]> = {};
+        tableData.forEach(r => {
+            const key = (r.date || r.createdAt || '').split('T')[0];
+            if (!key) return;
+            if (!map[key]) map[key] = [];
+            map[key].push(r);
+        });
+        return map;
+    }, [tableData]);
+
+    const requestCountsByMonth = React.useMemo(() => {
+        const counts: Record<string, { total: number; urgent: number }> = {};
+        tableData.forEach(r => {
+            const key = (r.date || r.createdAt || '').split('T')[0];
+            if (!key) return;
+            const [y, m] = key.split('-');
+            if (!y || !m) return;
+            const monthKey = `${y}-${m}`;
+            const isUrgent = r.priority === 'Urgent' || r.isUrgent;
+            if (!counts[monthKey]) counts[monthKey] = { total: 0, urgent: 0 };
+            counts[monthKey].total += 1;
+            if (isUrgent) counts[monthKey].urgent += 1;
+        });
+        return counts;
+    }, [tableData]);
+
+    const startOfWeek = (date: Date) => {
+        const day = (date.getDay() + 6) % 7; // make Monday index 0
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate() - day);
+    };
+
+    const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+
+    const calendarData = React.useMemo(() => {
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        let cells: Array<Date | null> = [];
+        let columns = 7;
+        let headerLabels: string[] = [];
+        let heading = '';
+
+        if (calendarView === 'daily') {
+            columns = 1;
+            cells = [calendarDate];
+            headerLabels = [weekdayLabels[(calendarDate.getDay() + 6) % 7]];
+            heading = calendarDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        } else if (calendarView === '5days') {
+            const start = startOfWeek(calendarDate);
+            columns = 5;
+            cells = Array.from({ length: 5 }, (_, i) => addDays(start, i));
+            headerLabels = weekdayLabels.slice(0, 5);
+            const end = addDays(start, 4);
+            heading = `5-Day View (${start.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('default', { month: 'short', day: 'numeric' })})`;
+        } else if (calendarView === 'weekly') {
+            const start = startOfWeek(calendarDate);
+            columns = 7;
+            cells = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+            headerLabels = weekdayLabels;
+            const end = addDays(start, 6);
+            heading = `Week of ${start.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        } else if (calendarView === 'yearly') {
+            columns = 4;
+            cells = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
+            headerLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
+            heading = `Year ${year}`;
+        } else {
+            // monthly (default)
+            const firstDay = new Date(year, month, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7; // Monday start
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            cells = Array(startOffset).fill(null);
+            for (let d = 1; d <= daysInMonth; d++) {
+                cells.push(new Date(year, month, d));
+            }
+            columns = 7;
+            headerLabels = weekdayLabels;
+            heading = calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
+
+        const rows = Math.max(1, Math.ceil(cells.length / columns));
+        while (cells.length < rows * columns) {
+            cells.push(null);
+        }
+
+        return { cells, columns, rows, headerLabels, heading };
+    }, [calendarDate, calendarView]);
+
+    const calendarViewOptions: { value: CalendarViewMode; label: string }[] = [
+        { value: 'daily', label: 'Daily' },
+        { value: '5days', label: '5 Days' },
+        { value: 'weekly', label: 'Weekly' },
+        { value: 'monthly', label: 'Monthly' },
+        { value: 'yearly', label: 'Yearly' }
+    ];
+
+    const todayKey = React.useMemo(() => new Date().toISOString().split('T')[0], []);
+    const focusedDateKey = React.useMemo(() => calendarDate.toISOString().split('T')[0], [calendarDate]);
+
+    const workWeekDays = React.useMemo(() => {
+        const start = startOfWeek(calendarDate);
+        return Array.from({ length: 5 }, (_, i) => addDays(start, i));
+    }, [calendarDate]);
+
+    const fullWeekDays = React.useMemo(() => {
+        const start = startOfWeek(calendarDate);
+        return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    }, [calendarDate]);
+
+    const scheduleTimeSlots = React.useMemo(() => ['All day', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm', '11pm'], []);
+
+    const focusedDailyStats = React.useMemo(() => {
+        const list = requestsByDate[focusedDateKey] || [];
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const parseDate = (value?: string) => {
+            if (!value) return null;
+            const normalized = value.split('T')[0];
+            const d = new Date(normalized);
+            return isNaN(d.getTime()) ? null : d;
+        };
+        const diffInDays = (target?: string) => {
+            const d = parseDate(target);
+            if (!d) return null;
+            const base = parseDate(focusedDateKey);
+            if (!base) return null;
+            const utcBase = Date.UTC(base.getFullYear(), base.getMonth(), base.getDate());
+            const utcTarget = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+            return Math.floor((utcBase - utcTarget) / msPerDay);
+        };
+
+        const urgentList = list.filter(r => r.priority === 'Urgent' || r.isUrgent);
+        const dueToday = urgentList.filter(r => (r.dueDate && r.dueDate.split('T')[0] === focusedDateKey)).length;
+        const overdue3d = urgentList.filter(r => {
+            const diff = diffInDays(r.dueDate);
+            return diff !== null && diff > 3;
+        }).length;
+        const followUp = urgentList.filter(r => {
+            const needsApproval = !['Approved', 'Rejected'].includes(r.approvalStatus);
+            const pendingStatus = ['Pending', 'On Hold'].includes(r.status);
+            return needsApproval || pendingStatus;
+        }).length;
+
+        return {
+            list,
+            urgentList,
+            total: list.length,
+            urgentCount: urgentList.length,
+            dueToday,
+            overdue3d,
+            followUp
+        };
+    }, [focusedDateKey, requestsByDate]);
 
     const rfqRequestIds = React.useMemo(() => new Set(rfqs.map(r => r.requestId)), [rfqs]);
 
@@ -624,61 +1048,384 @@ export const ProcurementOverview: React.FC = () => {
                 existingTasks={tableData}
             />
 
-            <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Procurement Requests</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your procurement requisitions</p>
-            </div>
-
-            {/* 1. KPIs Section */}
-            <div className="grid grid-cols-4 gap-4">
-                {kpis.map((kpi, index) => (
-                    <div
-                        key={index}
-                        className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
-                    >
-                        <div className="flex justify-between items-start mb-3">
-                            <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                                <kpi.icon className="text-gray-500 dark:text-gray-400" size={18} />
-                            </div>
-                            <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${kpi.trendUp
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
-                                }`}>
-                                {kpi.trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                {kpi.trend}
-                            </div>
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">{kpi.value}</h3>
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{kpi.title}</p>
-                                <span className="text-[10px] text-gray-400 dark:text-gray-500">{kpi.description}</span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* 2. Chart Section */}
-            <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Department Request Volume</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Breakdown of procurement requests across departments</p>
-                    </div>
-                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-400 transition-colors">
-                        <MoreHorizontal size={16} />
-                    </button>
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Procurement Requests</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your procurement requisitions</p>
                 </div>
-
-                <div className="w-full -ml-2">
-                    <ReactECharts
-                        option={chartOption}
-                        style={{ height: '300px', width: '100%' }}
-                        theme={null}
-                    />
+                <div className="flex items-center gap-2">
+                    <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-full p-1 shadow-sm">
+                        <button
+                            onClick={() => setKpiMode('total')}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${kpiMode === 'total'
+                                ? 'bg-blue-600 text-white shadow'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            Total
+                        </button>
+                        <button
+                            onClick={() => setKpiMode('urgent')}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${kpiMode === 'urgent'
+                                ? 'bg-rose-500 text-white shadow'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            Urgent
+                        </button>
+                        <button
+                            onClick={() => setKpiMode('calendar')}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${kpiMode === 'calendar'
+                                ? 'bg-emerald-500 text-white shadow'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            Calendar
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {kpiMode === 'calendar' ? (
+                <div className="grid grid-cols-4 gap-4">
+                    <div className="col-span-4 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm h-[520px] flex flex-col">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wide">Calendar</p>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{calendarData.heading}</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View request load by day</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                                <div className="flex items-center gap-1 px-1.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                                    {calendarViewOptions.map(option => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => setCalendarView(option.value)}
+                                            className={`px-2 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${calendarView === option.value
+                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                                }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <span className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/30">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Total
+                                </span>
+                                <span className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200 border border-rose-100 dark:border-rose-500/30">
+                                    <span className="h-2 w-2 rounded-full bg-rose-500"></span> Urgent
+                                </span>
+                                <div className="flex items-center gap-1 ml-2">
+                                    <button
+                                        onClick={() => {
+                                            if (calendarView === 'daily') setCalendarDate(prev => addDays(prev, -1));
+                                            else if (calendarView === '5days' || calendarView === 'weekly') setCalendarDate(prev => addDays(prev, -7));
+                                            else if (calendarView === 'yearly') setCalendarDate(prev => new Date(prev.getFullYear() - 1, 0, 1));
+                                            else setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                                        }}
+                                        className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                        aria-label="Previous"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => setCalendarDate(new Date())}
+                                        className="px-2 py-1 text-[11px] font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                    >
+                                        Today
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (calendarView === 'daily') setCalendarDate(prev => addDays(prev, 1));
+                                            else if (calendarView === '5days' || calendarView === 'weekly') setCalendarDate(prev => addDays(prev, 7));
+                                            else if (calendarView === 'yearly') setCalendarDate(prev => new Date(prev.getFullYear() + 1, 0, 1));
+                                            else setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                                        }}
+                                        className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                        aria-label="Next"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex-1 flex flex-col">
+                            {isScheduleView ? (
+                                <div className="flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 rounded-lg">
+                                    <div
+                                        className="grid border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40 text-[11px] font-semibold text-gray-600 dark:text-gray-300"
+                                        style={{ gridTemplateColumns: `80px repeat(${isScheduleView ? (calendarView === '5days' ? workWeekDays.length : fullWeekDays.length) : 0}, minmax(0, 1fr))` }}
+                                    >
+                                        <div className="px-3 py-2 uppercase tracking-wide text-left">All day</div>
+                                        {(calendarView === '5days' ? workWeekDays : fullWeekDays).map(day => {
+                                            const key = day.toISOString().split('T')[0];
+                                            const counts = requestCountsByDate[key];
+                                            return (
+                                                <div key={key} className="px-3 py-2 border-l border-gray-200 dark:border-gray-800">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex flex-col leading-tight">
+                                                            <span className="text-[12px] font-bold text-gray-900 dark:text-gray-100">
+                                                                {day.toLocaleDateString('default', { weekday: 'long' })}
+                                                            </span>
+                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                                {day.toLocaleDateString('default', { day: 'numeric', month: 'short' })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/30">
+                                                                {counts?.total ?? 0}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200 border border-rose-100 dark:border-rose-500/30">
+                                                                {counts?.urgent ?? 0}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="flex-1 grid overflow-hidden" style={{ gridTemplateColumns: `80px repeat(${calendarView === '5days' ? workWeekDays.length : fullWeekDays.length}, minmax(0, 1fr))` }}>
+                                        <div className="border-r border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/30 text-[11px] text-gray-500 dark:text-gray-400">
+                                            {scheduleTimeSlots.map((slot, idx) => (
+                                                <div key={slot} className={`h-full px-3 flex items-start ${idx === 0 ? 'pt-2 pb-1' : 'py-4'} border-b border-gray-200 dark:border-gray-800`}>
+                                                    {slot}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {(calendarView === '5days' ? workWeekDays : fullWeekDays).map(day => {
+                                            const key = day.toISOString().split('T')[0];
+                                            const counts = requestCountsByDate[key];
+                                            return (
+                                                <div key={key} className="grid border-r border-gray-200 dark:border-gray-800" style={{ gridTemplateRows: `repeat(${scheduleTimeSlots.length}, minmax(0, 1fr))` }}>
+                                                    {scheduleTimeSlots.map((slot, idx) => (
+                                                        <div key={slot} className={`relative border-b border-gray-200 dark:border-gray-800 ${idx === scheduleTimeSlots.length - 1 ? '' : ''}`}>
+                                                            {idx === 0 && counts && (
+                                                                <div className="absolute inset-x-2 top-2 flex items-center gap-2 text-[11px]">
+                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/30">
+                                                                        Total {counts.total}
+                                                                    </span>
+                                                                    {counts.urgent > 0 && (
+                                                                        <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200 border border-rose-100 dark:border-rose-500/30">
+                                                                            Urgent {counts.urgent}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {!counts && idx === 0 && (
+                                                                <div className="absolute inset-x-2 top-2 text-[11px] text-gray-400 dark:text-gray-600">No entries</div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div
+                                        className="grid text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                        style={{ gridTemplateColumns: `repeat(${calendarData.columns}, minmax(0, 1fr))` }}
+                                    >
+                                        {calendarData.headerLabels.map(label => (
+                                            <div key={label} className="text-center py-1">{label}</div>
+                                        ))}
+                                    </div>
+                                    <div
+                                        className="grid gap-2 text-sm mt-2 flex-1"
+                                        style={{
+                                            gridTemplateColumns: `repeat(${calendarData.columns}, minmax(0, 1fr))`,
+                                            gridTemplateRows: `repeat(${calendarData.rows}, minmax(0, 1fr))`
+                                        }}
+                                    >
+                                        {calendarData.cells.map((day, idx) => {
+                                            if (!day) {
+                                                return <div key={idx} className="h-full rounded-lg border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40"></div>;
+                                            }
+                                            const key = day.toISOString().split('T')[0];
+                                            const counts = calendarView === 'yearly'
+                                                ? requestCountsByMonth[`${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}`]
+                                                : requestCountsByDate[key];
+                                            const isToday = calendarView === 'yearly'
+                                                ? (day.getFullYear() === new Date().getFullYear() && day.getMonth() === new Date().getMonth())
+                                                : key === todayKey;
+                                            const hasUrgent = counts?.urgent;
+                                            const dayLabel = calendarView === 'yearly'
+                                                ? day.toLocaleString('default', { month: 'short' })
+                                                : day.getDate();
+                                            const subLabel = calendarView === 'yearly'
+                                                ? day.getFullYear().toString()
+                                                : calendarView === 'monthly'
+                                                    ? ''
+                                                    : day.toLocaleString('default', { month: 'short' });
+                                            const isFocusedDay = calendarView === 'daily' && key === focusedDateKey;
+                                            const detail = isFocusedDay ? focusedDailyStats : null;
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    className={`h-full rounded-lg border bg-white dark:bg-[#161922] flex flex-col p-2 transition-colors ${isToday
+                                                        ? 'border-blue-400 shadow-sm'
+                                                        : 'border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/40'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                                        <div className="flex items-baseline gap-1">
+                                                            <span>{dayLabel}</span>
+                                                            {subLabel && <span className="text-[10px] text-gray-400 dark:text-gray-500">{subLabel}</span>}
+                                                        </div>
+                                                        {hasUrgent ? <span className="w-2 h-2 rounded-full bg-rose-500" /> : null}
+                                                    </div>
+                                                    {counts ? (
+                                                        <div className="mt-auto space-y-1">
+                                                            <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-400">
+                                                                <span>Total</span>
+                                                                <span className="font-semibold text-emerald-600 dark:text-emerald-300">{counts.total}</span>
+                                                            </div>
+                                                            {counts.urgent > 0 && (
+                                                                <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-400">
+                                                                    <span>Urgent</span>
+                                                                    <span className="font-semibold text-rose-600 dark:text-rose-300">{counts.urgent}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mt-auto text-[11px] text-gray-400 dark:text-gray-600">No entries</div>
+                                                    )}
+                                                    {isFocusedDay && (
+                                                        <div className="mt-2 border-t border-gray-100 dark:border-gray-800 pt-2 space-y-2 text-[11px]">
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                <span className="px-2 py-1 rounded-full bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                                                    Total {detail?.total ?? 0}
+                                                                </span>
+                                                                <span className="px-2 py-1 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200 border border-rose-100 dark:border-rose-500/30">
+                                                                    Urgent {detail?.urgentCount ?? 0}
+                                                                </span>
+                                                                <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200 border border-amber-100 dark:border-amber-500/30">
+                                                                    Due today {detail?.dueToday ?? 0}
+                                                                </span>
+                                                                <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-500/30">
+                                                                    Follow up {detail?.followUp ?? 0}
+                                                                </span>
+                                                                {detail?.overdue3d ? (
+                                                                    <span className="px-2 py-1 rounded-full bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-200 border border-orange-100 dark:border-orange-500/30">
+                                                                        Overdue 3d+ {detail.overdue3d}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            <div className="space-y-1 max-h-28 overflow-auto">
+                                                                {detail?.urgentList && detail.urgentList.length > 0 ? (
+                                                                    detail.urgentList.slice(0, 4).map((req: any) => (
+                                                                        <div
+                                                                            key={req.id}
+                                                                            className="flex items-center justify-between rounded-md border border-rose-100 dark:border-rose-500/30 bg-rose-50/60 dark:bg-rose-500/10 px-2 py-1"
+                                                                        >
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-100">
+                                                                                    {req.id || 'Urgent Request'}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                                                    {req.department || '—'} · {req.status || 'Pending'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-200">
+                                                                                Due {req.dueDate ? req.dueDate.split('T')[0] : '—'}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">No urgent items for this day</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* 1. KPIs Section */}
+                    <div className="grid grid-cols-4 gap-4">
+                        {activeKpis.map((kpi, index) => (
+                            <div
+                                key={index}
+                                className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                            >
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                                        <kpi.icon className="text-gray-500 dark:text-gray-400" size={18} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {kpi.rangeSelector && (
+                                            <div className="flex items-center gap-1 px-1.5 py-1 rounded-full border border-rose-100 dark:border-rose-500/30 bg-rose-50/60 dark:bg-rose-500/10">
+                                                {(['daily', 'weekly', 'monthly'] as const).map(range => (
+                                                    <button
+                                                        key={range}
+                                                        onClick={() => setUrgentRange(range)}
+                                                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${urgentRange === range
+                                                            ? 'bg-white dark:bg-rose-500/30 text-rose-600 dark:text-rose-50 shadow-sm'
+                                                            : 'text-rose-500 dark:text-rose-200 hover:bg-white/60 dark:hover:bg-rose-500/20'
+                                                            }`}
+                                                    >
+                                                        {range.charAt(0).toUpperCase() + range.slice(1)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${kpi.trendUp
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                                            }`}>
+                                            {kpi.trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                            {kpi.trend}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">{kpi.value}</h3>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{kpi.title}</p>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{kpi.description}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 2. Chart Section */}
+                    <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                                    {kpiMode === 'total' ? 'Department Request Volume' : 'Top Urgent Requester Departments'}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {kpiMode === 'total'
+                                        ? 'Breakdown of procurement requests across departments'
+                                        : 'Highlighting where urgent requests originate'}
+                                </p>
+                            </div>
+                            <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-400 transition-colors">
+                                <MoreHorizontal size={16} />
+                            </button>
+                        </div>
+
+                        <div className="w-full -ml-2">
+                            <ReactECharts
+                                option={activeChartOption}
+                                style={{ height: '300px', width: '100%' }}
+                                theme={null}
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* 3. Requests Table */}
             <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm flex-1 flex flex-col">
@@ -779,7 +1526,7 @@ export const ProcurementOverview: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto min-h-[300px]">
+                <div className="overflow-x-auto min-h-[300px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-800/40 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 whitespace-nowrap">
@@ -848,7 +1595,15 @@ export const ProcurementOverview: React.FC = () => {
                                                     className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 disabled:opacity-40"
                                                 />
                                             </td>
-                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleViewRequestDetails(row)}
+                                                    className="font-semibold text-blue-700 dark:text-blue-400 hover:underline underline-offset-2 decoration-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 rounded"
+                                                >
+                                                    {row.id}
+                                                </button>
+                                            </td>
                                             <td className="px-4 py-3 text-gray-500">{row.date}</td>
                                             <td className="px-4 py-3">
                                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
@@ -1000,6 +1755,11 @@ export const ProcurementOverview: React.FC = () => {
                 variant="warning"
             />
 
+            <RequestDetailsModal
+                request={selectedRequestDetails}
+                onClose={() => setSelectedRequestDetails(null)}
+            />
+
             <NewRFQModal
                 isOpen={isRFQModalOpen}
                 onClose={() => setIsRFQModalOpen(false)}
@@ -1143,7 +1903,7 @@ export const ProcurementOverview: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto min-h-[240px]">
+                <div className="overflow-x-auto min-h-[240px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-800/40 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 whitespace-nowrap">

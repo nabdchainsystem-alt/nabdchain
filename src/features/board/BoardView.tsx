@@ -8,15 +8,12 @@ import {
     Kanban,
     List,
     FileText,
-    MessageSquare,
     CheckSquare,
-    LayoutDashboard,
     Settings2,
     Target,
     UserCheck,
     Plus as PlusIcon,
     GanttChart,
-    PieChart,
     Calendar,
     Image as ImageIcon,
     FileEdit,
@@ -31,11 +28,9 @@ import {
     Unlock,
     Trash2,
     ArrowUpDown,
-    RotateCw,
-    Shapes
+    RotateCw
 } from 'lucide-react';
 import { Board, BoardViewType } from '../../types';
-import ListBoard from './views/ListBoard/ListBoard';
 import Lists from './views/List/Lists';
 import RoomTable from './views/Table/RoomTable';
 import DiscussionPage from '../discussion/DiscussionPage';
@@ -75,13 +70,29 @@ interface BoardViewProps {
 export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUpdateTasks, renderCustomView, dashboardSections }) => {
     const storageKey = `board-active-view-${board.id}`;
 
+    const normalizeViewId = (viewId?: string | null): BoardViewType | null => {
+        if (viewId === 'listboard' || viewId === 'list_board') return 'list';
+        return viewId as BoardViewType | null;
+    };
+
+    const getSanitizedViews = (views?: BoardViewType[]) => {
+        const base = (views && views.length > 0 ? views : ['overview', 'table', 'kanban']) as BoardViewType[];
+        const filtered = base.filter(view => view !== 'listboard' && view !== 'list_board') as BoardViewType[];
+        return filtered.length ? filtered : ['overview', 'table', 'kanban'];
+    };
+
+    const sanitizedAvailableViews = getSanitizedViews(board.availableViews);
+    const normalizedDefaultView = normalizeViewId(board.defaultView);
+
     const [activeView, setActiveView] = useState<BoardViewType>(() => {
-        const saved = localStorage.getItem(storageKey);
-        // Validate if saved view is still available
-        if (saved && board.availableViews && board.availableViews.includes(saved as BoardViewType)) {
-            return saved as BoardViewType;
+        const saved = normalizeViewId(localStorage.getItem(storageKey));
+        if (saved && sanitizedAvailableViews.includes(saved)) {
+            return saved;
         }
-        return board.defaultView || 'kanban';
+        if (normalizedDefaultView && sanitizedAvailableViews.includes(normalizedDefaultView)) {
+            return normalizedDefaultView;
+        }
+        return 'kanban';
     });
     const [showAddViewMenu, setShowAddViewMenu] = useState(false);
     const [showInfoMenu, setShowInfoMenu] = useState(false);
@@ -215,8 +226,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
     };
 
     const isViewAvailable = (view: BoardViewType) => {
-        if (!board.availableViews || board.availableViews.length === 0) return true;
-        return board.availableViews.includes(view);
+        if (!sanitizedAvailableViews.length) return true;
+        return sanitizedAvailableViews.includes(view);
     };
 
     const isWarehouseBoard = board.id.startsWith('warehouse');
@@ -335,17 +346,13 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
     const VIEW_OPTIONS = [
         { label: 'Overview', icon: Layout, id: 'overview', description: 'Board overview' },
         { label: 'Table', icon: Table, id: 'table', description: 'Manage project workflows' },
+        { label: 'Data Table', icon: Table, id: 'datatable', description: 'High performance data grid' },
         { label: 'Kanban', icon: Kanban, id: 'kanban', description: 'Visualize your work' },
         { label: 'List', icon: List, id: 'list', description: 'Simple list view' },
-        { label: 'List Board', icon: CheckSquare, id: 'listboard', description: 'Advanced list board' },
-        { label: 'Discussion', icon: MessageSquare, id: 'discussion', description: 'Team chat' },
         { label: 'Calendar', icon: Calendar, id: 'calendar', description: 'Schedule tasks' },
         { label: 'Doc', icon: FileText, id: 'doc', description: 'Collaborate on docs' },
         { label: 'Gantt', icon: GanttChart, id: 'gantt', description: 'Visual timeline' },
-        { label: 'Chart', icon: PieChart, id: 'chart', description: 'Analyze data' },
         ...(isWarehouseBoard ? [{ label: 'Capacity Map', icon: Layout, id: 'warehouse_capacity_map', description: 'Visual warehouse capacity map' }] : []),
-        { label: 'Dashboards', icon: LayoutDashboard, id: 'dashboards', description: 'High-level visibility' },
-        { label: 'Whiteboard', icon: Shapes, id: 'whiteboard', description: 'Lightweight planning canvas' },
         { label: 'Workload View', icon: UserCheck, id: 'workload', description: 'Balance assignments' },
         { label: 'Smart Sheet', icon: Table, id: 'spreadsheet', description: 'Spreadsheet workspace' },
         { label: 'GTD System', icon: CheckSquare, id: 'gtd', description: 'Getting Things Done' },
@@ -388,8 +395,6 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
 
             case 'list':
                 return <Lists roomId={board.id} viewId="list-main" />;
-            case 'listboard':
-                return <ListBoard key={board.id} roomId={board.id} viewId="listboard-main" />;
             case 'calendar':
                 return <CalendarView key={board.id} roomId={board.id} />;
             case 'pivot_table':
@@ -422,9 +427,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board, onUpdateBoard, onUp
     };
 
     // Ensure default views are available if availableViews is empty
-    let availableViews = board.availableViews && board.availableViews.length > 0
-        ? [...board.availableViews]
-        : ['overview', 'table', 'kanban'] as BoardViewType[];
+    let availableViews = [...sanitizedAvailableViews];
 
     if (!isWarehouseBoard) {
         availableViews = availableViews.filter(view => view !== 'warehouse_capacity_map');

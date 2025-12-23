@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [creationStep, setCreationStep] = useState<'template' | 'details'>('template');
     const [selectedTemplate, setSelectedTemplate] = useState<BoardTemplate | undefined>(undefined);
-    const [selectedLayout, setSelectedLayout] = useState<'table' | 'data_table' | 'kanban' | 'list' | 'list_board'>('table');
+    const [selectedLayout, setSelectedLayout] = useState<'table' | 'data_table' | 'datatable' | 'kanban' | 'list'>('table');
     const [parentBoardIdForCreation, setParentBoardIdForCreation] = useState<string | undefined>(undefined);
     const [expandedBoards, setExpandedBoards] = useState<Set<string>>(() => {
         const saved = localStorage.getItem('expandedBoards');
@@ -248,11 +248,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
     };
 
-    const displayedWidth = isCollapsed ? 60 : width;
+    const displayedWidth = isCollapsed ? 64 : width;
+    const textBase = 'transition-[max-width,opacity] duration-200 ease-in-out overflow-hidden';
+    const textVisibility = isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[200px] opacity-100';
 
     return (
         <div
-            className={`flex flex-col h-full flex-shrink-0 relative group/sidebar select-none bg-gradient-to-b from-[#F7F8FA] to-[#EEF1F5] dark:from-monday-dark-bg dark:to-monday-dark-bg rounded-s-2xl ms-4 shadow-sm ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out'}`}
+            className={`flex flex-col h-full flex-shrink-0 relative group/sidebar select-none bg-gradient-to-b from-[#F7F8FA] to-[#EEF1F5] dark:from-monday-dark-bg dark:to-monday-dark-bg rounded-s-2xl ms-4 shadow-sm ${isResizing ? '' : 'transition-[width] duration-200 ease-out will-change-[width]'}`}
             style={{
                 width: `${displayedWidth}px`
             }}
@@ -265,7 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'dashboard' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Home size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">{t('home')}</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('home')}</span>
                 </button>
                 <button
                     onClick={() => onNavigate('flow_hub')}
@@ -273,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'flow_hub' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Sparkles size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">Flow Hub</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Flow Hub</span>
                 </button>
                 <button
                     onClick={() => onNavigate('process_map')}
@@ -281,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'process_map' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Activity size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">Process Map</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Process Map</span>
                 </button>
                 <button
                     onClick={() => onNavigate('my_work')}
@@ -289,7 +291,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'my_work' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Grid size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">{t('my_work')}</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('my_work')}</span>
                 </button>
 
                 {/* New Pages */}
@@ -299,7 +301,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'inbox' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Inbox size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">{t('inbox')}</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('inbox')}</span>
                 </button>
                 <button
                     onClick={() => onNavigate('discussion')}
@@ -307,7 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'discussion' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <MessageSquare size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">Discussion</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Discussion</span>
                 </button>
 
                 <button
@@ -316,7 +318,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'teams' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Users size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">{t('teams')}</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('teams')}</span>
                 </button>
                 <button
                     onClick={() => onNavigate('vault')}
@@ -324,7 +326,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'vault' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                 >
                     <Lock size={18} />
-                    {!isCollapsed && <span className="font-normal text-sm truncate min-w-0 flex-1 text-start">{t('vault')}</span>}
+                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('vault')}</span>
                 </button>
             </div>
 
@@ -350,11 +352,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                             <div className="flex items-center gap-2 truncate">
                                 <Boxes size={18} className="text-gray-500" />
-                                {!isCollapsed && <span className="text-sm font-medium">Supply Chain</span>}
+                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Supply Chain</span>
                             </div>
-                            {!isCollapsed && (
-                                <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''}`} />
-                            )}
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
                         </div>
                         {expandedDepartments.has('supply_chain') && !isCollapsed && (
                             <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
@@ -389,11 +389,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                             <div className="flex items-center gap-2 truncate">
                                 <Factory size={18} className="text-gray-500" />
-                                {!isCollapsed && <span className="text-sm font-medium">Operations</span>}
+                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Operations</span>
                             </div>
-                            {!isCollapsed && (
-                                <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('operations') ? 'rotate-180' : ''}`} />
-                            )}
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
                         </div>
                         {expandedDepartments.has('operations') && !isCollapsed && (
                             <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
@@ -419,14 +417,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                             <div className="flex items-center gap-2 truncate">
                                 <Building2 size={18} className="text-gray-500" />
-                                {!isCollapsed && <span className="text-sm font-medium">Business</span>}
+                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Business</span>
                             </div>
-                            {!isCollapsed && (
-                                <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business') ? 'rotate-180' : ''}`} />
-                            )}
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
                         </div>
                         {expandedDepartments.has('business') && !isCollapsed && (
                             <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                    <FileSpreadsheet size={14} /> <span>Listings</span>
+                                </button>
+                                <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                    <Factory size={14} /> <span>Sales Factory</span>
+                                </button>
                                 <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                     <Megaphone size={14} /> <span>Sales</span>
                                 </button>
@@ -446,11 +448,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                             <div className="flex items-center gap-2 truncate">
                                 <Users size={18} className="text-gray-500" />
-                                {!isCollapsed && <span className="text-sm font-medium">Support</span>}
+                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Support</span>
                             </div>
-                            {!isCollapsed && (
-                                <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business_support') ? 'rotate-180' : ''}`} />
-                            )}
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
                         </div>
                         {expandedDepartments.has('business_support') && !isCollapsed && (
                             <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
@@ -516,7 +516,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 <div className={`w-6 h-6 rounded bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
                                     {activeWorkspace.name.charAt(0)}
                                 </div>
-                                {!isCollapsed && <span className="text-sm font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1">{activeWorkspace.name}</span>}
+                                <span className={`text-sm font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
                             </div>
 
                             {!isCollapsed && (
@@ -615,7 +615,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     size: isChild ? 14 : 16,
                                                     className: `${isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400'} flex-shrink-0`
                                                 })}
-                                                {!isCollapsed && <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-sm'}`}>{board.name}</span>}
+                                                <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-sm'} ${textBase} ${textVisibility}`}>{board.name}</span>
                                             </div>
                                             {!isCollapsed && (
                                                 <div className="flex items-center gap-1">
@@ -1109,8 +1109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     { id: 'table', label: 'Table', icon: Table, description: 'Spreadsheet view' },
                                                     { id: 'kanban', label: 'Kanban', icon: KanbanSquare, description: 'Visual workflow' },
                                                     { id: 'list', label: 'List', icon: List, description: 'Simple task list' },
-                                                    { id: 'datatable', label: 'Data Table', icon: Database, description: 'High performance' },
-                                                    { id: 'listboard', label: 'List Board', icon: Globe, description: 'Hybrid view' }
+                                                    { id: 'datatable', label: 'Data Table', icon: Database, description: 'High performance' }
                                                 ].map((tool) => (
                                                     <button
                                                         key={tool.id}

@@ -14,7 +14,6 @@ import { chatWithGemini } from '../../services/geminiService';
 import KanbanBoard from '../board/views/Kanban/KanbanBoard';
 import RoomTable from '../board/views/Table/RoomTable';
 import DataTable from '../board/views/Table/DataTable';
-import ListBoard from '../board/views/ListBoard/ListBoard';
 import Lists from '../board/views/List/Lists';
 
 
@@ -370,7 +369,7 @@ export default function DiscussionPage() {
                             <React.Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Board...</div>}>
                                 {(() => {
                                     const board = boards.find(b => b.id === activeBoardId);
-                                    const viewType = board?.defaultView || 'table';
+                                    const viewType = board?.defaultView === 'list_board' ? 'list' : board?.defaultView || 'table';
 
                                     // Render appropriate view based on selection
                                     switch (viewType) {
@@ -379,8 +378,6 @@ export default function DiscussionPage() {
                                         case 'list':
                                             // Passing props that match Lists.tsx expectations
                                             return <Lists roomId={activeBoardId || 'demo-room'} viewId="list" />;
-                                        case 'list_board': // Standalone ListBoard app
-                                            return <ListBoard roomId={activeBoardId || 'demo-room'} viewId="list_board" />;
                                         case 'data_table':
                                             return <DataTable roomId={activeBoardId || 'demo-room'} viewId="data_table" />;
                                         case 'table':

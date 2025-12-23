@@ -5,6 +5,8 @@ interface User {
     name: string;
     email: string;
     avatar?: string;
+    role?: string;
+    homeView?: string;
 }
 
 interface AuthContextType {
@@ -48,16 +50,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Hardcoded credentials as requested
-        if (email.toLowerCase() === 'master@nabd.com' && pass === '1') {
-            const newUser = {
-                id: 'u-master',
-                name: 'Master User',
-                email: 'master@nabd.com',
-                avatar: 'https://ui-avatars.com/api/?name=Master+User&background=00c875&color=fff'
-            };
+        const normalizedEmail = email.toLowerCase().trim();
+        const knownUsers: Record<string, { password: string; profile: User }> = {
+            'master@nabd.com': {
+                password: '1',
+                profile: {
+                    id: 'u-master',
+                    name: 'Master User',
+                    email: 'master@nabd.com',
+                    avatar: 'https://ui-avatars.com/api/?name=Master+User&background=00c875&color=fff',
+                    role: 'admin',
+                    homeView: 'dashboard'
+                }
+            },
+            'sales@smt-nabd.com': {
+                password: '123',
+                profile: {
+                    id: 'u-sales',
+                    name: 'Sales Factory Lead',
+                    email: 'sales@smt-nabd.com',
+                    avatar: 'https://ui-avatars.com/api/?name=Sales+Factory&background=0066ff&color=fff',
+                    role: 'supplier_sales',
+                    homeView: 'sales_factory'
+                }
+            }
+        };
+
+        const matchedUser = knownUsers[normalizedEmail];
+
+        if (matchedUser && pass === matchedUser.password) {
+            const newUser = { ...matchedUser.profile };
             setUser(newUser);
             localStorage.setItem('auth_user', JSON.stringify(newUser));
+            if (newUser.homeView) {
+                localStorage.setItem('app-active-view', newUser.homeView);
+            }
             setIsLoading(false);
             return true;
         }

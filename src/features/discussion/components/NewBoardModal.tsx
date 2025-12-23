@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Board } from '../types';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { X, Check, Folder, Lock, Globe, Palette, ArrowLeft, Layout, Database } from 'lucide-react';
+import { X, Check, Folder, Lock, Palette, ArrowLeft, Layout, Database } from 'lucide-react';
 import { TemplatePicker } from '../../board/components/TemplatePicker';
 import { BoardTemplate } from '../../board/data/templates';
 
@@ -14,7 +14,7 @@ interface NewBoardModalProps {
 
 export const NewBoardModal: React.FC<NewBoardModalProps> = ({ isOpen, onClose, onCreate, availableUsers }) => {
   const [step, setStep] = useState<'template' | 'details' | 'tool'>('details');
-  const [selectedTool, setSelectedTool] = useState<'table' | 'data_table' | 'kanban' | 'list' | 'list_board'>('table');
+  const [selectedTool, setSelectedTool] = useState<'table' | 'data_table' | 'kanban' | 'list'>('table');
   const [selectedTemplate, setSelectedTemplate] = useState<BoardTemplate | undefined>(undefined);
 
   const [name, setName] = useState('');
@@ -31,8 +31,7 @@ export const NewBoardModal: React.FC<NewBoardModalProps> = ({ isOpen, onClose, o
     { id: 'table', label: 'Table', icon: Layout, description: 'Classic spreadsheet-like view' },
     { id: 'data_table', label: 'Data Table', icon: Database, description: 'High performance data grid' },
     { id: 'kanban', label: 'Kanban', icon: Folder, description: 'Visual workflow board' }, // TODO: Better icon
-    { id: 'list', label: 'List', icon: Check, description: 'Simple task list' },
-    { id: 'list_board', label: 'List Board', icon: Globe, description: 'List with board capabilities' },
+    { id: 'list', label: 'List', icon: Check, description: 'Simple task list' }
   ];
 
   useEffect(() => {

@@ -1,5 +1,108 @@
 {
-  "procurementRequests": [],
+  "procurementRequests": [
+    {
+      "id": "REQ-2025000001",
+      "name": "REQ-2025000001",
+      "date": "2025-12-23",
+      "department": "Production",
+      "warehouse": "24",
+      "relatedTo": "Krones ",
+      "status": "Pending",
+      "priority": "Urgent",
+      "isUrgent": true,
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "RM-01-009",
+          "description": "Preform 1500 ML",
+          "quantity": 848900,
+          "dueDate": "2025-12-22"
+        }
+      ],
+      "approvalStatus": "Approved",
+      "rfqSent": true
+    },
+    {
+      "id": "REQ-2025000002",
+      "name": "REQ-2025000002",
+      "date": "2025-12-23",
+      "department": "Warehouse",
+      "warehouse": "26",
+      "relatedTo": "Krones ",
+      "status": "Pending",
+      "priority": "Urgent",
+      "isUrgent": true,
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "RM-01-090",
+          "description": "Divider 330 ML",
+          "quantity": 15000,
+          "dueDate": "2025-12-22"
+        }
+      ],
+      "approvalStatus": "Approved",
+      "rfqSent": true
+    },
+    {
+      "id": "REQ-2025000003",
+      "name": "REQ-2025000003",
+      "date": "2025-12-23",
+      "department": "Procurment",
+      "warehouse": "207",
+      "relatedTo": "Office",
+      "status": "Pending",
+      "priority": "Low",
+      "isUrgent": false,
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "AS-01-011",
+          "description": "Office Desk",
+          "quantity": 1,
+          "dueDate": "2025-12-22"
+        },
+        {
+          "id": "7nryvxj2b",
+          "itemCode": "AS-01-012",
+          "description": "Office Chain",
+          "quantity": 1,
+          "dueDate": "2025-12-22"
+        },
+        {
+          "id": "3he41ztok",
+          "itemCode": "AS-01-013",
+          "description": "Monitor 23 Inch",
+          "quantity": 1,
+          "dueDate": "2025-12-30"
+        }
+      ],
+      "approvalStatus": "Approved",
+      "rfqSent": true
+    },
+    {
+      "id": "REQ-2025000004",
+      "name": "REQ-2025000004",
+      "date": "2025-12-23",
+      "department": "IT",
+      "warehouse": "207",
+      "relatedTo": "HQ Network",
+      "status": "Pending",
+      "priority": "Medium",
+      "isUrgent": false,
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "AS-01-010",
+          "description": "Power Supply 320 V",
+          "quantity": 1,
+          "dueDate": "2025-12-30"
+        }
+      ],
+      "approvalStatus": "Approved",
+      "rfqSent": true
+    }
+  ],
   "boards": [],
   "cards": [],
   "rooms": [],
@@ -9,6 +112,167 @@
   "gtdCaptures": [],
   "cornellNotes": [],
   "storage": [],
-  "rfqs": [],
-  "orders": []
+  "rfqs": [
+    {
+      "id": "RFQ-780221",
+      "requestId": "REQ-2025000002",
+      "date": "2025-12-23",
+      "department": "Warehouse",
+      "warehouse": "26",
+      "supplier": "شركة ميدان المشاريع - Midan Al Mashareaa",
+      "value": 19837.5,
+      "dueDate": "2025-12-30",
+      "status": "Sent to PO",
+      "createdDate": "2025-12-23",
+      "unitPrice": 1.15,
+      "quantity": 15000,
+      "vatAmount": 2587.5,
+      "totalExVat": 17250,
+      "relatedTo": "Krones ",
+      "sentToOrder": true,
+      "orderId": "ORD-823389"
+    },
+    {
+      "id": "RFQ-069560",
+      "requestId": "REQ-2025000003",
+      "date": "2025-12-23",
+      "department": "Procurment",
+      "warehouse": "207",
+      "supplier": "Office Care ",
+      "value": 2633.5,
+      "dueDate": "2025-12-30",
+      "status": "Open",
+      "createdDate": "2025-12-23",
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "AS-01-011",
+          "description": "Office Desk",
+          "quantity": 1,
+          "dueDate": "2025-12-22",
+          "unitPrice": 1200
+        },
+        {
+          "id": "7nryvxj2b",
+          "itemCode": "AS-01-012",
+          "description": "Office Chain",
+          "quantity": 1,
+          "dueDate": "2025-12-22",
+          "unitPrice": 750
+        },
+        {
+          "id": "3he41ztok",
+          "itemCode": "AS-01-013",
+          "description": "Monitor 23 Inch",
+          "quantity": 1,
+          "dueDate": "2025-12-30",
+          "unitPrice": 340
+        }
+      ],
+      "unitPrice": 763.3333333333334,
+      "quantity": 3,
+      "vatAmount": 343.5,
+      "totalExVat": 2290,
+      "relatedTo": "Office"
+    },
+    {
+      "id": "RFQ-416639",
+      "requestId": "REQ-2025000001",
+      "date": "2025-12-23",
+      "department": "Production",
+      "warehouse": "24",
+      "supplier": "SMT",
+      "value": 39049.4,
+      "dueDate": "2025-12-30",
+      "status": "Open",
+      "createdDate": "2025-12-23",
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "RM-01-009",
+          "description": "Preform 1500 ML",
+          "quantity": 848900,
+          "dueDate": "2025-12-22",
+          "unitPrice": 0.04
+        }
+      ],
+      "unitPrice": 0.04,
+      "quantity": 848900,
+      "vatAmount": 5093.4,
+      "totalExVat": 33956,
+      "relatedTo": "Krones "
+    },
+    {
+      "id": "RFQ-970573",
+      "requestId": "REQ-2025000004",
+      "date": "2025-12-23",
+      "department": "IT",
+      "warehouse": "207",
+      "supplier": "SMT",
+      "value": 11500,
+      "dueDate": "2025-12-30",
+      "status": "Sent to PO",
+      "createdDate": "2025-12-23",
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "AS-01-010",
+          "description": "Power Supply 320 V",
+          "quantity": 1,
+          "dueDate": "2025-12-30",
+          "unitPrice": 10000
+        }
+      ],
+      "unitPrice": 10000,
+      "quantity": 1,
+      "vatAmount": 1500,
+      "totalExVat": 10000,
+      "relatedTo": "HQ Network",
+      "sentToOrder": true,
+      "orderId": "ORD-990635"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD-823389",
+      "rfqId": "RFQ-780221",
+      "requestId": "REQ-2025000002",
+      "supplier": "شركة ميدان المشاريع - Midan Al Mashareaa",
+      "department": "Warehouse",
+      "warehouse": "26",
+      "date": "2025-12-23",
+      "dueDate": "2025-12-30",
+      "totalValue": 19837.5,
+      "priority": "Normal",
+      "status": "Received",
+      "approvals": "Approved",
+      "relatedTo": "Krones ",
+      "items": []
+    },
+    {
+      "id": "ORD-990635",
+      "rfqId": "RFQ-970573",
+      "requestId": "REQ-2025000004",
+      "supplier": "SMT",
+      "department": "IT",
+      "warehouse": "207",
+      "date": "2025-12-23",
+      "dueDate": "2025-12-30",
+      "totalValue": 11500,
+      "priority": "Normal",
+      "status": "Open",
+      "approvals": "Pending",
+      "relatedTo": "HQ Network",
+      "items": [
+        {
+          "id": "1",
+          "itemCode": "AS-01-010",
+          "description": "Power Supply 320 V",
+          "quantity": 1,
+          "dueDate": "2025-12-30",
+          "unitPrice": 10000
+        }
+      ]
+    }
+  ]
 }

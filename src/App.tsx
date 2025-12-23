@@ -63,9 +63,9 @@ const INITIAL_BOARDS: Board[] = [
 const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
 
-  const [activeView, setActiveView] = useState<ViewState>(() => {
+  const [activeView, setActiveView] = useState<ViewState | string>(() => {
     const saved = localStorage.getItem('app-active-view');
-    return (saved as ViewState) || 'dashboard';
+    return saved || 'dashboard';
   });
 
   const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
@@ -92,7 +92,10 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem('app-sidebar-width');
     return saved ? parseInt(saved, 10) : 260;
   });
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('app-sidebar-collapsed');
+    return saved ? saved === 'true' : false;
+  });
 
   const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
 
@@ -101,6 +104,10 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('app-sidebar-width', sidebarWidth.toString());
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('app-sidebar-collapsed', isSidebarCollapsed ? 'true' : 'false');
+  }, [isSidebarCollapsed]);
 
   useEffect(() => {
     localStorage.setItem('app-active-view', activeView);
@@ -243,7 +250,7 @@ const AppContent: React.FC = () => {
     handleBoardCreated(newBoard);
   };
 
-  const handleNavigate = (view: ViewState, boardId?: string) => {
+  const handleNavigate = (view: ViewState | string, boardId?: string) => {
     setActiveView(view);
     if (boardId) {
       setActiveBoardId(boardId);
@@ -301,6 +308,8 @@ const AppContent: React.FC = () => {
   const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
 
   const SalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
+  const SalesListingPage = lazyWithRetry(() => import('./features/business/sales/SalesListingPage'));
+  const SalesFactoryPage = lazyWithRetry(() => import('./features/business/sales/SalesFactoryPage'));
   const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
 
   const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
@@ -318,27 +327,29 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
       <TopBar />
       <div className="flex flex-1 relative overflow-hidden">
-        <Sidebar
-          activeView={activeView}
-          activeBoardId={activeBoardId}
-          onNavigate={handleNavigate}
-          width={sidebarWidth}
-          onResize={setSidebarWidth}
-          workspaces={workspaces}
-          activeWorkspaceId={activeWorkspaceId}
-          onWorkspaceChange={setActiveWorkspaceId}
-          onAddWorkspace={handleAddWorkspace}
-          onDeleteWorkspace={handleDeleteWorkspace}
-          boards={boards}
-          onDeleteBoard={handleDeleteBoard}
-          onToggleFavorite={handleToggleFavorite}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
-        />
+        {![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) && (
+          <Sidebar
+            activeView={activeView}
+            activeBoardId={activeBoardId}
+            onNavigate={handleNavigate}
+            width={sidebarWidth}
+            onResize={setSidebarWidth}
+            workspaces={workspaces}
+            activeWorkspaceId={activeWorkspaceId}
+            onWorkspaceChange={setActiveWorkspaceId}
+            onAddWorkspace={handleAddWorkspace}
+            onDeleteWorkspace={handleDeleteWorkspace}
+            boards={boards}
+            onDeleteBoard={handleDeleteBoard}
+            onToggleFavorite={handleToggleFavorite}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+            onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
+          />
+        )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5">
+        <main className={`flex-1 flex flex-col relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
               <Dashboard onBoardCreated={handleBoardCreated} />
@@ -376,6 +387,10 @@ const AppContent: React.FC = () => {
               <ProductionPage />
             ) : activeView === 'quality' ? (
               <QualityPage />
+            ) : activeView === 'sales_factory' ? (
+              <SalesFactoryPage onNavigate={handleNavigate} />
+            ) : activeView === 'sales_listing' ? (
+              <SalesListingPage onNavigate={handleNavigate} />
             ) : activeView === 'sales' ? (
               <SalesPage />
             ) : activeView === 'finance' ? (
