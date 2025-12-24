@@ -312,6 +312,9 @@ const AppContent: React.FC = () => {
   const SalesFactoryPage = lazyWithRetry(() => import('./features/business/sales/SalesFactoryPage'));
   const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
 
+  const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
+  const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
+
   const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
   const HRPage = lazyWithRetry(() => import('./features/business_support/hr/HRPage'));
   const MarketingPage = lazyWithRetry(() => import('./features/business_support/marketing/MarketingPage'));
@@ -326,7 +329,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
       <TopBar />
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) && (
           <Sidebar
             activeView={activeView}
@@ -349,7 +352,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Main Content Area */}
-        <main className={`flex-1 flex flex-col relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
+        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
               <Dashboard onBoardCreated={handleBoardCreated} />
@@ -401,6 +404,10 @@ const AppContent: React.FC = () => {
               <HRPage />
             ) : activeView === 'marketing' ? (
               <MarketingPage />
+            ) : activeView === 'local_marketplace' ? (
+              <LocalMarketplacePage />
+            ) : activeView === 'foreign_marketplace' ? (
+              <ForeignMarketplacePage />
             ) : activeView === 'marketing' ? (
               <MarketingPage />
             ) : activeView === 'cornell_notes' ? (

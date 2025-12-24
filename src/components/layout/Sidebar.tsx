@@ -254,12 +254,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     return (
         <div
-            className={`flex flex-col h-full flex-shrink-0 relative group/sidebar select-none bg-gradient-to-b from-[#F7F8FA] to-[#EEF1F5] dark:from-monday-dark-bg dark:to-monday-dark-bg rounded-s-2xl ms-4 shadow-sm ${isResizing ? '' : 'transition-[width] duration-200 ease-out will-change-[width]'}`}
+            className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-gradient-to-b from-[#F7F8FA] to-[#EEF1F5] dark:from-monday-dark-bg dark:to-monday-dark-bg rounded-s-2xl ms-4 shadow-sm ${isResizing ? '' : 'transition-[width] duration-200 ease-out will-change-[width]'}`}
             style={{
                 width: `${displayedWidth}px`
             }}
         >
-            {/* 1. Top Navigation */}
+            <div className="h-full min-h-0 flex flex-col">
+                {/* 1. Top Navigation */}
             <div className={`py-3 space-y-0.5 ${isCollapsed ? 'px-2 items-center flex flex-col' : 'px-4'}`}>
                 <button
                     onClick={() => onNavigate('dashboard')}
@@ -333,7 +334,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="border-t border-gray-200/50 dark:border-monday-dark-border my-2 mx-4"></div>
 
             {/* 2. Scrollable Content */}
-            <div className={`flex-1 overflow-y-auto py-2 custom-scrollbar ${isCollapsed ? 'px-2' : 'px-4'}`}>
+            <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar ${isCollapsed ? 'px-2' : 'px-4'}`}>
 
                 {/* Departments Section */}
                 <div className="mb-6">
@@ -668,6 +669,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 </div>
 
+                {/* Marketplace Section */}
+                <div className="mt-6">
+                    {!isCollapsed && (
+                        <div className="flex items-center mb-2 px-1">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                        </div>
+                    )}
+                    <div className="space-y-1">
+                        <button
+                            onClick={() => onNavigate('local_marketplace')}
+                            title="Local Marketplace"
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <ShoppingCart size={16} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
+                        </button>
+                        <button
+                            onClick={() => onNavigate('foreign_marketplace')}
+                            title="Foreign Marketplace"
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <Globe size={16} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Resize/Collapse Handle */}
                 <button
                     onClick={onToggleCollapse}
@@ -687,8 +715,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ></div>
                 )}
 
-                {/* Board Context Menu */}
-                {contextMenu && (
+            </div>
+
+            {/* Board Context Menu */}
+            {contextMenu && (
                     <div
                         className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
                         style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}

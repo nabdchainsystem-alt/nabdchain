@@ -4,7 +4,6 @@ import { useToast } from './components/Toast';
 import { VENDORS_DATA } from './vendorsData';
 import { Vendor } from './types';
 import { CATEGORY_GROUPS, getCategoryGroup } from './categoryMapping';
-import { VendorDashboard } from './VendorDashboard';
 import { useMarketplaceData } from './integration'; // Import integration hook
 
 const INITIAL_SUPPLIERS = VENDORS_DATA as unknown as Vendor[]; // Cast to new type for initial state
@@ -47,7 +46,7 @@ import { SupplierDetails } from './SupplierDetails';
 const LocalMarketplacePage: React.FC = () => {
     const { showToast } = useToast();
     const { vendors: marketplaceVendors } = useMarketplaceData(); // Use hook
-    const [viewMode, setViewMode] = useState<'marketplace' | 'intelligence'>('marketplace');
+    const [viewMode, setViewMode] = useState<'marketplace' | 'live_tracking'>('marketplace');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         'Industrial & Manufacturing': true,
@@ -158,14 +157,14 @@ const LocalMarketplacePage: React.FC = () => {
                             Marketplace
                         </button>
                         <button
-                            onClick={() => setViewMode('intelligence')}
-                            className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'intelligence'
+                            onClick={() => setViewMode('live_tracking')}
+                            className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'live_tracking'
                                 ? 'bg-white text-clickup-purple shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             <BarChart3 size={14} className="mr-1.5" />
-                            Intelligence
+                            Live Tracking
                         </button>
                     </div>
 
@@ -177,9 +176,9 @@ const LocalMarketplacePage: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            {viewMode === 'intelligence' ? (
+            {viewMode === 'live_tracking' ? (
                 <div className="flex-1 overflow-y-auto">
-                    <VendorDashboard />
+                    <LiveTrackingView />
                 </div>
             ) : (
                 <div className="flex flex-1 overflow-hidden" style={{ zoom: '90%' }}>
@@ -569,6 +568,357 @@ const LocalMarketplacePage: React.FC = () => {
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const LiveTrackingView: React.FC = () => {
+    const glassPanel = "bg-white/90 backdrop-blur-2xl border border-white/50 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.025)]";
+
+    return (
+        <div className="bg-background-light text-slate-900 font-display overflow-hidden h-full w-full flex flex-col md:flex-row">
+            {/* Left Sidebar */}
+            <aside className="w-full md:w-[300px] lg:w-[320px] h-full bg-white border-r border-slate-200 flex flex-col overflow-y-auto shrink-0 z-20 shadow-xl shadow-slate-200/50">
+                <div className="p-5 pb-2">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary text-3xl">deployed_code</span>
+                        <h1 className="text-lg font-bold tracking-tight text-slate-900">SwiftLogistics</h1>
+                    </div>
+
+                    <div className="mb-6">
+                        <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider rounded">Priority Air</span>
+                        <h2 className="mt-2 text-xl font-bold text-slate-900">#8493-XJ</h2>
+                        <p className="text-slate-500 text-sm">Created Oct 23, 2023</p>
+                    </div>
+
+                    <div className="relative overflow-hidden rounded-xl bg-primary p-4 shadow-lg shadow-primary/30 text-white mb-6 group cursor-pointer transition-transform hover:scale-[1.01]">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <span className="material-symbols-outlined text-8xl">local_shipping</span>
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                </span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Live Status</span>
+                            </div>
+                            <p className="text-xl font-bold leading-tight mb-1">In Transit</p>
+                            <p className="text-blue-100 text-sm font-medium">Est. Arrival: Oct 27 - 2:00 PM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-5 py-2">
+                    <h3 className="text-slate-900 font-bold text-sm uppercase tracking-wider mb-3">Package Details</h3>
+                    <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div className="flex flex-col gap-1">
+                            <p className="text-slate-500 text-xs font-medium uppercase">Weight</p>
+                            <p className="text-slate-900 text-sm font-semibold">4.5 lbs</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <p className="text-slate-500 text-xs font-medium uppercase">Dimensions</p>
+                            <p className="text-slate-900 text-sm font-semibold">12x10x5 in</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <p className="text-slate-500 text-xs font-medium uppercase">Service</p>
+                            <p className="text-slate-900 text-sm font-semibold">Express Air</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <p className="text-slate-500 text-xs font-medium uppercase">Items</p>
+                            <p className="text-slate-900 text-sm font-semibold">Electronics</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 p-5 pt-4">
+                    <h3 className="text-slate-900 font-bold text-sm uppercase tracking-wider mb-4">Tracking History</h3>
+                    <div className="grid grid-cols-[32px_1fr] gap-x-3">
+                        <div className="flex flex-col items-center gap-1 pt-1">
+                            <div className="text-primary material-symbols-outlined text-[20px]">check_circle</div>
+                            <div className="w-[2px] bg-primary/20 h-full grow rounded-full"></div>
+                        </div>
+                        <div className="pb-6">
+                            <p className="text-slate-900 text-sm font-bold">Order Placed</p>
+                            <p className="text-slate-500 text-xs">Oct 23, 9:00 AM • San Francisco, CA</p>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-[2px] bg-primary/20 h-2 rounded-full"></div>
+                            <div className="text-primary material-symbols-outlined text-[20px]">local_shipping</div>
+                            <div className="w-[2px] bg-primary/20 h-full grow rounded-full"></div>
+                        </div>
+                        <div className="pb-6 pt-1">
+                            <p className="text-slate-900 text-sm font-bold">Picked Up</p>
+                            <p className="text-slate-500 text-xs">Oct 23, 2:30 PM • San Francisco, CA</p>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-[2px] bg-primary/20 h-2 rounded-full"></div>
+                            <div className="text-primary material-symbols-outlined text-[20px] animate-pulse">warehouse</div>
+                        </div>
+                        <div className="pt-1">
+                            <p className="text-primary text-sm font-bold">In Transit to Hub</p>
+                            <p className="text-slate-500 text-xs">Oct 24, 5:00 AM • Phoenix, AZ</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Map + Progress */}
+            <main className="flex-1 relative bg-slate-50 overflow-hidden flex flex-col justify-center items-center" style={{ background: 'radial-gradient(circle at center, rgba(19, 127, 236, 0.03) 0%, rgba(255,255,255,0) 60%)' }}>
+                <div
+                    className="absolute inset-0 z-0 opacity-[0.03]"
+                    style={{
+                        backgroundImage: 'linear-gradient(#137fec 1px, transparent 1px), linear-gradient(90deg, #137fec 1px, transparent 1px)',
+                        backgroundSize: '40px 40px'
+                    }}
+                ></div>
+
+                <div className="absolute top-6 w-full px-4 md:px-8 z-20 flex justify-center">
+                    <div className={`${glassPanel} px-5 py-2 rounded-full shadow-lg flex items-center justify-between gap-5 max-w-2xl w-full mx-auto relative overflow-hidden`}>
+                        <div className="absolute bottom-0 left-0 h-[2px] bg-slate-100 w-full z-0">
+                            <div className="h-full bg-primary w-[34%] shadow-[0_0_10px_rgba(19,127,236,0.5)]"></div>
+                        </div>
+                        <div className="flex items-center gap-3 z-10 shrink-0">
+                            <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-primary shrink-0">
+                                <span className="material-symbols-outlined text-[18px]">moving</span>
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Covered</span>
+                                <span className="text-base font-bold text-slate-900 font-display leading-none">642 <span className="text-[10px] font-normal text-slate-500">mi</span></span>
+                            </div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-center z-10 mx-2">
+                            <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mt-1">
+                                <div className="h-full bg-gradient-to-r from-primary to-blue-400 w-[34%] rounded-full relative">
+                                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/30 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 z-10 shrink-0 justify-end">
+                            <div className="flex flex-col justify-center items-end">
+                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Remaining</span>
+                                <span className="text-base font-bold text-slate-900 font-display leading-none">1,240 <span className="text-[10px] font-normal text-slate-500">mi</span></span>
+                            </div>
+                            <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                                <span className="material-symbols-outlined text-[18px]">flag</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="relative w-full max-w-5xl h-[340px] flex items-center justify-center z-10 px-3 md:px-8">
+                    <div className="absolute left-10 md:left-14 top-1/2 transform -translate-y-1/2 flex flex-col items-center group z-20">
+                        <div className="w-5 h-5 rounded-full bg-white border-4 border-slate-200 shadow-md mb-3 transition-colors"></div>
+                        <div className={`${glassPanel} px-4 py-2 rounded-xl shadow-sm text-center`}>
+                            <p className="text-sm font-bold text-slate-800">San Francisco</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Origin</p>
+                        </div>
+                    </div>
+                    <div className="absolute right-10 md:right-14 top-1/2 transform -translate-y-1/2 flex flex-col items-center group z-20">
+                        <div className="w-5 h-5 rounded-full bg-slate-800 border-4 border-slate-100 shadow-md mb-3"></div>
+                        <div className={`${glassPanel} px-4 py-2 rounded-xl shadow-sm text-center`}>
+                            <p className="text-sm font-bold text-slate-800">New York</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Destination</p>
+                        </div>
+                    </div>
+
+                    <svg className="w-full h-full absolute inset-0 pointer-events-none" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="routeGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                                <stop offset="0%" stopColor="#cbd5e1"></stop>
+                                <stop offset="35%" stopColor="#137fec"></stop>
+                                <stop offset="100%" stopColor="#e2e8f0"></stop>
+                            </linearGradient>
+                            <filter id="glow-line" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="4"></feGaussianBlur>
+                                <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                            </filter>
+                        </defs>
+                        <path d="M 100 200 C 350 120, 650 280, 900 200" fill="none" stroke="#e2e8f0" strokeLinecap="round" strokeWidth="8" vectorEffect="non-scaling-stroke"></path>
+                        <path className="drop-shadow-xl animate-pulse" d="M 100 200 C 350 120, 650 280, 900 200" fill="none" filter="url(#glow-line)" stroke="url(#routeGradient)" strokeDasharray="1000" strokeDashoffset="0" strokeLinecap="round" strokeWidth="5" vectorEffect="non-scaling-stroke"></path>
+                    </svg>
+
+                    <div className="absolute left-[35%] top-[34%] transform -translate-x-1/2 -translate-y-1/2 z-30 animate-[bounce_4s_ease-in-out_infinite]">
+                        <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-xl w-max flex items-center gap-2 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-6 after:border-transparent after:border-t-slate-900 z-30">
+                            <span className="material-symbols-outlined text-[16px] text-yellow-400">schedule</span>
+                            <div className="text-left leading-none">
+                                <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Est. Arrival</span>
+                                <span className="block text-sm font-bold">3 days left</span>
+                            </div>
+                        </div>
+                        <div className="relative w-16 h-16 bg-white rounded-full shadow-[0_0_24px_rgba(19,127,236,0.35)] flex items-center justify-center border-[5px] border-blue-50 z-20">
+                            <div className="absolute inset-0 rounded-full border border-primary/20"></div>
+                            <span className="material-symbols-outlined text-primary text-3xl drop-shadow-sm">local_shipping</span>
+                            <div className="absolute inset-0 rounded-full border-2 border-primary opacity-0 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                        </div>
+                        <div className={`${glassPanel} absolute top-24 left-1/2 transform -translate-x-1/2 bg-white/90 px-4 py-2 rounded-lg border border-white/50 shadow-lg w-max flex items-center gap-2`}>
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <p className="text-xs font-bold text-slate-700">Passing Phoenix, AZ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="absolute bottom-8 z-10 w-full px-3 md:px-6">
+                    <div className="flex gap-3 justify-center flex-wrap">
+                        <div className={`${glassPanel} h-11 px-4 rounded-full shadow-sm flex items-center gap-3 min-w-[150px] hover:-translate-y-1 transition-transform duration-300`}>
+                            <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-orange-400 text-lg">sunny</span>
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Weather</span>
+                                <span className="text-sm font-bold text-slate-900 leading-none">Clear, 78°F</span>
+                            </div>
+                        </div>
+                        <div className={`${glassPanel} h-11 px-4 rounded-full shadow-sm flex items-center gap-3 min-w-[150px] hover:-translate-y-1 transition-transform duration-300`}>
+                            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-green-500 text-lg">traffic</span>
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Traffic</span>
+                                <span className="text-sm font-bold text-slate-900 leading-none">Light</span>
+                            </div>
+                        </div>
+                        <div className={`${glassPanel} h-11 px-4 rounded-full shadow-sm flex items-center gap-3 min-w-[150px] hover:-translate-y-1 transition-transform duration-300`}>
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-blue-500 text-lg">speed</span>
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Avg Speed</span>
+                                <span className="text-sm font-bold text-slate-900 leading-none">62 mph</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            {/* Right Sidebar */}
+            <aside className="w-full md:w-[280px] bg-slate-50/50 border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto">
+                <div className="p-5 border-b border-slate-200 bg-white">
+                    <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Your Courier</h3>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="w-14 h-14 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-md" data-alt="Portrait of delivery driver in uniform">
+                                <img alt="Driver" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAtid8GVeWd3NUiRISf8oaQNQM8t8PssDfs5wCEwzNnzMg26CAe1gyCuLN_AoVmBKNIs_kLk593dl-aMDfKwZFcYY9scvwcM6v82XC5yeJXJyjtfNi6CPM_qmB6JcGN4-M9b4O5nbGhsdnZJyrHmHViip4_WvOh-aevWvnaq4ve_bYapSp0aOIV4s8zUn7W4UY9AeLm-tJpH5eOS5K7DFOqX5BaRv1CFk_QGJAzdvyp6Oqq-CZsUYwZfuqnZZP_Ni0qYPzUgKT4-un" />
+                            </div>
+                            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-900 text-lg">Michael R.</p>
+                            <div className="flex items-center gap-1 text-yellow-500">
+                                <span className="material-symbols-outlined text-[16px] fill-current">star</span>
+                                <span className="text-slate-600 text-xs font-medium">4.9 (1240)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                        <button className="flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm">
+                            <span className="material-symbols-outlined text-[18px]">chat</span>
+                            Message
+                        </button>
+                        <button className="flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm">
+                            <span className="material-symbols-outlined text-[18px]">call</span>
+                            Call
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-5 border-b border-slate-200">
+                    <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Management</h3>
+                    <div className="flex flex-col gap-3">
+                        <button className="group flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-md bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <span className="material-symbols-outlined text-[20px]">edit_location_alt</span>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm font-semibold text-slate-900">Change Delivery</p>
+                                    <p className="text-xs text-slate-500">Update address or time</p>
+                                </div>
+                            </div>
+                            <span className="material-symbols-outlined text-slate-300 group-hover:text-primary">chevron_right</span>
+                        </button>
+                        <button className="group flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-md bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <span className="material-symbols-outlined text-[20px]">support_agent</span>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm font-semibold text-slate-900">Report Issue</p>
+                                    <p className="text-xs text-slate-500">Damaged or lost item</p>
+                                </div>
+                            </div>
+                            <span className="material-symbols-outlined text-slate-300 group-hover:text-primary">chevron_right</span>
+                        </button>
+                        <button className="group flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-md bg-blue-50 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <span className="material-symbols-outlined text-[20px]">ios_share</span>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm font-semibold text-slate-900">Share Tracking</p>
+                                    <p className="text-xs text-slate-500">Send link to recipient</p>
+                                </div>
+                            </div>
+                            <span className="material-symbols-outlined text-slate-300 group-hover:text-primary">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-5 flex-1">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Other Orders</h3>
+                        <button className="text-primary text-xs font-semibold hover:underline">View All</button>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-bold text-slate-800 text-sm">#9281-AB</span>
+                                <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Delivered</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="material-symbols-outlined text-slate-400 text-[16px]">package_2</span>
+                                <p className="text-xs text-slate-600 truncate">Office Supplies Bundle</p>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                <p className="text-[10px] text-slate-400">Oct 20, 2023</p>
+                                <span className="material-symbols-outlined text-slate-300 text-[16px] group-hover:text-primary">arrow_forward</span>
+                            </div>
+                        </div>
+                        <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-bold text-slate-800 text-sm">#7734-XY</span>
+                                <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-bold uppercase rounded">Processing</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="material-symbols-outlined text-slate-400 text-[16px]">inventory_2</span>
+                                <p className="text-xs text-slate-600 truncate">Gaming Monitor 27"</p>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                <p className="text-[10px] text-slate-400">Today</p>
+                                <span className="material-symbols-outlined text-slate-300 text-[16px] group-hover:text-primary">arrow_forward</span>
+                            </div>
+                        </div>
+                        <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="font-bold text-slate-800 text-sm">#6521-ZZ</span>
+                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded">Draft</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="material-symbols-outlined text-slate-400 text-[16px]">edit_note</span>
+                                <p className="text-xs text-slate-600 truncate">Return: Headphones</p>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                <p className="text-[10px] text-slate-400">Created yesterday</p>
+                                <span className="material-symbols-outlined text-slate-300 text-[16px] group-hover:text-primary">arrow_forward</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button className="mt-4 w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 text-sm font-medium hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined text-[18px]">add</span>
+                        Create New Shipment
+                    </button>
+                </div>
+            </aside>
         </div>
     );
 };

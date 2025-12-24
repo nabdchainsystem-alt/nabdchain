@@ -1,392 +1,356 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Vendor } from './types';
-import { MOCK_QUOTATIONS, Quotation } from './quotationsData';
-import { ArrowLeft, Star, MapPin, Phone, Mail, Globe, MessageSquare, FileText, Clock, CheckCircle, XCircle, AlertCircle, ShoppingBag, PlusCircle, ChevronRight, ShieldCheck, TrendingUp, Users, Building2, Award, Zap, Calendar, ExternalLink, ArrowUpRight, Search, Filter } from 'lucide-react';
+import {
+    ArrowLeft,
+    CheckCircle,
+    Filter,
+    Globe,
+    Heart,
+    Mail,
+    MapPin,
+    Phone,
+    Search,
+    Share2,
+    ShieldCheck,
+    ShoppingCart,
+    Star,
+    Zap,
+} from 'lucide-react';
 
 interface SupplierDetailsProps {
     vendor: Vendor;
     onBack: () => void;
 }
 
+const sampleProducts = [
+    { id: 'p1', title: 'Heavy Duty Steel I-Beam (Type H)', moq: 'MOQ: 50 Tons', price: '$450', unit: '/ton', badge: 'Bestseller', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAa_YadcGAEglrgCjiyKvwvWUBUQbUMbTEvJt9g-Slekwcn_fE3dp3CD3nTfrFMn1X3x1H092Nt_hDGCJ5g8SPXvMZNb_QTl-7TMMFsqSdOxvKgmu4h6t1quLjDxQ6vWbpipk8EKDbu7DeIJ-oylSGCldfMG_HGwEB3Ys4hwyyOLUMFi0dpgXIR9Vs7oJzo9da-KXzr2OdSTQNRndC_7up39R0JJRtjvlek_TexrtsF2iC4bmHHaN-FSYyI4lFqCjZYNKqMpBIJhpQ' },
+    { id: 'p2', title: 'Stainless Steel Hex Bolts M12', moq: 'MOQ: 1000 Units', price: '$0.45', unit: '/unit', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwkUtcn1FPBrWKYfbrUGHcw2eq22D6jWmhgy8XaPXQL_1PynduksikWnh2meeuvmKwLY4j-1bDDGoLKK2s41VUj8pp3gyJnRIVNA4uJbfp_xcBEEDG1jRKvhv-zXy4CJ7b6l_ovUhty5UOKA_mm0FgCBNG5B-EfYfWCGxk6pq2Ghva3yAhok4n5A8w7balSCZ9b1bqR_Wgta9-WzQ5KzMByxlLuV-OjBPKABSdLFL3H0EjVjvibfvgo5Mu8mshd2t05zWjN6nXX7E' },
+    { id: 'p3', title: 'Aluminum Sheet 5052', moq: 'MOQ: 20 Sheets', price: '$120', unit: '/sheet', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA6JTz5ytSx7gyfmrURJqhRtIEh2XPOvcnMfqX3AYJR8U-ArDYLzvUvVz9JgwwG66apB3rOVkaRhzxtwd7PE9GoYhB49uLX4Xqcfhm6gUqsi3QsxhhI4hs-AfNYkRnuU-mlF6wBtxzz9Rveae2hmZfjNnEYI8vJLmy8PErHgjvcp3EbW1g32gfay8baZ3P0O_8fk0hdqm6CD0M5AFa78e0nsSK_hNTOO6UgGdomuhWj6l4wWcRoNzMt3jjZLTX0zaZfjR6godwut8U' },
+    { id: 'p4', title: 'ARC 200 Welding Machine', moq: 'MOQ: 5 Units', price: '$299', unit: '', badge: 'Sale', original: '$349', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC05D5QCr0sFJ0xmYTKS6Z3SbZsaCfcq9mIyvsGmCALudUf8wOUKjxkgtlxKDoD9Liy2yW5x_4AMh_tQLhsLH_atwceF_Y-BUzAm-26RKc5kUhfcezz9sY2FXhc7VkxW18Y5ZuyEZ56Fon46Jchvz_z1A3eJQ5aYYyiAkytx_NW0zu6SqyEopcAvQHCzSIfPEf4F2VmS5IFHTeZtfWbMhbNPtzXfbMFGi5XahLlbeyNUGzbMUk-Xj50CiLwVmA5qN8bxCSfoNtvbak' },
+    { id: 'p5', title: 'Seamless Steel Pipe', moq: 'MOQ: 50 Pipes', price: '$85', unit: '/pipe', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCN4giKJXqbIIxpmLOyCsdyAT3C3SKmZ6-ez3FtOfCyEu-3ZfGvl52HQTLaFkq6BcaznCU2vM5ZRDUNLL0_Zo77QV1JXY_BDtq3jaKXPO_BP-SmYcc5y3iKot_XqgdEf6SMIHYlnDm7BARtbsXuoCfk0u_ieM2w5lMNNonNMPDVeA3X_P2FZ_JrvMslqg3ZLHPhVUMdlD0JNCSIOqeXHGx-bT19I5MBAD4YU9Ky7fl0gVREhOEPf3EgTvKwtHPxIIRjYRjC8u5FmTs' },
+    { id: 'p6', title: 'Alloy 6061 Plate', moq: 'MOQ: 15 Sheets', price: '$140', unit: '/sheet', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA6JTz5ytSx7gyfmrURJqhRtIEh2XPOvcnMfqX3AYJR8U-ArDYLzvUvVz9JgwwG66apB3rOVkaRhzxtwd7PE9GoYhB49uLX4Xqcfhm6gUqsi3QsxhhI4hs-AfNYkRnuU-mlF6wBtxzz9Rveae2hmZfjNnEYI8vJLmy8PErHgjvcp3EbW1g32gfay8baZ3P0O_8fk0hdqm6CD0M5AFa78e0nsSK_hNTOO6UgGdomuhWj6l4wWcRoNzMt3jjZLTX0zaZfjR6godwut8U' },
+    { id: 'p7', title: 'Structural Steel Beam (Type W)', moq: 'MOQ: 30 Tons', price: '$480', unit: '/ton', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAa_YadcGAEglrgCjiyKvwvWUBUQbUMbTEvJt9g-Slekwcn_fE3dp3CD3nTfrFMn1X3x1H092Nt_hDGCJ5g8SPXvMZNb_QTl-7TMMFsqSdOxvKgmu4h6t1quLjDxQ6vWbpipk8EKDbu7DeIJ-oylSGCldfMG_HGwEB3Ys4hwyyOLUMFi0dpgXIR9Vs7oJzo9da-KXzr2OdSTQNRndC_7up39R0JJRtjvlek_TexrtsF2iC4bmHHaN-FSYyI4lFqCjZYNKqMpBIJhpQ' },
+    { id: 'p8', title: 'Carbon Steel Nuts M10', moq: 'MOQ: 5000 Units', price: '$0.08', unit: '/unit', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwkUtcn1FPBrWKYfbrUGHcw2eq22D6jWmhgy8XaPXQL_1PynduksikWnh2meeuvmKwLY4j-1bDDGoLKK2s41VUj8pp3gyJnRIVNA4uJbfp_xcBEEDG1jRKvhv-zXy4CJ7b6l_ovUhty5UOKA_mm0FgCBNG5B-EfYfWCGxk6pq2Ghva3yAhok4n5A8w7balSCZ9b1bqR_Wgta9-WzQ5KzMByxlLuV-OjBPKABSdLFL3H0EjVjvibfvgo5Mu8mshd2t05zWjN6nXX7E' },
+];
+
+const sampleReviews = [
+    { id: 'r1', name: 'John D.', time: '2w ago', rating: 5, text: 'Excellent quality steel beams. The customization was spot on.', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC931LCqTWAhfR6L52sffoHMtyw--iVP9Wwyl5SY7qMhK3j83jomzz-28jQx-qTVOsutdlsi4-8Y8608_Wp_udNj_bbJUaaxId_uHHqpMK9iAhbShv48AyBHpkE7farcO3FbwY_T2mDTpz-b35ZytMC7aj5Y6omWw4RGKXrRanyBSZqWWD6nTjPxyWNnb_U9QsO2cDcpFvXlMINWTL4SB5nI9gdiN95-6-dSo6iyEzh2LuSrytDi_k9JrLKSezvWN5PKnG02ne5ZNY' },
+    { id: 'r2', name: 'Sarah M.', time: '1mo ago', rating: 4, text: 'Great product, slight delay in shipping but good communication.', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAGCwe7FHOGGBWutdaKAvDKkbgwIPFgAcuQGJaxmzPaGTp_3Kk53K313PVQa7FDdULQtDUdNX55jTApiujAi63G9cFpzSnvJ8rXiAc464FTzstG3RR2r0eQf8k3sQEC-fLlRPeM97o1sSQq2dgjX4Xmhw33hgEa87BcdZgAx0EqQbFcSFx27YU8iUpYxRO-RBUQVU6uNLvnBZt_-DHAUeSKr-XiyBbUHyOkRA6pY3x3C4VpNUOPsAflwJzFmvWnbUeWCrdVm2s2Fmg' },
+    { id: 'r3', name: 'Mike K.', time: '2mo ago', rating: 4, text: 'Good value for the price. Packaging could be better.', avatar: null },
+    { id: 'r4', name: 'Construction Co.', time: '3mo ago', rating: 5, text: 'Bulk order of hex bolts arrived perfectly counted. Recommended.', avatar: null },
+    { id: 'r5', name: 'TechFab Inc', time: '4mo ago', rating: 5, text: 'Consistent quality over 3 years of partnership.', avatar: null },
+];
+
 export const SupplierDetails: React.FC<SupplierDetailsProps> = ({ vendor, onBack }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'quotations' | 'products'>('overview');
+    const location = vendor.address || 'Location not specified';
+    const rating = vendor.rating ?? 4.8;
+    const reviewsCount = vendor.reviews ?? 120;
+    const responseTime = vendor.deliveryTime || '< 2h';
+    const onTimeRate = vendor.reliabilityScore ? `${vendor.reliabilityScore}%` : '98%';
+    const ordersCount = '1.2k+';
+    const description =
+        vendor.description ||
+        'Premium provider of industrial materials and equipment with expertise in bulk orders and reliable logistics.';
+    const isVerified = vendor.status === 'Active' || vendor.contractStatus === 'Active';
+    const heroImage =
+        vendor.image ||
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuBYa31Ysrv0UAeVgQrZvkMxmkn-VIG0NSL3kyxBTQIFWRf6CWE2Q5j1KI9kvvM-YNa4nzYKWOkOF6WNazvC1G2nzXeBjShszVpzdQQQfqtGyUHNQ4KBQibzP2-99N3r7R1E0rCDlaNMzfFG_vUHBoidbkjFB1kYRXSCJ1ThhpyYQII8nwEWCRl1QmcrGKacGK27QVeIrshiO0x1iZROaiv5BnAIdQPUv2GgWP-01L4FvHDV2Si62wcuOMKfh8J66uwaKINxsWD3YhA';
+    const coverImage =
+        vendor.coverImage ||
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuDWfVRxXjT2DNZcbZDWu2mq-ZxeWtJcKQ0x9uEwUHvAMjbS0DbBaFfvu-wlPsdhB6Ph_O-jBUvGnDYoNMDe4CGPNhQ1-jP56lTS1jJgWgWbO49VFCLKXqFrKUfp0mmtSvJvEzcPnJtdBd8JyXEZYAQG9MiHniImFocSkzC4NQBdk-rMKVLnni2zVxhiu4g38Vq9IRKpo2VLvllAJZMbiDeOEbWvK5vuR3JRJoHE38F54kfRCByW29GMyV7oh7I9L2rlGdRqNneuH8c';
 
-    // Filter quotations for this vendor
-    const quotations = MOCK_QUOTATIONS.filter(q => q.vendorId === vendor.id || q.vendorId === '1');
-
-    const getStatusColor = (status: Quotation['status']) => {
-        switch (status) {
-            case 'Received': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-            case 'Processing': return 'bg-blue-50 text-blue-700 border-blue-100';
-            case 'Pending': return 'bg-amber-50 text-amber-700 border-amber-100';
-            case 'Rejected': return 'bg-red-50 text-red-700 border-red-100';
-            default: return 'bg-gray-50 text-gray-700 border-gray-100';
-        }
-    };
+    const metrics = [
+        { label: 'Rating', value: rating.toFixed(1), sub: `(${reviewsCount} Reviews)`, icon: Star, color: 'text-amber-500' },
+        { label: 'Response', value: responseTime, sub: 'Fast', icon: Zap, color: 'text-blue-600' },
+        { label: 'On-time', value: onTimeRate, sub: 'Last 12 mo', icon: CheckCircle, color: 'text-emerald-600' },
+        { label: 'Orders', value: ordersCount, sub: 'Completed', icon: ShoppingCart, color: 'text-indigo-600' },
+    ];
 
     return (
-        <div className="flex flex-col h-full bg-[#F8F9FC] overflow-hidden font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="flex flex-col h-full bg-slate-50 text-slate-900 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+                <div className="w-full mx-auto max-w-[min(110rem,calc(100vw-2rem))] px-4 md:px-6 lg:px-8 py-6 space-y-4">
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <button
+                            onClick={onBack}
+                            className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors shadow-sm"
+                        >
+                            <ArrowLeft size={16} className="mr-1.5" />
+                            Back
+                        </button>
+                        <span className="text-slate-300">/</span>
+                        <span className="text-slate-500">Marketplace</span>
+                        <span className="text-slate-300">/</span>
+                        <span className="font-semibold text-slate-900">{vendor.name}</span>
+                    </div>
 
-            {/* Top Navigation Bar - Floating & Glass */}
-            <div className="absolute top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center pointer-events-none">
-                <button
-                    onClick={onBack}
-                    className="pointer-events-auto flex items-center px-4 py-2 bg-white/80 backdrop-blur-md border border-white/40 rounded-full text-slate-700 font-medium shadow-lg shadow-black/5 hover:bg-white hover:scale-105 transition-all duration-300 group"
-                >
-                    <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-                    Back
-                </button>
-
-                <div className="flex gap-3 pointer-events-auto">
-                    <button className="p-2.5 bg-white/80 backdrop-blur-md border border-white/40 rounded-full text-slate-700 shadow-lg shadow-black/5 hover:bg-white hover:scale-110 transition-all duration-300">
-                        <Globe size={20} />
-                    </button>
-                    <button className="p-2.5 bg-white/80 backdrop-blur-md border border-white/40 rounded-full text-slate-700 shadow-lg shadow-black/5 hover:bg-white hover:scale-110 transition-all duration-300">
-                        <MessageSquare size={20} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Hero Section - Cinematic & Immersive */}
-            <div className="relative h-80 w-full shrink-0 group overflow-hidden">
-                <div className="absolute inset-0 bg-slate-900">
-                    <img
-                        src={vendor.coverImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=80'}
-                        alt="Cover"
-                        className="w-full h-full object-cover opacity-80 mix-blend-overlay transition-transform duration-1000 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FC] via-transparent to-black/30"></div>
-                </div>
-            </div>
-
-            {/* Main Content - The "Floating Citadel" Layout */}
-            <div className="flex-1 overflow-y-auto relative z-10 -mt-32 px-4 md:px-8 pb-12" style={{ zoom: '85%' }}>
-                <div className="w-full max-w-[98%] mx-auto">
-
-                    {/* 1. The Profile Card - Floating, High Contrast, Readable */}
-                    <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/50 p-8 mb-10 relative overflow-hidden backdrop-blur-xl">
-                        {/* Decorative Background Elements */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
-
-                        <div className="relative flex flex-col md:flex-row gap-8 items-end md:items-center">
-                            {/* Avatar with Status Ring */}
-                            <div className="relative -mt-20 md:-mt-0 shrink-0">
-                                <div className="w-40 h-40 rounded-[2rem] bg-white p-2 shadow-xl shadow-slate-200 ring-1 ring-slate-100">
-                                    <img src={vendor.image} alt={vendor.name} className="w-full h-full object-cover rounded-[1.5rem]" />
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+                        <div className="lg:col-span-8 bg-white rounded-lg border border-slate-200 p-0 shadow-sm flex overflow-hidden relative group">
+                            <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-slate-50 to-transparent pointer-events-none z-0"></div>
+                            <div className="flex flex-col sm:flex-row w-full z-10">
+                                <div className="shrink-0 p-5 flex flex-col justify-center items-center border-b sm:border-b-0 sm:border-r border-slate-200 bg-slate-50/60 w-full sm:w-48">
+                                    <div className="size-20 bg-white rounded-lg p-2 border border-slate-200 flex items-center justify-center mb-3 shadow-sm overflow-hidden">
+                                        <img src={heroImage} alt={vendor.name} className="w-full h-full object-cover rounded-md" />
+                                    </div>
+                                    {isVerified && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-100">
+                                            <ShieldCheck size={12} className="fill-blue-600 text-blue-600" />
+                                            Verified
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white px-3 py-1 rounded-full border-[4px] border-white shadow-lg flex items-center gap-1">
-                                    <ShieldCheck size={14} fill="currentColor" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Verified</span>
-                                </div>
-                            </div>
-
-                            {/* Info Block */}
-                            <div className="flex-1 min-w-0 pt-2 md:pt-0">
-                                <div className="flex items-center gap-4 mb-2">
-                                    <h1 className="text-4xl font-bold text-slate-900 tracking-tight">{vendor.name}</h1>
-                                    <div className="flex gap-2">
-                                        {vendor.status === 'Active' && (
-                                            <span className="px-3 py-1 bg-slate-900 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-lg shadow-slate-900/20">
-                                                Premium
+                                <div className="flex-1 p-5 flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <h1 className="text-2xl font-bold text-slate-900 leading-none">{vendor.name}</h1>
+                                                <p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
+                                                    <MapPin size={14} className="text-blue-500" />
+                                                    <span className="truncate">{location}</span>
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button className="size-9 flex items-center justify-center rounded bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+                                                    <Share2 size={16} />
+                                                </button>
+                                                <button className="size-9 flex items-center justify-center rounded bg-slate-100 text-slate-500 hover:text-rose-500 hover:bg-white border border-transparent hover:border-slate-200 transition-all">
+                                                    <Heart size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-slate-600 text-sm leading-relaxed line-clamp-3 max-w-2xl">{description}</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-200">
+                                        <button className="flex-1 sm:flex-none flex items-center justify-center rounded bg-blue-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition-colors">
+                                            <Mail size={16} className="mr-1.5" /> Contact Supplier
+                                        </button>
+                                        <button className="flex-1 sm:flex-none flex items-center justify-center rounded bg-white border border-slate-200 px-4 py-1.5 text-xs font-bold text-slate-900 hover:bg-slate-50 transition-colors">
+                                            <ShoppingCart size={16} className="mr-1.5" /> View Catalog
+                                        </button>
+                                        <div className="hidden sm:flex items-center gap-3 ml-auto text-xs text-slate-500">
+                                            <span className="flex items-center gap-1">
+                                                <CheckCircle size={14} className="text-emerald-500" /> ISO 9001
                                             </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <p className="text-lg text-slate-500 font-medium mb-6 max-w-3xl leading-relaxed">
-                                    {vendor.description || 'Premier supplier delivering excellence in every transaction. We provide top-tier materials and equipment to enterprise clients, ensuring quality and reliability.'}
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
-                                    <div className="flex items-center px-4 py-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
-                                        <Building2 size={16} className="mr-2 text-indigo-500" />
-                                        {vendor.category}
-                                    </div>
-                                    <div className="flex items-center px-4 py-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
-                                        <MapPin size={16} className="mr-2 text-rose-500" />
-                                        {vendor.address || 'Riyadh, KSA'}
-                                    </div>
-                                    <div className="flex items-center px-4 py-2 rounded-xl bg-slate-50 text-slate-900 border border-slate-100">
-                                        <Star size={16} className="mr-2 text-amber-400 fill-amber-400" />
-                                        <span className="font-bold">{vendor.rating}</span>
-                                        <span className="text-slate-400 ml-1">({vendor.reviews})</span>
+                                            <span className="flex items-center gap-1">
+                                                <CheckCircle size={14} className="text-emerald-500" /> Custom Mfg
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Action Buttons - Big & Bold */}
-                            <div className="flex gap-4 w-full md:w-auto">
-                                <button className="flex-1 md:flex-none items-center justify-center px-8 py-4 bg-white border border-slate-200 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow-md active:scale-95">
-                                    Message
-                                </button>
-                                <button className="flex-1 md:flex-none flex items-center justify-center px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:scale-95">
-                                    <Zap size={20} className="mr-2 fill-indigo-200 text-indigo-200" />
-                                    Request Quote
-                                </button>
-                            </div>
+                        </div>
+                        <div className="lg:col-span-4 grid grid-cols-2 gap-3">
+                            {metrics.map((metric) => {
+                                const Icon = metric.icon;
+                                return (
+                                    <div
+                                        key={metric.label}
+                                        className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col justify-between hover:border-blue-100 transition-colors shadow-sm"
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-semibold text-slate-500">{metric.label}</span>
+                                            <Icon size={18} className={metric.color} />
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-2xl font-black text-slate-900 leading-none">{metric.value}</span>
+                                            {metric.sub && <span className="text-[10px] text-slate-500 mb-0.5">{metric.sub}</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* 2. The Grid Layout - Bento Style */}
-                    <div className="grid grid-cols-12 gap-8">
-
-                        {/* Left Column: Navigation & Content */}
-                        <div className="col-span-12 lg:col-span-8 space-y-8">
-
-                            {/* Sticky Tabs */}
-                            <div className="sticky top-4 z-30 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-lg shadow-slate-200/50 p-1.5 flex gap-1">
-                                {['overview', 'quotations', 'products'].map((tab) => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab as any)}
-                                        className={`flex-1 py-3 rounded-xl text-sm font-bold capitalize transition-all duration-300 ${activeTab === tab
-                                            ? 'bg-white text-indigo-600 shadow-md ring-1 ring-black/5'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                            }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {activeTab === 'overview' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-
-                                    {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {[
-                                            { label: 'Total Spend', value: '$45.2k', trend: '+12%', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                            { label: 'Active Orders', value: '2', sub: 'Processing', icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                            { label: 'Avg. Delivery', value: '2 Days', sub: '98% On-time', icon: Clock, color: 'text-violet-600', bg: 'bg-violet-50' },
-                                            { label: 'Response', value: '< 1hr', sub: 'Very Fast', icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50' },
-                                        ].map((stat, i) => (
-                                            <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                                                        <stat.icon size={20} />
-                                                    </div>
-                                                    {stat.trend && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">{stat.trend}</span>}
-                                                </div>
-                                                <div className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</div>
-                                                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.label}</div>
-                                            </div>
-                                        ))}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                        <div className="lg:col-span-8 flex flex-col gap-3">
+                            <div className="bg-white rounded-lg border border-slate-200 p-2 pl-3 flex flex-wrap gap-2 items-center justify-between shadow-sm sticky top-3 z-10">
+                                <div className="flex items-center gap-4 overflow-x-auto">
+                                    <h3 className="text-sm font-bold text-slate-900 whitespace-nowrap">Catalog</h3>
+                                    <div className="h-4 w-px bg-slate-200"></div>
+                                    <div className="flex gap-1">
+                                        <button className="px-2.5 py-1 text-xs font-medium rounded bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors whitespace-nowrap">
+                                            All Products
+                                        </button>
+                                        <button className="px-2.5 py-1 text-xs font-medium rounded text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors whitespace-nowrap">
+                                            Raw Materials
+                                        </button>
+                                        <button className="px-2.5 py-1 text-xs font-medium rounded text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors whitespace-nowrap">
+                                            Machinery
+                                        </button>
+                                        <button className="px-2.5 py-1 text-xs font-medium rounded text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors whitespace-nowrap">
+                                            Fasteners
+                                        </button>
                                     </div>
-
-                                    {/* Company Details - Bento Card */}
-                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                                        <h3 className="text-xl font-bold text-slate-900 mb-6 relative z-10">Company Overview</h3>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
-                                            <div className="prose prose-slate">
-                                                <p className="text-slate-600 leading-relaxed">
-                                                    {vendor.description || `${vendor.name} is a premier supplier in the ${vendor.category} sector. We specialize in providing high-quality materials and equipment to large-scale enterprises. Our commitment to quality and speed makes us the preferred partner for over 500 companies.`}
-                                                </p>
-                                                <button className="mt-4 text-indigo-600 font-bold flex items-center hover:underline">
-                                                    Read full profile <ArrowUpRight size={16} className="ml-1" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <input
+                                            className="h-8 w-36 md:w-48 text-xs border border-slate-200 bg-slate-50 rounded pl-8 pr-8 focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
+                                            placeholder="Filter products..."
+                                            type="text"
+                                        />
+                                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <Filter size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    </div>
+                                    <button className="size-8 flex items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+                                        <Search size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+                                {sampleProducts.map((product) => (
+                                    <div
+                                        key={product.id}
+                                        className="group bg-white rounded-lg border border-slate-200 overflow-hidden hover:shadow-md hover:border-blue-100 transition-all flex flex-col"
+                                    >
+                                        <div className="aspect-[4/3] relative bg-slate-100 overflow-hidden">
+                                            {product.badge && (
+                                                <div
+                                                    className={`absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide text-white ${product.badge === 'Sale' ? 'bg-rose-500' : 'bg-black/70'}`}
+                                                >
+                                                    {product.badge}
+                                                </div>
+                                            )}
+                                            <div
+                                                className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
+                                                style={{ backgroundImage: `url(${product.image})` }}
+                                            ></div>
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                                        </div>
+                                        <div className="p-3 flex flex-col flex-1">
+                                            <h4 className="text-sm font-bold text-slate-900 leading-tight mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                                {product.title}
+                                            </h4>
+                                            <p className="text-[10px] text-slate-500 mb-2">{product.moq}</p>
+                                            <div className="mt-auto flex items-end justify-between border-t border-dashed border-slate-200 pt-2">
+                                                <div className="flex flex-col leading-none">
+                                                    {product.original && (
+                                                        <span className="text-[10px] text-rose-500 line-through">{product.original}</span>
+                                                    )}
+                                                    <span className="text-sm font-bold text-slate-900">
+                                                        {product.price}
+                                                        <span className="text-[10px] font-normal text-slate-500">{product.unit}</span>
+                                                    </span>
+                                                </div>
+                                                <button className="size-7 flex items-center justify-center rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                                                    <PlusIcon />
                                                 </button>
                                             </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {[
-                                                    { label: 'Est. Year', value: '2021' },
-                                                    { label: 'Employees', value: '50-100' },
-                                                    { label: 'Min Order', value: vendor.minOrder },
-                                                    { label: 'Payment', value: 'Net 30' },
-                                                ].map((item, i) => (
-                                                    <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{item.label}</div>
-                                                        <div className="text-lg font-bold text-slate-900">{item.value}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
                                         </div>
                                     </div>
+                                ))}
+                            </div>
+                            <button className="w-full py-2 bg-white border border-slate-200 text-xs font-semibold rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors">
+                                Load More Products
+                            </button>
+                        </div>
 
-                                    {/* Featured Products */}
-                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                                        <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-                                            <h3 className="text-xl font-bold text-slate-900">Featured Products</h3>
-                                            <button onClick={() => setActiveTab('products')} className="text-sm font-bold text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors">
-                                                View All Products
-                                            </button>
-                                        </div>
-                                        <div className="p-8 grid grid-cols-1 sm:grid-cols-3 gap-8">
-                                            {[1, 2, 3].map((i) => (
-                                                <div key={i} className="group cursor-pointer">
-                                                    <div className="aspect-[4/3] bg-slate-100 rounded-2xl overflow-hidden mb-4 relative">
-                                                        <img
-                                                            src={`https://images.unsplash.com/photo-${i === 1 ? '1581091226825-a6a2a5aee158' : i === 2 ? '1535813547-99c456a41d4a' : '1586075010923-2dd4570fb338'}?auto=format&fit=crop&w=600&q=80`}
-                                                            alt="Product"
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                                                        <button className="absolute bottom-3 right-3 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                                                            <PlusCircle size={20} className="text-slate-900" />
-                                                        </button>
-                                                    </div>
-                                                    <h4 className="font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">Industrial Grade Item {i}</h4>
-                                                    <div className="flex justify-between items-center">
-                                                        <p className="text-sm text-slate-500">In Stock</p>
-                                                        <p className="font-bold text-slate-900">$120.00</p>
-                                                    </div>
-                                                </div>
+                        <div className="lg:col-span-4 flex flex-col gap-4 lg:sticky lg:top-4 self-start">
+                            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-900">Contact</h3>
+                                    <span className="flex h-2 w-2 rounded-full bg-emerald-500" title="Online"></span>
+                                </div>
+                                <div className="h-36 w-full relative bg-slate-200">
+                                    <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${coverImage})` }}></div>
+                                    <div className="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded text-[10px] font-bold backdrop-blur shadow-sm">
+                                        {location}
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-3 text-sm">
+                                    <div className="flex gap-3 items-center">
+                                        <Phone size={18} className="text-slate-400" />
+                                        <span className="font-medium text-slate-900">{vendor.phone || '+1 (555) 123-4567'}</span>
+                                    </div>
+                                    <div className="flex gap-3 items-center">
+                                        <Globe size={18} className="text-slate-400" />
+                                        <a
+                                            className="font-medium text-blue-600 hover:underline"
+                                            href={vendor.website || '#'}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            {vendor.website || 'acmeindustrial.com'}
+                                        </a>
+                                    </div>
+                                    <div className="flex gap-3 items-center">
+                                        <Mail size={18} className="text-slate-400" />
+                                        <span className="font-medium text-slate-900">{vendor.email || 'contact@acmeindustrial.com'}</span>
+                                    </div>
+                                    <div className="flex gap-3 items-center">
+                                        <MapPin size={18} className="text-slate-400" />
+                                        <span className="font-medium text-slate-900">{location}</span>
+                                    </div>
+                                    <button className="w-full mt-2 rounded bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow hover:bg-blue-700 transition-all">
+                                        Request Custom Quote
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col max-h-[70vh] overflow-hidden">
+                                <div className="shrink-0 p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="font-bold text-slate-900">Reviews</h3>
+                                        <p className="text-[10px] text-slate-500">Recent feedback from buyers</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-black text-slate-900 leading-none">{rating.toFixed(1)}</div>
+                                        <div className="flex text-amber-500 text-[10px] space-x-0.5">
+                                            {Array.from({ length: 5 }).map((_, idx) => (
+                                                <Star
+                                                    key={idx}
+                                                    size={12}
+                                                    className={`${idx < Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                                                />
                                             ))}
                                         </div>
                                     </div>
                                 </div>
-                            )}
-
-                            {activeTab === 'quotations' && (
-                                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
-                                    <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-                                        <h3 className="text-xl font-bold text-slate-900">Quotation History</h3>
-                                        <div className="flex gap-2">
-                                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg"><Search size={18} /></button>
-                                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg"><Filter size={18} /></button>
-                                        </div>
-                                    </div>
-                                    {quotations.length > 0 ? (
-                                        <table className="w-full text-left">
-                                            <thead className="bg-slate-50/50 border-b border-slate-100">
-                                                <tr>
-                                                    <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Reference</th>
-                                                    <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
-                                                    <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</th>
-                                                    <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                                                    <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                                {quotations.map((quote) => (
-                                                    <tr key={quote.id} className="hover:bg-slate-50/80 transition-colors group cursor-pointer">
-                                                        <td className="px-8 py-5 text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{quote.reference}</td>
-                                                        <td className="px-8 py-5 text-sm text-slate-500">{quote.date}</td>
-                                                        <td className="px-8 py-5 text-sm font-bold text-slate-900">{quote.totalAmount}</td>
-                                                        <td className="px-8 py-5">
-                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(quote.status)}`}>
-                                                                {quote.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right">
-                                                            <ChevronRight size={18} className="text-slate-300 group-hover:text-indigo-600 transition-colors ml-auto" />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    ) : (
-                                        <div className="text-center py-24">
-                                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                                <FileText size={32} className="text-slate-300" />
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-900">No quotations found</h3>
-                                            <p className="text-slate-500 mt-2">Start by requesting a quote above.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {activeTab === 'products' && (
-                                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-20 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-                                    <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-                                        <ShoppingBag size={40} />
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-slate-900 mb-4">Product Catalog</h3>
-                                    <p className="text-lg text-slate-500 max-w-md mx-auto">
-                                        We are currently synchronizing the full product catalog for {vendor.name}. Please check back later.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Right Column: Sidebar */}
-                        <div className="col-span-12 lg:col-span-4 space-y-8">
-
-                            {/* Account Manager - The "Concierge" Card */}
-                            <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20 group-hover:opacity-30 transition-opacity duration-700"></div>
-
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl font-bold border border-white/10">
-                                            {vendor.contactPerson ? vendor.contactPerson.charAt(0) : 'S'}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">Account Manager</p>
-                                            <p className="text-xl font-bold">{vendor.contactPerson || 'Sales Team'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 mb-8">
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                                                <Phone size={18} />
-                                            </div>
-                                            <span className="font-medium">{vendor.phone || 'N/A'}</span>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                                                <Mail size={18} />
-                                            </div>
-                                            <span className="font-medium truncate">{vendor.email || 'N/A'}</span>
-                                        </div>
-                                    </div>
-
-                                    <button className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold hover:bg-indigo-50 transition-colors shadow-lg">
-                                        Contact Directly
+                                <div className="shrink-0 p-2 flex gap-2 border-b border-slate-200 overflow-x-auto">
+                                    <button className="px-2 py-1 rounded-full bg-black text-white text-[10px] font-bold whitespace-nowrap">All</button>
+                                    <button className="px-2 py-1 rounded-full border border-slate-200 text-slate-500 text-[10px] font-medium whitespace-nowrap hover:bg-slate-50">
+                                        With Photos
+                                    </button>
+                                    <button className="px-2 py-1 rounded-full border border-slate-200 text-slate-500 text-[10px] font-medium whitespace-nowrap hover:bg-slate-50">
+                                        5 Stars
                                     </button>
                                 </div>
-                            </div>
-
-                            {/* Verification Status */}
-                            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Compliance & Trust</h4>
-                                <div className="space-y-4">
-                                    {[
-                                        { name: 'Commercial Registration', id: vendor.cr || 'Verified', icon: FileText },
-                                        { name: 'VAT Certificate', id: vendor.vat || 'Verified', icon: FileText },
-                                        { name: 'ISO 9001:2015', id: 'Active', icon: Award },
-                                    ].map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-slate-400 group-hover:text-indigo-500 transition-colors">
-                                                    <item.icon size={18} />
+                                <div className="flex-1 overflow-y-auto">
+                                    {sampleReviews.map((review) => (
+                                        <div
+                                            key={review.id}
+                                            className="p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="shrink-0 size-8 rounded-full bg-slate-200 bg-cover bg-center flex items-center justify-center text-xs font-bold text-blue-600"
+                                                    style={review.avatar ? { backgroundImage: `url(${review.avatar})` } : undefined}
+                                                >
+                                                    {!review.avatar && review.name.slice(0, 2)}
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-900">{item.name}</p>
-                                                    <p className="text-xs text-slate-500">{item.id}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-start mb-0.5">
+                                                        <h5 className="text-xs font-bold text-slate-900 truncate">{review.name}</h5>
+                                                        <span className="text-[10px] text-slate-500">{review.time}</span>
+                                                    </div>
+                                                    <div className="flex text-amber-500 mb-1">
+                                                        {Array.from({ length: 5 }).map((_, idx) => (
+                                                            <Star
+                                                                key={idx}
+                                                                size={10}
+                                                                className={`${idx < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-800 leading-snug">{review.text}</p>
                                                 </div>
                                             </div>
-                                            <CheckCircle size={16} className="text-emerald-500" />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-
-                            {/* Similar Suppliers */}
-                            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Similar Suppliers</h4>
-                                <div className="space-y-2">
-                                    {[1, 2].map((i) => (
-                                        <div key={i} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-2xl cursor-pointer transition-colors group">
-                                            <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden shrink-0">
-                                                <img src={`https://images.unsplash.com/photo-${i === 1 ? '1504307651254-35680f356dfd' : '1497366216548-37526070297c'}?auto=format&fit=crop&w=100&q=80`} alt="Supplier" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">Competitor {i}</p>
-                                                <div className="flex items-center text-xs text-slate-500 mt-1">
-                                                    <Star size={12} className="text-amber-400 fill-amber-400 mr-1" />
-                                                    <span className="font-medium">4.{8 - i}</span>
-                                                </div>
-                                            </div>
-                                            <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-600 transition-colors" />
-                                        </div>
-                                    ))}
+                                <div className="shrink-0 p-3 text-center border-t border-slate-200 bg-slate-50">
+                                    <button className="text-xs font-bold text-blue-600 hover:underline">View All {reviewsCount} Reviews</button>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -394,3 +358,10 @@ export const SupplierDetails: React.FC<SupplierDetailsProps> = ({ vendor, onBack
         </div>
     );
 };
+
+const PlusIcon: React.FC = () => (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+);

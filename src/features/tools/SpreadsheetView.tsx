@@ -280,7 +280,16 @@ const SmartSheetView: React.FC<{ boardId: string }> = ({ boardId }) => {
     }, [data, selectedCell]);
 
     return (
-        <div className="flex flex-col h-full w-full text-slate-800 bg-white overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+        <div className="h-full w-full overflow-auto">
+            <div
+                className="flex flex-col h-full w-full text-slate-800 bg-white overflow-hidden rounded-xl border border-slate-100 shadow-sm"
+                style={{
+                    transform: 'scale(0.9)',
+                    transformOrigin: 'top left',
+                    width: '111.1111%',
+                    minWidth: '111.1111%'
+                }}
+            >
             <header className="flex items-center justify-between px-4 h-14 bg-white border-b flex-shrink-0">
                 <div className="flex items-center gap-3 w-1/4 min-w-max">
                     <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm flex items-center justify-center">
@@ -659,6 +668,7 @@ const SmartSheetView: React.FC<{ boardId: string }> = ({ boardId }) => {
                     </button>
                 </div>
             </footer>
+            </div>
         </div>
     );
 };
