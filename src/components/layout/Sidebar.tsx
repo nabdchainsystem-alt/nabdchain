@@ -39,13 +39,14 @@ interface SidebarProps {
     isCollapsed: boolean;
     onToggleCollapse: () => void;
     onAddBoard: (name: string, icon: string, template?: BoardTemplate, defaultView?: string, parentId?: string) => void;
+    pageVisibility: Record<string, boolean>;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     onNavigate, activeView, activeBoardId, width, onResize,
     workspaces, activeWorkspaceId, onWorkspaceChange, onAddWorkspace, onDeleteWorkspace,
     boards, onDeleteBoard, onToggleFavorite,
-    isCollapsed, onToggleCollapse, onAddBoard
+    isCollapsed, onToggleCollapse, onAddBoard, pageVisibility
 }) => {
     const { t, dir } = useAppContext();
     const [isResizing, setIsResizing] = useState(false);
@@ -261,464 +262,522 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
             <div className="h-full min-h-0 flex flex-col">
                 {/* 1. Top Navigation */}
-            <div className={`py-3 space-y-0.5 ${isCollapsed ? 'px-2 items-center flex flex-col' : 'px-4'}`}>
-                <button
-                    onClick={() => onNavigate('dashboard')}
-                    title={t('home')}
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'dashboard' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Home size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('home')}</span>
-                </button>
-                <button
-                    onClick={() => onNavigate('flow_hub')}
-                    title="Flow Hub"
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'flow_hub' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Sparkles size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Flow Hub</span>
-                </button>
-                <button
-                    onClick={() => onNavigate('process_map')}
-                    title="Process Map"
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'process_map' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Activity size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Process Map</span>
-                </button>
-                <button
-                    onClick={() => onNavigate('my_work')}
-                    title={t('my_work')}
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'my_work' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Grid size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('my_work')}</span>
-                </button>
-
-                {/* New Pages */}
-                <button
-                    onClick={() => onNavigate('inbox')}
-                    title={t('inbox')}
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'inbox' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Inbox size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('inbox')}</span>
-                </button>
-                <button
-                    onClick={() => onNavigate('discussion')}
-                    title="Discussion"
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'discussion' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <MessageSquare size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Discussion</span>
-                </button>
-
-                <button
-                    onClick={() => onNavigate('teams')}
-                    title={t('teams')}
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'teams' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Users size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('teams')}</span>
-                </button>
-                <button
-                    onClick={() => onNavigate('vault')}
-                    title={t('vault')}
-                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'vault' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <Lock size={18} />
-                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('vault')}</span>
-                </button>
-            </div>
-
-            <div className="border-t border-gray-200/50 dark:border-monday-dark-border my-2 mx-4"></div>
-
-            {/* 2. Scrollable Content */}
-            <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar ${isCollapsed ? 'px-2' : 'px-4'}`}>
-
-                {/* Departments Section */}
-                <div className="mb-6">
-                    {!isCollapsed && (
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">DEPARTMENTS</span>
-                        </div>
+                <div className={`pt-6 pb-3 space-y-0.5 ${isCollapsed ? 'px-2 items-center flex flex-col' : 'px-4'}`}>
+                    <button
+                        onClick={() => onNavigate('dashboard')}
+                        title={t('home')}
+                        className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'dashboard' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                    >
+                        <Home size={18} />
+                        <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('home')}</span>
+                    </button>
+                    {pageVisibility['flow_hub'] !== false && (
+                        <button
+                            onClick={() => onNavigate('flow_hub')}
+                            title="Flow Hub"
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'flow_hub' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <Sparkles size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Flow Hub</span>
+                        </button>
+                    )}
+                    {pageVisibility['process_map'] !== false && (
+                        <button
+                            onClick={() => onNavigate('process_map')}
+                            title="Process Map"
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'process_map' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <Activity size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Process Map</span>
+                        </button>
+                    )}
+                    {pageVisibility['my_work'] !== false && (
+                        <button
+                            onClick={() => onNavigate('my_work')}
+                            title={t('my_work')}
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'my_work' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <Grid size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('my_work')}</span>
+                        </button>
                     )}
 
-                    {/* Supply Chain */}
-                    <div className="mb-1">
-                        <div
-                            className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
-                            onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
-                            title="Supply Chain"
+                    {/* New Pages */}
+                    {pageVisibility['inbox'] !== false && (
+                        <button
+                            onClick={() => onNavigate('inbox')}
+                            title={t('inbox')}
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'inbox' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <div className="flex items-center gap-2 truncate">
-                                <Boxes size={18} className="text-gray-500" />
-                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Supply Chain</span>
-                            </div>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
-                        </div>
-                        {expandedDepartments.has('supply_chain') && !isCollapsed && (
-                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <ShoppingCart size={14} /> <span>Procurement</span>
-                                </button>
-                                <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Home size={14} /> <span>Warehouse</span>
-                                </button>
-                                <button onClick={() => onNavigate('shipping')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'shipping' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Truck size={14} /> <span>Shipping</span>
-                                </button>
-                                <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Truck size={14} /> <span>Fleet</span>
-                                </button>
-                                <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Users2 size={14} /> <span>Vendors</span>
-                                </button>
-                                <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <LayoutDashboard size={14} /> <span>Planning</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                            <Inbox size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                        </button>
+                    )}
+                    {pageVisibility['discussion'] !== false && (
+                        <button
+                            onClick={() => onNavigate('discussion')}
+                            title="Discussion"
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'discussion' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <MessageSquare size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Discussion</span>
+                        </button>
+                    )}
 
-                    {/* Operations */}
-                    <div className="mb-1">
-                        <div
-                            className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
-                            onClick={() => !isCollapsed && toggleDepartment('operations')}
-                            title="Operations"
+                    {pageVisibility['teams'] !== false && (
+                        <button
+                            onClick={() => onNavigate('teams')}
+                            title={t('teams')}
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'teams' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <div className="flex items-center gap-2 truncate">
-                                <Factory size={18} className="text-gray-500" />
-                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Operations</span>
-                            </div>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
-                        </div>
-                        {expandedDepartments.has('operations') && !isCollapsed && (
-                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Wrench size={14} /> <span>Maintenance</span>
-                                </button>
-                                <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Factory size={14} /> <span>Production</span>
-                                </button>
-                                <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <ShieldCheck size={14} /> <span>Quality</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Business */}
-                    <div className="mb-1">
-                        <div
-                            className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
-                            onClick={() => !isCollapsed && toggleDepartment('business')}
-                            title="Business"
+                            <Users size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                        </button>
+                    )}
+                    {pageVisibility['vault'] !== false && (
+                        <button
+                            onClick={() => onNavigate('vault')}
+                            title={t('vault')}
+                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1 rounded-md transition-colors ${activeView === 'vault' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <div className="flex items-center gap-2 truncate">
-                                <Building2 size={18} className="text-gray-500" />
-                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Business</span>
-                            </div>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
-                        </div>
-                        {expandedDepartments.has('business') && !isCollapsed && (
-                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <FileSpreadsheet size={14} /> <span>Listings</span>
-                                </button>
-                                <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Factory size={14} /> <span>Sales Factory</span>
-                                </button>
-                                <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Megaphone size={14} /> <span>Sales</span>
-                                </button>
-                                <button onClick={() => onNavigate('finance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'finance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Banknote size={14} /> <span>Finance</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Business Support */}
-                    <div className="mb-1">
-                        <div
-                            className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
-                            onClick={() => !isCollapsed && toggleDepartment('business_support')}
-                            title="Business Support"
-                        >
-                            <div className="flex items-center gap-2 truncate">
-                                <Users size={18} className="text-gray-500" />
-                                <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Support</span>
-                            </div>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
-                        </div>
-                        {expandedDepartments.has('business_support') && !isCollapsed && (
-                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Monitor size={14} /> <span>IT</span>
-                                </button>
-                                <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Users2 size={14} /> <span>HR</span>
-                                </button>
-                                <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                    <Megaphone size={14} /> <span>Marketing</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                            <Lock size={18} />
+                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                        </button>
+                    )}
                 </div>
 
-                {/* Favorites Section */}
-                {!isCollapsed && favoriteBoards.length > 0 && (
-                    <div className="mb-6 mt-6">
-                        <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded py-1">
-                            <span className="text-sm font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
-                                {t('favorites')} <ChevronRight size={14} className="text-gray-400" />
-                            </span>
-                        </div>
-                        <div className="space-y-1">
-                            {favoriteBoards.map(board => (
-                                <div
-                                    key={board.id}
-                                    onClick={() => onNavigate('board', board.id)}
-                                    className="flex items-center space-x-2 rtl:space-x-reverse text-gray-700 dark:text-monday-dark-text cursor-pointer hover:bg-white/40 dark:hover:bg-monday-dark-hover p-2 rounded transition-colors group"
-                                >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
-                                    <span className="text-sm truncate flex-1">{board.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <div className="border-t border-gray-200/50 dark:border-monday-dark-border my-2 mx-4"></div>
 
-                {/* Workspaces Header */}
-                <div className="mt-2">
-                    {!isCollapsed && (
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
-                            <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
-                                <Search size={14} className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
+                {/* 2. Scrollable Content */}
+                <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar ${isCollapsed ? 'px-2' : 'px-4'}`}>
+
+                    {/* Departments Section */}
+                    <div className="mb-6">
+                        {!isCollapsed && (
+                            <div className="flex items-center justify-between mb-2 px-1">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">DEPARTMENTS</span>
+                            </div>
+                        )}
+
+                        {/* Supply Chain */}
+                        {pageVisibility['supply_chain'] !== false && (
+                            <div className="mb-1">
+                                <div
+                                    className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
+                                    onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
+                                    title="Supply Chain"
+                                >
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Boxes size={18} className="text-gray-500" />
+                                        <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Supply Chain</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
+                                </div>
+                                {expandedDepartments.has('supply_chain') && !isCollapsed && (
+                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                        {pageVisibility['procurement'] !== false && (
+                                            <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <ShoppingCart size={14} /> <span>Procurement</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['warehouse'] !== false && (
+                                            <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Home size={14} /> <span>Warehouse</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['shipping'] !== false && (
+                                            <button onClick={() => onNavigate('shipping')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'shipping' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Truck size={14} /> <span>Shipping</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['fleet'] !== false && (
+                                            <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Truck size={14} /> <span>Fleet</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['vendors'] !== false && (
+                                            <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Users2 size={14} /> <span>Vendors</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['planning'] !== false && (
+                                            <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <LayoutDashboard size={14} /> <span>Planning</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Operations */}
+                        {pageVisibility['operations'] !== false && (
+                            <div className="mb-1">
+                                <div
+                                    className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
+                                    onClick={() => !isCollapsed && toggleDepartment('operations')}
+                                    title="Operations"
+                                >
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Factory size={18} className="text-gray-500" />
+                                        <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Operations</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
+                                </div>
+                                {expandedDepartments.has('operations') && !isCollapsed && (
+                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                        {pageVisibility['maintenance'] !== false && (
+                                            <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Wrench size={14} /> <span>Maintenance</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['production'] !== false && (
+                                            <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Factory size={14} /> <span>Production</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['quality'] !== false && (
+                                            <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <ShieldCheck size={14} /> <span>Quality</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Business */}
+                        {pageVisibility['business'] !== false && (
+                            <div className="mb-1">
+                                <div
+                                    className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
+                                    onClick={() => !isCollapsed && toggleDepartment('business')}
+                                    title="Business"
+                                >
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Building2 size={18} className="text-gray-500" />
+                                        <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Business</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
+                                </div>
+                                {expandedDepartments.has('business') && !isCollapsed && (
+                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                        {pageVisibility['sales_listing'] !== false && (
+                                            <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <FileSpreadsheet size={14} /> <span>Listings</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['sales_factory'] !== false && (
+                                            <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Factory size={14} /> <span>Sales Factory</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['sales'] !== false && (
+                                            <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Megaphone size={14} /> <span>Sales</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['finance'] !== false && (
+                                            <button onClick={() => onNavigate('finance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'finance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Banknote size={14} /> <span>Finance</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Business Support */}
+                        {pageVisibility['business_support'] !== false && (
+                            <div className="mb-1">
+                                <div
+                                    className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text ${isCollapsed ? 'justify-center' : ''}`}
+                                    onClick={() => !isCollapsed && toggleDepartment('business_support')}
+                                    title="Business Support"
+                                >
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Users size={18} className="text-gray-500" />
+                                        <span className={`text-sm font-medium ${textBase} ${textVisibility}`}>Support</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'opacity-0' : 'opacity-100'}`} />
+                                </div>
+                                {expandedDepartments.has('business_support') && !isCollapsed && (
+                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                        {pageVisibility['it_support'] !== false && (
+                                            <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Monitor size={14} /> <span>IT</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['hr'] !== false && (
+                                            <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Users2 size={14} /> <span>HR</span>
+                                            </button>
+                                        )}
+                                        {pageVisibility['marketing'] !== false && (
+                                            <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Megaphone size={14} /> <span>Marketing</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Favorites Section */}
+                    {!isCollapsed && favoriteBoards.length > 0 && (
+                        <div className="mb-6 mt-6">
+                            <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded py-1">
+                                <span className="text-sm font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
+                                    {t('favorites')} <ChevronRight size={14} className="text-gray-400" />
+                                </span>
+                            </div>
+                            <div className="space-y-1">
+                                {favoriteBoards.map(board => (
+                                    <div
+                                        key={board.id}
+                                        onClick={() => onNavigate('board', board.id)}
+                                        className="flex items-center space-x-2 rtl:space-x-reverse text-gray-700 dark:text-monday-dark-text cursor-pointer hover:bg-white/40 dark:hover:bg-monday-dark-hover p-2 rounded transition-colors group"
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
+                                        <span className="text-sm truncate flex-1">{board.name}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Active Workspace Card */}
-                    <div className="relative group/workspace-card">
-                        <div
-                            onClick={(e) => {
-                                if (isCollapsed) return;
-                                e.stopPropagation();
-                                setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
-                            }}
-                            className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-lg p-2 flex items-center cursor-pointer transition-all hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
-                        >
-                            <div className={`flex items-center ${!isCollapsed ? 'space-x-2 rtl:space-x-reverse truncate' : ''}`}>
-                                <div className={`w-6 h-6 rounded bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
-                                    {activeWorkspace.name.charAt(0)}
+                    {/* Workspaces Header */}
+                    <div className="mt-2">
+                        {!isCollapsed && (
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
+                                <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
+                                    <Search size={14} className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
                                 </div>
-                                <span className={`text-sm font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
+                            </div>
+                        )}
+
+                        {/* Active Workspace Card */}
+                        <div className="relative group/workspace-card">
+                            <div
+                                onClick={(e) => {
+                                    if (isCollapsed) return;
+                                    e.stopPropagation();
+                                    setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+                                }}
+                                className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-lg p-2 flex items-center cursor-pointer transition-all hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                            >
+                                <div className={`flex items-center ${!isCollapsed ? 'space-x-2 rtl:space-x-reverse truncate' : ''}`}>
+                                    <div className={`w-6 h-6 rounded bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
+                                        {activeWorkspace.name.charAt(0)}
+                                    </div>
+                                    <span className={`text-sm font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
+                                </div>
+
+                                {!isCollapsed && (
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            ref={addButtonRef}
+                                            onClick={toggleAddMenu}
+                                            title={t('add_new')}
+                                            className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
+                                        >
+                                            <Plus size={12} />
+                                        </button>
+                                        <div className="text-gray-400 dark:text-gray-500 group-hover/workspace-card:text-gray-600 dark:group-hover/workspace-card:text-gray-300">
+                                            <ChevronDown size={14} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {!isCollapsed && (
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        ref={addButtonRef}
-                                        onClick={toggleAddMenu}
-                                        title={t('add_new')}
-                                        className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
-                                    >
-                                        <Plus size={12} />
-                                    </button>
-                                    <div className="text-gray-400 dark:text-gray-500 group-hover/workspace-card:text-gray-600 dark:group-hover/workspace-card:text-gray-300">
-                                        <ChevronDown size={14} />
+                            {/* Workspace Dropdown */}
+                            {isWorkspaceMenuOpen && !isCollapsed && (
+                                <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
+                                    {workspaces.map(ws => (
+                                        <div
+                                            key={ws.id}
+                                            className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
+                                            onClick={() => {
+                                                onWorkspaceChange(ws.id);
+                                                setIsWorkspaceMenuOpen(false);
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2 truncate">
+                                                <div className={`w-5 h-5 rounded bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
+                                                <span className={`text-sm truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
+                                                    {ws.name}
+                                                </span>
+                                            </div>
+                                            <div
+                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
+                                                onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
+                                            >
+                                                <MoreHorizontal size={12} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
+                                        <button
+                                            onClick={() => {
+                                                setIsAddWorkspaceModalOpen(true);
+                                                setIsWorkspaceMenuOpen(false);
+                                            }}
+                                            className="w-full text-start px-3 py-2 text-sm text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
+                                        >
+                                            <Plus size={14} /> {t('add_workspace')}
+                                        </button>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Workspace Dropdown */}
-                        {isWorkspaceMenuOpen && !isCollapsed && (
-                            <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
-                                {workspaces.map(ws => (
-                                    <div
-                                        key={ws.id}
-                                        className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
-                                        onClick={() => {
-                                            onWorkspaceChange(ws.id);
-                                            setIsWorkspaceMenuOpen(false);
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2 truncate">
-                                            <div className={`w-5 h-5 rounded bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
-                                            <span className={`text-sm truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
-                                                {ws.name}
-                                            </span>
-                                        </div>
-                                        <div
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
-                                            onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
-                                        >
-                                            <MoreHorizontal size={12} />
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
-                                    <button
-                                        onClick={() => {
-                                            setIsAddWorkspaceModalOpen(true);
-                                            setIsWorkspaceMenuOpen(false);
-                                        }}
-                                        className="w-full text-start px-3 py-2 text-sm text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
-                                    >
-                                        <Plus size={14} /> {t('add_workspace')}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        {/* Boards List */}
+                        <div className="mt-2 space-y-1">
+                            {(() => {
+                                const renderBoardItem = (board: Board, level: number = 0) => {
+                                    const isActive = activeView === 'board' && activeBoardId === board.id;
+                                    const subBoards = workspaceBoards.filter(b => b.parentId === board.id);
+                                    const hasChildren = subBoards.length > 0;
+                                    const isChild = level > 0;
+                                    const isExpanded = expandedBoards.has(board.id);
 
-                    {/* Boards List */}
-                    <div className="mt-2 space-y-1">
-                        {(() => {
-                            const renderBoardItem = (board: Board, level: number = 0) => {
-                                const isActive = activeView === 'board' && activeBoardId === board.id;
-                                const subBoards = workspaceBoards.filter(b => b.parentId === board.id);
-                                const hasChildren = subBoards.length > 0;
-                                const isChild = level > 0;
-                                const isExpanded = expandedBoards.has(board.id);
-
-                                return (
-                                    <div key={board.id} className="relative">
-                                        <div
-                                            className={`flex items-center px-3 py-1 rounded cursor-pointer group transition-colors select-none
+                                    return (
+                                        <div key={board.id} className="relative">
+                                            <div
+                                                className={`flex items-center px-3 py-1 rounded cursor-pointer group transition-colors select-none
                                                 ${isActive ? 'bg-white/60 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} 
                                                 ${isCollapsed ? 'justify-center' : 'justify-between'}
                                                 ${isChild ? 'ml-3' : ''}
                                             `}
-                                            onClick={() => onNavigate('board', board.id)}
-                                            title={board.name}
-                                        >
-                                            <div className={`flex items-center ${!isCollapsed ? 'space-x-2 rtl:space-x-reverse truncate' : ''}`}>
-                                                {/* Expand Arrow for parents */}
-                                                {!isCollapsed && hasChildren ? (
-                                                    <div
-                                                        onClick={(e) => toggleExpand(board.id, e)}
-                                                        className="p-0.5 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 mr-1 transition-colors"
-                                                    >
-                                                        <ChevronRight size={12} className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                                                    </div>
-                                                ) : !isCollapsed && (
-                                                    <div className="w-4 mr-1"></div>
-                                                )}
+                                                onClick={() => onNavigate('board', board.id)}
+                                                title={board.name}
+                                            >
+                                                <div className={`flex items-center ${!isCollapsed ? 'space-x-2 rtl:space-x-reverse truncate' : ''}`}>
+                                                    {/* Expand Arrow for parents */}
+                                                    {!isCollapsed && hasChildren ? (
+                                                        <div
+                                                            onClick={(e) => toggleExpand(board.id, e)}
+                                                            className="p-0.5 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 mr-1 transition-colors"
+                                                        >
+                                                            <ChevronRight size={12} className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                                                        </div>
+                                                    ) : !isCollapsed && (
+                                                        <div className="w-4 mr-1"></div>
+                                                    )}
 
-                                                {React.createElement(ICON_MAP[board.icon || 'Table'] || Table, {
-                                                    size: isChild ? 14 : 16,
-                                                    className: `${isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400'} flex-shrink-0`
-                                                })}
-                                                <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-sm'} ${textBase} ${textVisibility}`}>{board.name}</span>
+                                                    {React.createElement(ICON_MAP[board.icon || 'Table'] || Table, {
+                                                        size: isChild ? 14 : 16,
+                                                        className: `${isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400'} flex-shrink-0`
+                                                    })}
+                                                    <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-sm'} ${textBase} ${textVisibility}`}>{board.name}</span>
+                                                </div>
+                                                {!isCollapsed && (
+                                                    <div className="flex items-center gap-1">
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setParentBoardIdForCreation(board.id);
+                                                                setCreationStep('details');
+                                                                setSelectedTemplate(undefined);
+                                                                setIsNewBoardModalOpen(true);
+                                                            }}
+                                                            className={`p-1 rounded hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                            title="Add sub-board"
+                                                        >
+                                                            <Plus size={isChild ? 12 : 14} className="" />
+                                                        </div>
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setBoardToDelete(board.id);
+                                                            }}
+                                                            className={`p-1 rounded hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                            title="Delete board"
+                                                        >
+                                                            <Trash2 size={isChild ? 12 : 14} className="" />
+                                                        </div>
+                                                        <div
+                                                            onClick={(e) => handleContextMenu(e, board.id)}
+                                                            className={`p-1 rounded hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
+                                                        >
+                                                            <MoreHorizontal size={isChild ? 12 : 14} className="text-gray-500 dark:text-gray-400" />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {!isCollapsed && (
-                                                <div className="flex items-center gap-1">
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setParentBoardIdForCreation(board.id);
-                                                            setCreationStep('details');
-                                                            setSelectedTemplate(undefined);
-                                                            setIsNewBoardModalOpen(true);
-                                                        }}
-                                                        className={`p-1 rounded hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
-                                                        title="Add sub-board"
-                                                    >
-                                                        <Plus size={isChild ? 12 : 14} className="" />
-                                                    </div>
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setBoardToDelete(board.id);
-                                                        }}
-                                                        className={`p-1 rounded hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
-                                                        title="Delete board"
-                                                    >
-                                                        <Trash2 size={isChild ? 12 : 14} className="" />
-                                                    </div>
-                                                    <div
-                                                        onClick={(e) => handleContextMenu(e, board.id)}
-                                                        className={`p-1 rounded hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
-                                                    >
-                                                        <MoreHorizontal size={isChild ? 12 : 14} className="text-gray-500 dark:text-gray-400" />
-                                                    </div>
+                                            {hasChildren && !isCollapsed && isExpanded && (
+                                                <div className="ml-4 pl-1 border-l border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5">
+                                                    {subBoards.map(sb => renderBoardItem(sb, level + 1))}
                                                 </div>
                                             )}
                                         </div>
-                                        {hasChildren && !isCollapsed && isExpanded && (
-                                            <div className="ml-4 pl-1 border-l border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5">
-                                                {subBoards.map(sb => renderBoardItem(sb, level + 1))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            };
+                                    );
+                                };
 
-                            // Filter for root boards
-                            const rootBoards = workspaceBoards.filter(b => !b.parentId || !workspaceBoards.find(p => p.id === b.parentId));
+                                // Filter for root boards
+                                const rootBoards = workspaceBoards.filter(b => !b.parentId || !workspaceBoards.find(p => p.id === b.parentId));
 
-                            return rootBoards.map(board => renderBoardItem(board));
-                        })()}
-                    </div>
-                </div>
-
-                {/* Marketplace Section */}
-                <div className="mt-6">
-                    {!isCollapsed && (
-                        <div className="flex items-center mb-2 px-1">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                                return rootBoards.map(board => renderBoardItem(board));
+                            })()}
                         </div>
-                    )}
-                    <div className="space-y-1">
-                        <button
-                            onClick={() => onNavigate('local_marketplace')}
-                            title="Local Marketplace"
-                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                        >
-                            <ShoppingCart size={16} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
-                        </button>
-                        <button
-                            onClick={() => onNavigate('foreign_marketplace')}
-                            title="Foreign Marketplace"
-                            className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
-                        >
-                            <Globe size={16} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
-                        </button>
                     </div>
+
+                    {/* Marketplace Section */}
+                    <div className="mt-6">
+                        {!isCollapsed && (
+                            <div className="flex items-center mb-2 px-1">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                            </div>
+                        )}
+                        <div className="space-y-1">
+                            {pageVisibility['local_marketplace'] !== false && (
+                                <button
+                                    onClick={() => onNavigate('local_marketplace')}
+                                    title="Local Marketplace"
+                                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                                >
+                                    <ShoppingCart size={16} />
+                                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
+                                </button>
+                            )}
+                            {pageVisibility['foreign_marketplace'] !== false && (
+                                <button
+                                    onClick={() => onNavigate('foreign_marketplace')}
+                                    title="Foreign Marketplace"
+                                    className={`flex items-center space-x-3 rtl:space-x-reverse w-full px-3 py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                                >
+                                    <Globe size={16} />
+                                    <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Resize/Collapse Handle */}
+                    <button
+                        onClick={onToggleCollapse}
+                        className="absolute top-8 -right-3 rtl:-left-3 w-6 h-6 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-full flex items-center justify-center text-gray-400 hover:text-monday-blue shadow-sm z-40 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
+                    >
+                        {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                    </button>
+
+                    {/* Resize Drag Zone */}
+                    {!isCollapsed && (
+                        <div
+                            className="absolute top-0 right-0 rtl:left-0 w-1 h-full cursor-col-resize hover:bg-monday-blue/20 transition-colors z-30"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                setIsResizing(true);
+                            }}
+                        ></div>
+                    )}
+
                 </div>
 
-                {/* Resize/Collapse Handle */}
-                <button
-                    onClick={onToggleCollapse}
-                    className="absolute top-8 -right-3 rtl:-left-3 w-6 h-6 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-full flex items-center justify-center text-gray-400 hover:text-monday-blue shadow-sm z-40 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
-                >
-                    {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-                </button>
-
-                {/* Resize Drag Zone */}
-                {!isCollapsed && (
-                    <div
-                        className="absolute top-0 right-0 rtl:left-0 w-1 h-full cursor-col-resize hover:bg-monday-blue/20 transition-colors z-30"
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            setIsResizing(true);
-                        }}
-                    ></div>
-                )}
-
-            </div>
-
-            {/* Board Context Menu */}
-            {contextMenu && (
+                {/* Board Context Menu */}
+                {contextMenu && (
                     <div
                         className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
                         style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}

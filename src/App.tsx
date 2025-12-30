@@ -99,6 +99,11 @@ const AppContent: React.FC = () => {
 
   const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
 
+  const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('app-page-visibility');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // --- Persistence Effects ---
 
   useEffect(() => {
@@ -130,6 +135,10 @@ const AppContent: React.FC = () => {
       localStorage.setItem('app-active-board', activeBoardId);
     }
   }, [activeBoardId]);
+
+  useEffect(() => {
+    localStorage.setItem('app-page-visibility', JSON.stringify(pageVisibility));
+  }, [pageVisibility]);
 
   const handleBoardCreated = (newBoard: Board) => {
     const boardWithWorkspace = { ...newBoard, workspaceId: activeWorkspaceId };
@@ -319,6 +328,7 @@ const AppContent: React.FC = () => {
   const HRPage = lazyWithRetry(() => import('./features/business_support/hr/HRPage'));
   const MarketingPage = lazyWithRetry(() => import('./features/business_support/marketing/MarketingPage'));
   const CornellNotesPage = lazyWithRetry(() => import('./features/tools/cornell/CornellNotesPage'));
+  const SettingsPage = lazyWithRetry(() => import('./features/settings/SettingsPage'));
 
   const FullScreenLoader = () => (
     <div className="h-full w-full flex items-center justify-center">
@@ -328,9 +338,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
-      <TopBar />
+      <TopBar onNavigate={handleNavigate} />
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
-        {![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) && (
+        {!['sales_factory', 'sales_listing', 'sales'].includes(activeView as string) && (
           <Sidebar
             activeView={activeView}
             activeBoardId={activeBoardId}
@@ -348,11 +358,12 @@ const AppContent: React.FC = () => {
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
             onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
+            pageVisibility={pageVisibility}
           />
         )}
 
         {/* Main Content Area */}
-        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${![ 'sales_factory', 'sales_listing', 'sales' ].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
+        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${!['sales_factory', 'sales_listing', 'sales'].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
               <Dashboard onBoardCreated={handleBoardCreated} />
@@ -412,6 +423,8 @@ const AppContent: React.FC = () => {
               <MarketingPage />
             ) : activeView === 'cornell_notes' ? (
               <CornellNotesPage />
+            ) : activeView === 'settings' ? (
+              <SettingsPage visibility={pageVisibility} onVisibilityChange={setPageVisibility} />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
                 {activeView === 'board' && !activeBoard && "No board selected"}

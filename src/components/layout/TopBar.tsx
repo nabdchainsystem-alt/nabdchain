@@ -2,11 +2,15 @@ import React from 'react';
 import { Bell, Search, HelpCircle, Grid3X3, Download, Link, Moon, Sun, Play, Pause, RotateCcw, X } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useFocus } from '../../contexts/FocusContext';
 import { useState, useRef, useEffect } from 'react';
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  onNavigate: (view: string) => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
   const { theme, toggleTheme, language, toggleLanguage, t } = useAppContext();
   const { user, logout } = useAuth();
   const { isActive, isSessionActive, timeLeft, toggleFocus, resetFocus, cancelFocus, formatTime } = useFocus();
@@ -121,6 +125,16 @@ export const TopBar: React.FC = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
               <div className="py-1">
+                <button
+                  onClick={() => {
+                    onNavigate('settings');
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-monday-dark-hover flex items-center gap-2 transition-colors"
+                >
+                  <SettingsIcon size={14} />
+                  Settings
+                </button>
                 <button
                   onClick={() => {
                     logout();
