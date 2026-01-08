@@ -24,19 +24,112 @@ import {
 
 interface DocEditorProps {
     defaultTitle?: string;
+    storageKey?: string;
 }
 
-export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '' }) => {
-    const [title, setTitle] = useState(defaultTitle === 'Inbox' || defaultTitle === 'Untitled' ? '' : defaultTitle);
+export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storageKey }) => {
+    // Persistence state
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Update title when defaultTitle changes (e.g. navigation)
-    React.useEffect(() => {
-        setTitle(defaultTitle === 'Inbox' || defaultTitle === 'Untitled' ? '' : defaultTitle);
-    }, [defaultTitle]);
-    const [isTitleFocused, setIsTitleFocused] = useState(false);
-    const [hasStartedWriting, setHasStartedWriting] = useState(false);
+    const [title, setTitle] = useState(defaultTitle === 'Inbox' || defaultTitle === 'Untitled' ? '' : defaultTitle);
     const [icon, setIcon] = useState<string | null>(null);
     const [coverImage, setCoverImage] = useState<string | null>(null);
+    const [hasStartedWriting, setHasStartedWriting] = useState(false);
+    const loadedContentRef = useRef<string | null>(null);
+
+    // Initial load from storage
+    React.useEffect(() => {
+        if (!storageKey) {
+            setIsLoaded(true);
+            return;
+        }
+
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.title !== undefined) setTitle(data.title);
+                if (data.icon !== undefined) setIcon(data.icon);
+                if (data.coverImage !== undefined) setCoverImage(data.coverImage);
+                if (data.hasStartedWriting !== undefined) setHasStartedWriting(data.hasStartedWriting);
+
+
+                // Content is handled separately via ref to avoid React render cycles with contentEditable
+                // We store it in a ref and apply it once the contentRef becomes available
+                if (data.content) {
+                    loadedContentRef.current = data.content;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load doc data', e);
+        }
+        setIsLoaded(true);
+    }, [storageKey]);
+
+    // Save helper
+    const saveToStorage = React.useCallback(() => {
+        if (!storageKey || !isLoaded) return;
+
+        try {
+            const data = {
+                title,
+                icon,
+                coverImage,
+                hasStartedWriting,
+                content: contentRef.current?.innerHTML || ''
+            };
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        } catch (e) {
+            console.error('Failed to save doc data', e);
+        }
+    }, [storageKey, isLoaded, title, icon, coverImage, hasStartedWriting]);
+
+    // Content-only save for higher frequency updates
+    const saveContentOnly = React.useCallback(() => {
+        if (!storageKey || !isLoaded) return;
+        try {
+            const saved = localStorage.getItem(storageKey);
+            const data = saved ? JSON.parse(saved) : {};
+            data.content = contentRef.current?.innerHTML || '';
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        } catch (e) {
+            console.error('Failed to save content', e);
+        }
+    }, [storageKey, isLoaded]);
+
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const debouncedSaveContent = React.useCallback(() => {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(saveContentOnly, 1000);
+    }, [saveContentOnly]);
+
+    // Clean up timeout
+    React.useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        };
+    }, []);
+
+    // Auto-save when metadata changes
+    React.useEffect(() => {
+        saveToStorage();
+    }, [title, icon, coverImage, hasStartedWriting, saveToStorage]);
+
+    // Update title when defaultTitle changes (e.g. navigation) if not loaded yet
+    React.useEffect(() => {
+        if (!isLoaded) {
+            setTitle(defaultTitle === 'Inbox' || defaultTitle === 'Untitled' ? '' : defaultTitle);
+        }
+    }, [defaultTitle, isLoaded]);
+    // Apply loaded content when ref becomes available
+    React.useEffect(() => {
+        if (isLoaded && hasStartedWriting && contentRef.current && loadedContentRef.current !== null) {
+            contentRef.current.innerHTML = loadedContentRef.current;
+            loadedContentRef.current = null; // Mark as applied
+        }
+    }, [isLoaded, hasStartedWriting]);
+
+    const [isTitleFocused, setIsTitleFocused] = useState(false);
     const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
     const [showIconPicker, setShowIconPicker] = useState(false); // New state for IconPicker
     const contentRef = React.useRef<HTMLDivElement>(null);
@@ -245,11 +338,19 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '' }) => {
                         <div
                             ref={contentRef}
                             contentEditable
+                            onBlur={saveToStorage}
+                            onInput={debouncedSaveContent}
                             className="w-full min-h-[50vh] outline-none text-lg text-stone-800 dark:text-stone-200 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-stone-400 cursor-text"
                             data-placeholder="Type '/' for commands"
                             onKeyDown={(e) => {
                                 if (e.key === 'Backspace' && e.currentTarget.textContent === '') {
                                     // Optional: Could go back to setup state if desired, but sticking to simple flow for now
+                                }
+                            }}
+                            onKeyUp={(e) => {
+                                // Save immediately on Enter or period 
+                                if (e.key === 'Enter' || e.key === '.') {
+                                    saveContentOnly();
                                 }
                             }}
                         />

@@ -248,10 +248,30 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     const [showAIMenu, setShowAIMenu] = useState(false);
     const aiButtonRef = useRef<HTMLButtonElement>(null);
 
-    // Context Menu State
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; viewId: BoardViewType } | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
     const addViewRef = useRef<HTMLButtonElement>(null);
+
+    // Custom view names logic (isolated to BoardView for now)
+    const viewNamesStorageKey = `board-view-names-${board.id}`;
+    const [viewNames, setViewNames] = useState<Record<string, string>>(() => {
+        try {
+            const saved = localStorage.getItem(viewNamesStorageKey);
+            return saved ? JSON.parse(saved) : {};
+        } catch {
+            return {};
+        }
+    });
+
+    // Update view names if board ID changes
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(`board-view-names-${board.id}`);
+            setViewNames(saved ? JSON.parse(saved) : {});
+        } catch {
+            setViewNames({});
+        }
+    }, [board.id]);
 
     // Track previous board ID to distinguish between board switch and update
     const prevBoardIdRef = useRef(board.id);
@@ -280,10 +300,12 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         }
     }, [activeView, storageKey]);
 
+    // Track previous views to detect deletions vs additions
+    const prevAvailableViewsRef = useRef<BoardViewType[]>(board.availableViews || []);
+
     // Sync active view when board changes
     React.useEffect(() => {
         // Migration: Reset corrupted column storage for the new 'table-main' isolated view
-        // This ensures the standard columns reappear if they were lost during a bad update
         const migrationKey = `table-standard-reset-v4`;
         if (!localStorage.getItem(migrationKey)) {
             const targetKey = `room-table-columns-v4-${board.id}-table-main`;
@@ -291,34 +313,37 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             localStorage.setItem(migrationKey, 'true');
         }
 
-        // If board ID changed, it means we switched boards -> reset to saved or default
+        const currentViews = board.availableViews || [];
+        const prevViews = prevAvailableViewsRef.current;
+
+        // 1. Handle Board Switch
         if (board.id !== prevBoardIdRef.current) {
             const newStorageKey = `board-active-view-${board.id}`;
             const saved = localStorage.getItem(newStorageKey);
 
-            if (saved && board.availableViews && board.availableViews.includes(saved as BoardViewType)) {
+            if (saved && currentViews.includes(saved as BoardViewType)) {
                 setActiveView(saved as BoardViewType);
-            } else if (board.defaultView && board.availableViews?.includes(board.defaultView)) {
+            } else if (board.defaultView && currentViews.includes(board.defaultView)) {
                 setActiveView(board.defaultView);
-            } else if (board.availableViews && board.availableViews.length > 0) {
-                setActiveView(board.availableViews[0]);
+            } else if (currentViews.length > 0) {
+                setActiveView(currentViews[0]);
             } else {
                 setActiveView('kanban');
             }
             prevBoardIdRef.current = board.id;
         }
-        // If board ID is same, check if current active view is still valid
-        // This allows us to manually switch views without it being reset by prop updates
-        else if (board.availableViews && !board.availableViews.includes(activeView)) {
-            // Active view was deleted or removed, switch to default
-            if (board.defaultView && board.availableViews.includes(board.defaultView)) {
+        // 2. Handle View Deletion (Only reset if it WAS in the list and now it's NOT)
+        else if (prevViews.includes(activeView) && !currentViews.includes(activeView)) {
+            if (board.defaultView && currentViews.includes(board.defaultView)) {
                 setActiveView(board.defaultView);
-            } else if (board.availableViews.length > 0) {
-                setActiveView(board.availableViews[0]);
+            } else if (currentViews.length > 0) {
+                setActiveView(currentViews[0]);
             } else {
                 setActiveView('kanban');
             }
         }
+
+        prevAvailableViewsRef.current = currentViews;
     }, [board.id, board.defaultView, board.availableViews, activeView]);
 
     // Local state for editing to avoid jumpy UI
@@ -468,11 +493,9 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         if (!contextMenu) return;
         const newName = prompt('Enter new name for this view:', '');
         if (newName) {
-            const storageKey = `board-view-names-${board.id}`;
-            const savedNames = JSON.parse(localStorage.getItem(storageKey) || '{}');
-            savedNames[contextMenu.viewId] = newName;
-            localStorage.setItem(storageKey, JSON.stringify(savedNames));
-            window.location.reload();
+            const updatedNames = { ...viewNames, [contextMenu.viewId]: newName };
+            setViewNames(updatedNames);
+            localStorage.setItem(viewNamesStorageKey, JSON.stringify(updatedNames));
         }
         setContextMenu(null);
     };
@@ -755,8 +778,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                     const option = VIEW_OPTIONS.find(v => v.id === viewId);
                                     if (!option) return null;
 
-                                    const customNames = JSON.parse(localStorage.getItem(`board-view-names-${board.id}`) || '{}');
-                                    const label = customNames[viewId] || option.label;
+                                    const label = viewNames[viewId] || option.label;
                                     const isActive = activeView === viewId;
                                     const isPinned = board.pinnedViews?.includes(viewId);
 
@@ -780,8 +802,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                 {activeDragId ? (() => {
                                     const option = VIEW_OPTIONS.find(v => v.id === activeDragId);
                                     if (!option) return null;
-                                    const customNames = JSON.parse(localStorage.getItem(`board-view-names-${board.id}`) || '{}');
-                                    const label = customNames[activeDragId] || option.label;
+                                    const label = viewNames[activeDragId] || option.label;
                                     return (
 
                                         <button className="flex items-center gap-2 py-1.5 border-b-2 border-slate-900 text-[13px] font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap bg-white dark:bg-[#1a1d24] shadow-lg rounded opacity-90 cursor-grabbing">

@@ -23,7 +23,7 @@ export async function* chatWithGemini(message: string, history: { role: string, 
         throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Convert history to Gemini format if needed (simple role/parts mapping)
     // The history param passed here is expected to be simple objects
@@ -59,7 +59,7 @@ export async function generateSubtasks(taskTitle: string): Promise<string[]> {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const prompt = `Generate 3-5 concise, actionable subtasks for the task: "${taskTitle}". Return ONLY the subtasks as a JSON array of strings. Example: ["Research competitors", "Draft outline"]. Do not include markdown formatting like \`\`\`json.`;
 
         const result = await model.generateContent(prompt);

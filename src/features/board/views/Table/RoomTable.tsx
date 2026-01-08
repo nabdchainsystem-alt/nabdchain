@@ -1,5 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import * as XLSX from 'xlsx';
+import { ChartBuilderModal } from '../../components/chart-builder/ChartBuilderModal';
+import { AIReportModal } from '../../components/AIReportModal';
 import { SharedDatePicker } from '../../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../../components/ui/PortalPopup';
 import {
@@ -22,11 +25,17 @@ import {
     Filter,
     Search,
     Bell,
+    Download,
+    BarChart3,
+    Sparkles,
+    LayoutGrid,
 } from 'lucide-react';
 import { ColumnMenu } from '../../components/ColumnMenu';
 import { getPriorityClasses, normalizePriority, PRIORITY_LEVELS, PriorityLevel, comparePriority } from '../../../priorities/priorityUtils';
 import { useReminders } from '../../../reminders/reminderStore';
 import { ReminderPanel } from '../../../reminders/ReminderPanel';
+import { ChartBuilderConfig } from '../../components/chart-builder/types';
+import { AIChartCard } from '../../components/AIChartCard';
 
 // --- Types ---
 export interface Column {
@@ -275,6 +284,33 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     });
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    // Pinned Charts State
+    const storageKeyPinnedCharts = `room-table-pinned-charts-${roomId}-${viewId}`;
+    const [pinnedCharts, setPinnedCharts] = useState<ChartBuilderConfig[]>(() => {
+        try {
+            const saved = localStorage.getItem(storageKeyPinnedCharts);
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
+    // Persist Pinned Charts
+    useEffect(() => {
+        localStorage.setItem(storageKeyPinnedCharts, JSON.stringify(pinnedCharts));
+    }, [pinnedCharts, storageKeyPinnedCharts]);
+
+    // Reset pagination when rows change length significantly (optional, but good UX)
+    useEffect(() => {
+        if (currentPage > 1 && rows.length < (currentPage - 1) * rowsPerPage) {
+            setCurrentPage(1);
+        }
+    }, [rows.length, rowsPerPage, currentPage]);
+
     // Sync from props if they change (only if they are actually different to avoid focus loss)
     useEffect(() => {
         if (externalColumns && externalColumns.length > 0) {
@@ -307,6 +343,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const [newTaskName, setNewTaskName] = useState('');
     const [activeCell, setActiveCell] = useState<{ rowId: string, colId: string, rect?: DOMRect } | null>(null);
     const [activeColumnMenu, setActiveColumnMenu] = useState<{ rect: DOMRect } | null>(null);
+    const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+    const [isAIReportModalOpen, setIsAIReportModalOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
@@ -364,6 +403,30 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             return 0;
         });
     }, [filteredRows, sortConfig]);
+
+    // Pagination Logic
+    const totalPages = Math.ceil(sortedRows.length / rowsPerPage);
+    const paginatedRows = useMemo(() => {
+        const start = (currentPage - 1) * rowsPerPage;
+        return sortedRows.slice(start, start + rowsPerPage);
+    }, [sortedRows, currentPage, rowsPerPage]);
+
+    const handleAddPinnedChart = (config: ChartBuilderConfig) => {
+        setPinnedCharts(prev => [...prev, config]);
+        // Ideally show a toast here
+    };
+
+    const handleDeletePinnedChart = (index: number) => {
+        setPinnedCharts(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
+
+    // --- Handlers ---
 
     // --- Handlers ---
     const handleAddTask = () => {
@@ -517,6 +580,222 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         } else {
             setSortConfig({ columnId: colId, direction: 'asc' });
         }
+    };
+
+    const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+
+                // 1. Get ALL data as an array of arrays.
+                const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+                if (!rawData || rawData.length === 0) {
+                    alert("The file appears to be empty.");
+                    return;
+                }
+
+                // 2. Scan for the Header Row
+                let headerRowIndex = -1;
+                let maxMatches = 0;
+
+                // Scan first 20 rows
+                for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                    const row = rawData[i];
+                    if (!Array.isArray(row)) continue;
+
+                    let matches = 0;
+                    row.forEach((cell: any) => {
+                        if (cell && typeof cell === 'string') {
+                            const cellVal = cell.trim().toLowerCase();
+                            if (columns.some(col =>
+                                col.id.toLowerCase() === cellVal ||
+                                col.label.toLowerCase() === cellVal
+                            )) {
+                                matches++;
+                            }
+                        }
+                    });
+
+                    if (matches > maxMatches) {
+                        maxMatches = matches;
+                        headerRowIndex = i;
+                    }
+                }
+
+                // If no strong match found, default to 0
+                if (headerRowIndex === -1) headerRowIndex = 0;
+
+                // 3. Extract Headers and Data
+                const headerRow = rawData[headerRowIndex] || [];
+                const dataRows = rawData.slice(headerRowIndex + 1);
+
+                if (dataRows.length === 0) {
+                    alert(`Found header at row ${headerRowIndex + 1}, but no data rows followed it.`);
+                    return;
+                }
+
+                // 4. Build Column Mapping (Try to match logic)
+                const columnMapping: Record<string, number> = {};
+                const unmatchedHeaderIndices: number[] = [];
+
+                // Track which existing columns have been matched
+                const matchedColIds = new Set<string>();
+
+                headerRow.forEach((headerVal: any, index: number) => {
+                    let matchedColId: string | null = null;
+                    const hStr = String(headerVal).trim();
+                    const hLower = hStr.toLowerCase();
+
+                    // Match against existing columns
+                    for (const col of columns) {
+                        if (col.id === 'select') continue;
+                        if (col.id.toLowerCase() === hLower || col.label.toLowerCase() === hLower) {
+                            matchedColId = col.id;
+                            break;
+                        }
+                    }
+
+                    if (matchedColId) {
+                        columnMapping[matchedColId] = index;
+                        matchedColIds.add(matchedColId);
+                    } else {
+                        unmatchedHeaderIndices.push(index);
+                    }
+                });
+
+
+                let newColumns = [...columns];
+                let isBlindImport = false;
+
+                // If FEW matches were found (blind-ish import), or user requested "expand/rename mode" behavior (implicit)
+                // We will reuse existing columns in order, RENAMING them if they weren't strictly matched.
+
+                if (matchedColIds.size === 0 && headerRow.length > 0) {
+                    isBlindImport = true;
+                    // Reset mapping for blind import
+                    const blindMapping: Record<string, number> = {};
+
+                    // Filter out 'select' from consideration for mapping
+                    const visualColumns = columns.filter(c => c.id !== 'select');
+
+                    headerRow.forEach((hVal: any, i: number) => {
+                        const headerLabel = String(hVal || `Column ${i + 1}`).trim();
+
+                        if (i < visualColumns.length) {
+                            // Map to EXISTING column, and RENAME it
+                            const existingCol = visualColumns[i];
+                            blindMapping[existingCol.id] = i;
+
+                            // Update the column definition to have the new label
+                            newColumns = newColumns.map(c =>
+                                c.id === existingCol.id
+                                    ? { ...c, label: headerLabel }
+                                    : c
+                            );
+                        } else {
+                            // Create NEW column
+                            const newId = headerLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '') + '_' + Date.now() + '_' + i;
+                            const newCol: Column = {
+                                id: newId,
+                                label: headerLabel,
+                                type: 'text',
+                                width: 150,
+                                minWidth: 100,
+                                resizable: true
+                            };
+                            newColumns.push(newCol);
+                            blindMapping[newId] = i;
+                        }
+                    });
+
+                    // Use the blind mapping
+                    Object.assign(columnMapping, blindMapping);
+                } else {
+                    // Standard Import with potential Expansion
+                    // For any file header that didn't match an existing column, create a NEW column
+                    unmatchedHeaderIndices.forEach(idx => {
+                        const headerLabel = String(headerRow[idx] || `Column ${idx + 1}`).trim();
+                        // Skip empty headers unless they have data? 
+                        if (!headerLabel) return;
+
+                        const newId = headerLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '') + '_' + Date.now() + '_' + idx;
+                        const newCol: Column = {
+                            id: newId,
+                            label: headerLabel,
+                            type: 'text',
+                            width: 150,
+                            minWidth: 100,
+                            resizable: true
+                        };
+                        newColumns.push(newCol);
+                        columnMapping[newId] = idx;
+                    });
+                }
+
+                // 5. Create Rows
+                const newRows: Row[] = [];
+                dataRows.forEach((rowArray, index) => {
+                    if (!rowArray || rowArray.length === 0) return;
+                    if (rowArray.every((cell: any) => cell == null || cell === '')) return;
+
+                    const row: Row = { id: (Date.now() + index).toString() };
+                    let hasData = false;
+
+                    newColumns.forEach(col => {
+                        if (col.id === 'select') return;
+
+                        const colIndex = columnMapping[col.id];
+                        if (colIndex !== undefined && rowArray[colIndex] !== undefined) {
+                            row[col.id] = rowArray[colIndex];
+                            hasData = true;
+                        } else {
+                            row[col.id] = null;
+                        }
+                    });
+
+                    if (hasData) {
+                        newRows.push(row);
+                    }
+                });
+
+                if (newRows.length > 0) {
+                    if (isBlindImport) {
+                        const confirmBlind = window.confirm(
+                            `We couldn't match valid columns, so we renamed your existing columns and added new ones to match the file.\n\n` +
+                            `Detected Headers: ${headerRow.join(', ')}\n\n` +
+                            `Proceed?`
+                        );
+                        if (!confirmBlind) return;
+                    }
+
+                    setColumns(newColumns); // Update columns first
+                    const updatedRows = [...rows, ...newRows];
+                    setRows(updatedRows);
+                    if (onUpdateTasks) onUpdateTasks(updatedRows);
+                    alert(`Successfully imported ${newRows.length} rows and updated columns.`);
+                } else {
+                    alert("No valid data rows found.");
+                }
+
+            } catch (error) {
+                console.error("Import failed:", error);
+                alert("Failed to parse file. Please ensure it is a valid Excel or CSV file.");
+            }
+        };
+        reader.onerror = () => {
+            alert("Error reading file.");
+        };
+        reader.readAsArrayBuffer(file);
+        // Reset input
+        e.target.value = '';
     };
 
     const onMouseMove = useCallback((e: MouseEvent) => {
@@ -746,6 +1025,34 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         <ListTree size={14} className="text-stone-400" />
                         <span>Subtasks</span>
                     </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileImport}
+                        className="hidden"
+                        accept=".csv,.xlsx,.xls"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+                    >
+                        <Download size={14} className="text-stone-400" />
+                        <span>Import</span>
+                    </button>
+                    <button
+                        onClick={() => setIsChartModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    >
+                        <BarChart3 size={13} />
+                        <span>Generate Chart</span>
+                    </button>
+                    <button
+                        onClick={() => setIsAIReportModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm shadow-indigo-200"
+                    >
+                        <Sparkles size={13} />
+                        <span>AI Report</span>
+                    </button>
                 </div>
                 <div className="flex items-center gap-2">
                     <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
@@ -789,7 +1096,22 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 pb-96 relative overscroll-y-contain">
+            <div className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain">
+                {/* Pinned Charts Section */}
+                {pinnedCharts.length > 0 && (
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50/50 dark:bg-stone-900/30 border-b border-stone-100 dark:border-stone-800">
+                        {pinnedCharts.map((config, idx) => (
+                            <AIChartCard
+                                key={idx}
+                                config={config}
+                                columns={columns}
+                                rows={rows}
+                                onDelete={() => handleDeletePinnedChart(idx)}
+                            />
+                        ))}
+                    </div>
+                )}
+
                 {/* Table Header */}
                 <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
                     {columns.map((col, index) => (
@@ -871,7 +1193,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                 {/* Tasks */}
                 {
-                    sortedRows.map((row, index) => (
+                    paginatedRows.map((row, index) => (
                         <div
                             key={row.id}
                             className={`
@@ -948,10 +1270,51 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
                     ))}
                     <div className="w-8 h-full border-s border-stone-100/50 dark:border-stone-800" />
+                    <div className="w-8 h-full border-s border-stone-100/50 dark:border-stone-800" />
                 </div>
 
-                <div className="w-full h-full min-h-[300px] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
             </div >
+
+            {/* Pagination Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-sm">
+                <div className="flex items-center gap-2">
+                    <span className="text-stone-500 dark:text-stone-400">Rows per page:</span>
+                    <select
+                        value={rowsPerPage}
+                        onChange={(e) => {
+                            setRowsPerPage(Number(e.target.value));
+                            setCurrentPage(1);
+                        }}
+                        className="bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded px-2 py-1 text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={50}>50</option>
+                    </select>
+                </div>
+
+                <div className="flex items-center gap-4 text-stone-600 dark:text-stone-400">
+                    <span>
+                        Page {currentPage} of {Math.max(1, totalPages)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage >= totalPages}
+                            className="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
             {activeReminderTarget && (
                 <PortalPopup
                     triggerRef={{ current: { getBoundingClientRect: () => activeReminderTarget.rect } } as any}
@@ -975,6 +1338,25 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     />
                 </PortalPopup>
             )}
+
+            <ChartBuilderModal
+                isOpen={isChartModalOpen}
+                onClose={() => setIsChartModalOpen(false)}
+                columns={columns}
+                rows={rows}
+                onSave={(config) => {
+                    console.log('Chart Config Saved:', config);
+                    setIsChartModalOpen(false);
+                }}
+            />
+
+            <AIReportModal
+                isOpen={isAIReportModalOpen}
+                onClose={() => setIsAIReportModalOpen(false)}
+                columns={columns}
+                rows={rows}
+                onAddChart={handleAddPinnedChart}
+            />
         </div >
     );
 };

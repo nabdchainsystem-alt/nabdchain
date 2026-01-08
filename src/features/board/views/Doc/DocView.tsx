@@ -74,7 +74,11 @@ export const DocView: React.FC<DocViewProps> = ({ roomId }) => {
                             <DiscussionPage />
                         </div>
                     ) : (
-                        <DocEditor defaultTitle={activePageTitle} />
+                        <DocEditor
+                            key={`${roomId}-${activeItemId}`}
+                            storageKey={`doc-data-${roomId}-${activeItemId}`}
+                            defaultTitle={activePageTitle}
+                        />
                     )}
                 </main>
             </div>

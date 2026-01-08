@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { IBoard, IGroup, ITask, Status, Priority } from '../types/boardTypes';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -46,7 +46,25 @@ const INITIAL_BOARD: IBoard = {
 import { Board } from '../../../types';
 
 export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard | Board) => {
+    // Namespaced key for this specific board's data
+    const persistenceKey = `room-board-data-v2-${storageKey}`;
+
     const [board, setBoard] = useState<IBoard>(() => {
+        // 1. Try to load from localStorage first
+        try {
+            const saved = localStorage.getItem(persistenceKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Simple validation to ensure it has at least an ID
+                if (parsed && parsed.id) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load board data from storage', e);
+        }
+
+        // 2. Fallback to initialBoardData or default
         if (!initialBoardData) return INITIAL_BOARD;
 
         // Check if it's already an IBoard (has groups)
@@ -82,7 +100,68 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
             }]
         };
     });
+
+    // Persist board state whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(persistenceKey, JSON.stringify(board));
+        } catch (e) {
+            console.error('Failed to save board data', e);
+        }
+    }, [board, persistenceKey]);
+
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+
+    // Sync state when initialBoardData changes (e.g. from parent component updates)
+    // IMPORTANT: We must be careful not to overwrite local unsaved changes with stale server data 
+    // if we are treating localStorage as the "source of truth" for client-side edits.
+    // However, if the parent pushes a NEW board ID, we must switch.
+    useEffect(() => {
+        if (!initialBoardData) return;
+
+        setBoard(prev => {
+            // If the board ID changed, we absolutely must switch to the new data 
+            // (which will then be saved to the NEW persistenceKey in the next render cycle)
+            if (prev.id !== initialBoardData.id) {
+                if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
+                    return initialBoardData as IBoard;
+                } else {
+                    const flatBoard = initialBoardData as Board;
+                    return {
+                        id: flatBoard.id,
+                        name: flatBoard.name,
+                        description: flatBoard.description,
+                        availableViews: flatBoard.availableViews,
+                        pinnedViews: flatBoard.pinnedViews,
+                        defaultView: flatBoard.defaultView,
+                        groups: [{
+                            id: 'default-group',
+                            title: 'Tasks',
+                            color: '#579bff',
+                            tasks: (flatBoard.tasks || []).map(t => ({
+                                id: t.id,
+                                name: t.name,
+                                status: t.status as Status,
+                                priority: t.priority as Priority,
+                                personId: t.person,
+                                dueDate: t.date,
+                                textValues: {},
+                                selected: false
+                            })),
+                            columns: flatBoard.columns as any[],
+                            isPinned: false
+                        }]
+                    };
+                }
+            }
+
+            // If ID is the same, we generally TRUST OUR LOCAL STATE over the prop 
+            // because the user might be typing right now. 
+            // Only update if specific metadata changed that ISN'T locally managed (like views maybe?)
+            // For now, let's keep the local state authoritative to prevent overwriting typing.
+            return prev;
+        });
+    }, [initialBoardData?.id]); // Only re-run if ID changes to avoid constant overwrites
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
 

@@ -1,0 +1,144 @@
+import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
+
+const prisma = new PrismaClient();
+
+async function main() {
+    const dbPath = path.join(__dirname, '../db.json');
+    console.log('Reading data from:', dbPath);
+
+    if (!fs.existsSync(dbPath)) {
+        console.error('db.json not found!');
+        return;
+    }
+
+    const rawData = fs.readFileSync(dbPath, 'utf8');
+    const data = JSON.parse(rawData);
+
+    // 1. Procurement Requests
+    if (data.procurementRequests) {
+        console.log(`Seeding ${data.procurementRequests.length} Procurement Requests...`);
+        for (const req of data.procurementRequests) {
+
+            // Create Request
+            await prisma.procurementRequest.create({
+                data: {
+                    id: req.id,
+                    name: req.name,
+                    date: req.date,
+                    department: req.department,
+                    warehouse: req.warehouse,
+                    relatedTo: req.relatedTo,
+                    status: req.status,
+                    priority: req.priority,
+                    isUrgent: req.isUrgent,
+                    approvalStatus: req.approvalStatus,
+                    rfqSent: req.rfqSent,
+                    items: {
+                        create: req.items.map((item: any) => ({
+                            // Generate a UUID if the item id is "1" or too short to avoid collisions if reused
+                            // But better to keep existing IDs if they are unique per table. 
+                            // JSON server often reuses '1' for nested items. 
+                            // Since our schema uses UUID default for items, we can just omit ID OR use the one provided if unique.
+                            // Given nested items in json-server might reuse ID '1', let's generate new IDs for safety or prefix them.
+                            // Actually, let's just let Prisma generate UUIDs for items to be safe.
+                            itemCode: item.itemCode,
+                            description: item.description,
+                            quantity: Number(item.quantity),
+                            dueDate: item.dueDate,
+                            unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+                        }))
+                    }
+                }
+            });
+        }
+    }
+
+    // 2. RFQs
+    if (data.rfqs) {
+        console.log(`Seeding ${data.rfqs.length} RFQs...`);
+        for (const rfq of data.rfqs) {
+            // Check if request exists to connect
+            const requestExists = rfq.requestId ? await prisma.procurementRequest.findUnique({ where: { id: rfq.requestId } }) : false;
+
+            await prisma.rFQ.create({
+                data: {
+                    id: rfq.id,
+                    requestId: requestExists ? rfq.requestId : null, // Connect if valid
+                    date: rfq.date,
+                    department: rfq.department,
+                    warehouse: rfq.warehouse,
+                    supplier: rfq.supplier,
+                    value: Number(rfq.value),
+                    dueDate: rfq.dueDate,
+                    status: rfq.status,
+                    createdDate: rfq.createdDate,
+                    relatedTo: rfq.relatedTo,
+                    sentToOrder: rfq.sentToOrder,
+                    orderId: rfq.orderId,
+                    unitPrice: rfq.unitPrice,
+                    quantity: rfq.quantity,
+                    vatAmount: rfq.vatAmount,
+                    totalExVat: rfq.totalExVat,
+                    items: {
+                        create: (rfq.items || []).map((item: any) => ({
+                            itemCode: item.itemCode,
+                            description: item.description,
+                            quantity: Number(item.quantity),
+                            dueDate: item.dueDate,
+                            unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+                        }))
+                    }
+                }
+            });
+        }
+    }
+
+    // 3. Orders
+    if (data.orders) {
+        console.log(`Seeding ${data.orders.length} Orders...`);
+        for (const ord of data.orders) {
+            // Check linkage
+            const rfqExists = ord.rfqId ? await prisma.rFQ.findUnique({ where: { id: ord.rfqId } }) : false;
+
+            await prisma.order.create({
+                data: {
+                    id: ord.id,
+                    rfqId: rfqExists ? ord.rfqId : null,
+                    requestId: null, // Basic linkage
+                    supplier: ord.supplier,
+                    department: ord.department,
+                    warehouse: ord.warehouse,
+                    date: ord.date,
+                    dueDate: ord.dueDate,
+                    totalValue: Number(ord.totalValue),
+                    priority: ord.priority,
+                    status: ord.status,
+                    approvals: ord.approvals,
+                    relatedTo: ord.relatedTo,
+                    items: {
+                        create: (ord.items || []).map((item: any) => ({
+                            itemCode: item.itemCode,
+                            description: item.description,
+                            quantity: Number(item.quantity),
+                            dueDate: item.dueDate,
+                            unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+                        }))
+                    }
+                }
+            });
+        }
+    }
+
+    console.log('Seeding completed.');
+}
+
+main()
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
