@@ -114,11 +114,15 @@ model OrderItem {
 
 // Board System
 model Board {
-  id        String   @id @default(uuid())
-  title     String
-  cards     Card[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String   // Changed from title to name to match frontend
+  description    String?
+  availableViews String?  // JSON string
+  pinnedViews    String?  // JSON string
+  defaultView    String?
+  cards          Card[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Card {

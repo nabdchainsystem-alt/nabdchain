@@ -1015,16 +1015,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     return (
         <div className="flex flex-col w-full h-full bg-stone-50 dark:bg-stone-900/50 font-sans">
             {/* Secondary Toolbar */}
-            <div className="flex items-center justify-between h-12 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4">
+            <div className="flex items-center justify-end h-12 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4">
                 <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <Layers size={14} className="text-stone-400" />
-                        <span>Group: None</span>
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <ListTree size={14} className="text-stone-400" />
-                        <span>Subtasks</span>
-                    </button>
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -1048,50 +1040,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     </button>
                     <button
                         onClick={() => setIsAIReportModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full hover:from-indigo-700 hover:to-violet-700 transition-all shadow-sm shadow-indigo-200"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-full hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm shadow-blue-200"
                     >
                         <Sparkles size={13} />
                         <span>AI Report</span>
                     </button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <Filter size={14} className="text-stone-400" />
-                        <span>Filter</span>
-                    </button>
-                    <div className="flex items-center gap-1 text-xs text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full px-2 py-1.5 bg-white dark:bg-stone-900">
-                        <span className="px-1 text-[11px] uppercase tracking-wide text-stone-400">Priority</span>
-                        <select
-                            value={priorityFilter}
-                            onChange={(e) => setPriorityFilter(e.target.value as any)}
-                            className="bg-transparent outline-none border-none text-xs text-stone-700 dark:text-stone-200"
-                        >
-                            <option value="all">All</option>
-                            {PRIORITY_LEVELS.map(p => (
-                                <option key={p} value={p}>{p}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <CheckCircle2 size={14} className="text-stone-400" />
-                        <span>Closed</span>
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                        <Users size={14} className="text-stone-400" />
-                        <span>Assignee</span>
-                    </button>
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white dark:ring-stone-900">
-                        M
-                    </div>
-                    <div className="h-4 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="pl-8 pr-3 py-1.5 text-xs text-stone-700 dark:text-stone-300 bg-transparent border border-stone-200 dark:border-stone-700 rounded-lg w-40 placeholder:text-stone-400 focus:outline-none focus:border-stone-400 dark:focus:border-stone-500 transition-colors"
-                        />
-                        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-stone-400" size={14} />
-                    </div>
                 </div>
             </div>
 

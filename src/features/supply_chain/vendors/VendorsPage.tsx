@@ -20,35 +20,53 @@ const INITIAL_BOARD: Board = {
     defaultView: 'overview'
 };
 
+import { boardService } from '../../../services/boardService';
+
 export const VendorsPage: React.FC = () => {
-    const [board, setBoard] = useState<Board>(() => {
-        const saved = localStorage.getItem('vendors-board-data-v2');
-        const initial = saved ? JSON.parse(saved) : INITIAL_BOARD;
+    const [board, setBoard] = useState<Board>(INITIAL_BOARD);
+    const [isLoading, setIsLoading] = useState(true);
 
-        // Ensure overview is available and default
-        if (!initial.availableViews?.includes('overview')) {
-            initial.availableViews = ['overview', ...(initial.availableViews || [])];
+    React.useEffect(() => {
+        const loadBoard = async () => {
+            try {
+                let data = await boardService.getBoard('vendors-main-v2');
+                if (!data) {
+                    data = await boardService.createBoard(INITIAL_BOARD);
+                }
+
+                // Ensure defaults
+                const availableViews = data.availableViews || [];
+                let needsUpdate = false;
+                if (!availableViews.includes('overview')) {
+                    availableViews.unshift('overview');
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    data = await boardService.updateBoard(data.id, { availableViews });
+                }
+
+                setBoard(data);
+            } catch (error) {
+                console.error('Failed to load board', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadBoard();
+    }, []);
+
+    const handleUpdateBoard = React.useCallback(async (boardId: string, updates: Partial<Board>) => {
+        setBoard(prev => ({ ...prev, ...updates }));
+        try {
+            await boardService.updateBoard(boardId, updates);
+        } catch (error) {
+            console.error('Failed to update board', error);
         }
-        initial.defaultView = 'overview';
-
-        return initial;
-    });
-
-    const handleUpdateBoard = React.useCallback((boardId: string, updates: Partial<Board>) => {
-        setBoard(prev => {
-            const updated = { ...prev, ...updates };
-            localStorage.setItem('vendors-board-data-v2', JSON.stringify(updated));
-            return updated;
-        });
     }, []);
 
     const handleUpdateTasks = React.useCallback((tasks: any[]) => {
-        setBoard(prev => {
-            const updated = { ...prev, tasks };
-            localStorage.setItem(`board-tasks-${prev.id}`, JSON.stringify(tasks));
-            localStorage.setItem('vendors-board-data-v2', JSON.stringify(updated));
-            return updated;
-        });
+        setBoard(prev => ({ ...prev, tasks }));
     }, []);
 
     const dashboardSections = [

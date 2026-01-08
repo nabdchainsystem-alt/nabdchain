@@ -88,13 +88,47 @@ app.get('/orders', async (req, res) => {
 // 4. Boards
 app.get('/boards', async (req, res) => {
     const boards = await prisma.board.findMany({ include: { cards: true } });
-    res.json(boards);
+    const parsed = boards.map(b => ({
+        ...b,
+        availableViews: b.availableViews ? JSON.parse(b.availableViews) : [],
+        pinnedViews: b.pinnedViews ? JSON.parse(b.pinnedViews) : []
+    }));
+    res.json(parsed);
 });
 
 app.post('/boards', async (req, res) => {
     try {
-        const result = await prisma.board.create({ data: req.body });
-        res.json(result);
+        const { availableViews, pinnedViews, ...rest } = req.body;
+        const result = await prisma.board.create({
+            data: {
+                ...rest,
+                availableViews: availableViews ? JSON.stringify(availableViews) : undefined,
+                pinnedViews: pinnedViews ? JSON.stringify(pinnedViews) : undefined
+            }
+        });
+        // Return parsed
+        res.json({
+            ...result,
+            availableViews: result.availableViews ? JSON.parse(result.availableViews) : [],
+            pinnedViews: result.pinnedViews ? JSON.parse(result.pinnedViews) : []
+        });
+    } catch (e) { res.status(500).json({ error: e }); }
+});
+
+app.patch('/boards/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { availableViews, pinnedViews, ...rest } = req.body;
+        const data: any = { ...rest };
+        if (availableViews !== undefined) data.availableViews = JSON.stringify(availableViews);
+        if (pinnedViews !== undefined) data.pinnedViews = JSON.stringify(pinnedViews);
+
+        const result = await prisma.board.update({ where: { id }, data });
+        res.json({
+            ...result,
+            availableViews: result.availableViews ? JSON.parse(result.availableViews) : [],
+            pinnedViews: result.pinnedViews ? JSON.parse(result.pinnedViews) : []
+        });
     } catch (e) { res.status(500).json({ error: e }); }
 });
 

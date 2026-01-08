@@ -121,7 +121,6 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
 
         setBoard(prev => {
             // If the board ID changed, we absolutely must switch to the new data 
-            // (which will then be saved to the NEW persistenceKey in the next render cycle)
             if (prev.id !== initialBoardData.id) {
                 if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
                     return initialBoardData as IBoard;
@@ -155,13 +154,31 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                 }
             }
 
-            // If ID is the same, we generally TRUST OUR LOCAL STATE over the prop 
-            // because the user might be typing right now. 
-            // Only update if specific metadata changed that ISN'T locally managed (like views maybe?)
-            // For now, let's keep the local state authoritative to prevent overwriting typing.
+            // If ID is the same, verify if metadata changed (e.g. added a view)
+            const flat = initialBoardData as Board;
+            // Simple validation to check if we received a flat Board update from parent
+            if (!('groups' in flat)) {
+                if (
+                    JSON.stringify(prev.availableViews) !== JSON.stringify(flat.availableViews) ||
+                    JSON.stringify(prev.pinnedViews) !== JSON.stringify(flat.pinnedViews) ||
+                    prev.defaultView !== flat.defaultView ||
+                    prev.name !== flat.name ||
+                    prev.description !== flat.description
+                ) {
+                    return {
+                        ...prev,
+                        availableViews: flat.availableViews,
+                        pinnedViews: flat.pinnedViews,
+                        defaultView: flat.defaultView,
+                        name: flat.name,
+                        description: flat.description
+                    };
+                }
+            }
+
             return prev;
         });
-    }, [initialBoardData?.id]); // Only re-run if ID changes to avoid constant overwrites
+    }, [initialBoardData]); // Re-run when prop object changes
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiPrompt, setAiPrompt] = useState('');
 
