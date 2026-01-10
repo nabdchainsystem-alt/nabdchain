@@ -18,6 +18,8 @@ const msalConfig = {
     }
 };
 
+const SCOPES = ['User.Read', 'Mail.Read', 'Mail.ReadWrite', 'Mail.Send', 'offline_access'];
+
 
 let pca: msal.ConfidentialClientApplication | null = null;
 

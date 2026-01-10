@@ -50,7 +50,7 @@ router.get('/google/callback', async (req, res) => {
 router.get('/outlook', async (req, res) => {
     try {
         const url = await getOutlookAuthURL();
-        res.redirect(url);
+        res.json({ url });
     } catch (err) {
         console.error(err);
         res.status(500).send("Error initiating Outlook auth");

@@ -1,12 +1,11 @@
+import 'dotenv/config'; // Must be first
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import emailRoutes from './routes/emailRoutes';
+import inviteRoutes from './routes/inviteRoutes';
 import { requireAuth } from './middleware/auth';
-
-dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();

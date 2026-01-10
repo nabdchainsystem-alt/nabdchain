@@ -14,8 +14,14 @@ datasource db {
 model User {
   id        String   @id // Will store the Auth Provider ID (e.g. Clerk user_id)
   email     String   @unique
+  name      String?
+  avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Multi-tenancy
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
 
   // Relations
   procurementRequests ProcurementRequest[]
@@ -24,6 +30,30 @@ model User {
   boards             Board[]
   rooms              Room[]
   emailAccounts      EmailAccount[]
+  
+  // Pivot for many-to-many if needed later, but simple 1-workspace for now
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  invitations Invitation[]
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  status    String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 // Procurement System

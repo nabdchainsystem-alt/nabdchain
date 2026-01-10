@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
     UserPlus, Search, Filter, MoreHorizontal, Mail, MapPin,
     Shield, CheckCircle, Clock, Zap, Users, UserCheck, UserX,
-    MessageSquare, Settings, ArrowUpRight
+    MessageSquare, Settings, ArrowUpRight, Copy, X, Loader
 } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '@clerk/clerk-react';
+import { inviteService } from '../../services/inviteService';
 import { MOCK_MEMBERS } from './data';
 import { TeamRole, TeamStatus } from './types';
 
@@ -25,6 +27,29 @@ export const TeamsPage: React.FC = () => {
     const { t } = useAppContext();
     const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Invite State
+    const { getToken } = useAuth();
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [inviteLink, setInviteLink] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleGenerateInvite = async () => {
+        setIsGenerating(true);
+        setInviteLink('');
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const data = await inviteService.createInvite(token); // No email needed for generic link
+            setInviteLink(data.link);
+        } catch (e) {
+            console.error("Invite Gen Failed", e);
+            alert("Failed to generate link");
+        } finally {
+            setIsGenerating(false);
+        }
+    }
 
     // Stats Logic
     const stats = {
@@ -58,7 +83,10 @@ export const TeamsPage: React.FC = () => {
                         <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-surface text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-monday-dark-hover transition-colors font-medium text-sm">
                             <Settings size={16} /> Settings
                         </button>
-                        <button className="flex items-center gap-2 bg-monday-blue hover:bg-blue-600 text-white px-5 py-2 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95 font-medium text-sm">
+                        <button
+                            onClick={() => { setIsInviteModalOpen(true); handleGenerateInvite(); }}
+                            className="flex items-center gap-2 bg-monday-blue hover:bg-blue-600 text-white px-5 py-2 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95 font-medium text-sm"
+                        >
                             <UserPlus size={16} /> Invite Member
                         </button>
                     </div>
@@ -221,6 +249,56 @@ export const TeamsPage: React.FC = () => {
                         )}
                     </div>
                 </div>
+                {/* Invite Modal */}
+                {isInviteModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-xl shadow-2xl max-w-md w-full border border-gray-100 dark:border-monday-dark-border m-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Invite to Workspace</h3>
+                                <button onClick={() => setIsInviteModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+                                Share this link with your team members. When they click it, they will be added to your workspace automatically.
+                            </p>
+
+                            <div className="bg-gray-50 dark:bg-monday-dark-bg p-4 rounded-lg border border-gray-200 dark:border-monday-dark-border flex items-center gap-3 mb-6">
+                                {isGenerating ? (
+                                    <div className="flex items-center gap-2 text-monday-blue">
+                                        <Loader size={16} className="animate-spin" />
+                                        <span className="text-sm font-medium">Generating link...</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate font-mono select-all">
+                                                {inviteLink}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => { navigator.clipboard.writeText(inviteLink); alert("Copied!"); }}
+                                            className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md text-monday-blue transition-colors"
+                                            title="Copy Link"
+                                        >
+                                            <Copy size={18} />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => setIsInviteModalOpen(false)}
+                                    className="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 font-medium text-sm"
+                                >
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

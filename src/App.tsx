@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
+import React, { Suspense, useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Sidebar } from "./components/layout/Sidebar";
 import { TopBar } from './components/layout/TopBar';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { BoardView } from './features/board/BoardView';
@@ -14,6 +15,7 @@ import { MyWorkPage } from './features/myWork/MyWorkPage';
 import { SignedIn, SignedOut, SignIn, SignUp, useUser } from '@clerk/clerk-react';
 import { Logo } from './components/Logo';
 import { LandingPage } from './features/landing/LandingPage';
+import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
 import { Board, Workspace, ViewState, BoardViewType, BoardColumn } from './types';
 import { BoardTemplate } from './features/board/data/templates';
 import { AppProvider } from './contexts/AppContext';
@@ -24,6 +26,7 @@ import TeamsPage from './features/teams/TeamsPage';
 import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 // import { FocusWidget } from './components/features/focus/FocusWidget';
+import { RedirectToSignIn } from '@clerk/clerk-react';
 
 // Mock Initial Data
 const INITIAL_WORKSPACES: Workspace[] = [
@@ -525,7 +528,26 @@ const App: React.FC = () => {
         <LanguageProvider>
           <NavigationProvider>
             <FocusProvider>
-              <AppRoutes />
+              {/* Invitation Route */}
+              <Router>
+                <Routes>
+                  <Route
+                    path="/invite/accept"
+                    element={
+                      <>
+                        <SignedIn>
+                          <AcceptInvitePage />
+                        </SignedIn>
+                        <SignedOut>
+                          <RedirectToSignIn />
+                        </SignedOut>
+                      </>
+                    }
+                  />
+                  {/* Dashboard & Main App Routes */}
+                  <Route path="*" element={<AppRoutes />} />
+                </Routes>
+              </Router>
             </FocusProvider>
           </NavigationProvider>
         </LanguageProvider>
