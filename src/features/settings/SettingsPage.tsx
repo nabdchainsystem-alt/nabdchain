@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser, useClerk } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
 import {
@@ -100,6 +100,26 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     const [jobTitle, setJobTitle] = useState(() => localStorage.getItem('user_job_title') || '');
     const [department, setDepartment] = useState(() => localStorage.getItem('user_department') || '');
     const [bio, setBio] = useState(() => localStorage.getItem('user_bio') || '');
+    const [profileImage, setProfileImage] = useState(() => localStorage.getItem('user_profile_image') || user?.imageUrl || '');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setProfileImage(base64String);
+                localStorage.setItem('user_profile_image', base64String);
+                window.dispatchEvent(new Event('profile-image-updated'));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
+    };
 
     const handleSaveProfile = () => {
         localStorage.setItem('user_job_title', jobTitle);
@@ -125,12 +145,36 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 </h3>
                 <div className="flex items-start gap-6">
                     <div className="flex flex-col items-center gap-3">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center text-4xl font-bold border-4 border-gray-50 dark:border-monday-dark-bg shadow-md">
-                            {userDisplayName.charAt(0).toUpperCase()}
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center text-4xl font-bold border-4 border-gray-50 dark:border-monday-dark-bg shadow-md overflow-hidden relative group">
+                            {profileImage ? (
+                                <img
+                                    src={profileImage}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                userDisplayName.charAt(0).toUpperCase()
+                            )}
+                            <div
+                                onClick={triggerFileInput}
+                                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-white">edit</span>
+                            </div>
                         </div>
-                        <button className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                        <button
+                            onClick={triggerFileInput}
+                            className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                        >
                             Change Photo
                         </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageUpload}
+                            accept="image/*"
+                            className="hidden"
+                        />
                     </div>
 
                     <div className="flex-1 space-y-6">
@@ -217,7 +261,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         <div className="flex justify-end pt-2">
                             <button
                                 onClick={handleSaveProfile}
-                                className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
                             >
                                 <Save size={18} />
                                 Save Profile

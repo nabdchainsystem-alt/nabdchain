@@ -260,50 +260,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     return (
         <div
-            className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-gradient-to-b from-[#F7F8FA] to-[#EEF1F5] dark:from-monday-dark-bg dark:to-monday-dark-bg rounded-s-2xl ms-4 shadow-sm ${isResizing ? '' : 'transition-[width] duration-200 ease-out will-change-[width]'}`}
+            className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-transparent rounded-r-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 ${isResizing ? '' : 'transition-[width] duration-200 ease-out will-change-[width]'}`}
             style={{
                 width: `${displayedWidth}px`
             }}
         >
             <div className="h-full min-h-0 flex flex-col">
                 {/* 1. Top Navigation */}
-                <div className={`pt-6 pb-3 space-y-0.5 ${isCollapsed ? 'px-2 items-center flex flex-col' : 'px-4'}`}>
+                <div className={`pt-3 pb-3 space-y-0.5 ${isCollapsed ? 'px-2 items-center flex flex-col' : 'px-4'}`}>
                     <button
                         onClick={() => onNavigate('dashboard')}
                         title={t('home')}
-                        className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'dashboard' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                        className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                        ${activeView === 'dashboard'
+                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                        ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                        <Home size={18} />
-                        <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('home')}</span>
+                        <Home size={18} strokeWidth={1.5} />
+                        <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
                     </button>
                     {pageVisibility['flow_hub'] !== false && (
                         <button
                             onClick={() => onNavigate('flow_hub')}
                             title="Flow Hub"
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'flow_hub' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'flow_hub'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Sparkles size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Flow Hub</span>
+                            <Sparkles size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Flow Hub</span>
                         </button>
                     )}
                     {pageVisibility['process_map'] !== false && (
                         <button
                             onClick={() => onNavigate('process_map')}
                             title="Process Map"
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'process_map' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'process_map'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Activity size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Process Map</span>
+                            <Activity size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Process Map</span>
                         </button>
                     )}
                     {pageVisibility['my_work'] !== false && (
                         <button
                             onClick={() => onNavigate('my_work')}
                             title={t('my_work')}
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'my_work' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'my_work'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Grid size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('my_work')}</span>
+                            <Grid size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
                         </button>
                     )}
 
@@ -312,20 +328,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={() => onNavigate('inbox')}
                             title={t('inbox')}
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'inbox' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'inbox'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Inbox size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                            <Inbox size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
                         </button>
                     )}
                     {pageVisibility['discussion'] !== false && (
                         <button
                             onClick={() => onNavigate('discussion')}
                             title="Discussion"
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'discussion' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'discussion'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <MessageSquare size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Discussion</span>
+                            <MessageSquare size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Discussion</span>
                         </button>
                     )}
 
@@ -333,25 +357,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={() => onNavigate('teams')}
                             title={t('teams')}
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'teams' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'teams'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Users size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                            <Users size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
                         </button>
                     )}
                     {pageVisibility['vault'] !== false && (
                         <button
                             onClick={() => onNavigate('vault')}
                             title={t('vault')}
-                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-1 rounded-md transition-colors ${activeView === 'vault' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} ${isCollapsed ? 'justify-center' : ''}`}
+                            className={`flex items-center ${!isCollapsed ? 'space-x-3 rtl:space-x-reverse' : ''} w-full px-3 py-2 rounded-lg transition-all 
+                            ${activeView === 'vault'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Lock size={18} />
-                            <span className={`font-normal text-sm truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                            <Lock size={18} strokeWidth={1.5} />
+                            <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
                         </button>
                     )}
                 </div>
 
-                <div className="border-t border-gray-200/50 dark:border-monday-dark-border my-2 mx-4"></div>
+
+                <div className="border-t border-gray-100 dark:border-monday-dark-border my-2 mx-6"></div>
 
                 {/* 2. Scrollable Content */}
                 <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar ${isCollapsed ? 'px-2' : 'px-4'}`}>
@@ -1362,6 +1395,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     message={t('Are you sure you want to delete this workspace? All boards within it will be deleted. This action cannot be undone.')}
                 />
             </div>
-        </div>
+        </div >
     );
 };

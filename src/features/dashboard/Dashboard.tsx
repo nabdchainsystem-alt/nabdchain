@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Board, RecentlyVisitedItem, ViewState, Task, Workspace } from '../../types';
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
+import { SaveToVaultModal } from './components/SaveToVaultModal';
 import { boardService } from '../../services/boardService';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../auth-adapter';
@@ -34,10 +35,95 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [recentPage, setRecentPage] = useState(0);
   const ITEMS_PER_PAGE = 3;
 
+  // Upload Logic
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadFile(e.target.files[0]);
+      setIsUploadModalOpen(true);
+      // Reset input so same file can be selected again if cancelled
+      e.target.value = '';
+    }
+  };
+
   // Loads quick note from local storage on mount
   useEffect(() => {
     const savedNote = localStorage.getItem('dashboard_quick_note');
     if (savedNote) setQuickNote(savedNote);
+  }, []);
+
+  // Time and Greeting Logic
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [greeting, setGreeting] = useState('');
+  const [weather, setWeather] = useState<{ temp: number; condition: string; city: string; country: string } | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Update every minute
+
+    // Initial greeting set
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update greeting when time changes significantly (lazy way checks on re-render or could be in effect)
+  useEffect(() => {
+    const hour = currentTime.getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, [currentTime]);
+
+  // Fetch Weather & Location
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        // 1. Get Location (IP-based is usually sufficient for dashboard and less intrusive than asking permission immediately)
+        // Using a free IP geo service
+        const locRes = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        const locData = await locRes.json();
+        const { latitude, longitude, city, country } = locData;
+
+        // 2. Get Weather from Open-Meteo (Free, no key)
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+        const weatherData = await weatherRes.json();
+
+        if (weatherData.current_weather) {
+          const w = weatherData.current_weather;
+          // Map WMO codes to text (simplified)
+          let condition = 'Clear';
+          const code = w.weathercode;
+          if (code >= 1 && code <= 3) condition = 'Partly Cloudy';
+          else if (code >= 45 && code <= 48) condition = 'Foggy';
+          else if (code >= 51 && code <= 67) condition = 'Rain';
+          else if (code >= 71 && code <= 77) condition = 'Snow';
+          else if (code >= 80 && code <= 99) condition = 'Storm';
+
+          setWeather({
+            temp: Math.round(w.temperature),
+            condition,
+            city: city || 'Unknown City',
+            country: country || ''
+          });
+        }
+      } catch (e) {
+        console.error("Failed to fetch weather/location", e);
+        // Fallback to defaults if failed
+        setWeather({ temp: 24, condition: 'Sunny', city: 'New York', country: 'USA' });
+      }
+    };
+
+    fetchWeather();
   }, []);
 
   // Fetch activities
@@ -270,11 +356,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Good morning, {userDisplayName}!</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{greeting}, {userDisplayName}!</h1>
             <p className="text-gray-500 mt-1">Here's your daily overview.</p>
           </div>
-          <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+
+          <div className="flex items-center gap-3">
+            {/* Weather Widget */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100 hidden sm:flex">
+              <span className="material-symbols-outlined text-[20px] text-gray-500">
+                {weather?.condition.includes('Cloud') ? 'cloud' :
+                  weather?.condition.includes('Rain') ? 'rainy' :
+                    weather?.condition.includes('Snow') ? 'cloud_snow' :
+                      weather?.condition.includes('Storm') ? 'thunderstorm' :
+                        weather?.condition.includes('Fog') ? 'blur_on' : 'wb_sunny'}
+              </span>
+              <span className="text-sm font-semibold text-gray-700">{weather ? `${weather.temp}°C` : '--'}</span>
+            </div>
+
+            {/* Date Widget */}
+            <div className="px-5 py-2 bg-white rounded-full shadow-sm border border-gray-100">
+              <span className="text-sm font-medium text-gray-600">
+                {currentTime.toLocaleDateString('en-US', { weekday: 'long' })}, {currentTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -509,10 +613,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">calendar_today</span>
                     <span className="text-xs font-medium whitespace-nowrap">Events</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                  <button
+                    onClick={handleUploadClick}
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                  >
                     <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">upload_file</span>
                     <span className="text-xs font-medium whitespace-nowrap">Upload</span>
                   </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </div>
               </section>
             </div>
@@ -648,6 +761,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         onSave={handleNewTaskSave}
         activeWorkspaceId={activeWorkspaceId}
       />
-    </div >
+
+      <SaveToVaultModal
+        isOpen={isUploadModalOpen}
+        onClose={() => {
+          setIsUploadModalOpen(false);
+          setUploadFile(null);
+        }}
+        file={uploadFile}
+      />
+    </div>
   );
 };

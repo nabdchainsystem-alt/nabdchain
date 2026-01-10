@@ -61,19 +61,31 @@ export const VaultView: React.FC = () => {
                 throw new Error("Invalid data received from server");
             }
 
-            const transformedItems: VaultItem[] = data.map((i: any) => ({
-                id: i.id,
-                title: i.title || 'Untitled',
-                type: i.type || 'file',
-                subtitle: i.subtitle || (i.type === 'folder' ? '0 items' : ''),
-                lastModified: i.updatedAt ? new Date(i.updatedAt).toLocaleDateString() : 'Just now',
-                isFavorite: !!i.isFavorite,
-                folderId: i.folderId,
-                color: i.color,
-                metadata: i.metadata,
-                // Removed icon from state to ensure serializability and avoid potential rendering issues
-                previewUrl: i.previewUrl
-            }));
+
+            // Calculate folder counts locally
+            const folderCounts = new Map<string, number>();
+            data.forEach((item: any) => {
+                if (item.folderId) {
+                    folderCounts.set(item.folderId, (folderCounts.get(item.folderId) || 0) + 1);
+                }
+            });
+
+            const transformedItems: VaultItem[] = data.map((i: any) => {
+                const count = folderCounts.get(i.id) || 0;
+                return {
+                    id: i.id,
+                    title: i.title || 'Untitled',
+                    type: i.type || 'file',
+                    subtitle: i.subtitle || (i.type === 'folder' ? `${count} item${count !== 1 ? 's' : ''}` : ''),
+                    lastModified: i.updatedAt ? new Date(i.updatedAt).toLocaleDateString() : 'Just now',
+                    isFavorite: !!i.isFavorite,
+                    folderId: i.folderId,
+                    color: i.color,
+                    metadata: i.metadata,
+                    // Removed icon from state to ensure serializability and avoid potential rendering issues
+                    previewUrl: i.previewUrl || i.content
+                };
+            });
             setItems(transformedItems);
         } catch (error: any) {
             console.error("Failed to load vault items", error);

@@ -19,7 +19,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
 
   const { isActive, isSessionActive, timeLeft, toggleFocus, resetFocus, cancelFocus, formatTime } = useFocus();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(() => localStorage.getItem('user_profile_image') || user?.imageUrl || '');
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileImage(localStorage.getItem('user_profile_image') || user?.imageUrl || '');
+    };
+    window.addEventListener('profile-image-updated', handleProfileUpdate);
+    return () => window.removeEventListener('profile-image-updated', handleProfileUpdate);
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -117,9 +126,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
         <div className="relative" ref={profileRef}>
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:scale-105 hover:shadow-md transition-all ms-2 border-2 border-white dark:border-monday-dark-border"
+            className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:scale-105 hover:shadow-md transition-all ms-2 border-2 border-white dark:border-monday-dark-border overflow-hidden"
           >
-            {user?.fullName?.charAt(0) || user?.firstName?.charAt(0) || 'U'}
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              user?.fullName?.charAt(0) || user?.firstName?.charAt(0) || 'U'
+            )}
           </div>
 
           {isProfileOpen && (
