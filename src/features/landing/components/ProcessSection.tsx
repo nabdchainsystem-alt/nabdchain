@@ -29,7 +29,7 @@ export const ProcessSection: React.FC = () => {
 
                     {/* Feature 2 */}
                     <div className="flex-1 text-center md:text-left">
-                        <span className="text-purple-400 font-mono text-xs uppercase tracking-widest mb-4 block">Operations</span>
+                        <span className="text-blue-400 font-mono text-xs uppercase tracking-widest mb-4 block">Operations</span>
                         <h3 className="text-3xl font-bold mb-4 tracking-tight">Real-time Data <br /> Command Center</h3>
                         <p className="text-zinc-400 mb-10 max-w-sm mx-auto md:mx-0">
                             Monitor your entire centralized supply chain and urgent tasks with millisecond-latency updates across all nodes.
@@ -41,7 +41,7 @@ export const ProcessSection: React.FC = () => {
                         <div className="grid grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden max-w-sm mx-auto md:mx-0">
                             {[1, 2, 3].map((i) => (
                                 <div key={i} className="aspect-square bg-[#0A0A0A] flex items-center justify-center hover:bg-[#111] transition-colors group">
-                                    <div className="w-8 h-8 rounded-md rotate-45 border border-white/20 group-hover:bg-purple-500/20 group-hover:border-purple-500/50 transition-colors" />
+                                    <div className="w-8 h-8 rounded-md rotate-45 border border-white/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/50 transition-colors" />
                                 </div>
                             ))}
                         </div>

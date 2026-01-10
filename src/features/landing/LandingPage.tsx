@@ -7,7 +7,12 @@ import { AnalyticsSection } from './components/AnalyticsSection';
 import { MarketplaceSection } from './components/MarketplaceSection';
 import { PricingSection } from './components/PricingSection';
 
+import { useClerk } from '../../auth-adapter';
+import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
+
 export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSystem }) => {
+    const [isDevLoginOpen, setIsDevLoginOpen] = React.useState(false);
+    const { openSignIn } = useClerk();
     const { scrollY } = useScroll();
     const navBackground = useTransform(
         scrollY,
@@ -25,8 +30,32 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
         ['blur(0px)', 'blur(12px)']
     );
 
+    const handleUserSign = () => {
+        // Check if we are in Mock Mode
+        const isMockMode = localStorage.getItem('nabd_dev_mode') === 'true' || import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+
+        if (isMockMode) {
+            // User wants Real Login but is currently in Dev Mode. 
+            // We must exit Dev Mode to load Clerk.
+            if (window.confirm("Switch to Standard Mode? This will enable real Google authentication.")) {
+                localStorage.removeItem('nabd_dev_mode');
+                localStorage.removeItem('mock_auth_token');
+                window.location.reload();
+            }
+        } else {
+            // Standard Clerk Login
+            openSignIn({
+                appearance: {
+                    variables: {
+                        colorPrimary: '#2563EB',
+                    }
+                }
+            });
+        }
+    };
+
     return (
-        <div className="h-screen overflow-y-auto bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-[#6C47FF]/20">
+        <div className="h-screen overflow-y-auto bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-[#2563EB]/20">
             {/* Navbar */}
             <motion.nav
                 style={{
@@ -40,8 +69,8 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
             >
                 <div className="flex items-center gap-8">
                     {/* Logo */}
-                    <div className="flex items-center gap-2 font-bold text-lg tracking-tight cursor-pointer" onClick={onEnterSystem}>
-                        <div className="w-5 h-5 bg-[#6C47FF] rounded-md flex items-center justify-center text-white text-xs">N</div>
+                    <div className="flex items-center gap-2 font-bold text-lg tracking-tight cursor-pointer" onClick={handleUserSign}>
+                        <div className="w-5 h-5 bg-[#2563EB] rounded-md flex items-center justify-center text-white text-xs">N</div>
                         <span>Nabd</span>
                     </div>
 
@@ -55,18 +84,24 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <button onClick={onEnterSystem} className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
-                        Sign in
+                    <button
+                        onClick={handleUserSign}
+                        className="bg-[#2563EB] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#1d4ed8] transition-colors"
+                    >
+                        User Sign
                     </button>
-                    <button onClick={onEnterSystem} className="text-sm font-medium bg-zinc-900 text-white px-4 py-2 rounded-lg hover:bg-zinc-800 transition-all shadow-sm">
-                        Enter System
+                    <button
+                        onClick={() => setIsDevLoginOpen(true)}
+                        className="bg-[#0A0A0A] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-zinc-800 transition-colors"
+                    >
+                        Developer Sign
                     </button>
                 </div>
             </motion.nav>
 
             {/* Main Content */}
             <main className="pt-16">
-                <HeroSection onEnterSystem={onEnterSystem} />
+                <HeroSection onEnterSystem={handleUserSign} />
                 <StatsSection />
                 <ProcessSection />
                 <MarketplaceSection />
@@ -79,7 +114,7 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                 <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-5 gap-10">
                     <div className="col-span-2">
                         <div className="flex items-center gap-2 font-bold text-lg tracking-tight mb-6">
-                            <div className="w-5 h-5 bg-[#6C47FF] rounded-md flex items-center justify-center text-white text-xs">N</div>
+                            <div className="w-5 h-5 bg-[#2563EB] rounded-md flex items-center justify-center text-white text-xs">N</div>
                             <span>Nabd System</span>
                         </div>
                         <div className="flex gap-4 mb-8">
@@ -93,30 +128,40 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                     <div>
                         <h4 className="font-semibold text-sm mb-4 text-zinc-900">Platform</h4>
                         <ul className="space-y-3 text-sm text-zinc-500">
-                            <li><a href="#" className="hover:text-[#6C47FF]">Analytics</a></li>
-                            <li><a href="#" className="hover:text-[#6C47FF]">Network</a></li>
-                            <li><a href="#" className="hover:text-[#6C47FF]">Security</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Analytics</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Network</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Security</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 className="font-semibold text-sm mb-4 text-zinc-900">Resources</h4>
                         <ul className="space-y-3 text-sm text-zinc-500">
-                            <li><a href="#" className="hover:text-[#6C47FF]">Docs</a></li>
-                            <li><a href="#" className="hover:text-[#6C47FF]">API</a></li>
-                            <li><a href="#" className="hover:text-[#6C47FF]">Status</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Docs</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">API</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Status</a></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 className="font-semibold text-sm mb-4 text-zinc-900">Company</h4>
                         <ul className="space-y-3 text-sm text-zinc-500">
-                            <li><a href="#" className="hover:text-[#6C47FF]">About</a></li>
-                            <li><a href="#" className="hover:text-[#6C47FF]">Contact</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">About</a></li>
+                            <li><a href="#" className="hover:text-[#2563EB]">Contact</a></li>
+                            <li>
+                                <button
+                                    onClick={() => setIsDevLoginOpen(true)}
+                                    className="text-zinc-500 hover:text-zinc-900 transition-colors text-left"
+                                >
+                                    Developer Access
+                                </button>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </footer>
+
+            <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
         </div>
     );
 };

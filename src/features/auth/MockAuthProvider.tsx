@@ -16,7 +16,9 @@ interface MockAuthContextType {
     getToken: () => Promise<string | null>;
     signOut: () => Promise<void>;
     user: MockUser | null;
-    signIn: () => void; // Helper for our mock login
+    signIn: () => void; // Default helper
+    loginAsGoogle: () => void;
+    loginAsMaster: () => void;
 }
 
 const MockAuthContext = createContext<MockAuthContextType | null>(null);
@@ -29,6 +31,10 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const token = localStorage.getItem('mock_auth_token');
         if (token === 'master-token') {
             loginAsMaster();
+        } else if (token === 'dev-token') {
+            loginAsDev();
+        } else if (token === 'google-token') {
+            loginAsGoogle();
         }
     }, []);
 
@@ -43,6 +49,29 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.setItem('mock_auth_token', 'master-token');
     };
 
+    const loginAsDev = () => {
+        setIsSignedIn(true);
+        setUser({
+            id: 'user_developer_admin',
+            fullName: 'Developer Admin',
+            primaryEmailAddress: { emailAddress: 'master@nabdchain.com' },
+            imageUrl: 'https://ui-avatars.com/api/?name=Developer+Admin&background=000&color=fff'
+        });
+        localStorage.setItem('mock_auth_token', 'dev-token');
+    };
+
+    const loginAsGoogle = () => {
+        setIsSignedIn(true);
+        // Simulate a realistic Google user found in the system
+        setUser({
+            id: 'user_google_simulated',
+            fullName: 'Google User',
+            primaryEmailAddress: { emailAddress: 'user@gmail.com' },
+            imageUrl: 'https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff'
+        });
+        localStorage.setItem('mock_auth_token', 'google-token');
+    };
+
     const signOut = async () => {
         setIsSignedIn(false);
         setUser(null);
@@ -50,7 +79,7 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     const getToken = async () => {
-        return isSignedIn ? 'mock-jwt-token' : null;
+        return localStorage.getItem('mock_auth_token');
     };
 
     const value = {
@@ -61,7 +90,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         getToken,
         signOut,
         user,
-        signIn: loginAsMaster
+        signIn: loginAsMaster,
+        loginAsGoogle,
+        loginAsMaster
     };
 
     return (

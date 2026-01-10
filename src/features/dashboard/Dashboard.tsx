@@ -1,5 +1,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Board, RecentlyVisitedItem, ViewState, Task, Workspace } from '../../types';
+import {
+  Cloud, CloudRain, Snowflake, Lightning, CloudFog, Sun,
+  ClockCounterClockwise, CaretLeft, CaretRight, ArrowSquareOut, Star,
+  CheckCircle, Flag, WarningCircle, CalendarBlank, Folder,
+  PencilSimple, ListPlus, UserPlus, MagnifyingGlass, SquaresFour,
+  UploadSimple, Clock, Trash, ChatCircle, PaperPlaneRight,
+  EnvelopeSimple, Archive, NotePencil, Bell, Headset
+} from 'phosphor-react';
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
 import { SaveToVaultModal } from './components/SaveToVaultModal';
 import { boardService } from '../../services/boardService';
@@ -212,19 +220,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
   const getActivityStyles = (type: string) => {
     switch (type) {
-      case 'BOARD_CREATED': return { bg: 'bg-green-100', icon: 'dashboard', color: 'text-green-600' };
-      case 'BOARD_DELETED': return { bg: 'bg-red-100', icon: 'delete', color: 'text-red-600' };
-      case 'TASK_CREATED': return { bg: 'bg-blue-100', icon: 'add_task', color: 'text-blue-600' };
-      case 'TASK_UPDATED': return { bg: 'bg-amber-100', icon: 'edit', color: 'text-amber-600' };
-      case 'TASK_DELETED': return { bg: 'bg-red-100', icon: 'delete_outline', color: 'text-red-600' };
-      case 'GROUP_CREATED': return { bg: 'bg-green-100', icon: 'group_add', color: 'text-green-600' };
-      case 'GROUP_DELETED': return { bg: 'bg-red-100', icon: 'delete_sweep', color: 'text-red-600' };
-      case 'THREAD_CREATED': return { bg: 'bg-teal-100', icon: 'forum', color: 'text-teal-600' };
-      case 'MESSAGE_SENT': return { bg: 'bg-indigo-100', icon: 'send', color: 'text-indigo-600' };
-      case 'EMAIL_SENT': return { bg: 'bg-sky-100', icon: 'mail', color: 'text-sky-600' };
-      case 'EMAIL_DELETED': return { bg: 'bg-gray-100', icon: 'auto_delete', color: 'text-gray-600' };
-      case 'EMAIL_ARCHIVED': return { bg: 'bg-orange-100', icon: 'archive', color: 'text-orange-600' };
-      default: return { bg: 'bg-gray-100', icon: 'notification_important', color: 'text-gray-600' };
+      case 'BOARD_CREATED': return { bg: 'bg-green-100', icon: SquaresFour, color: 'text-green-600' };
+      case 'BOARD_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
+      case 'TASK_CREATED': return { bg: 'bg-blue-100', icon: ListPlus, color: 'text-blue-600' };
+      case 'TASK_UPDATED': return { bg: 'bg-amber-100', icon: PencilSimple, color: 'text-amber-600' };
+      case 'TASK_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
+      case 'GROUP_CREATED': return { bg: 'bg-green-100', icon: UserPlus, color: 'text-green-600' };
+      case 'GROUP_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
+      case 'THREAD_CREATED': return { bg: 'bg-teal-100', icon: ChatCircle, color: 'text-teal-600' };
+      case 'MESSAGE_SENT': return { bg: 'bg-indigo-100', icon: PaperPlaneRight, color: 'text-indigo-600' };
+      case 'EMAIL_SENT': return { bg: 'bg-sky-100', icon: EnvelopeSimple, color: 'text-sky-600' };
+      case 'EMAIL_DELETED': return { bg: 'bg-gray-100', icon: Trash, color: 'text-gray-600' };
+      case 'EMAIL_ARCHIVED': return { bg: 'bg-orange-100', icon: Archive, color: 'text-orange-600' };
+      default: return { bg: 'bg-gray-100', icon: Bell, color: 'text-gray-600' };
     }
   };
 
@@ -363,12 +371,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           <div className="flex items-center gap-3">
             {/* Weather Widget */}
             <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100 hidden sm:flex">
-              <span className="material-symbols-outlined text-[20px] text-gray-500">
-                {weather?.condition.includes('Cloud') ? 'cloud' :
-                  weather?.condition.includes('Rain') ? 'rainy' :
-                    weather?.condition.includes('Snow') ? 'cloud_snow' :
-                      weather?.condition.includes('Storm') ? 'thunderstorm' :
-                        weather?.condition.includes('Fog') ? 'blur_on' : 'wb_sunny'}
+              <span className="text-gray-500">
+                {weather?.condition.includes('Cloud') ? <Cloud size={20} weight="light" /> :
+                  weather?.condition.includes('Rain') ? <CloudRain size={20} weight="light" /> :
+                    weather?.condition.includes('Snow') ? <Snowflake size={20} weight="light" /> :
+                      weather?.condition.includes('Storm') ? <Lightning size={20} weight="light" /> :
+                        weather?.condition.includes('Fog') ? <CloudFog size={20} weight="light" /> : <Sun size={20} weight="light" />}
               </span>
               <span className="text-sm font-semibold text-gray-700">{weather ? `${weather.temp}°C` : '--'}</span>
             </div>
@@ -388,7 +396,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <span className="material-symbols-outlined text-gray-400">history</span>
+              <ClockCounterClockwise size={24} weight="light" className="text-gray-400" />
               Recently Visited
             </h2>
             {/* Pagination Controls */}
@@ -399,14 +407,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   disabled={recentPage === 0}
                   className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${recentPage === 0 ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
                 >
-                  <span className="material-symbols-outlined text-lg">chevron_left</span>
+                  <CaretLeft size={18} weight="light" />
                 </button>
                 <button
                   onClick={handleNextRecent}
                   disabled={(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length}
                   className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
                 >
-                  <span className="material-symbols-outlined text-lg">chevron_right</span>
+                  <CaretRight size={18} weight="light" />
                 </button>
               </div>
             )}
@@ -443,14 +451,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             title="Open"
                             onClick={(e) => { e.stopPropagation(); onNavigate(item.type, item.boardId); }}
                           >
-                            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                            <ArrowSquareOut size={16} weight="light" />
                           </button>
                           <button
                             className="bg-white/95 text-gray-700 p-1 rounded shadow-sm hover:text-yellow-600 transition-colors"
                             title="Favorite"
                             onClick={(e) => { e.stopPropagation(); /* TODO: Implement Favorite */ }}
                           >
-                            <span className="material-symbols-outlined text-[16px]">star</span>
+                            <Star size={16} weight="light" />
                           </button>
                         </div>
                       </div>
@@ -469,11 +477,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           {stats ? (
                             <div className="flex gap-2 text-xs text-gray-500">
                               <span className="flex items-center gap-0.5" title="Active Tasks">
-                                <span className="material-symbols-outlined text-[12px] text-gray-400">check_circle</span>
+                                <CheckCircle size={12} weight="light" className="text-gray-400" />
                                 {stats.total}
                               </span>
                               <span className="flex items-center gap-0.5" title="High Priority">
-                                <span className="material-symbols-outlined text-[12px] text-red-400">flag</span>
+                                <Flag size={12} weight="light" className="text-red-400" />
                                 {stats.highPriority}
                               </span>
                             </div>
@@ -488,7 +496,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 })
             ) : (
               <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                <span className="material-symbols-outlined text-4xl mb-3 opacity-20">history</span>
+                <ClockCounterClockwise size={40} weight="light" className="text-gray-300 mb-3" />
                 <p className="text-sm font-medium">No recent history</p>
                 <p className="text-xs mt-1 opacity-70">Pages you visit will appear here</p>
               </div>
@@ -507,7 +515,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-red-500">priority_high</span>
+                    <WarningCircle size={24} weight="light" className="text-red-500" />
                     Urgent Tasks
                   </h2>
                   <div className="flex items-center gap-3">
@@ -524,7 +532,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           disabled={urgentTasksPage === 1}
                           className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                         >
-                          <span className="material-symbols-outlined text-sm text-gray-500 block">chevron_left</span>
+                          <CaretLeft size={14} weight="light" />
                         </button>
                         <span className="text-[10px] font-medium text-gray-500 px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
                         <button
@@ -532,7 +540,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           disabled={urgentTasksPage === totalUrgentPages}
                           className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                         >
-                          <span className="material-symbols-outlined text-sm text-gray-500 block">chevron_right</span>
+                          <CaretRight size={14} weight="light" />
                         </button>
                       </div>
                     )}
@@ -555,16 +563,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[10px]">event</span>
+                              <CalendarBlank size={12} weight="light" />
                               {task.date || 'No Date'}
                               <span className="mx-1">•</span>
-                              <span className="material-symbols-outlined text-[10px]">folder</span>
+                              <Folder size={12} weight="light" />
                               {task.boardName}
                             </p>
                           </div>
                           <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors">
-                              <span className="material-symbols-outlined text-lg">edit</span>
+                              <PencilSimple size={18} weight="light" />
                             </button>
                           </div>
                         </div>
@@ -572,7 +580,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     </>
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                      <span className="material-symbols-outlined text-gray-300 text-3xl mb-1">check_circle</span>
+                      <CheckCircle size={32} weight="light" className="text-gray-300 mb-1" />
                       <p className="text-sm text-gray-500">No urgent tasks due. You're all caught up!</p>
                     </div>
                   )}
@@ -585,7 +593,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-amber-500">bolt</span>
+                    <Lightning size={24} weight="light" className="text-amber-500" />
                     Quick Actions
                   </h2>
                 </div>
@@ -594,30 +602,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     onClick={() => setIsNewTaskModalOpen(true)}
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">add_task</span>
+                    <ListPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">New Task</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">group_add</span>
+                    <UserPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Invite Member</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">search</span>
+                    <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Search All</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">dashboard_customize</span>
+                    <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">New Board</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">calendar_today</span>
+                    <CalendarBlank size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Events</span>
                   </button>
                   <button
                     onClick={handleUploadClick}
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
-                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">upload_file</span>
+                    <UploadSimple size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Upload</span>
                   </button>
                   <input
@@ -634,16 +642,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           {/* Row 2: Recent Activity & Other Widgets */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-            {/* Recent Activity */}
-            <div className="lg:col-span-2 h-full">
+            {/* Recent Activity - Spans 2 Rows to match Quick Notes + Reminders */}
+            <div className="lg:col-span-2 lg:row-span-2 h-full min-h-0">
               <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-500">update</span>
+                    <Clock size={24} weight="light" className="text-blue-500" />
                     Recent Activity
                   </h2>
                 </div>
-                <div className="flow-root flex-1">
+                <div className="flow-root flex-1 overflow-y-auto pr-2 custom-scrollbar">
                   <ul className="-mb-8" role="list">
                     {activities.length > 0 ? (
                       activities.map((activity, idx) => (
@@ -658,9 +666,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                   const styles = getActivityStyles(activity.type);
                                   return (
                                     <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${styles.bg}`}>
-                                      <span className={`material-symbols-outlined text-sm ${styles.color}`}>
-                                        {styles.icon}
-                                      </span>
+                                      <styles.icon size={16} weight="light" className={styles.color} />
                                     </span>
                                   );
                                 })()}
@@ -681,7 +687,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       ))
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-gray-400">
-                        <span className="material-symbols-outlined text-3xl mb-1 opacity-20">update</span>
+                        <Clock size={32} weight="light" className="text-gray-300 mb-1" />
                         <p className="text-sm">No recent activity found.</p>
                       </div>
                     )}
@@ -690,65 +696,61 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               </section>
             </div>
 
-            {/* Right Column Stack */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Quick Notes (Row 1, Col 3) */}
+            <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <NotePencil size={24} weight="light" className="text-yellow-500" />
+                  Quick Notes
+                </h2>
+                <span className="text-xs text-gray-400">Auto-saved</span>
+              </div>
+              <textarea
+                className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
+                placeholder="Jot down something..."
+                value={quickNote}
+                onChange={(e) => setQuickNote(e.target.value)}
+              />
+            </section>
 
-              {/* Quick Notes (New) */}
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-yellow-500">edit_note</span>
-                    Quick Notes
-                  </h2>
-                  <span className="text-xs text-gray-400">Auto-saved</span>
-                </div>
-                <textarea
-                  className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
-                  placeholder="Jot down something..."
-                  value={quickNote}
-                  onChange={(e) => setQuickNote(e.target.value)}
-                />
-              </section>
+            {/* Reminders (Row 2, Col 3) */}
+            <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <Bell size={24} weight="light" className="text-purple-500" />
+                  Reminders
+                </h2>
+                <button className="text-blue-600 hover:text-blue-700 text-xs font-medium">Clear</button>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900">Email update to client</span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900">Check in with Design</span>
+                </label>
+              </div>
+            </section>
 
-              {/* Reminders */}
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-purple-500">notifications</span>
-                    Reminders
-                  </h2>
-                  <button className="text-blue-600 hover:text-blue-700 text-xs font-medium">Clear</button>
-                </div>
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                    <span className="text-sm text-gray-600 group-hover:text-gray-900">Email update to client</span>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                    <span className="text-sm text-gray-600 group-hover:text-gray-900">Check in with Design</span>
-                  </label>
-                </div>
-              </section>
-
-              {/* Help Card */}
-              <section className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden">
-                <div className="absolute -top-6 -right-6 w-24 h-24 bg-white opacity-10 rounded-full"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                      <span className="material-symbols-outlined">support_agent</span>
-                    </div>
+            {/* Help Card (Row 3, Col 3) */}
+            <section className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden lg:col-span-1 lg:col-start-3">
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Headset size={24} weight="light" />
                   </div>
-                  <h3 className="font-bold text-lg mb-1">Need help?</h3>
-                  <p className="text-blue-100 text-sm mb-4">Check our help details.</p>
-                  <button className="w-full bg-white text-blue-700 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-50 transition-colors shadow-sm">
-                    Visit Help Center
-                  </button>
                 </div>
-              </section>
+                <h3 className="font-bold text-lg mb-1">Need help?</h3>
+                <p className="text-blue-100 text-sm mb-4">Check our help details.</p>
+                <button className="w-full bg-white text-blue-700 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-50 transition-colors shadow-sm">
+                  Visit Help Center
+                </button>
+              </div>
+            </section>
 
-            </div>
           </div>
         </div>
       </div >

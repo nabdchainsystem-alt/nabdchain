@@ -31,7 +31,7 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({ activeCategory, onSe
                             onClick={() => onSelectCategory(category.id)}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium
                             ${isActive
-                                    ? 'bg-blue-100 dark:bg-monday-dark-hover text-monday-blue'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-monday-dark-hover'
                                 }
                         `}

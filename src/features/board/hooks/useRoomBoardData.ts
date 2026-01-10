@@ -96,15 +96,21 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
     // Ref to track if the last update was from props (external)
     const isExternalUpdate = useRef(false);
 
+    // Keep the latest onSave callback in a ref to avoid dependency cycles
+    const onSaveRef = useRef(onSave);
+    useEffect(() => {
+        onSaveRef.current = onSave;
+    }, [onSave]);
+
     // Persist board state whenever it changes
     useEffect(() => {
         try {
             localStorage.setItem(persistenceKey, JSON.stringify(board));
 
             // CRITICAL: Only call onSave if it wasn't an external update from props
-            // to break infinite loop cycles.
-            if (onSave && !isExternalUpdate.current) {
-                onSave(board);
+            // to break infinite loop cycles. We use the ref here.
+            if (onSaveRef.current && !isExternalUpdate.current) {
+                onSaveRef.current(board);
             }
 
             // Reset for next update
@@ -112,7 +118,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
         } catch (e) {
             console.error('Failed to save board data', e);
         }
-    }, [board, persistenceKey, onSave]);
+    }, [board, persistenceKey]);
 
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
 

@@ -2,21 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useUser, useClerk } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
 import {
-    Save, AlertTriangle, Layout, Check, Shield,
-    Home, Sparkles, Activity, Grid, Inbox, MessageSquare, Users, Lock,
-    ShoppingCart, Globe, Boxes, Truck, Users2, LayoutDashboard,
-    Wrench, Factory, ShieldCheck, Building2, FileSpreadsheet, Megaphone, Banknote,
-    Monitor, User, Bell, Eye, Moon, Sun, Globe2, LogOut
-} from 'lucide-react';
+    FloppyDisk, Warning, Layout, Check, Shield,
+    House, Sparkle, Activity, SquaresFour, Tray, ChatCircle, Users, Lock,
+    ShoppingCart, Globe, Package, Truck, UsersThree,
+    Wrench, Factory, ShieldCheck, Buildings, Table, Megaphone, Money,
+    Monitor, User, Bell, Eye, Moon, Sun, SignOut
+} from 'phosphor-react';
 
 export const ALL_PAGES = {
     // Top Level
-    'home': { label: 'Home', section: 'Main', icon: Home },
-    'flow_hub': { label: 'Flow Hub', section: 'Main', icon: Sparkles },
+    'home': { label: 'Home', section: 'Main', icon: House },
+    'flow_hub': { label: 'Flow Hub', section: 'Main', icon: Sparkle },
     'process_map': { label: 'Process Map', section: 'Main', icon: Activity },
-    'my_work': { label: 'My Work', section: 'Main', icon: Grid },
-    'inbox': { label: 'Inbox', section: 'Main', icon: Inbox },
-    'discussion': { label: 'Discussion', section: 'Main', icon: MessageSquare },
+    'my_work': { label: 'My Work', section: 'Main', icon: SquaresFour },
+    'inbox': { label: 'Inbox', section: 'Main', icon: Tray },
+    'discussion': { label: 'Discussion', section: 'Main', icon: ChatCircle },
     'teams': { label: 'Teams', section: 'Main', icon: Users },
     'vault': { label: 'Vault', section: 'Main', icon: Lock },
 
@@ -25,13 +25,13 @@ export const ALL_PAGES = {
     'foreign_marketplace': { label: 'Foreign Marketplace', section: 'Marketplace', icon: Globe },
 
     // Supply Chain
-    'supply_chain': { label: 'Supply Chain (Group)', section: 'Departments', icon: Boxes },
+    'supply_chain': { label: 'Supply Chain (Group)', section: 'Departments', icon: Package },
     'procurement': { label: 'Procurement', section: 'Supply Chain', icon: ShoppingCart },
-    'warehouse': { label: 'Warehouse', section: 'Supply Chain', icon: Home },
+    'warehouse': { label: 'Warehouse', section: 'Supply Chain', icon: House },
     'shipping': { label: 'Shipping', section: 'Supply Chain', icon: Truck },
     'fleet': { label: 'Fleet', section: 'Supply Chain', icon: Truck },
-    'vendors': { label: 'Vendors', section: 'Supply Chain', icon: Users2 },
-    'planning': { label: 'Planning', section: 'Supply Chain', icon: LayoutDashboard },
+    'vendors': { label: 'Vendors', section: 'Supply Chain', icon: UsersThree },
+    'planning': { label: 'Planning', section: 'Supply Chain', icon: Layout },
 
     // Operations
     'operations': { label: 'Operations (Group)', section: 'Departments', icon: Factory },
@@ -40,16 +40,16 @@ export const ALL_PAGES = {
     'quality': { label: 'Quality', section: 'Operations', icon: ShieldCheck },
 
     // Business
-    'business': { label: 'Business (Group)', section: 'Departments', icon: Building2 },
-    'sales_listing': { label: 'Sales Listings', section: 'Business', icon: FileSpreadsheet },
+    'business': { label: 'Business (Group)', section: 'Departments', icon: Buildings },
+    'sales_listing': { label: 'Sales Listings', section: 'Business', icon: Table },
     'sales_factory': { label: 'Sales Factory', section: 'Business', icon: Factory },
     'sales': { label: 'Sales', section: 'Business', icon: Megaphone },
-    'finance': { label: 'Finance', section: 'Business', icon: Banknote },
+    'finance': { label: 'Finance', section: 'Business', icon: Money },
 
     // Business Support
     'business_support': { label: 'Business Support (Group)', section: 'Departments', icon: Users },
     'it_support': { label: 'IT Support', section: 'Business Support', icon: Monitor },
-    'hr': { label: 'HR', section: 'Business Support', icon: Users2 },
+    'hr': { label: 'HR', section: 'Business Support', icon: UsersThree },
     'marketing': { label: 'Marketing', section: 'Business Support', icon: Megaphone },
 };
 
@@ -106,12 +106,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size too large. Please upload an image smaller than 10MB.');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
-                setProfileImage(base64String);
-                localStorage.setItem('user_profile_image', base64String);
-                window.dispatchEvent(new Event('profile-image-updated'));
+                setProfileImage(base64String); // Only update preview, don't save yet
             };
             reader.readAsDataURL(file);
         }
@@ -125,7 +129,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
         localStorage.setItem('user_job_title', jobTitle);
         localStorage.setItem('user_department', department);
         localStorage.setItem('user_bio', bio);
-        // Visual feedback could be added here
+
+        // Save profile image if it has changed/set
+        if (profileImage && profileImage.startsWith('data:image')) {
+            try {
+                localStorage.setItem('user_profile_image', profileImage);
+                window.dispatchEvent(new Event('profile-image-updated'));
+            } catch (error) {
+                console.error('Storage quota exceeded', error);
+                alert('Image is too large to save locally. Please try a smaller image.');
+                return;
+            }
+        }
+
+        // Visual feedback
         alert('Profile saved successfully!');
     };
 
@@ -263,7 +280,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 onClick={handleSaveProfile}
                                 className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
                             >
-                                <Save size={18} />
+                                <FloppyDisk size={18} />
                                 Save Profile
                             </button>
                         </div>
@@ -273,7 +290,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
 
             <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                    <Sparkles className="text-yellow-500" size={20} />
+                    <Sparkle className="text-yellow-500" size={20} />
                     Preferences
                 </h3>
                 <div className="space-y-4">
@@ -298,7 +315,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover rounded-xl transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-gray-100 dark:bg-monday-dark-bg rounded-lg">
-                                <Globe2 size={18} className="text-green-500" />
+                                <Globe size={18} className="text-green-500" />
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-white">Language</p>
@@ -320,7 +337,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     onClick={() => signOut()}
                     className="flex items-center gap-2 px-6 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors font-medium border border-transparent hover:border-red-100"
                 >
-                    <LogOut size={16} />
+                    <SignOut size={16} />
                     Sign Out
                 </button>
             </div>
@@ -342,7 +359,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         : 'bg-white text-gray-400 border border-gray-200 cursor-not-allowed dark:bg-monday-dark-bg dark:border-gray-700'
                         }`}
                 >
-                    <Save size={16} />
+                    <FloppyDisk size={16} />
                     Save Changes
                 </button>
             </div>
@@ -432,7 +449,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             <div className="w-64 border-r border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-surface flex flex-col">
                 <div className="p-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <SettingsIcon size={24} className="text-gray-400" />
+                        <Wrench size={24} className="text-gray-400" />
                         Settings
                     </h2>
                 </div>
@@ -441,7 +458,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('general')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'general'
-                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
@@ -452,7 +469,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('views')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'views'
-                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
@@ -463,7 +480,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'notifications'
-                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
@@ -498,12 +515,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     );
 };
 
-// Helper icon component for internal use
-const SettingsIcon: React.FC<{ size?: number, className?: string }> = ({ size = 24, className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-        <circle cx="12" cy="12" r="3" />
-    </svg>
-);
+
 
 export default SettingsPage;

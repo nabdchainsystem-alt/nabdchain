@@ -17,8 +17,8 @@ export const AnalyticsSection: React.FC = () => {
                         </p>
                         <div className="space-y-4">
                             {['Live Collaboration', 'Procurement', 'Warehouse'].map((feature, i) => (
-                                <div key={feature} className="border-l-2 border-zinc-200 pl-4 py-2 cursor-pointer hover:border-[#6C47FF] transition-colors">
-                                    <h4 className={`text-sm font-bold ${i === 0 ? 'text-[#6C47FF]' : 'text-zinc-400'}`}>{feature}</h4>
+                                <div key={feature} className="border-l-2 border-zinc-200 pl-4 py-2 cursor-pointer hover:border-[#2563EB] transition-colors">
+                                    <h4 className={`text-sm font-bold ${i === 0 ? 'text-[#2563EB]' : 'text-zinc-400'}`}>{feature}</h4>
                                     {i === 0 && <p className="text-sm text-zinc-500 mt-1">Real-time multiplayer editing, task assignment, and live notifications...</p>}
                                 </div>
                             ))}
@@ -39,13 +39,13 @@ export const AnalyticsSection: React.FC = () => {
 
                             <div className="space-y-4">
                                 <div className="h-24 rounded-lg bg-zinc-800 border border-zinc-700 p-3 relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10" />
                                     <div className="h-2 w-1/3 bg-blue-500 rounded mb-2" />
                                     <div className="h-2 w-2/3 bg-zinc-700 rounded" />
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="flex-1 h-32 rounded-lg bg-zinc-800 border border-zinc-700 p-3">
-                                        <div className="h-8 w-8 rounded-full bg-purple-500/20 mb-2" />
+                                        <div className="h-8 w-8 rounded-full bg-blue-500/20 mb-2" />
                                         <div className="h-2 w-1/2 bg-zinc-600 rounded" />
                                     </div>
                                     <div className="flex-1 h-32 rounded-lg bg-zinc-800 border border-zinc-700 p-3">

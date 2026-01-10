@@ -180,19 +180,21 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
     const storageKey = `board-active-view-${board.id}`;
 
+    const DEFAULT_VIEWS: BoardViewType[] = ['overview', 'table', 'kanban'];
+
+    const sanitizedAvailableViews = useMemo(() => {
+        const views = board.availableViews;
+        const base = (views && views.length > 0 ? views : DEFAULT_VIEWS) as BoardViewType[];
+        const filtered = base.filter(view => (view as any) !== 'listboard' && (view as any) !== 'list_board') as BoardViewType[];
+        return filtered.length ? filtered : DEFAULT_VIEWS;
+    }, [board.availableViews]);
+
     const normalizeViewId = (viewId?: string | null): BoardViewType | null => {
         // Cast to any to avoid "no overlap" error for legacy values
         if ((viewId as any) === 'listboard' || (viewId as any) === 'list_board') return 'list';
         return viewId as BoardViewType | null;
     };
 
-    const getSanitizedViews = (views?: BoardViewType[]) => {
-        const base = (views && views.length > 0 ? views : ['overview', 'table', 'kanban']) as BoardViewType[];
-        const filtered = base.filter(view => (view as any) !== 'listboard' && (view as any) !== 'list_board') as BoardViewType[];
-        return filtered.length ? filtered : ['overview', 'table', 'kanban'];
-    };
-
-    const sanitizedAvailableViews = getSanitizedViews(board.availableViews);
     const normalizedDefaultView = normalizeViewId(board.defaultView);
 
     const [activeView, setActiveView] = useState<BoardViewType>(() => {
@@ -895,10 +897,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                 onClick={() => {
                                                                     setShowAddViewMenu(false);
                                                                     const viewId = option.id as BoardViewType;
-                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
-                                                                    } else if (onUpdateBoard && !board.availableViews) {
-                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    if (onUpdateBoard) {
+                                                                        const currentAvailable = board.availableViews && board.availableViews.length > 0
+                                                                            ? board.availableViews
+                                                                            : DEFAULT_VIEWS;
+
+                                                                        if (!currentAvailable.includes(viewId)) {
+                                                                            onUpdateBoard(board.id, { availableViews: [...currentAvailable, viewId] });
+                                                                        }
                                                                     }
                                                                     setActiveView(viewId);
                                                                 }}
@@ -928,10 +934,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                 onClick={() => {
                                                                     setShowAddViewMenu(false);
                                                                     const viewId = option.id as BoardViewType;
-                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
-                                                                    } else if (onUpdateBoard && !board.availableViews) {
-                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    if (onUpdateBoard) {
+                                                                        const currentAvailable = board.availableViews && board.availableViews.length > 0
+                                                                            ? board.availableViews
+                                                                            : DEFAULT_VIEWS;
+
+                                                                        if (!currentAvailable.includes(viewId)) {
+                                                                            onUpdateBoard(board.id, { availableViews: [...currentAvailable, viewId] });
+                                                                        }
                                                                     }
                                                                     setActiveView(viewId);
                                                                 }}
@@ -964,10 +974,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                         onClick={() => {
                                                                             setShowAddViewMenu(false);
                                                                             const viewId = option.id as BoardViewType;
-                                                                            if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                                onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
-                                                                            } else if (onUpdateBoard && !board.availableViews) {
-                                                                                onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                            if (onUpdateBoard) {
+                                                                                const currentAvailable = board.availableViews && board.availableViews.length > 0
+                                                                                    ? board.availableViews
+                                                                                    : DEFAULT_VIEWS;
+
+                                                                                if (!currentAvailable.includes(viewId)) {
+                                                                                    onUpdateBoard(board.id, { availableViews: [...currentAvailable, viewId] });
+                                                                                }
                                                                             }
                                                                             setActiveView(viewId);
                                                                         }}

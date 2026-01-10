@@ -1,9 +1,8 @@
 import React from 'react';
-import { Bell, Search, HelpCircle, Grid3X3, Download, Link, Moon, Sun, Play, Pause, RotateCcw, X } from 'lucide-react';
+import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Link, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, User as UserIcon } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk } from '../../auth-adapter';
-import { LogOut, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useFocus } from '../../contexts/FocusContext';
 import { useState, useRef, useEffect } from 'react';
 
@@ -47,7 +46,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
       <div className="flex items-center min-w-[200px]">
         <div className="flex items-center cursor-pointer group">
           <div className="w-8 h-8 bg-[#2b2c33] dark:bg-monday-blue rounded-md flex items-center justify-center me-2 shadow-sm transition-all group-hover:scale-105 group-hover:bg-monday-blue dark:group-hover:bg-monday-blue-hover">
-            <Link size={16} className="text-white transform -rotate-45" />
+            <Link size={16} weight="bold" className="text-white transform -rotate-45" />
           </div>
           <div className="flex items-baseline gap-1.5 justify-center">
             <span className="text-lg font-bold tracking-tight text-[#323338] dark:text-monday-dark-text leading-none hidden md:block">
@@ -63,7 +62,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
       {/* Center: Search Bar */}
       <div className="flex-1 flex justify-center px-4">
         <div className="relative w-full max-w-md hidden md:block group">
-          <Search className="absolute ms-3 top-2 text-gray-400 dark:text-monday-dark-text-secondary group-focus-within:text-monday-blue transition-colors" size={16} />
+          <MagnifyingGlass className="absolute ms-3 top-2 text-gray-400 dark:text-monday-dark-text-secondary group-focus-within:text-monday-blue transition-colors" size={16} weight="light" />
           <input
             type="text"
             placeholder={t('search')}
@@ -73,7 +72,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
       </div>
 
       {/* End: Icons Section */}
-      <div className="flex items-center space-x-1 space-x-reverse min-w-[200px] justify-end">
+      <div className="flex items-center space-x-2 space-x-reverse min-w-[200px] justify-end">
 
         {/* Focus Timer */}
         {isSessionActive && (
@@ -83,13 +82,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
             </span>
             <div className="flex items-center gap-1">
               <button onClick={toggleFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-colors" title={isActive ? "Pause" : "Resume"}>
-                {isActive ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+                {isActive ? <Pause size={14} weight="fill" fill="currentColor" /> : <Play size={14} weight="fill" fill="currentColor" />}
               </button>
               <button onClick={resetFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-500 dark:text-blue-400 transition-colors" title="Reset">
-                <RotateCcw size={14} />
+                <ArrowCounterClockwise size={14} weight="light" />
               </button>
               <button onClick={cancelFocus} className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-colors" title="Cancel Session">
-                <X size={14} />
+                <X size={14} weight="light" />
               </button>
             </div>
           </div>
@@ -110,18 +109,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
           title={theme === 'light' ? t('dark_mode') : t('light_mode')}
           className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon size={21} weight="light" /> : <Sun size={21} weight="light" />}
         </button>
 
         <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>
 
         <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text relative transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover">
-          <Bell size={18} />
+          <Bell size={21} weight="light" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-monday-dark-surface"></span>
         </button>
-        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><Download size={18} /></button>
-        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><HelpCircle size={18} /></button>
-        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"><Grid3X3 size={18} /></button>
+        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><DownloadSimple size={21} weight="light" /></button>
+        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><Question size={21} weight="light" /></button>
+        <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"><SquaresFour size={21} weight="light" /></button>
 
         <div className="relative" ref={profileRef}>
           <div
@@ -153,7 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-monday-dark-hover flex items-center gap-2 transition-colors"
                 >
-                  <SettingsIcon size={14} />
+                  <Gear size={14} weight="light" />
                   Settings
                 </button>
                 <button
@@ -163,7 +162,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
                 >
-                  <LogOut size={14} />
+                  <SignOut size={14} weight="light" />
                   Sign out
                 </button>
               </div>

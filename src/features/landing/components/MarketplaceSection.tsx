@@ -32,7 +32,7 @@ export const MarketplaceSection: React.FC = () => {
             quote: "The complete ecosystem we needed to modernize our legacy infrastructure.",
             author: "CTO Office",
             role: "Strategic Planning",
-            bg: "bg-[#635BFF]",
+            bg: "bg-[#2563EB]",
             text: "text-white"
         }
     ];

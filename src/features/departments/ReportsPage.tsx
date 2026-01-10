@@ -1,34 +1,33 @@
 import React, { useState } from 'react';
-import { BoardView } from '../../board/BoardView';
-import { Board } from '../../../types';
+import { BoardView } from '../board/BoardView';
+import { Board } from '../../types';
 
 const INITIAL_BOARD: Board = {
-    id: 'dept-sales',
-    name: 'Sales',
-    description: 'Track sales opportunities and deals',
+    id: 'dept-reports',
+    name: 'Reports',
+    description: 'Centralized access to all system reports',
     columns: [
-        { id: 'name', title: 'Deal Name', type: 'text' },
-        { id: 'value', title: 'Value', type: 'text' },
-        { id: 'stage', title: 'Stage', type: 'status' }, // Lead, Qualification, Proposal, Negotiation, Closed Won
+        { id: 'name', title: 'Report Name', type: 'text' },
+        { id: 'type', title: 'Type', type: 'status' }, // Financial, Operational, Sales
+        { id: 'generated', title: 'Last Generated', type: 'date' },
         { id: 'owner', title: 'Owner', type: 'person' },
-        { id: 'probability', title: 'Probability', type: 'status' },
-        { id: 'closing', title: 'Closing Date', type: 'date' }
+        { id: 'frequency', title: 'Frequency', type: 'status' } // Daily, Weekly, Monthly
     ],
     tasks: [],
-    availableViews: ['kanban', 'table', 'overview'],
-    defaultView: 'kanban'
+    availableViews: ['table', 'overview'],
+    defaultView: 'table'
 };
 
-const SalesPage: React.FC = () => {
+const ReportsPage: React.FC = () => {
     const [board, setBoard] = useState<Board>(() => {
-        const saved = localStorage.getItem('dept-sales-data');
+        const saved = localStorage.getItem('dept-reports-data');
         return saved ? JSON.parse(saved) : INITIAL_BOARD;
     });
 
     const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
         setBoard(prev => {
             const updated = { ...prev, ...updates };
-            localStorage.setItem('dept-sales-data', JSON.stringify(updated));
+            localStorage.setItem('dept-reports-data', JSON.stringify(updated));
             return updated;
         });
     };
@@ -50,4 +49,4 @@ const SalesPage: React.FC = () => {
     );
 };
 
-export default SalesPage;
+export default ReportsPage;

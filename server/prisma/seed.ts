@@ -20,18 +20,18 @@ async function main() {
     console.log('Seeding Master User...');
     const masterId = "user_master_local_admin";
 
-    // Check if user exists (though create won't checks this efficiently without unique constraint handling in code here, 
-    // but Prisma `upsert` is better. Let's use upsert).
+    // Check if user exists (upgraded to include workspaceId support)
     await prisma.user.upsert({
         where: { email: 'master@nabd.com' },
-        update: {},
+        update: {
+            workspaceId: 'w1' // Enforce Main Workspace connection
+        },
         create: {
             id: masterId,
             email: 'master@nabd.com',
             name: 'Master Admin',
             avatarUrl: 'https://ui-avatars.com/api/?name=Master+Admin&background=0D8ABC&color=fff',
-            // Default workspace will be connected later if needed, or we can create one now.
-            // Let's ensure a default workspace exists for them.
+            workspaceId: 'w1', // Set default workspace
             workspace: {
                 connectOrCreate: {
                     where: { id: 'w1' },
@@ -43,6 +43,46 @@ async function main() {
                         color: 'from-orange-400 to-red-500'
                     }
                 }
+            }
+        }
+    });
+
+    // 0.1 NabdChain Developer
+    console.log('Seeding Developer User...');
+    const devId = "user_developer_admin";
+    await prisma.user.upsert({
+        where: { email: 'master@nabdchain.com' },
+        update: {
+            workspaceId: 'w1' // Enforce Main Workspace connection
+        },
+        create: {
+            id: devId,
+            email: 'master@nabdchain.com',
+            name: 'Developer Admin',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Developer+Admin&background=000&color=fff',
+            workspaceId: 'w1', // Set default workspace
+            workspace: {
+                connect: { id: 'w1' } // Join existing main workspace
+            }
+        }
+    });
+
+    // 0.2 Google Simulated User
+    console.log('Seeding Google User...');
+    const googleId = "user_google_simulated";
+    await prisma.user.upsert({
+        where: { email: 'user@gmail.com' },
+        update: {
+            workspaceId: 'w1'
+        },
+        create: {
+            id: googleId,
+            email: 'user@gmail.com',
+            name: 'Google User',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff',
+            workspaceId: 'w1',
+            workspace: {
+                connect: { id: 'w1' }
             }
         }
     });

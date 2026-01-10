@@ -30,7 +30,10 @@ app.use(async (req: any, res, next) => {
 
     // Run Clerk Auth
     requireAuth(req, res as any, async (err: any) => {
-        if (err) return next(err);
+        if (err) {
+            // console.error('[AuthMiddleware] Error:', err.message);
+            return res.status(401).json({ error: 'Unauthenticated' });
+        }
 
         // Sync User to DB
         if (req.auth?.userId) {
@@ -119,6 +122,21 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
     try {
         const userId = req.auth.userId;
         const { name, icon, color } = req.body;
+        console.log(`[Workspaces] Creating workspace for user: ${userId}`, { name, icon, color });
+
+        // Ensure user exists first (redundant check but good for debug)
+        const userExists = await prisma.user.findUnique({ where: { id: userId } });
+        if (!userExists) {
+            console.error(`[Workspaces] User ${userId} not found in DB!`);
+            // Auto-create if missing (failsafe for dev mode inconsistencies)
+            await prisma.user.create({
+                data: {
+                    id: userId,
+                    email: userId === 'user_developer_admin' ? 'master@nabdchain.com' : `${userId}@placeholder.com`,
+                    name: 'Recovered User'
+                }
+            });
+        }
 
         const newWorkspace = await prisma.workspace.create({
             data: {
@@ -130,6 +148,8 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
             }
         });
 
+        console.log(`[Workspaces] Workspace created: ${newWorkspace.id}`);
+
         // Update user's active workspace
         await prisma.user.update({
             where: { id: userId },
@@ -137,7 +157,10 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
         });
 
         res.json(newWorkspace);
-    } catch (e) { handleError(res, e); }
+    } catch (e) {
+        console.error('[Workspaces] Creation Failed:', e);
+        handleError(res, e);
+    }
 });
 
 app.patch('/api/workspaces/:id', requireAuth, async (req: any, res) => {

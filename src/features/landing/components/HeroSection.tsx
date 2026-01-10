@@ -22,14 +22,14 @@ export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterS
                 >
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-zinc-900 mb-8 leading-[1.1]">
                         The Ultimate <br />
-                        <span className="text-[#6C47FF]">Nabd Chain System</span>
+                        <span className="text-[#2563EB]">Nabd Chain System</span>
                     </h1>
                     <p className="text-xl text-zinc-500 mb-10 max-w-2xl mx-auto leading-relaxed">
                         Advanced analytics, neural network integration, and global marketplace management. The complete operating system for modern data teams.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button onClick={onEnterSystem} className="h-12 px-8 rounded-xl bg-[#6C47FF] text-white font-medium hover:bg-[#5b3bdb] transition-all shadow-[0_4px_14px_0_rgba(108,71,255,0.39)] hover:shadow-[0_6px_20px_rgba(108,71,255,0.23)] hover:-translate-y-0.5">
+                        <button onClick={onEnterSystem} className="h-12 px-8 rounded-xl bg-[#2563EB] text-white font-medium hover:bg-[#1d4ed8] transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5">
                             Enter System
                         </button>
                         <button className="h-12 px-8 rounded-xl bg-white text-zinc-600 font-medium 

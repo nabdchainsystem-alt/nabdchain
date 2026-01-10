@@ -90,15 +90,28 @@ const AppContent: React.FC = () => {
       try {
         const token = await getToken();
         if (token) {
+          console.log('[App] Fetching workspaces...');
           const response = await fetch('http://localhost:3001/api/workspaces', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (response.ok) {
             const data = await response.json();
+            console.log('[App] Workspaces fetched:', data);
             setWorkspaces(data);
-            if (data.length > 0 && (!activeWorkspaceId || activeWorkspaceId === 'w1')) {
+
+            // Auto-select workspace if current is invalid or missing
+            const currentExists = data.find((w: Workspace) => w.id === activeWorkspaceId);
+            if (data.length > 0 && !currentExists) {
+              console.log(`[App] Current workspace ${activeWorkspaceId} not found. Switching to ${data[0].id}`);
               setActiveWorkspaceId(data[0].id);
+            } else if (data.length > 0 && (!activeWorkspaceId || activeWorkspaceId === 'w1')) {
+              // Keeps existing logic for empty/'w1' case just in case, though the above covers most mismatch cases
+              setActiveWorkspaceId(data[0].id);
+            } else if (data.length === 0) {
+              console.warn('[App] No workspaces found. Prompting creation or waiting.');
             }
+          } else {
+            console.error('[App] Failed to fetch workspaces. Status:', response.status);
           }
         }
       } catch (error) {
@@ -522,6 +535,15 @@ const AppContent: React.FC = () => {
   const SalesFactoryPage = lazyWithRetry(() => import('./features/business/sales/SalesFactoryPage'));
   const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
 
+  // New Department Pages
+  const DashboardsPage = lazyWithRetry(() => import('./features/departments/DashboardsPage'));
+  const PurchasesPage = lazyWithRetry(() => import('./features/departments/PurchasesPage'));
+  const InventoryPage = lazyWithRetry(() => import('./features/departments/InventoryPage'));
+  const ExpensesPage = lazyWithRetry(() => import('./features/departments/ExpensesPage'));
+  const SuppliersPage = lazyWithRetry(() => import('./features/departments/SuppliersPage'));
+  const CustomersPage = lazyWithRetry(() => import('./features/departments/CustomersPage'));
+  const ReportsPage = lazyWithRetry(() => import('./features/departments/ReportsPage'));
+
   const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
   const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
 
@@ -652,30 +674,28 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
       <TopBar onNavigate={handleNavigate} />
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
-        {!['sales_factory', 'sales_listing', 'sales'].includes(activeView as string) && (
-          <Sidebar
-            activeView={activeView}
-            activeBoardId={activeBoardId}
-            onNavigate={handleNavigate}
-            width={sidebarWidth}
-            onResize={setSidebarWidth}
-            workspaces={workspaces}
-            activeWorkspaceId={activeWorkspaceId}
-            onWorkspaceChange={setActiveWorkspaceId}
-            onAddWorkspace={handleAddWorkspace}
-            onDeleteWorkspace={handleDeleteWorkspace}
-            boards={boards}
-            onDeleteBoard={handleDeleteBoard}
-            onToggleFavorite={handleToggleFavorite}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-            onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
-            pageVisibility={pageVisibility}
-          />
-        )}
+        <Sidebar
+          activeView={activeView}
+          activeBoardId={activeBoardId}
+          onNavigate={handleNavigate}
+          width={sidebarWidth}
+          onResize={setSidebarWidth}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          onWorkspaceChange={setActiveWorkspaceId}
+          onAddWorkspace={handleAddWorkspace}
+          onDeleteWorkspace={handleDeleteWorkspace}
+          boards={boards}
+          onDeleteBoard={handleDeleteBoard}
+          onToggleFavorite={handleToggleFavorite}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+          onAddBoard={(name, icon, template, defaultView, parentId) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId)}
+          pageVisibility={pageVisibility}
+        />
 
         {/* Main Content Area */}
-        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${!['sales_factory', 'sales_listing', 'sales'].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
+        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
               <Dashboard
@@ -744,6 +764,20 @@ const AppContent: React.FC = () => {
               <SalesPage />
             ) : activeView === 'finance' ? (
               <FinancePage />
+            ) : activeView === 'dashboards' ? (
+              <DashboardsPage />
+            ) : activeView === 'purchases' ? (
+              <PurchasesPage />
+            ) : activeView === 'inventory' ? (
+              <InventoryPage />
+            ) : activeView === 'expenses' ? (
+              <ExpensesPage />
+            ) : activeView === 'suppliers' ? (
+              <SuppliersPage />
+            ) : activeView === 'customers' ? (
+              <CustomersPage />
+            ) : activeView === 'reports' ? (
+              <ReportsPage />
             ) : activeView === 'it_support' ? (
               <ITPage />
             ) : activeView === 'hr' ? (
