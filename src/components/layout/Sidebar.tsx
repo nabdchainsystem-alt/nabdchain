@@ -275,59 +275,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
             <div className="h-full min-h-0 flex flex-col">
                 {/* 1. Top Navigation */}
-                <div className={`pt-3 pb-3 space-y-0.5 px-3 transition-[padding] duration-300`}>
+                <div className={`pt-3 pb-3 space-y-0.5 pl-5 pr-3 transition-[padding] duration-300`}>
                     <button
                         onClick={() => onNavigate('dashboard')}
                         title={t('home')}
-                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                         ${activeView === 'dashboard'
                                 ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                         `}
                     >
                         <House size={17} weight="light" />
-                        <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
+                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
                     </button>
                     {pageVisibility['flow_hub'] !== false && (
                         <button
                             onClick={() => onNavigate('flow_hub')}
                             title="Flow Hub"
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'flow_hub'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <Sparkle size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Flow Hub</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Flow Hub</span>
                         </button>
                     )}
                     {pageVisibility['process_map'] !== false && (
                         <button
                             onClick={() => onNavigate('process_map')}
                             title="Process Map"
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'process_map'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <Activity size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Process Map</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Process Map</span>
                         </button>
                     )}
                     {pageVisibility['my_work'] !== false && (
                         <button
                             onClick={() => onNavigate('my_work')}
                             title={t('my_work')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'my_work'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <SquaresFour size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
                         </button>
                     )}
 
@@ -336,28 +336,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={() => onNavigate('inbox')}
                             title={t('inbox')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'inbox'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <Tray size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
                         </button>
                     )}
                     {pageVisibility['discussion'] !== false && (
                         <button
                             onClick={() => onNavigate('discussion')}
                             title="Discussion"
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'discussion'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <ChatCircle size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Discussion</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Discussion</span>
                         </button>
                     )}
 
@@ -365,28 +365,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={() => onNavigate('teams')}
                             title={t('teams')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'teams'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <Users size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
                         </button>
                     )}
                     {pageVisibility['vault'] !== false && (
                         <button
                             onClick={() => onNavigate('vault')}
                             title={t('vault')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all duration-300 
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'vault'
                                     ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
                         >
                             <Lock size={17} weight="light" />
-                            <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
                         </button>
                     )}
                 </div>
@@ -395,13 +395,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="border-t border-gray-100 dark:border-monday-dark-border my-2 mx-6"></div>
 
                 {/* 2. Scrollable Content */}
-                <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar px-3 transition-[padding] duration-300`}>
+                <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar pl-5 pr-3 transition-[padding] duration-300`}>
 
                     {/* Departments Section */}
-                    <div className="mb-6">
+                    <div className="mb-3">
                         {!isCollapsed && (
-                            <div className="flex items-center justify-between mb-2 px-1">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">DEPARTMENTS</span>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">Departments</span>
                             </div>
                         )}
 
@@ -410,154 +410,154 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {/* Dashboards */}
                             <button
                                 onClick={() => onNavigate('dashboards')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'dashboards'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Layout size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Dashboards</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Dashboards</span>
                             </button>
 
                             {/* Sales */}
                             <button
                                 onClick={() => onNavigate('sales')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'sales'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Megaphone size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Sales</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Sales</span>
                             </button>
 
                             {/* Purchases */}
                             <button
                                 onClick={() => onNavigate('purchases')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'purchases'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <ShoppingCart size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Purchases</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Purchases</span>
                             </button>
 
                             {/* Stock / Inventory */}
                             <button
                                 onClick={() => onNavigate('inventory')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'inventory'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Package size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Stock / Inventory</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Stock / Inventory</span>
                             </button>
 
                             {/* Expenses */}
                             <button
                                 onClick={() => onNavigate('expenses')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'expenses'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Money size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Expenses</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Expenses</span>
                             </button>
 
                             {/* Suppliers */}
                             <button
                                 onClick={() => onNavigate('suppliers')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'suppliers'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Truck size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Suppliers</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Suppliers</span>
                             </button>
 
                             {/* Customers */}
                             <button
                                 onClick={() => onNavigate('customers')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'customers'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <Users size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Customers</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Customers</span>
                             </button>
 
                             {/* Reports */}
                             <button
                                 onClick={() => onNavigate('reports')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-lg transition-all 
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all 
                                 ${activeView === 'reports'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                         : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                                 `}
                             >
                                 <FileText size={17} weight="light" />
-                                <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Reports</span>
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Reports</span>
                             </button>
                         </div>
 
                         {/* Traditional Departments Structure */}
 
-                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-monday-dark-border">
+                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-monday-dark-border">
                             {/* Supply Chain */}
                             {pageVisibility['supply_chain'] !== false && (
                                 <div className="mb-1">
                                     <div
-                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                         onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
                                         title="Supply Chain"
                                     >
                                         <div className={`flex items-center ${!isCollapsed ? 'gap-2' : ''} truncate`}>
                                             <Package size={17} weight="light" className="text-gray-500" />
-                                            <span className={`text-[12px] font-medium ${textBase} ${textVisibility}`}>Supply Chain</span>
+                                            <span className={`text-[14px] font-medium ${textBase} ${textVisibility}`}>Supply Chain</span>
                                         </div>
                                         <CaretDown size={14} weight="light" className={`text-gray-400 transition-transform ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'hidden' : 'opacity-100'}`} />
                                     </div>
                                     {expandedDepartments.has('supply_chain') && !isCollapsed && (
                                         <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                             {pageVisibility['procurement'] !== false && (
-                                                <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <ShoppingCart size={14} weight="light" /> <span>Procurement</span>
                                                 </button>
                                             )}
                                             {pageVisibility['warehouse'] !== false && (
-                                                <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <House size={14} weight="light" /> <span>Warehouse</span>
                                                 </button>
                                             )}
                                             {pageVisibility['shipping'] !== false && (
-                                                <button onClick={() => onNavigate('sourcing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sourcing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('sourcing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sourcing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <UsersThree size={14} weight="light" /> <span>Sourcing</span>
                                                 </button>
                                             )}
                                             {pageVisibility['fleet'] !== false && (
-                                                <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Truck size={14} weight="light" /> <span>Fleet</span>
                                                 </button>
                                             )}
                                             {pageVisibility['vendors'] !== false && (
-                                                <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <UsersThree size={14} weight="light" /> <span>Vendors</span>
                                                 </button>
                                             )}
                                             {pageVisibility['planning'] !== false && (
-                                                <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Gauge size={14} weight="light" /> <span>Planning</span>
                                                 </button>
                                             )}
@@ -570,30 +570,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {pageVisibility['operations'] !== false && (
                                 <div className="mb-1">
                                     <div
-                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                         onClick={() => !isCollapsed && toggleDepartment('operations')}
                                         title="Operations"
                                     >
                                         <div className={`flex items-center ${!isCollapsed ? 'gap-2' : ''} truncate`}>
                                             <Factory size={17} weight="light" className="text-gray-500" />
-                                            <span className={`text-[12px] font-medium ${textBase} ${textVisibility}`}>Operations</span>
+                                            <span className={`text-[14px] font-medium ${textBase} ${textVisibility}`}>Operations</span>
                                         </div>
                                         <CaretDown size={14} weight="light" className={`text-gray-400 transition-transform ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'hidden' : 'opacity-100'}`} />
                                     </div>
                                     {expandedDepartments.has('operations') && !isCollapsed && (
                                         <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                             {pageVisibility['maintenance'] !== false && (
-                                                <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Wrench size={14} /> <span>Maintenance</span>
                                                 </button>
                                             )}
                                             {pageVisibility['production'] !== false && (
-                                                <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Factory size={14} /> <span>Production</span>
                                                 </button>
                                             )}
                                             {pageVisibility['quality'] !== false && (
-                                                <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <ShieldCheck size={14} weight="light" /> <span>Quality</span>
                                                 </button>
                                             )}
@@ -606,35 +606,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {pageVisibility['business'] !== false && (
                                 <div className="mb-1">
                                     <div
-                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                         onClick={() => !isCollapsed && toggleDepartment('business')}
                                         title="Business"
                                     >
                                         <div className={`flex items-center ${!isCollapsed ? 'gap-2' : ''} truncate`}>
                                             <Buildings size={17} weight="light" className="text-gray-500" />
-                                            <span className={`text-[12px] font-medium ${textBase} ${textVisibility}`}>Business</span>
+                                            <span className={`text-[14px] font-medium ${textBase} ${textVisibility}`}>Business</span>
                                         </div>
                                         <CaretDown size={14} weight="light" className={`text-gray-400 transition-transform ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'hidden' : 'opacity-100'}`} />
                                     </div>
                                     {expandedDepartments.has('business') && !isCollapsed && (
                                         <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                             {pageVisibility['sales_listing'] !== false && (
-                                                <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Table size={14} weight="light" /> <span>Listings</span>
                                                 </button>
                                             )}
                                             {pageVisibility['sales_factory'] !== false && (
-                                                <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Factory size={14} /> <span>Sales Factory</span>
                                                 </button>
                                             )}
                                             {pageVisibility['sales'] !== false && (
-                                                <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Megaphone size={14} /> <span>Sales</span>
                                                 </button>
                                             )}
                                             {pageVisibility['finance'] !== false && (
-                                                <button onClick={() => onNavigate('finance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'finance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('finance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'finance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Money size={14} weight="light" /> <span>Finance</span>
                                                 </button>
                                             )}
@@ -647,30 +647,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {pageVisibility['business_support'] !== false && (
                                 <div className="mb-1">
                                     <div
-                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center ${!isCollapsed ? 'justify-between px-2' : 'justify-center px-0'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                         onClick={() => !isCollapsed && toggleDepartment('business_support')}
                                         title="Business Support"
                                     >
                                         <div className={`flex items-center ${!isCollapsed ? 'gap-2' : ''} truncate`}>
                                             <Users size={18} className="text-gray-500" />
-                                            <span className={`text-[12px] font-medium ${textBase} ${textVisibility}`}>Support</span>
+                                            <span className={`text-[14px] font-medium ${textBase} ${textVisibility}`}>Support</span>
                                         </div>
                                         <CaretDown size={14} weight="light" className={`text-gray-400 transition-transform ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'hidden' : 'opacity-100'}`} />
                                     </div>
                                     {expandedDepartments.has('business_support') && !isCollapsed && (
                                         <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                             {pageVisibility['it_support'] !== false && (
-                                                <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Monitor size={14} /> <span>IT</span>
                                                 </button>
                                             )}
                                             {pageVisibility['hr'] !== false && (
-                                                <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <UsersThree size={14} weight="light" /> <span>HR</span>
                                                 </button>
                                             )}
                                             {pageVisibility['marketing'] !== false && (
-                                                <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-[12px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
                                                     <Megaphone size={14} /> <span>Marketing</span>
                                                 </button>
                                             )}
@@ -684,8 +684,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {/* Favorites Section */}
                     {!isCollapsed && favoriteBoards.length > 0 && (
                         <div className="mb-6 mt-6">
-                            <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded py-1">
-                                <span className="text-[12px] font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
+                            <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm py-1">
+                                <span className="text-[14px] font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
                                     {t('favorites')} <CaretRight size={14} weight="light" className="text-gray-400" />
                                 </span>
                             </div>
@@ -694,10 +694,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     <div
                                         key={board.id}
                                         onClick={() => onNavigate('board', board.id)}
-                                        className={`flex items-center justify-between px-3 py-1.5 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center justify-between px-3 py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                     >
                                         <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
-                                        <span className="text-[12px] truncate flex-1">{board.name}</span>
+                                        <span className="text-[14px] truncate flex-1">{board.name}</span>
                                     </div>
                                 ))}
                             </div>
@@ -705,7 +705,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
 
                     {/* Workspaces Header */}
-                    <div className="mt-2">
+                    <div className="mt-0">
                         {!isCollapsed && (
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
@@ -723,13 +723,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     e.stopPropagation();
                                     setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
                                 }}
-                                className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-lg py-2 flex items-center cursor-pointer transition-all hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${isCollapsed ? 'justify-between px-2' : 'justify-between p-2'}`}
+                                className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-sm py-2 flex items-center cursor-pointer transition-all hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${isCollapsed ? 'justify-between px-2' : 'justify-between p-2'}`}
                             >
                                 <div className={`flex items-center ${!isCollapsed ? 'gap-2' : 'gap-0'} truncate transition-[gap] duration-300`}>
-                                    <div className={`w-6 h-6 rounded bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
+                                    <div className={`w-6 h-6 rounded-sm bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
                                         {activeWorkspace.name.charAt(0)}
                                     </div>
-                                    <span className={`text-[12px] font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
+                                    <span className={`text-[14px] font-medium text-gray-700 dark:text-monday-dark-text truncate min-w-0 flex-1 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
                                 </div>
 
                                 {!isCollapsed && (
@@ -738,7 +738,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             ref={addButtonRef}
                                             onClick={toggleAddMenu}
                                             title={t('add_new')}
-                                            className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all duration-300 ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
+                                            className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded-sm border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all duration-300 ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
                                         >
                                             <Plus size={12} weight="light" />
                                         </button>
@@ -751,7 +751,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                             {/* Workspace Dropdown */}
                             {isWorkspaceMenuOpen && !isCollapsed && (
-                                <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
+                                <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
                                     {workspaces.map(ws => (
                                         <div
                                             key={ws.id}
@@ -762,13 +762,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             }}
                                         >
                                             <div className="flex items-center gap-2 truncate">
-                                                <div className={`w-5 h-5 rounded bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
-                                                <span className={`text-[12px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
+                                                <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
+                                                <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
                                                     {ws.name}
                                                 </span>
                                             </div>
                                             <div
-                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
+                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
                                                 onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
                                             >
                                                 <DotsThree size={12} weight="light" />
@@ -781,7 +781,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                 setIsAddWorkspaceModalOpen(true);
                                                 setIsWorkspaceMenuOpen(false);
                                             }}
-                                            className="w-full text-start px-3 py-2 text-[12px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
+                                            className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
                                         >
                                             <Plus size={14} weight="light" /> {t('add_workspace')}
                                         </button>
@@ -803,7 +803,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     return (
                                         <div key={board.id} className="relative">
                                             <div
-                                                className={`flex items-center px-3 py-1 rounded cursor-pointer group transition-colors select-none
+                                                className={`flex items-center px-3 py-1 rounded-sm cursor-pointer group transition-colors select-none
                                                 ${isActive ? 'bg-white/60 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'} 
                                                 ${isCollapsed ? 'justify-between px-3' : 'justify-between px-3'}
                                                 ${isChild ? 'ml-3' : ''}
@@ -828,7 +828,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                         size: isChild ? 14 : 16,
                                                         className: `${isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400'} flex-shrink-0`
                                                     })}
-                                                    <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-[12px]'} ${textBase} ${textVisibility}`}>{board.name}</span>
+                                                    <span className={`font-normal truncate min-w-0 flex-1 ${isChild ? 'text-xs' : 'text-[14px]'} ${textBase} ${textVisibility}`}>{board.name}</span>
                                                 </div>
                                                 {!isCollapsed && (
                                                     <div className="flex items-center gap-1">
@@ -840,7 +840,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                                 setSelectedTemplate(undefined);
                                                                 setIsNewBoardModalOpen(true);
                                                             }}
-                                                            className={`p-1 rounded hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                            className={`p-1 rounded-sm hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
                                                             title="Add sub-board"
                                                         >
                                                             <Plus size={isChild ? 12 : 14} weight="light" className="" />
@@ -850,14 +850,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                                 e.stopPropagation();
                                                                 setBoardToDelete(board.id);
                                                             }}
-                                                            className={`p-1 rounded hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                            className={`p-1 rounded-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
                                                             title="Delete board"
                                                         >
                                                             <Trash size={isChild ? 12 : 14} weight="light" className="" />
                                                         </div>
                                                         <div
                                                             onClick={(e) => handleContextMenu(e, board.id)}
-                                                            className={`p-1 rounded hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
+                                                            className={`p-1 rounded-sm hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
                                                         >
                                                             <DotsThree size={isChild ? 12 : 14} weight="light" className="text-gray-500 dark:text-gray-400" />
                                                         </div>
@@ -882,35 +882,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
 
                     {/* Marketplace Section */}
-                    <div className="mt-6">
-                        {!isCollapsed && (
-                            <div className="flex items-center mb-2 px-1">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                    {(pageVisibility['local_marketplace'] !== false || pageVisibility['foreign_marketplace'] !== false) && (
+                        <div className="mt-6">
+                            {!isCollapsed && (
+                                <div className="flex items-center mb-2 px-1">
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                                </div>
+                            )}
+                            <div className="space-y-1">
+                                {pageVisibility['local_marketplace'] !== false && (
+                                    <button
+                                        onClick={() => onNavigate('local_marketplace')}
+                                        title="Local Marketplace"
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                    >
+                                        <ShoppingCart size={16} weight="light" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
+                                    </button>
+                                )}
+                                {pageVisibility['foreign_marketplace'] !== false && (
+                                    <button
+                                        onClick={() => onNavigate('foreign_marketplace')}
+                                        title="Foreign Marketplace"
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                    >
+                                        <Globe size={16} weight="light" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
+                                    </button>
+                                )}
                             </div>
-                        )}
-                        <div className="space-y-1">
-                            {pageVisibility['local_marketplace'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('local_marketplace')}
-                                    title="Local Marketplace"
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
-                                >
-                                    <ShoppingCart size={16} weight="light" />
-                                    <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
-                                </button>
-                            )}
-                            {pageVisibility['foreign_marketplace'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('foreign_marketplace')}
-                                    title="Foreign Marketplace"
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
-                                >
-                                    <Globe size={16} weight="light" />
-                                    <span className={`font-normal text-[12px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
-                                </button>
-                            )}
                         </div>
-                    </div>
+                    )}
 
                     {/* Resize/Collapse Handle */}
                     <button
@@ -936,16 +938,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* Board Context Menu */}
                 {contextMenu && (
                     <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                        className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
                         style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
                     >
-                        <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[12px]">
+                        <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
                             <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
                         </div>
                         {/* ... other context items would be translated similarly, omitting for brevity ... */}
                         <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
                         <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[12px]"
+                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
                             onClick={() => {
                                 onDeleteBoard(contextMenu.boardId);
                                 setContextMenu(null);
@@ -959,11 +961,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* Workspace Context Menu */}
                 {workspaceContextMenu && (
                     <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                        className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
                         style={{ top: Math.min(workspaceContextMenu.y, window.innerHeight - 150), left: dir === 'rtl' ? (workspaceContextMenu.x - 224) : (workspaceContextMenu.x + 10) }}
                     >
                         <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[12px]"
+                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]"
                             onClick={() => {
                                 // Edit functionality could go here
                                 setWorkspaceContextMenu(null);
@@ -973,7 +975,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
                         <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[12px]"
+                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
                             onClick={() => {
                                 if (workspaces.length <= 1) {
                                     alert(t('Cannot delete the only workspace. Create another one first.'));
@@ -992,7 +994,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isAddMenuOpen && (
                     <div
                         ref={addMenuRef}
-                        className="fixed bg-white dark:bg-monday-dark-surface shadow-2xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 w-64 overflow-visible"
+                        className="fixed bg-white dark:bg-monday-dark-surface shadow-2xl rounded-sm border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 w-64 overflow-visible"
                         style={{
                             top: addMenuPos.top,
                             bottom: addMenuPos.bottom,
@@ -1000,7 +1002,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                     >
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-monday-dark-border">
-                            <span className="text-[12px] font-semibold text-gray-800 dark:text-monday-dark-text">{t('add_new')}</span>
+                            <span className="text-[14px] font-semibold text-gray-800 dark:text-monday-dark-text">{t('add_new')}</span>
                         </div>
                         <div className="py-2">
                             <div
@@ -1009,17 +1011,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     setIsAddWorkspaceModalOpen(true);
                                     setIsAddMenuOpen(false);
                                 }}
-                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group"
+                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
                             >
                                 <Briefcase size={16} className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('workspace')}</span>
                             </div>
                             <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <Briefcase size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('project')}</span>
                             </div>
-                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <Folder size={16} className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('portfolio')}</span>
                             </div>
@@ -1029,7 +1031,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <div
                                 onMouseEnter={() => setIsBoardHovered(true)}
                                 onMouseLeave={() => setIsBoardHovered(false)}
-                                className="relative px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group"
+                                className="relative px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
                             >
                                 <div className="flex items-center gap-3">
                                     <Table size={16} weight="light" className="text-monday-blue" />
@@ -1040,7 +1042,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 {/* BOARD SUBMENU */}
                                 {isBoardHovered && (
                                     <div className="absolute top-0 left-full rtl:right-full rtl:left-auto w-56 pl-1 rtl:pr-1 z-[110]">
-                                        <div className="bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border py-2 w-full">
+                                        <div className="bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-200 dark:border-monday-dark-border py-2 w-full">
                                             <div
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -1050,7 +1052,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     setIsNewBoardModalOpen(true);
                                                     setIsAddMenuOpen(false);
                                                 }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px]"
+                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px]"
                                             >
                                                 <Table size={16} className="text-monday-blue" />
                                                 <span>{t('new_board')}</span>
@@ -1064,7 +1066,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     setIsNewBoardModalOpen(true);
                                                     setIsAddMenuOpen(false);
                                                 }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px]"
+                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px]"
                                             >
                                                 <Layout size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                                 <span>{t('board_template')}</span>
@@ -1074,7 +1076,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 )}
                             </div>
 
-                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <div className="flex items-center gap-3">
                                     <FileText size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                     <span>{t('doc')}</span>
@@ -1084,7 +1086,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <div
                                 onMouseEnter={() => setIsDashboardHovered(true)}
                                 onMouseLeave={() => setIsDashboardHovered(false)}
-                                className="relative px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group"
+                                className="relative px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
                             >
                                 <div className="flex items-center gap-3">
                                     <SquaresFour size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
@@ -1095,7 +1097,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 {/* DASHBOARD SUBMENU */}
                                 {isDashboardHovered && (
                                     <div className="absolute top-0 left-full rtl:right-full rtl:left-auto w-56 pl-1 rtl:pr-1 z-[110]">
-                                        <div className="bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border py-2 w-full">
+                                        <div className="bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-200 dark:border-monday-dark-border py-2 w-full">
                                             <div
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -1105,7 +1107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     setIsNewBoardModalOpen(true);
                                                     setIsAddMenuOpen(false);
                                                 }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px]"
+                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px]"
                                             >
                                                 <SquaresFour size={16} weight="light" className="text-monday-blue" />
                                                 <span>{t('dashboard')}</span>
@@ -1118,7 +1120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     setIsNewBoardModalOpen(true);
                                                     setIsAddMenuOpen(false);
                                                 }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px]"
+                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px]"
                                             >
                                                 <Layout size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                                 <span>{t('templates')}</span>
@@ -1127,39 +1129,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 )}
                             </div>
-                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <div className="flex items-center gap-3">
                                     <Table size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                     <span>{t('form')}</span>
                                 </div>
                                 <CaretRight size={14} weight="light" className="text-gray-400 rtl:rotate-180" />
                             </div>
-                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <GitMerge size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('workflow')}</span>
                             </div>
-                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <Folder size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('folder')}</span>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
 
-                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <div className="flex items-center gap-3">
                                     <PuzzlePiece size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                     <span>{t('installed_apps')}</span>
                                 </div>
                                 <CaretRight size={14} weight="light" className="text-gray-400 rtl:rotate-180" />
                             </div>
-                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <div className="flex items-center gap-3">
                                     <DownloadSimple size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                     <span>{t('import_data')}</span>
                                 </div>
                                 <CaretRight size={14} weight="light" className="text-gray-400 rtl:rotate-180" />
                             </div>
-                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[12px] group">
+                            <div className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group">
                                 <MagicWand size={16} weight="light" className="text-gray-500 dark:text-gray-400" />
                                 <span>{t('template_center')}</span>
                             </div>
@@ -1185,7 +1187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         autoFocus
                                         value={newWorkspaceName}
                                         onChange={(e) => setNewWorkspaceName(e.target.value)}
-                                        className="w-full border border-gray-300 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-monday-dark-text rounded-lg p-3 text-[12px] focus:border-monday-blue focus:ring-2 focus:ring-monday-blue/20 outline-none transition-all duration-300 shadow-sm"
+                                        className="w-full border border-gray-300 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-monday-dark-text rounded-sm p-3 text-[14px] focus:border-monday-blue focus:ring-2 focus:ring-monday-blue/20 outline-none transition-all duration-300 shadow-sm"
                                         placeholder="e.g. Marketing Team"
                                     />
                                 </div>
@@ -1197,10 +1199,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         <button
                                             type="button"
                                             onClick={() => setIsWorkspaceIconPickerOpen(!isWorkspaceIconPickerOpen)}
-                                            className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg hover:border-monday-blue dark:hover:border-monday-blue transition-all duration-300 group"
+                                            className="w-full flex items-center justify-between p-3 rounded-sm border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg hover:border-monday-blue dark:hover:border-monday-blue transition-all duration-300 group"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                                                <div className={`w-10 h-10 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
                                                     {React.createElement(ICON_MAP[newWorkspaceIcon] || Briefcase, { size: 20 })}
                                                 </div>
                                                 <span className="font-medium text-gray-700 dark:text-gray-200">{newWorkspaceIcon}</span>
@@ -1235,7 +1237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                                     setIsWorkspaceIconPickerOpen(false);
                                                                 }}
                                                                 className={`
-                                                                    aspect-square rounded-lg flex items-center justify-center transition-all duration-300
+                                                                    aspect-square rounded-sm flex items-center justify-center transition-all duration-300
                                                                     bg-gradient-to-br ${gradient} text-white
                                                                     ${isSelected
                                                                         ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
@@ -1257,14 +1259,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => setIsAddWorkspaceModalOpen(false)}
-                                        className="px-5 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-lg text-[12px] font-medium transition-colors"
+                                        className="px-5 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
                                     >
                                         {t('cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={!newWorkspaceName.trim()}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[12px] font-medium rounded-lg hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
+                                        className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
                                     >
                                         {t('add_workspace')}
                                     </button>
@@ -1285,7 +1287,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     {creationStep === 'details' && (
                                         <button
                                             onClick={() => setCreationStep('template')}
-                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-lg transition-colors group"
+                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors group"
                                         >
                                             <CaretLeft size={20} weight="light" className="text-gray-400 group-hover:text-gray-600 dark:text-gray-500" />
                                         </button>
@@ -1296,7 +1298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
                                 <button
                                     onClick={() => setIsNewBoardModalOpen(false)}
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors text-gray-400 hover:text-gray-600"
                                 >
                                     <CaretDown className="rotate-180" size={20} weight="light" />
                                 </button>
@@ -1315,7 +1317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                         setNewBoardName('');
                                                         setCreationStep('details');
                                                     }}
-                                                    className="text-[12px] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline"
+                                                    className="text-[14px] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline"
                                                 >
                                                     Start from scratch
                                                 </button>
@@ -1334,7 +1336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     <form onSubmit={handleCreateBoard} className="p-6 space-y-6">
                                         {/* Board Name Input */}
                                         <div className="space-y-2">
-                                            <label className="block text-[12px] font-medium text-gray-700 dark:text-gray-300">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-gray-300">
                                                 Board Name
                                             </label>
                                             <input
@@ -1369,13 +1371,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                     `}
                                                     >
                                                         <div className={`
-                                                        w-8 h-8 rounded-lg flex items-center justify-center transition-colors
+                                                        w-8 h-8 rounded-sm flex items-center justify-center transition-colors
                                                         ${selectedLayout === tool.id ? 'bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500'}
                                                     `}>
                                                             <tool.icon size={16} />
                                                         </div>
                                                         <div>
-                                                            <h4 className={`font-bold text-[12px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                            <h4 className={`font-bold text-[14px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
                                                                 {tool.label}
                                                             </h4>
                                                             <p className="text-[10px] text-gray-500 font-medium truncate">
@@ -1413,13 +1415,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                             ];
                                                             const gradient = gradients[Math.max(0, iconIndex) % gradients.length];
                                                             return (
-                                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white bg-gradient-to-br ${gradient} shadow-md`}>
+                                                                <div className={`w-10 h-10 rounded-sm flex items-center justify-center text-white bg-gradient-to-br ${gradient} shadow-md`}>
                                                                     {React.createElement(ICON_MAP[newBoardIcon] || Table, { size: 20 })}
                                                                 </div>
                                                             );
                                                         })()}
                                                         <div className="text-left">
-                                                            <div className="text-[12px] font-semibold text-gray-700 dark:text-gray-200">{newBoardIcon}</div>
+                                                            <div className="text-[14px] font-semibold text-gray-700 dark:text-gray-200">{newBoardIcon}</div>
                                                             <div className="text-xs text-gray-400">Click to change icon</div>
                                                         </div>
                                                     </div>
@@ -1447,7 +1449,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                                             setIsIconPickerOpen(false);
                                                                         }}
                                                                         className={`
-                                                                            aspect-square rounded-lg flex items-center justify-center transition-all duration-300
+                                                                            aspect-square rounded-sm flex items-center justify-center transition-all duration-300
                                                                             bg-gradient-to-br ${gradient} text-white
                                                                             ${isSelected
                                                                                 ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
@@ -1469,14 +1471,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={() => setIsNewBoardModalOpen(false)}
-                                                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-monday-dark-hover rounded-lg text-[12px] font-medium transition-colors"
+                                                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
                                             >
                                                 {t('cancel')}
                                             </button>
                                             <button
                                                 type="submit"
                                                 disabled={!newBoardName.trim()}
-                                                className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[12px] font-medium rounded-lg hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
+                                                className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
                                             >
                                                 {t('create_board')}
                                             </button>

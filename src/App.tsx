@@ -530,19 +530,25 @@ const AppContent: React.FC = () => {
   const ProductionPage = lazyWithRetry(() => import('./features/operations/production/ProductionPage'));
   const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
 
-  const SalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
   const SalesListingPage = lazyWithRetry(() => import('./features/business/sales/SalesListingPage'));
   const SalesFactoryPage = lazyWithRetry(() => import('./features/business/sales/SalesFactoryPage'));
   const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
 
-  // New Department Pages
-  const DashboardsPage = lazyWithRetry(() => import('./features/departments/DashboardsPage'));
-  const PurchasesPage = lazyWithRetry(() => import('./features/departments/PurchasesPage'));
-  const InventoryPage = lazyWithRetry(() => import('./features/departments/InventoryPage'));
-  const ExpensesPage = lazyWithRetry(() => import('./features/departments/ExpensesPage'));
-  const SuppliersPage = lazyWithRetry(() => import('./features/departments/SuppliersPage'));
-  const CustomersPage = lazyWithRetry(() => import('./features/departments/CustomersPage'));
-  const ReportsPage = lazyWithRetry(() => import('./features/departments/ReportsPage'));
+  // Mini Company - Overview
+  const DashboardsPage = lazyWithRetry(() => import('./features/mini_company/overview/DashboardsPage'));
+  const ReportsPage = lazyWithRetry(() => import('./features/mini_company/overview/ReportsPage'));
+
+  // Mini Company - Operations
+  const SalesPage = lazyWithRetry(() => import('./features/mini_company/operations/SalesPage'));
+  const PurchasesPage = lazyWithRetry(() => import('./features/mini_company/operations/PurchasesPage'));
+  const InventoryPage = lazyWithRetry(() => import('./features/mini_company/operations/InventoryPage'));
+
+  // Mini Company - Finance
+  const ExpensesPage = lazyWithRetry(() => import('./features/mini_company/finance/ExpensesPage'));
+
+  // Mini Company - People
+  const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/people/SuppliersPage'));
+  const CustomersPage = lazyWithRetry(() => import('./features/mini_company/people/CustomersPage'));
 
   const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
   const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));

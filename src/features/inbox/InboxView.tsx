@@ -662,9 +662,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
 // Helper Components
 const NavItem = ({ icon, label, isActive, count, onClick }: { icon: React.ReactNode, label: string, isActive?: boolean, count?: number, onClick?: () => void }) => (
-  <div onClick={onClick} className={`flex items-center justify-between px-3 py-1.5 rounded-md cursor-pointer group ${isActive ? 'bg-[#e5f0fa] dark:bg-monday-dark-hover text-monday-blue font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-monday-dark-hover'}`}>
+  <div onClick={onClick} className={`flex items-center justify-between px-3 py-1.5 rounded-md cursor-pointer group ${isActive ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-monday-dark-hover'}`}>
     <div className="flex items-center gap-2.5">
-      <span className={isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'}>{icon}</span>
+      <span className={isActive ? 'text-inherit' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'}>{icon}</span>
       <span className="text-[13px]">{label}</span>
     </div>
     {count && (
@@ -674,7 +674,7 @@ const NavItem = ({ icon, label, isActive, count, onClick }: { icon: React.ReactN
 );
 
 const FolderItem = ({ label, hasChildren, indent, onClick, isActive }: { label: string, hasChildren?: boolean, indent?: boolean, onClick?: () => void, isActive?: boolean, key?: string | number }) => (
-  <div onClick={onClick} className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-400 ${indent ? 'ps-8' : ''} ${isActive ? 'bg-gray-200 dark:bg-monday-dark-hover font-medium' : ''}`}>
+  <div onClick={onClick} className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-400 ${indent ? 'ps-8' : ''} ${isActive ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : ''}`}>
     {hasChildren && <ChevronDown size={12} className="text-gray-400" />}
     {!hasChildren && <div className="w-3"></div>}
     <span className="text-[13px]">{label}</span>
