@@ -38,6 +38,7 @@ export interface Board {
   icon?: string;
   parentId?: string;
   pinnedViews?: string[];
+  type?: 'project' | 'discussion';
 }
 
 export interface Workspace {
@@ -47,4 +48,16 @@ export interface Workspace {
   color: string;
 }
 
-export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work' | 'flow_hub' | 'process_map';
+export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'discussion' | 'my_work' | 'flow_hub' | 'process_map' | 'procurement' | 'warehouse' | 'shipping' | 'fleet' | 'vendors' | 'planning' | 'maintenance' | 'production' | 'quality' | 'sales_factory' | 'sales_listing' | 'sales' | 'finance' | 'it_support' | 'hr' | 'marketing' | 'local_marketplace' | 'foreign_marketplace' | 'cornell_notes' | 'settings';
+
+export interface RecentlyVisitedItem {
+  id: string;
+  title: string;
+  type: ViewState | string;
+  timestamp: number;
+  metadata?: string;
+  icon?: string;
+  color?: string;
+  boardId?: string; // Optional, for board items
+}
+

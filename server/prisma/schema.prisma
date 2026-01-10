@@ -30,19 +30,40 @@ model User {
   boards             Board[]
   rooms              Room[]
   emailAccounts      EmailAccount[]
+  vaultItems         VaultItem[]
+  activities         Activity[]
   
   // Pivot for many-to-many if needed later, but simple 1-workspace for now
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  userId      String
+  workspaceId String?
+  boardId     String?
+  type        String   // e.g., "TASK_CREATED", "BOARD_CREATED", etc.
+  content     String   // Display message
+  metadata    String?  // JSON string for extra data (boardId, taskId, etc.)
+  createdAt   DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  board     Board?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
 }
 
 model Workspace {
   id        String   @id @default(uuid())
   name      String
+  icon      String?
+  color     String?
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   users       User[]
   invitations Invitation[]
+  boards      Board[]
+  activities  Activity[]
 }
 
 model Invitation {
@@ -167,16 +188,38 @@ model Board {
   id             String   @id @default(uuid())
   userId         String   // SaaS Multi-tenancy
   name           String   
+  icon           String?
   description    String?
   availableViews String?  
   pinnedViews    String?  
   columns        String?  
   defaultView    String?
+  tasks          String   @default("[]") // Storing tasks as JSON for flexibility
+  type           String   @default("project") // "project" or "discussion"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards Card[]
+  
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id]) // Optional for now to support private boards? Or enforce it? Let's make it optional for migration safety but intended for use.
+  
+  cards      Card[]
+  threads    Thread[]
+  activities Activity[]
+}
+
+model Thread {
+  id        String   @id @default(uuid())
+  boardId   String
+  title     String
+  preview   String?
+  updatedAt DateTime @updatedAt
+  messages  String   @default("[]") // JSON string of Message[]
+  priority  String?
+  dueDate   DateTime?
+  
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
 }
 
 model Card {
@@ -229,4 +272,24 @@ model EmailAccount {
   updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Vault System
+model VaultItem {
+  id          String   @id @default(uuid())
+  userId      String   // SaaS Multi-tenancy
+  title       String
+  type        String   // folder, file, note, weblink
+  subtitle    String?
+  content     String?  // For notes or text content
+  metadata    String?  // JSON string for file size, mimeType, dimensions, etc.
+  isFavorite  Boolean  @default(false)
+  folderId    String?  // Parent folder ID
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  VaultItem? @relation("FolderItems", fields: [folderId], references: [id], onDelete: Cascade)
+  children VaultItem[] @relation("FolderItems")
 }

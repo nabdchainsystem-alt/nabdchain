@@ -74,7 +74,7 @@ const translations: Translations = {
   dark_mode: { en: 'Dark Mode', ar: 'الوضع الداكن' },
   light_mode: { en: 'Light Mode', ar: 'الوضع الفاتح' },
   language: { en: 'Language', ar: 'اللغة' },
-  
+
   // New Add Menu Translations
   add_new: { en: 'Add new', ar: 'إضافة جديد' },
   tasks_board: { en: 'TasksBoard', ar: 'لوحة مهام' },
@@ -100,6 +100,8 @@ interface AppContextType {
   toggleLanguage: () => void;
   t: (key: string) => string;
   dir: 'ltr' | 'rtl';
+  userDisplayName: string;
+  updateUserDisplayName: (name: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -107,6 +109,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('light');
   const [language, setLanguage] = useState<Language>('en');
+  const [userDisplayName, setUserDisplayName] = useState<string>(() => {
+    return localStorage.getItem('app-user-display-name') || 'Alex';
+  });
 
   // Load from local storage on mount (optional, omitting for brevity in this demo)
 
@@ -127,6 +132,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     root.setAttribute('lang', language);
   }, [language]);
 
+  useEffect(() => {
+    localStorage.setItem('app-user-display-name', userDisplayName);
+  }, [userDisplayName]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -140,14 +149,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return translations[key][language];
   };
 
+  const updateUserDisplayName = (name: string) => {
+    setUserDisplayName(name);
+  };
+
   return (
-    <AppContext.Provider value={{ 
-      theme, 
-      toggleTheme, 
-      language, 
-      toggleLanguage, 
+    <AppContext.Provider value={{
+      theme,
+      toggleTheme,
+      language,
+      toggleLanguage,
       t,
-      dir: language === 'ar' ? 'rtl' : 'ltr'
+      dir: language === 'ar' ? 'rtl' : 'ltr',
+      userDisplayName,
+      updateUserDisplayName
     }}>
       {children}
     </AppContext.Provider>

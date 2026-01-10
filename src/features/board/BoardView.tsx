@@ -90,7 +90,7 @@ interface SortableTabProps {
     onContextMenu: (e: React.MouseEvent) => void;
 }
 
-const SortableTab = ({ viewId, isActive, label, icon: Icon, isPinned, onClick, onContextMenu }: SortableTabProps) => {
+const SortableTab: React.FC<SortableTabProps> = ({ viewId, isActive, label, icon: Icon, isPinned, onClick, onContextMenu }) => {
     const {
         attributes,
         listeners,
@@ -162,7 +162,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     // Ideally, if we are in a "controlled" mode (lifting state up), we might not use the hook at all?
     // But the current architecture seems to mix them.
     // Let's use the hook for internal state management where needed.
-    const { board, tasks, addTask, updateTask, onUpdateTasks } = useRoomBoardData(effectiveKey, initialBoard);
+
+    // Callback to bridge hook's internal state updates with parent's onUpdateTasks
+    const handleBoardSave = React.useCallback((updatedBoard: any) => {
+        if (initialOnUpdateTasks) {
+            // Flatten tasks from groups
+            const allTasks = updatedBoard.groups ? updatedBoard.groups.flatMap((g: any) => g.tasks) : [];
+            initialOnUpdateTasks(allTasks);
+        }
+    }, [initialOnUpdateTasks]);
+
+    const { board, tasks, addTask, updateTask, onUpdateTasks } = useRoomBoardData(effectiveKey, initialBoard, handleBoardSave);
 
     // Use the prop 'onUpdateBoard' if it exists, otherwise we might need a local handler if the hook provided one (it doesn't currently).
     // The hook provides 'setBoard'.
@@ -588,7 +598,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                 // Keeping it for legacy but maybe redirect or hide?
                 return <DataTable key={board.id} roomId={board.id} />;
             case 'discussion':
-                return <DiscussionPage key={board.id} />;
+                return <DiscussionPage />;
             case 'doc':
                 return <DocView key={board.id} roomId={board.id} />;
 
@@ -872,56 +882,83 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
                                             {/* Sections */}
                                             <div className="space-y-12">
-                                                {dashboardSections ? (
-                                                    // Render custom sections
-                                                    dashboardSections.map((section: any, idx: number) => (
-                                                        <section key={idx}>
-                                                            <div className="flex items-center gap-4 mb-6">
-                                                                <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">{section.title}</h3>
-                                                                <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
-                                                            </div>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {section.options.map((option: any) => {
-                                                                    // Fallback icon if not provided in dynamic options
-                                                                    const Icon = option.icon || Layout;
-                                                                    return (
-                                                                        <button
-                                                                            key={option.id}
-                                                                            onClick={() => {
-                                                                                setShowAddViewMenu(false);
-                                                                                const viewId = option.id as BoardViewType;
-                                                                                if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                                    onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
-                                                                                } else if (onUpdateBoard && !board.availableViews) {
-                                                                                    onUpdateBoard(board.id, { availableViews: [viewId] });
-                                                                                }
-                                                                                setActiveView(viewId);
-                                                                            }}
-                                                                            className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
-                                                                        >
-                                                                            <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
-                                                                                <Icon size={16} strokeWidth={1.5} />
-                                                                            </div>
-                                                                            <div className="text-left">
-                                                                                <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
-                                                                                <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
-                                                                            </div>
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </section>
-                                                    ))
-                                                ) : (
-                                                    <>
-                                                        {/* Basic Tools */}
-                                                        <section>
-                                                            <div className="flex items-center gap-4 mb-6">
-                                                                <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Basic Tools</h3>
-                                                                <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
-                                                            </div>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {VIEW_OPTIONS.filter(opt => !['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'warehouse_capacity_map'].includes(opt.id)).map((option) => (
+                                                {/* Basic Tools */}
+                                                <section>
+                                                    <div className="flex items-center gap-4 mb-6">
+                                                        <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Basic Tools</h3>
+                                                        <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {VIEW_OPTIONS.filter(opt => !['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'warehouse_capacity_map'].includes(opt.id)).map((option) => (
+                                                            <button
+                                                                key={option.id}
+                                                                onClick={() => {
+                                                                    setShowAddViewMenu(false);
+                                                                    const viewId = option.id as BoardViewType;
+                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
+                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
+                                                                    } else if (onUpdateBoard && !board.availableViews) {
+                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    }
+                                                                    setActiveView(viewId);
+                                                                }}
+                                                                className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
+                                                            >
+                                                                <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
+                                                                    <option.icon size={16} strokeWidth={1.5} />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
+                                                                    <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </section>
+                                                {/* Advanced Tools */}
+                                                <section>
+                                                    <div className="flex items-center gap-4 mb-6">
+                                                        <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Advanced Tools</h3>
+                                                        <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'warehouse_capacity_map'].includes(opt.id)).map((option) => (
+                                                            <button
+                                                                key={option.id}
+                                                                onClick={() => {
+                                                                    setShowAddViewMenu(false);
+                                                                    const viewId = option.id as BoardViewType;
+                                                                    if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
+                                                                        onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
+                                                                    } else if (onUpdateBoard && !board.availableViews) {
+                                                                        onUpdateBoard(board.id, { availableViews: [viewId] });
+                                                                    }
+                                                                    setActiveView(viewId);
+                                                                }}
+                                                                className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
+                                                            >
+                                                                <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
+                                                                    <option.icon size={16} strokeWidth={1.5} />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
+                                                                    <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </section>
+                                                {dashboardSections?.map((section: any, idx: number) => (
+                                                    <section key={idx}>
+                                                        <div className="flex items-center gap-4 mb-6">
+                                                            <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">{section.title}</h3>
+                                                            <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {section.options.map((option: any) => {
+                                                                // Fallback icon if not provided in dynamic options
+                                                                const Icon = option.icon || Layout;
+                                                                return (
                                                                     <button
                                                                         key={option.id}
                                                                         onClick={() => {
@@ -937,52 +974,23 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                         className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
                                                                     >
                                                                         <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
-                                                                            <option.icon size={16} strokeWidth={1.5} />
+                                                                            <Icon size={16} strokeWidth={1.5} />
                                                                         </div>
                                                                         <div className="text-left">
                                                                             <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
                                                                             <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
                                                                         </div>
                                                                     </button>
-                                                                ))}
-                                                            </div>
-                                                        </section>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </section>
+                                                ))}
 
-                                                        {/* Advanced Tools */}
-                                                        <section>
-                                                            <div className="flex items-center gap-4 mb-6">
-                                                                <h3 className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest whitespace-nowrap">Advanced Tools</h3>
-                                                                <div className="h-px w-full bg-stone-100 dark:bg-stone-800/50" />
-                                                            </div>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'warehouse_capacity_map'].includes(opt.id)).map((option) => (
-                                                                    <button
-                                                                        key={option.id}
-                                                                        onClick={() => {
-                                                                            setShowAddViewMenu(false);
-                                                                            const viewId = option.id as BoardViewType;
-                                                                            if (onUpdateBoard && board.availableViews && !board.availableViews.includes(viewId)) {
-                                                                                onUpdateBoard(board.id, { availableViews: [...board.availableViews, viewId] });
-                                                                            } else if (onUpdateBoard && !board.availableViews) {
-                                                                                onUpdateBoard(board.id, { availableViews: [viewId] });
-                                                                            }
-                                                                            setActiveView(viewId);
-                                                                        }}
-                                                                        className="flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:border-stone-100 dark:hover:border-stone-800/50 hover:bg-stone-50/50 dark:hover:bg-stone-900/50 transition-all group"
-                                                                    >
-                                                                        <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 group-hover:bg-black dark:group-hover:bg-stone-100 group-hover:text-white dark:group-hover:text-black transition-all">
-                                                                            <option.icon size={16} strokeWidth={1.5} />
-                                                                        </div>
-                                                                        <div className="text-left">
-                                                                            <div className="text-[13px] font-semibold text-stone-900 dark:text-stone-200 group-hover:translate-x-0.5 transition-transform">{option.label}</div>
-                                                                            <div className="text-[10px] text-stone-400 dark:text-stone-500 line-clamp-1 truncate">{option.description}</div>
-                                                                        </div>
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </section>
-                                                    </>
-                                                )}
+
+
+
+
                                             </div>
                                         </div>
                                     </div>

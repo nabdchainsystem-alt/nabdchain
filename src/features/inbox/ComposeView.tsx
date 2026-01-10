@@ -12,11 +12,12 @@ interface ComposeViewProps {
     onDiscard: () => void;
     accounts?: EmailAccount[];
     initialData?: { to: string, subject: string, body: string };
+    logActivity?: (type: string, content: string, metadata?: any, workspaceId?: string, boardId?: string) => Promise<void>;
 }
 
 import { useAuth } from '@clerk/clerk-react';
 
-export const ComposeView: React.FC<ComposeViewProps> = ({ onDiscard, accounts, initialData }) => {
+export const ComposeView: React.FC<ComposeViewProps> = ({ onDiscard, accounts, initialData, logActivity }) => {
     const { getToken } = useAuth();
     const [to, setTo] = useState(initialData?.to || "");
     const [cc, setCc] = useState("");
@@ -45,6 +46,9 @@ export const ComposeView: React.FC<ComposeViewProps> = ({ onDiscard, accounts, i
             if (!token) return;
             const provider = accounts?.[0]?.provider || 'google';
             await emailService.sendEmail(token, to, subject, body, provider as 'google' | 'outlook', cc, bcc);
+            if (logActivity) {
+                logActivity('EMAIL_SENT', `Sent email: ${subject}`, { to, subject });
+            }
             onDiscard();
         } catch (error) {
             console.error("Failed to send", error);

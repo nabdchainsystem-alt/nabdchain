@@ -68,9 +68,18 @@ type SettingsTab = 'general' | 'views' | 'notifications';
 export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibilityChange }) => {
     const { user } = useUser();
     const { signOut } = useClerk();
-    const { theme, toggleTheme, language, toggleLanguage, t } = useAppContext();
+    const { theme, toggleTheme, language, toggleLanguage, t, userDisplayName, updateUserDisplayName } = useAppContext();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState(userDisplayName);
+
+    const handleSaveName = () => {
+        if (newName.trim()) {
+            updateUserDisplayName(newName.trim());
+            setIsEditingName(false);
+        }
+    };
 
     // Views Config State
     const [localVisibility, setLocalVisibility] = useState(visibility);
@@ -87,6 +96,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
         setHasChanges(true);
     };
 
+    // Profile State
+    const [jobTitle, setJobTitle] = useState(() => localStorage.getItem('user_job_title') || '');
+    const [department, setDepartment] = useState(() => localStorage.getItem('user_department') || '');
+    const [bio, setBio] = useState(() => localStorage.getItem('user_bio') || '');
+
+    const handleSaveProfile = () => {
+        localStorage.setItem('user_job_title', jobTitle);
+        localStorage.setItem('user_department', department);
+        localStorage.setItem('user_bio', bio);
+        // Visual feedback could be added here
+        alert('Profile saved successfully!');
+    };
+
     const handleSaveViews = () => {
         onVisibilityChange(localVisibility);
         setHasChanges(false);
@@ -101,17 +123,105 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <User className="text-blue-500" size={20} />
                     Profile Information
                 </h3>
-                <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center text-3xl font-bold border-4 border-gray-50 dark:border-monday-dark-bg shadow-md">
-                        {user?.fullName?.charAt(0) || user?.firstName?.charAt(0) || 'U'}
+                <div className="flex items-start gap-6">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 text-white flex items-center justify-center text-4xl font-bold border-4 border-gray-50 dark:border-monday-dark-bg shadow-md">
+                            {userDisplayName.charAt(0).toUpperCase()}
+                        </div>
+                        <button className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                            Change Photo
+                        </button>
                     </div>
-                    <div className="space-y-1">
-                        <h4 className="text-xl font-bold text-gray-900 dark:text-white">{user?.fullName || user?.firstName}</h4>
-                        <p className="text-gray-500 dark:text-gray-400">{user?.primaryEmailAddress?.emailAddress}</p>
-                        <div className="flex gap-2 mt-2">
-                            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs rounded-full font-medium border border-blue-200 dark:border-blue-800">
-                                Workspace Admin
-                            </span>
+
+                    <div className="flex-1 space-y-6">
+                        {/* Name Field */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            value={isEditingName ? newName : userDisplayName}
+                                            onChange={(e) => setNewName(e.target.value)}
+                                            disabled={!isEditingName}
+                                            className={`w-full px-4 py-2 border rounded-xl transition-all ${isEditingName
+                                                ? 'border-blue-300 focus:ring-2 focus:ring-blue-100 bg-white dark:bg-monday-dark-bg'
+                                                : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-monday-dark-hover/50'}`}
+                                        />
+                                        {!isEditingName && (
+                                            <button
+                                                onClick={() => { setIsEditingName(true); setNewName(userDisplayName); }}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">edit</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    {isEditingName && (
+                                        <button
+                                            onClick={handleSaveName}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm flex items-center gap-2"
+                                        >
+                                            <Check size={16} />
+                                            Save
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+                                <input
+                                    type="text"
+                                    value={user?.primaryEmailAddress?.emailAddress || ''}
+                                    disabled
+                                    className="w-full px-4 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-xl dark:border-gray-700 dark:bg-monday-dark-hover/50"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Job Title</label>
+                                <input
+                                    type="text"
+                                    value={jobTitle}
+                                    onChange={(e) => setJobTitle(e.target.value)}
+                                    placeholder="e.g. Senior Product Designer"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all dark:bg-monday-dark-bg dark:border-gray-700"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+                                <input
+                                    type="text"
+                                    value={department}
+                                    onChange={(e) => setDepartment(e.target.value)}
+                                    placeholder="e.g. Product"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all dark:bg-monday-dark-bg dark:border-gray-700"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
+                            <textarea
+                                rows={3}
+                                value={bio}
+                                onChange={(e) => setBio(e.target.value)}
+                                placeholder="Tell us a little about yourself..."
+                                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none dark:bg-monday-dark-bg dark:border-gray-700"
+                            />
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={handleSaveProfile}
+                                className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                            >
+                                <Save size={18} />
+                                Save Profile
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -287,8 +397,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('general')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'general'
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
                         <User size={18} />
@@ -298,8 +408,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('views')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'views'
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
                         <Eye size={18} />
@@ -309,8 +419,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeTab === 'notifications'
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                             }`}
                     >
                         <Bell size={18} />

@@ -118,8 +118,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         setExpandedBoards(newExpanded);
     };
 
-    const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
-    const workspaceBoards = boards.filter(b => b.workspaceId === activeWorkspaceId);
+    const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0] || {
+        id: 'loading',
+        name: 'Loading...',
+        icon: 'Briefcase',
+        color: 'from-gray-400 to-gray-500'
+    };
+    const workspaceBoards = boards.filter(b => b.workspaceId === activeWorkspaceId && b.type !== 'discussion');
     const favoriteBoards = boards.filter(b => b.isFavorite);
 
     // Close menus on click outside

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { IBoard, IGroup, ITask, Status, Priority } from '../types/boardTypes';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -45,70 +45,74 @@ const INITIAL_BOARD: IBoard = {
 
 import { Board } from '../../../types';
 
-export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard | Board) => {
+export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard | Board, onSave?: (board: IBoard) => void) => {
     // Namespaced key for this specific board's data
     const persistenceKey = `room-board-data-v2-${storageKey}`;
 
     const [board, setBoard] = useState<IBoard>(() => {
-        // 1. Try to load from localStorage first
+        // ... (existing initialization logic)
+        if (initialBoardData) {
+            if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
+                return initialBoardData as IBoard;
+            }
+            const flatBoard = initialBoardData as Board;
+            return {
+                id: flatBoard.id,
+                name: flatBoard.name,
+                description: flatBoard.description,
+                availableViews: flatBoard.availableViews,
+                pinnedViews: flatBoard.pinnedViews,
+                defaultView: flatBoard.defaultView,
+                groups: [{
+                    id: 'default-group',
+                    title: 'Tasks',
+                    color: '#579bff',
+                    tasks: (Array.isArray(flatBoard.tasks) ? flatBoard.tasks : []).map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        status: t.status as Status,
+                        priority: t.priority as Priority,
+                        personId: t.person,
+                        dueDate: t.date,
+                        textValues: {},
+                        selected: false,
+                        ...t
+                    })),
+                    columns: flatBoard.columns as any[],
+                    isPinned: false
+                }]
+            };
+        }
         try {
             const saved = localStorage.getItem(persistenceKey);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Simple validation to ensure it has at least an ID
-                if (parsed && parsed.id) {
-                    return parsed;
-                }
+                if (parsed && parsed.id) return parsed;
             }
-        } catch (e) {
-            console.warn('Failed to load board data from storage', e);
-        }
-
-        // 2. Fallback to initialBoardData or default
-        if (!initialBoardData) return INITIAL_BOARD;
-
-        // Check if it's already an IBoard (has groups)
-        if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
-            return initialBoardData as IBoard;
-        }
-
-        // Convert flat Board to IBoard
-        const flatBoard = initialBoardData as Board;
-        return {
-            id: flatBoard.id,
-            name: flatBoard.name,
-            description: flatBoard.description,
-            availableViews: flatBoard.availableViews,
-            pinnedViews: flatBoard.pinnedViews,
-            defaultView: flatBoard.defaultView,
-            groups: [{
-                id: 'default-group',
-                title: 'Tasks',
-                color: '#579bff',
-                tasks: (flatBoard.tasks || []).map(t => ({
-                    id: t.id,
-                    name: t.name,
-                    status: t.status as Status,
-                    priority: t.priority as Priority,
-                    personId: t.person,
-                    dueDate: t.date,
-                    textValues: {},
-                    selected: false
-                })),
-                columns: flatBoard.columns as any[],
-                isPinned: false
-            }]
-        };
+        } catch (e) { }
+        return INITIAL_BOARD;
     });
+
+    // Ref to track if the last update was from props (external)
+    const isExternalUpdate = useRef(false);
 
     // Persist board state whenever it changes
     useEffect(() => {
         try {
             localStorage.setItem(persistenceKey, JSON.stringify(board));
+
+            // CRITICAL: Only call onSave if it wasn't an external update from props
+            // to break infinite loop cycles.
+            if (onSave && !isExternalUpdate.current) {
+                onSave(board);
+            }
+
+            // Reset for next update
+            isExternalUpdate.current = false;
         } catch (e) {
             console.error('Failed to save board data', e);
         }
-    }, [board, persistenceKey]);
+    }, [board, persistenceKey, onSave]);
 
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
 
@@ -122,6 +126,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
         setBoard(prev => {
             // If the board ID changed, we absolutely must switch to the new data 
             if (prev.id !== initialBoardData.id) {
+                isExternalUpdate.current = true;
                 if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
                     return initialBoardData as IBoard;
                 } else {
@@ -137,7 +142,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                             id: 'default-group',
                             title: 'Tasks',
                             color: '#579bff',
-                            tasks: (flatBoard.tasks || []).map(t => ({
+                            tasks: (Array.isArray(flatBoard.tasks) ? flatBoard.tasks : []).map(t => ({
                                 id: t.id,
                                 name: t.name,
                                 status: t.status as Status,
@@ -165,6 +170,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                     prev.name !== flat.name ||
                     prev.description !== flat.description
                 ) {
+                    isExternalUpdate.current = true;
                     return {
                         ...prev,
                         availableViews: flat.availableViews,

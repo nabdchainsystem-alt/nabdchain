@@ -12,11 +12,11 @@ import ProcessMapPage from './features/flowHub/ProcessMapPage';
 import { MyWorkPage } from './features/myWork/MyWorkPage';
 // import { AuthProvider, useAuth } from './contexts/AuthContext';
 // import { LoginPage } from './features/auth/LoginPage';
-import { SignedIn, SignedOut, SignIn, SignUp, useUser } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from '@clerk/clerk-react';
 import { Logo } from './components/Logo';
 import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
-import { Board, Workspace, ViewState, BoardViewType, BoardColumn } from './types';
+import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem } from './types';
 import { BoardTemplate } from './features/board/data/templates';
 import { AppProvider } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -27,6 +27,7 @@ import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 // import { FocusWidget } from './components/features/focus/FocusWidget';
 import { RedirectToSignIn } from '@clerk/clerk-react';
+import { boardService } from './services/boardService';
 
 // Mock Initial Data
 const INITIAL_WORKSPACES: Workspace[] = [
@@ -68,31 +69,79 @@ const INITIAL_BOARDS: Board[] = [
 const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
 
+  const { getToken, isSignedIn } = useAuth();
+
   const [activeView, setActiveView] = useState<ViewState | string>(() => {
     const saved = localStorage.getItem('app-active-view');
     return saved || 'dashboard';
   });
 
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
-    const saved = localStorage.getItem('app-workspaces');
-    return saved ? JSON.parse(saved) : INITIAL_WORKSPACES;
-  });
-
-  const [boards, setBoards] = useState<Board[]>(() => {
-    const saved = localStorage.getItem('app-boards');
-    return saved ? JSON.parse(saved) : INITIAL_BOARDS;
-  });
-
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => {
-    return localStorage.getItem('app-active-workspace') || INITIAL_WORKSPACES[0].id;
+    return localStorage.getItem('app-active-workspace') || '';
   });
+
+  // Fetch Workspaces from API
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      if (!isSignedIn) return;
+      try {
+        const token = await getToken();
+        if (token) {
+          const response = await fetch('http://localhost:3001/api/workspaces', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setWorkspaces(data);
+            if (data.length > 0 && (!activeWorkspaceId || activeWorkspaceId === 'w1')) {
+              setActiveWorkspaceId(data[0].id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch workspaces", error);
+      }
+    };
+    fetchWorkspaces();
+  }, [isSignedIn, getToken]); // Only runs once on sign-in
+
+  // Switch to standard state, fetched from API
+  const [boards, setBoards] = useState<Board[]>([]);
+
+  // Fetch Boards from API
+  useEffect(() => {
+    const fetchBoards = async () => {
+      if (!isSignedIn) return;
+      try {
+        const token = await getToken();
+        if (token) {
+          const fetchedBoards = await boardService.getAllBoards(token);
+          setBoards(fetchedBoards);
+
+          // Sync activeWorkspaceId if it's still 'w1' or default and we have real boards
+          if (fetchedBoards.length > 0) {
+            const firstBoardWorkspaceId = fetchedBoards[0].workspaceId;
+            if (firstBoardWorkspaceId && (activeWorkspaceId === 'w1' || !activeWorkspaceId)) {
+              setActiveWorkspaceId(firstBoardWorkspaceId);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch boards", error);
+      }
+    };
+    fetchBoards();
+  }, [isSignedIn, getToken, activeWorkspaceId]);
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(() => {
     // Check if we have a saved board ID that actually exists in our (potentially loaded) boards
     const savedId = localStorage.getItem('app-active-board');
-    return savedId || INITIAL_BOARDS[0].id;
+    return savedId;
   });
 
+  const lastLoggedUpdate = React.useRef<string>('');
+  const processingRef = React.useRef<boolean>(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('app-sidebar-width');
     return saved ? parseInt(saved, 10) : 260;
@@ -107,6 +156,11 @@ const AppContent: React.FC = () => {
   const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('app-page-visibility');
     return saved ? JSON.parse(saved) : {};
+  });
+
+  const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() => {
+    const saved = localStorage.getItem('app-recently-visited');
+    return saved ? JSON.parse(saved) : [];
   });
 
   // --- Persistence Effects ---
@@ -127,9 +181,7 @@ const AppContent: React.FC = () => {
     localStorage.setItem('app-workspaces', JSON.stringify(workspaces));
   }, [workspaces]);
 
-  useEffect(() => {
-    localStorage.setItem('app-boards', JSON.stringify(boards));
-  }, [boards]);
+  // Boards persistence REMOVED (now handled by API)
 
   useEffect(() => {
     localStorage.setItem('app-active-workspace', activeWorkspaceId);
@@ -145,12 +197,63 @@ const AppContent: React.FC = () => {
     localStorage.setItem('app-page-visibility', JSON.stringify(pageVisibility));
   }, [pageVisibility]);
 
-  const handleBoardCreated = (newBoard: Board) => {
-    const boardWithWorkspace = { ...newBoard, workspaceId: activeWorkspaceId };
-    setBoards([...boards, boardWithWorkspace]);
-    setActiveBoardId(newBoard.id);
-    setActiveView('board');
-  };
+  useEffect(() => {
+    localStorage.setItem('app-recently-visited', JSON.stringify(recentlyVisited));
+  }, [recentlyVisited]);
+
+  const logActivity = React.useCallback(async (type: string, content: string, metadata?: any, specificWorkspaceId?: string, specificBoardId?: string) => {
+    try {
+      const token = await getToken();
+      if (token) {
+        await fetch('http://localhost:3001/api/activities', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type,
+            content,
+            metadata,
+            workspaceId: specificWorkspaceId || activeWorkspaceId,
+            boardId: specificBoardId || activeBoardId
+          })
+        });
+      }
+    } catch (e) {
+      console.error("Failed to log activity", e);
+    }
+  }, [getToken, activeWorkspaceId, activeBoardId]);
+
+  const handleBoardCreated = React.useCallback(async (newBoard: Board) => {
+    // API Call first to get the real board object (with DB ID and workspaceId)
+    try {
+      const token = await getToken();
+      if (token) {
+        const createdBoard = await boardService.createBoard(token, newBoard);
+
+        // Update local state with the board returned from server
+        setBoards(prev => [...prev, createdBoard]);
+        setActiveBoardId(createdBoard.id);
+        setActiveView('board');
+
+        // Log activity
+        const ws = workspaces.find(w => w.id === createdBoard.workspaceId);
+        logActivity('BOARD_CREATED', `Created board: ${createdBoard.name}${ws ? ` in ${ws.name}` : ''}`, { boardId: createdBoard.id }, createdBoard.workspaceId, createdBoard.id);
+
+        // Ensure activeWorkspaceId stays in sync if user was on a mock one
+        if (createdBoard.workspaceId && activeWorkspaceId !== createdBoard.workspaceId) {
+          setActiveWorkspaceId(createdBoard.workspaceId);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to create board backend", e);
+      // Fallback
+      setBoards(prev => [...prev, newBoard]);
+      setActiveBoardId(newBoard.id);
+      setActiveView('board');
+    }
+  }, [getToken, activeWorkspaceId, logActivity]);
 
   const handleQuickAddBoard = (name: string, icon?: string, template?: BoardTemplate, defaultView: BoardViewType = 'table', parentId?: string) => {
     const newBoardId = Date.now().toString();
@@ -268,46 +371,137 @@ const AppContent: React.FC = () => {
     setActiveView(view);
     if (boardId) {
       setActiveBoardId(boardId);
+      const board = boards.find(b => b.id === boardId);
+      if (board) {
+        addToHistory(view, board);
+      }
+    } else {
+      addToHistory(view);
     }
   };
 
-  const handleAddWorkspace = (name: string, icon: string, color?: string) => {
-    const newWorkspace: Workspace = {
-      id: Date.now().toString(),
-      name,
-      icon,
-      color: color || 'from-blue-400 to-indigo-500' // Default color if none provided
+  const addToHistory = (view: ViewState | string, board?: Board) => {
+    if (view === 'dashboard' || view === 'landing' || view === 'signup' || view === 'signin') return;
+
+    let title = view.charAt(0).toUpperCase() + view.slice(1).replace(/_/g, ' ');
+    let metadata = 'Feature';
+
+    if (board) {
+      title = board.name;
+      metadata = 'Board';
+    } else if (view.includes('marketplace')) {
+      metadata = 'Marketplace';
+    } else if (['procurement', 'warehouse', 'shipping', 'fleet', 'vendors', 'planning'].includes(view as string)) {
+      metadata = 'Supply Chain';
+    }
+
+    const newItem: RecentlyVisitedItem = {
+      id: board ? board.id : view,
+      title: title,
+      type: view,
+      timestamp: Date.now(),
+      boardId: board?.id,
+      metadata: metadata,
+      icon: board?.icon,
+      color: board ? 'blue' : 'gray' // Default colors, refined in Dashboard
     };
-    setWorkspaces([...workspaces, newWorkspace]);
-    setActiveWorkspaceId(newWorkspace.id);
+
+    setRecentlyVisited(prev => {
+      const filtered = prev.filter(item => item.id !== newItem.id);
+      return [newItem, ...filtered].slice(0, 3); // Keep top 3 for the design
+    });
   };
 
-  const handleDeleteWorkspace = (id: string) => {
+  const handleAddWorkspace = React.useCallback(async (name: string, icon: string, color?: string) => {
+    try {
+      const token = await getToken();
+      if (token) {
+        const response = await fetch('http://localhost:3001/api/workspaces', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, icon, color })
+        });
+
+        if (response.ok) {
+          const newWorkspace = await response.json();
+          setWorkspaces(prev => [...prev, newWorkspace]);
+          setActiveWorkspaceId(newWorkspace.id);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to add workspace", error);
+    }
+  }, [getToken]);
+
+  const handleDeleteWorkspace = React.useCallback(async (id: string) => {
     if (workspaces.length <= 1) return; // Prevent deleting last workspace
-    const newWorkspaces = workspaces.filter(w => w.id !== id);
-    setWorkspaces(newWorkspaces);
-    if (activeWorkspaceId === id) {
-      setActiveWorkspaceId(newWorkspaces[0].id);
-    }
-    setBoards(boards.filter(b => b.workspaceId !== id));
-  };
 
-  const handleDeleteBoard = (id: string) => {
-    const newBoards = boards.filter(b => b.id !== id);
-    setBoards(newBoards);
-    if (activeBoardId === id) {
-      setActiveView('dashboard');
-      setActiveBoardId(null);
+    try {
+      const token = await getToken();
+      if (token) {
+        const response = await fetch(`http://localhost:3001/api/workspaces/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          setWorkspaces(prev => {
+            const newWorkspaces = prev.filter(w => w.id !== id);
+            if (activeWorkspaceId === id && newWorkspaces.length > 0) {
+              setActiveWorkspaceId(newWorkspaces[0].id);
+            }
+            return newWorkspaces;
+          });
+          setBoards(prev => prev.filter(b => b.workspaceId !== id));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete workspace", error);
     }
-  };
+  }, [workspaces.length, activeWorkspaceId, getToken]);
+
+  const handleDeleteBoard = React.useCallback(async (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    if (!board) return;
+
+    if (window.confirm(`Delete board "${board.name}"?`)) {
+      setBoards(prev => prev.filter(b => b.id !== boardId));
+      if (activeBoardId === boardId) {
+        setActiveBoardId(null);
+        setActiveView('dashboard');
+      }
+
+      try {
+        const token = await getToken();
+        if (token) {
+          await boardService.deleteBoard(token, boardId);
+          const ws = workspaces.find(w => w.id === board.workspaceId);
+          logActivity('BOARD_DELETED', `Deleted board: ${board.name}${ws ? ` from ${ws.name}` : ''}`, { boardId }, board.workspaceId);
+        }
+      } catch (e) {
+        console.error("Failed to delete board backend", e);
+      }
+    }
+  }, [activeBoardId, getToken, boards, workspaces, logActivity]);
 
   const handleToggleFavorite = (id: string) => {
+    // Favorites not yet persisted in backend schema
     setBoards(boards.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
   };
 
-  const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
-    setBoards(boards.map(b => b.id === boardId ? { ...b, ...updates } : b));
-  };
+  const handleUpdateBoard = React.useCallback(async (boardId: string, updates: Partial<Board>) => {
+    setBoards(prev => prev.map(b => b.id === boardId ? { ...b, ...updates } : b));
+
+    try {
+      const token = await getToken();
+      if (token) {
+        await boardService.updateBoard(token, boardId, updates);
+      }
+    } catch (e) { console.error(e); }
+  }, [getToken]);
 
   // --- Department Pages (Lazy Loaded) ---
   const ProcurementPage = lazyWithRetry(() => import('./features/supply_chain/procurement/ProcurementPage'));
@@ -341,11 +535,116 @@ const AppContent: React.FC = () => {
     </div>
   );
 
-  const handleUpdateTasks = (tasks: any[]) => {
+  const handleUpdateTasks = React.useCallback(async (tasks: any[]) => {
     if (activeBoardId) {
+      const currentBoard = boards.find(b => b.id === activeBoardId);
+      if (!currentBoard) return;
+
+      const oldTasks = currentBoard.tasks || [];
+      const currentWorkspace = workspaces.find(w => w.id === currentBoard.workspaceId);
+      const contextName = `${currentBoard.name}${currentWorkspace ? ` (${currentWorkspace.name})` : ''}`;
+
+      // Basic deep equality check for tasks to avoid redundant updates/logging
+      const tasksHash = JSON.stringify(tasks);
+      const currentHash = JSON.stringify(oldTasks);
+
+      if (tasksHash === currentHash) return;
+
       setBoards(prevBoards => prevBoards.map(b => b.id === activeBoardId ? { ...b, tasks } : b));
+
+      try {
+        const token = await getToken();
+        if (token) {
+          await boardService.updateBoard(token, activeBoardId, { tasks });
+
+          // 1. Detect Task Additions
+          if (tasks.length > oldTasks.length) {
+            const addedTask = tasks.find(t => !oldTasks.some(ot => ot.id === t.id));
+            if (addedTask) {
+              const updateKey = `add-${addedTask.id}`;
+              if (lastLoggedUpdate.current !== updateKey) {
+                logActivity('TASK_CREATED', `Created task "${addedTask.name}" in ${contextName}`, { boardId: activeBoardId, taskId: addedTask.id });
+                lastLoggedUpdate.current = updateKey;
+              }
+            }
+          }
+          // 2. Detect Task Deletions
+          else if (tasks.length < oldTasks.length) {
+            const removedTask = oldTasks.find(ot => !tasks.some(t => t.id === ot.id));
+            if (removedTask) {
+              const updateKey = `remove-${removedTask.id}`;
+              if (lastLoggedUpdate.current !== updateKey) {
+                logActivity('TASK_DELETED', `Deleted task "${removedTask.name}" from ${contextName}`, { boardId: activeBoardId, taskId: removedTask.id });
+                lastLoggedUpdate.current = updateKey;
+              }
+            }
+          }
+          // 3. Detect Task Edits
+          else {
+            tasks.forEach((task) => {
+              const oldTask = oldTasks.find(ot => ot.id === task.id);
+              if (oldTask) {
+                // Check multiple fields
+                if (oldTask.status !== task.status) {
+                  const updateKey = `status-${task.id}-${task.status}`;
+                  if (lastLoggedUpdate.current !== updateKey) {
+                    logActivity('TASK_UPDATED', `Updated "${task.name}" status to ${task.status || 'None'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
+                    lastLoggedUpdate.current = updateKey;
+                  }
+                } else if (oldTask.name !== task.name) {
+                  const updateKey = `name-${task.id}-${task.name}`;
+                  if (lastLoggedUpdate.current !== updateKey) {
+                    logActivity('TASK_UPDATED', `Renamed task to "${task.name}" in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
+                    lastLoggedUpdate.current = updateKey;
+                  }
+                } else if (oldTask.priority !== task.priority) {
+                  const updateKey = `priority-${task.id}-${task.priority}`;
+                  if (lastLoggedUpdate.current !== updateKey) {
+                    logActivity('TASK_UPDATED', `Changed priority of "${task.name}" to ${task.priority || 'None'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
+                    lastLoggedUpdate.current = updateKey;
+                  }
+                } else if (oldTask.date !== task.date) {
+                  const updateKey = `date-${task.id}-${task.date}`;
+                  if (lastLoggedUpdate.current !== updateKey) {
+                    logActivity('TASK_UPDATED', `Changed date for "${task.name}" to ${task.date || 'unscheduled'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
+                    lastLoggedUpdate.current = updateKey;
+                  }
+                }
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to update tasks backend", e);
+      }
     }
-  };
+  }, [activeBoardId, getToken, boards, workspaces, logActivity]);
+
+  // Generic task creator that can be used from My Work
+  const handleCreateTaskOnBoard = React.useCallback(async (boardId: string, task: any) => {
+    let updatedTasks: any[] = [];
+    setBoards(prevBoards => prevBoards.map(b => {
+      if (b.id === boardId) {
+        updatedTasks = [...(b.tasks || []), task];
+        return { ...b, tasks: updatedTasks };
+      }
+      return b;
+    }));
+
+    // Perform side effects OUTSIDE of the state updater
+    try {
+      const token = await getToken();
+      if (token && updatedTasks.length > 0) {
+        await boardService.updateBoard(token, boardId, { tasks: updatedTasks });
+        const board = boards.find(b => b.id === boardId);
+        const ws = workspaces.find(w => w.id === board?.workspaceId);
+        const contextString = board ? `${board.name}${ws ? ` (${ws.name})` : ''}` : 'Board';
+        logActivity('TASK_CREATED', `Created task: "${task.name}" in ${contextString}`, { boardId, taskId: task.id }, board?.workspaceId, boardId);
+      }
+    } catch (e) {
+      console.error("Failed to create task backend", e);
+    }
+  }, [getToken, logActivity]);
 
   return (
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
@@ -377,7 +676,13 @@ const AppContent: React.FC = () => {
         <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ${!['sales_factory', 'sales_listing', 'sales'].includes(activeView as string) ? 'shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5' : ''}`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
-              <Dashboard onBoardCreated={handleBoardCreated} />
+              <Dashboard
+                onBoardCreated={handleBoardCreated}
+                recentlyVisited={recentlyVisited}
+                onNavigate={handleNavigate}
+                boards={boards}
+                activeWorkspaceId={activeWorkspaceId}
+              />
             ) : activeView === 'board' && activeBoard ? (
               <BoardView
                 key={activeBoard.id}
@@ -386,11 +691,21 @@ const AppContent: React.FC = () => {
                 onUpdateTasks={handleUpdateTasks}
               />
             ) : activeView === 'inbox' ? (
-              <InboxView />
+              <InboxView logActivity={logActivity} />
             ) : activeView === 'discussion' ? (
-              <DiscussionPage />
+              <DiscussionPage
+                groups={boards}
+                onGroupCreated={handleBoardCreated}
+                onGroupDeleted={handleDeleteBoard}
+                logActivity={logActivity}
+              />
             ) : activeView === 'my_work' ? (
-              <MyWorkPage boards={boards} onNavigateToBoard={handleNavigate} />
+              <MyWorkPage
+                boards={boards}
+                onNavigateToBoard={handleNavigate}
+                onUpdateTasks={handleCreateTaskOnBoard}
+                onAddBoard={handleBoardCreated}
+              />
             ) : activeView === 'teams' ? (
               <TeamsPage />
             ) : activeView === 'vault' ? (

@@ -1,20 +1,21 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 // Force Sidebar Update
-import { Thread, Board, Priority, Language } from '../types';
+import { Board } from '../../../types';
+import { Thread, Priority, Language } from '../types';
 import { Search, Plus, MoreHorizontal, Sparkles, FolderPlus, Trash2, Calendar, Flag, ChevronDown, CornerDownLeft } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface SidebarProps {
-  boards: Board[];
+  groups: Board[];
   threads: Thread[];
   activeThreadId: string | null;
   onSelectThread: (id: string) => void;
   onNewThread: (boardId: string) => void;
-  onNewBoard: () => void;
-  onSelectBoard: (boardId: string) => void;
+  onNewGroup: () => void;
+  onSelectGroup: (groupId: string) => void;
 
-  onDeleteBoard: (boardId: string) => void;
+  onDeleteGroup: (groupId: string) => void;
 
   onCapture: () => void;
   onQuickCapture: (text: string) => void;
@@ -38,19 +39,19 @@ const getPriorityColor = (priority?: Priority) => {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  boards,
+  groups,
   threads,
   activeThreadId,
   onSelectThread,
   onNewThread,
-  onNewBoard,
-  onSelectBoard,
-  onDeleteBoard,
+  onNewGroup,
+  onSelectGroup,
+  onDeleteGroup,
   onCapture,
   onQuickCapture
 }) => {
   const { t, language } = useLanguage();
-  const [expandedBoards, setExpandedBoards] = useState<Set<string>>(new Set(boards.map(b => b.id)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(groups.map(b => b.id)));
 
   // Inline Capture State
   const [isCapturing, setIsCapturing] = useState(false);
@@ -88,19 +89,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const toggleBoard = (boardId: string) => {
-    const newExpanded = new Set(expandedBoards);
-    if (newExpanded.has(boardId)) {
-      newExpanded.delete(boardId);
+  const toggleGroup = (groupId: string) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupId)) {
+      newExpanded.delete(groupId);
     } else {
-      newExpanded.add(boardId);
+      newExpanded.add(groupId);
     }
-    setExpandedBoards(newExpanded);
+    setExpandedGroups(newExpanded);
   };
 
-  const handleBoardClick = (boardId: string) => {
-    onSelectBoard(boardId);
-    toggleBoard(boardId);
+  const handleGroupClick = (groupId: string) => {
+    onSelectGroup(groupId);
+    toggleGroup(groupId);
   };
 
   return (
@@ -111,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <button
-          onClick={onNewBoard}
+          onClick={onNewGroup}
           className="w-full bg-monday-blue hover:bg-blue-600 text-white py-1.5 px-4 rounded shadow-sm flex items-center justify-center gap-2 transition-colors"
           title="Create a new discussion group"
         >
@@ -149,33 +150,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-        {boards.map((board) => {
-          const isExpanded = expandedBoards.has(board.id);
-          const boardThreads = threads.filter(t => t.boardId === board.id);
+        {groups.map((group) => {
+          const isExpanded = expandedGroups.has(group.id);
+          const groupThreads = threads.filter(t => t.boardId === group.id);
 
           return (
-            <div key={board.id} className="mb-0.5">
-              {/* Board Header */}
+            <div key={group.id} className="mb-0.5">
+              {/* Group Header */}
               <div className="flex items-center justify-between px-3 py-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-monday-dark-hover cursor-pointer group/board">
                 <button
-                  onClick={() => handleBoardClick(board.id)}
+                  onClick={() => handleGroupClick(group.id)}
                   className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 font-sans font-medium text-[13px] flex-1 text-start"
                 >
                   <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : 'ltr:-rotate-90 rtl:rotate-90'}`}>
                     <ChevronDown size={12} />
                   </div>
-                  {board.name}
-                  <span className="text-[10px] text-gray-400 font-sans font-normal ms-1">({boardThreads.length})</span>
+                  {group.name}
+                  <span className="text-[10px] text-gray-400 font-sans font-normal ms-1">({groupThreads.length})</span>
                 </button>
                 <div className="flex items-center opacity-0 group-hover/board:opacity-100 transition-opacity gap-1">
                   <button
-                    onClick={() => onDeleteBoard(board.id)}
+                    onClick={() => onDeleteGroup(group.id)}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <Trash2 size={12} />
                   </button>
                   <button
-                    onClick={() => onNewThread(board.id)}
+                    onClick={() => onNewThread(group.id)}
                     className="p-1 text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                   >
                     <Plus size={14} />
@@ -187,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {
                 isExpanded && (
                   <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-300 origin-top">
-                    {boardThreads.map((thread) => (
+                    {groupThreads.map((thread) => (
                       <div
                         key={thread.id}
                         onClick={() => onSelectThread(thread.id)}
@@ -219,11 +220,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                       </div>
                     ))}
-                    {boardThreads.length === 0 && (
+                    {groupThreads.length === 0 && (
                       <div className="ps-8 py-2">
                         <p className="text-xs text-gray-400 italic">{t('discussion.no_threads')}</p>
                         <button
-                          onClick={() => onNewThread(board.id)}
+                          onClick={() => onNewThread(group.id)}
                           className="text-xs font-sans text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline mt-1"
                         >
                           {t('discussion.start_writing')}

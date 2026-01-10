@@ -1,26 +1,98 @@
-import React, { useState, useMemo } from 'react';
-import { Search, LayoutGrid, List as ListIcon, SlidersHorizontal, Folder, ChevronRight, Plus, FileText, Globe, Upload, Image, File } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, LayoutGrid, List as ListIcon, SlidersHorizontal, Folder, ChevronRight, Plus, FileText, Globe, Upload, Image, File, ArrowUp, ArrowDown, Check } from 'lucide-react';
 import { VaultSidebar } from './components/VaultSidebar';
 import { VaultGrid } from './components/VaultGrid';
 import { VaultList } from './components/VaultList';
 import { VaultEmptyState } from './components/VaultEmptyState';
-import { MOCK_VAULT_ITEMS, VaultItem } from './types';
+import { VaultItem } from './types';
 import { CreateFolderModal } from './components/CreateFolderModal';
 import { CreateLinkModal } from './components/CreateLinkModal';
-
-const generateId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+import { vaultService } from '../../services/vaultService';
+import { useAuth } from '@clerk/clerk-react';
 
 export const VaultView: React.FC = () => {
+    const { getToken, isSignedIn, isLoaded, userId } = useAuth();
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = useState<VaultItem | null>(null);
 
-    const [items, setItems] = useState<VaultItem[]>(MOCK_VAULT_ITEMS);
+    const [items, setItems] = useState<VaultItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
     const [isCreateLinkModalOpen, setIsCreateLinkModalOpen] = useState(false);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+    const [sortBy, setSortBy] = useState<'name' | 'date' | 'size' | 'type'>('date');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [groupBy, setGroupBy] = useState<'none' | 'type' | 'date'>('none');
+
+    // Initial Fetch
+    useEffect(() => {
+        if (isLoaded) {
+            if (isSignedIn) {
+                loadItems();
+            } else {
+                setIsLoading(false);
+                setError("Please sign in to access your vault.");
+            }
+        }
+    }, [isLoaded, isSignedIn]);
+
+    const loadItems = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            console.log("VaultView: Starting loadItems");
+            const token = await getToken();
+            if (!token) {
+                console.warn("VaultView: No token");
+                throw new Error("No authentication token available");
+            }
+
+            console.log("VaultView: Fetching from service");
+            const data = await vaultService.getAll(token, userId || "user-1");
+            console.log("VaultView: Data received", data);
+
+            if (!Array.isArray(data)) {
+                console.error("VaultView: Data is not an array", data);
+                throw new Error("Invalid data received from server");
+            }
+
+            const transformedItems: VaultItem[] = data.map((i: any) => ({
+                id: i.id,
+                title: i.title || 'Untitled',
+                type: i.type || 'file',
+                subtitle: i.subtitle || (i.type === 'folder' ? '0 items' : ''),
+                lastModified: i.updatedAt ? new Date(i.updatedAt).toLocaleDateString() : 'Just now',
+                isFavorite: !!i.isFavorite,
+                folderId: i.folderId,
+                color: i.color,
+                metadata: i.metadata,
+                // Removed icon from state to ensure serializability and avoid potential rendering issues
+                previewUrl: i.previewUrl
+            }));
+            setItems(transformedItems);
+        } catch (error: any) {
+            console.error("Failed to load vault items", error);
+            setError(error.message || "Failed to load items");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getIconForType = (type: string) => {
+        // Kept for reference but not using in state anymore
+        switch (type) {
+            case 'folder': return Folder;
+            case 'image': return Image;
+            case 'weblink': return Globe;
+            case 'note': return FileText;
+            default: return File;
+        }
+    };
 
     // Breadcrumbs logic
     const breadcrumbs = useMemo(() => {
@@ -96,35 +168,44 @@ export const VaultView: React.FC = () => {
         }
     };
 
-    const handleCreateFolder = (data: { name: string; color: string; icon: string; metadata: any }) => {
-        const newFolder: VaultItem = {
-            id: generateId(),
-            title: data.name,
-            type: 'folder',
-            subtitle: '0 items',
-            lastModified: 'Just now',
-            isFavorite: false,
-            folderId: currentFolderId || undefined,
-            color: data.color
-        };
-        setItems(prev => [...prev, newFolder]);
-        setIsCreateFolderModalOpen(false);
-        // Don't auto-navigate
+    const handleCreateFolder = async (data: { name: string; color: string; icon: string; metadata: any }) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const newFolder = await vaultService.create(token, {
+                title: data.name,
+                type: 'folder',
+                userId: userId || "user-1",
+                folderId: currentFolderId || undefined,
+                color: data.color,
+                metadata: data.metadata
+            });
+            await loadItems(); // Refresh to ensure sync
+            setIsCreateFolderModalOpen(false);
+        } catch (e) {
+            console.error("Failed to create folder", e);
+        }
     };
 
-    const handleCreateNote = () => {
-        const newItem: VaultItem = {
-            id: generateId(),
-            type: 'note',
-            title: 'Untitled Note',
-            subtitle: 'Just now',
-            lastModified: new Date().toLocaleDateString(),
-            isFavorite: false,
-            folderId: currentFolderId || undefined,
-            color: '#FCD34D'
-        };
-        setItems(prev => [newItem, ...prev]);
-        setIsMenuOpen(false);
+    const handleCreateNote = async () => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            await vaultService.create(token, {
+                title: 'Untitled Note',
+                type: 'note',
+                userId: userId || "user-1",
+                subtitle: 'Just now',
+                folderId: currentFolderId || undefined,
+                color: '#FCD34D'
+            });
+            await loadItems();
+            setIsMenuOpen(false);
+        } catch (e) {
+            console.error("Failed to create note", e);
+        }
     }
 
     const handleCreateItemRequest = (type: string | undefined) => {
@@ -143,45 +224,49 @@ export const VaultView: React.FC = () => {
         setCurrentFolderId(folderId);
     };
 
-    const handleCreateLink = (data: { title: string; url: string }) => {
-        const newLinkId = generateId();
-        const newItem: VaultItem = {
-            id: newLinkId,
-            type: 'weblink',
-            title: data.title, // Using title for consistency with existing VaultItem structure
-            subtitle: data.url, // Using subtitle for URL
-            lastModified: new Date().toLocaleDateString(), // Using lastModified
-            isFavorite: false, // Default to false
-            folderId: currentFolderId || undefined,
-            metadata: {
-                url: data.url
-            },
-            icon: Globe, // Add icon for consistency
-            color: '#8B5CF6' // Add color for consistency
-        };
-        setItems(prev => [newItem, ...prev]);
-        setIsCreateLinkModalOpen(false);
+    const handleCreateLink = async (data: { title: string; url: string }) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            await vaultService.create(token, {
+                title: data.title,
+                type: 'weblink',
+                userId: userId || "user-1",
+                subtitle: data.url,
+                folderId: currentFolderId || undefined,
+                color: '#8B5CF6',
+                metadata: { url: data.url }
+            });
+            await loadItems();
+            setIsCreateLinkModalOpen(false);
+        } catch (e) {
+            console.error("Failed to create link", e);
+        }
     };
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const handleDeleteItem = (itemId: string) => {
-        // Recursive delete: find all items that are children of this folder
-        const getItemsToDelete = (id: string): string[] => {
-            const children = items.filter(i => i.folderId === id);
-            let ids = [id];
-            children.forEach(child => {
-                ids = [...ids, ...getItemsToDelete(child.id)];
-            });
-            return ids;
-        };
+    const handleDeleteItem = async (itemId: string) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
 
-        const idsToDelete = getItemsToDelete(itemId);
-        setItems(prev => prev.filter(i => !idsToDelete.includes(i.id)));
+            await vaultService.delete(token, itemId);
 
-        // If we deleted the current folder, go up
-        if (currentFolderId && idsToDelete.includes(currentFolderId)) {
-            setCurrentFolderId(null);
+            // Optimistic update or refresh
+            setItems(prev => prev.filter(i => i.id !== itemId));
+
+            // If we deleted the current folder, go up (this might need recursive check locally or refresh)
+            // Just refresh to be safe for cascading deletes
+            await loadItems();
+
+            // If we were INSIDE the deleted folder, go to root (simple approach) or parent
+            if (itemId === currentFolderId) {
+                setCurrentFolderId(null);
+            }
+        } catch (e) {
+            console.error("Failed to delete item", e);
         }
     };
 
@@ -189,45 +274,44 @@ export const VaultView: React.FC = () => {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const id = generateId();
         const extension = file.name.split('.').pop()?.toLowerCase();
-
-        let type: 'image' | 'document' | 'weblink' = 'document'; // Default
+        let type: 'image' | 'document' = 'document'; // Default
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
             type = 'image';
-        } else if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx'].includes(extension || '')) {
-            type = 'document';
         }
 
-        const newItem: VaultItem = {
-            id,
-            title: file.name,
-            type: type as any,
-            subtitle: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-            lastModified: 'Just now',
-            isFavorite: false,
-            folderId: currentFolderId || undefined,
-            previewUrl: URL.createObjectURL(file), // Real local preview URL
-            metadata: {
-                size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-                mimeType: file.type
-            },
-            icon: type === 'image' ? Image : FileText,
-            color: type === 'image' ? '#3B82F6' : '#EF4444'
-        };
+        try {
+            const token = await getToken();
+            if (!token) return;
 
-        setItems(prev => [...prev, newItem]);
-        setIsMenuOpen(false);
-        // Reset input
-        if (fileInputRef.current) fileInputRef.current.value = '';
+            // Note: In a real app we would upload the file to storage here and get a URL.
+            // For now we will persist the metadata.
+            await vaultService.create(token, {
+                title: file.name,
+                type: type,
+                userId: userId || "user-1",
+                subtitle: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                folderId: currentFolderId || undefined,
+                metadata: {
+                    size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                    mimeType: file.type
+                },
+                color: type === 'image' ? '#3B82F6' : '#EF4444'
+            });
+            await loadItems();
+            setIsMenuOpen(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (e) {
+            console.error("Failed to upload file", e);
+        }
     };
 
     // Derived state for Empty State
-    const isEmpty = filteredItems.length === 0;
+    const isEmpty = !isLoading && filteredItems.length === 0;
     const isInsideFolder = !!currentFolderId;
 
     return (
@@ -285,6 +369,74 @@ export const VaultView: React.FC = () => {
                             </button>
                         </div>
 
+
+
+                        {/* Sort & Filter */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                                className={`p-2 rounded-lg transition-colors ${isSortMenuOpen ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            >
+                                <SlidersHorizontal size={18} />
+                            </button>
+
+                            {isSortMenuOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)}></div>
+                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2">
+
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sort By</div>
+                                        {(['name', 'date', 'type', 'size'] as const).map(option => (
+                                            <button
+                                                key={option}
+                                                onClick={() => { setSortBy(option); setIsSortMenuOpen(false); }}
+                                                className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                            >
+                                                <span className="capitalize">{option}</span>
+                                                {sortBy === option && <Check size={14} className="text-monday-blue" />}
+                                            </button>
+                                        ))}
+
+                                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-2"></div>
+
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Direction</div>
+                                        <button
+                                            onClick={() => { setSortDirection('asc'); setIsSortMenuOpen(false); }}
+                                            className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <ArrowUp size={14} /> Ascending
+                                            </div>
+                                            {sortDirection === 'asc' && <Check size={14} className="text-monday-blue" />}
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortDirection('desc'); setIsSortMenuOpen(false); }}
+                                            className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <ArrowDown size={14} /> Descending
+                                            </div>
+                                            {sortDirection === 'desc' && <Check size={14} className="text-monday-blue" />}
+                                        </button>
+
+                                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-2"></div>
+
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Group By</div>
+                                        {(['none', 'type', 'date'] as const).map(option => (
+                                            <button
+                                                key={option}
+                                                onClick={() => { setGroupBy(option); setIsSortMenuOpen(false); }}
+                                                className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                            >
+                                                <span className="capitalize">{option === 'none' ? 'No Grouping' : option}</span>
+                                                {groupBy === option && <Check size={14} className="text-monday-blue" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                         {/* Search */}
                         <div className="relative">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -301,7 +453,7 @@ export const VaultView: React.FC = () => {
                         <div className="relative">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-indigo-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-monday-blue hover:bg-blue-600 text-white rounded-md text-sm font-medium transition-colors shadow-sm"
                             >
                                 <Plus size={16} />
                                 <span className="hidden sm:inline">New</span>
@@ -350,7 +502,19 @@ export const VaultView: React.FC = () => {
 
                 {/* Main View Area */}
                 <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-[#1a1d24]">
-                    {isEmpty ? (
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center h-full text-red-500">
+                            <p className="text-lg font-semibold">Something went wrong</p>
+                            <p className="text-sm opacity-80">{error}</p>
+                            <button onClick={() => loadItems()} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                Retry
+                            </button>
+                        </div>
+                    ) : isEmpty ? (
                         <VaultEmptyState
                             type={
                                 searchQuery ? 'active-search' :
@@ -364,19 +528,90 @@ export const VaultView: React.FC = () => {
                             onCreateItem={handleCreateItemRequest}
                         />
                     ) : (
-                        viewMode === 'grid' ? (
-                            <VaultGrid
-                                items={filteredItems}
-                                onNavigate={handleNavigate}
-                                onDelete={handleDeleteItem}
-                            />
-                        ) : (
-                            <VaultList
-                                items={filteredItems}
-                                onNavigate={handleNavigate}
-                                onDelete={handleDeleteItem}
-                            />
-                        )
+                        <div className="h-full overflow-auto">
+                            {(() => {
+                                // 1. Sort
+                                const sortedItems = [...filteredItems].sort((a, b) => {
+                                    let comparison = 0;
+                                    switch (sortBy) {
+                                        case 'name':
+                                            comparison = a.title.localeCompare(b.title);
+                                            break;
+                                        case 'date':
+                                            comparison = new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+                                            break;
+                                        case 'size':
+                                            // Mock size check - logic would need real size
+                                            comparison = 0;
+                                            break;
+                                        case 'type':
+                                            comparison = a.type.localeCompare(b.type);
+                                            break;
+                                    }
+                                    return sortDirection === 'asc' ? comparison * -1 : comparison;
+                                });
+
+                                // 2. Group
+                                let grouped: Record<string, VaultItem[]> = {};
+
+                                if (groupBy === 'none') {
+                                    grouped = { 'All Items': sortedItems };
+                                } else if (groupBy === 'type') {
+                                    sortedItems.forEach(item => {
+                                        const type = item.type.charAt(0).toUpperCase() + item.type.slice(1) + 's'; // e.g., Folders, Files
+                                        if (!grouped[type]) grouped[type] = [];
+                                        grouped[type].push(item);
+                                    });
+                                } else if (groupBy === 'date') {
+                                    sortedItems.forEach(item => {
+                                        // Simple date grouping
+                                        const date = new Date(item.lastModified);
+                                        const now = new Date();
+                                        let key = 'Older';
+                                        if (date.toDateString() === now.toDateString()) key = 'Today';
+                                        else if (date.toDateString() === new Date(now.setDate(now.getDate() - 1)).toDateString()) key = 'Yesterday';
+                                        else if (date > new Date(now.setDate(now.getDate() - 7))) key = 'Last 7 Days';
+
+                                        if (!grouped[key]) grouped[key] = [];
+                                        grouped[key].push(item);
+                                    });
+                                }
+
+                                if (groupBy === 'none') {
+                                    return viewMode === 'grid' ? (
+                                        <VaultGrid items={sortedItems} onNavigate={handleNavigate} onDelete={handleDeleteItem} />
+                                    ) : (
+                                        <VaultList items={sortedItems} onNavigate={handleNavigate} onDelete={handleDeleteItem} />
+                                    );
+                                }
+
+                                return (
+                                    <div className="p-6 space-y-8">
+                                        {Object.entries(grouped).map(([groupName, groupItems]) => (
+                                            <div key={groupName}>
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{groupName}</h3>
+                                                    <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 font-medium">
+                                                        {groupItems.length}
+                                                    </span>
+                                                    <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800"></div>
+                                                </div>
+                                                {viewMode === 'grid' ? (
+                                                    // Passing zero padding to grid/list because we handle padding in the parent container now
+                                                    <div className="-m-6">
+                                                        <VaultGrid items={groupItems} onNavigate={handleNavigate} onDelete={handleDeleteItem} />
+                                                    </div>
+                                                ) : (
+                                                    <div className="-m-6">
+                                                        <VaultList items={groupItems} onNavigate={handleNavigate} onDelete={handleDeleteItem} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     )}
                 </div>
             </div>
@@ -392,6 +627,6 @@ export const VaultView: React.FC = () => {
                 onClose={() => setIsCreateLinkModalOpen(false)}
                 onCreate={handleCreateLink}
             />
-        </div>
+        </div >
     );
 };

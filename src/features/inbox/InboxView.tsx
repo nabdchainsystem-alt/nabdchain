@@ -67,7 +67,11 @@ const MOCK_MAILS: MailItem[] = [
   }
 ];
 
-export const InboxView: React.FC = () => {
+interface InboxViewProps {
+  logActivity?: (type: string, content: string, metadata?: any, workspaceId?: string, boardId?: string) => Promise<void>;
+}
+
+export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   const [mails, setMails] = useState<MailItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccount, setHasAccount] = useState(false);
@@ -178,6 +182,9 @@ export const InboxView: React.FC = () => {
           await emailService.trash(token, id, provider);
           setMails(prev => prev.filter(m => m.id !== id));
           setSelectedMailId(null);
+          if (logActivity) {
+            logActivity('EMAIL_DELETED', `Moved email to trash: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
+          }
         } catch (e) {
           console.error(e);
           alert("Failed to delete");
@@ -193,6 +200,9 @@ export const InboxView: React.FC = () => {
       await emailService.archive(token, id, provider);
       setMails(prev => prev.filter(m => m.id !== id));
       setSelectedMailId(null);
+      if (logActivity) {
+        logActivity('EMAIL_ARCHIVED', `Archived email: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
+      }
     } catch (e) {
       console.error(e);
       alert("Failed to archive");
@@ -266,6 +276,10 @@ export const InboxView: React.FC = () => {
 
       boardData.groups[0].tasks.push(newTask);
       localStorage.setItem(targetKey, JSON.stringify(boardData));
+
+      if (logActivity) {
+        logActivity('TASK_CREATED', `Created task from email: ${selectedMail.subject}`, { emailId: selectedMail.id, taskId: newTask.id });
+      }
 
       alert("Task created in Main Board!");
     } catch (e) {
@@ -544,7 +558,7 @@ export const InboxView: React.FC = () => {
           {/* 2b. Reading Pane */}
           {rightPanelMode === 'compose' ? (
             <div className="flex-1 bg-white dark:bg-monday-dark-bg overflow-y-auto relative">
-              <ComposeView onDiscard={() => setRightPanelMode('view')} accounts={accounts} />
+              <ComposeView onDiscard={() => setRightPanelMode('view')} accounts={accounts} logActivity={logActivity} />
             </div>
           ) : selectedMail ? (
             <div className="flex-1 flex flex-col relative min-w-0 bg-white dark:bg-monday-dark-bg">
@@ -610,6 +624,7 @@ export const InboxView: React.FC = () => {
                   onDiscard={() => setRightPanelMode('view')}
                   accounts={accounts}
                   initialData={replyData}
+                  logActivity={logActivity}
                 />
               </div>
             </div>
@@ -658,7 +673,7 @@ const NavItem = ({ icon, label, isActive, count, onClick }: { icon: React.ReactN
   </div>
 );
 
-const FolderItem = ({ label, hasChildren, indent, onClick, isActive }: { label: string, hasChildren?: boolean, indent?: boolean, onClick?: () => void, isActive?: boolean }) => (
+const FolderItem = ({ label, hasChildren, indent, onClick, isActive }: { label: string, hasChildren?: boolean, indent?: boolean, onClick?: () => void, isActive?: boolean, key?: string | number }) => (
   <div onClick={onClick} className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-400 ${indent ? 'ps-8' : ''} ${isActive ? 'bg-gray-200 dark:bg-monday-dark-hover font-medium' : ''}`}>
     {hasChildren && <ChevronDown size={12} className="text-gray-400" />}
     {!hasChildren && <div className="w-3"></div>}

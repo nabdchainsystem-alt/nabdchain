@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Board } from '../types';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { X, Check, Folder, Lock, Palette, ArrowLeft, Layout, Database } from 'lucide-react';
+import { X, Check, Folder, Lock, Palette, ArrowLeft, Layout, Database, Globe } from 'lucide-react';
 import { TemplatePicker } from '../../board/components/TemplatePicker';
 import { BoardTemplate } from '../../board/data/templates';
 
-interface NewBoardModalProps {
+interface NewGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (board: Partial<Board>, template?: BoardTemplate) => void;
+  onCreate: (group: Partial<Board>, template?: BoardTemplate) => void;
   availableUsers: User[];
 }
 
-export const NewBoardModal: React.FC<NewBoardModalProps> = ({ isOpen, onClose, onCreate, availableUsers }) => {
+export const NewGroupModal: React.FC<NewGroupModalProps> = ({ isOpen, onClose, onCreate, availableUsers }) => {
   const [step, setStep] = useState<'template' | 'details' | 'tool'>('details');
   const [selectedTool, setSelectedTool] = useState<'table' | 'data_table' | 'kanban' | 'list'>('table');
   const [selectedTemplate, setSelectedTemplate] = useState<BoardTemplate | undefined>(undefined);
@@ -310,7 +310,7 @@ export const NewBoardModal: React.FC<NewBoardModalProps> = ({ isOpen, onClose, o
               onClick={handleCreate}
               className="px-5 py-2 text-sm font-bold bg-monday-blue text-white rounded-lg shadow-md hover:bg-blue-600 transition-all"
             >
-              Create Board
+              Create Group
             </button>
           </div>
         )}

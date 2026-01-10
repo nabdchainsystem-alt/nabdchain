@@ -1,10 +1,12 @@
-const API_URL = 'http://localhost:3001';
+const API_URL = 'http://localhost:3001/api';
 
 export const boardService = {
     // Boards
-    async getAllBoards() {
+    async getAllBoards(token: string) {
         try {
-            const response = await fetch(`${API_URL}/boards`);
+            const response = await fetch(`${API_URL}/boards`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch boards');
             return await response.json();
         } catch (error) {
@@ -13,9 +15,11 @@ export const boardService = {
         }
     },
 
-    async getBoard(id: string) {
+    async getBoard(token: string, id: string) {
         try {
-            const response = await fetch(`${API_URL}/boards/${id}`);
+            const response = await fetch(`${API_URL}/boards/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch board');
             return await response.json();
         } catch (error) {
@@ -24,11 +28,14 @@ export const boardService = {
         }
     },
 
-    async createBoard(board: any) {
+    async createBoard(token: string, board: any) {
         try {
             const response = await fetch(`${API_URL}/boards`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(board),
             });
             if (!response.ok) throw new Error('Failed to create board');
@@ -39,11 +46,14 @@ export const boardService = {
         }
     },
 
-    async updateBoard(id: string, updates: any) {
+    async updateBoard(token: string, id: string, updates: any) {
         try {
             const response = await fetch(`${API_URL}/boards/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'PUT', // Changed PATCH to PUT to match backend route
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(updates),
             });
             if (!response.ok) throw new Error('Failed to update board');
@@ -54,10 +64,11 @@ export const boardService = {
         }
     },
 
-    async deleteBoard(id: string) {
+    async deleteBoard(token: string, id: string) {
         try {
             const response = await fetch(`${API_URL}/boards/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete board');
             return true;
