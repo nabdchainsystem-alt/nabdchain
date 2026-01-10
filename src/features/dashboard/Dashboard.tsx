@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Board, RecentlyVisitedItem, ViewState, Task } from '../../types';
+import { Board, RecentlyVisitedItem, ViewState, Task, Workspace } from '../../types';
+import { NewTaskModal } from '../../components/ui/NewTaskModal';
+import { boardService } from '../../services/boardService';
 import { useAppContext } from '../../contexts/AppContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 
 interface Activity {
   id: string;
@@ -17,13 +19,20 @@ interface DashboardProps {
   onNavigate: (view: ViewState | string, boardId?: string) => void;
   boards: Board[];
   activeWorkspaceId?: string;
+  workspaces: Workspace[];
+  onTaskCreated: (boardId: string, task: Task) => Promise<void>;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated }) => {
   const { userDisplayName } = useAppContext();
   const { getToken, isSignedIn } = useAuth();
+
   const [quickNote, setQuickNote] = useState('');
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [urgentTasksPage, setUrgentTasksPage] = useState(1);
+  const [recentPage, setRecentPage] = useState(0);
+  const ITEMS_PER_PAGE = 3;
 
   // Loads quick note from local storage on mount
   useEffect(() => {
@@ -99,8 +108,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       if (!a.date) return 1;
       if (!b.date) return -1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
-    }).slice(0, 5); // Limit to 5
+    }).slice(0, 15); // increased limit to support pagination
   }, [boards]);
+
+  const paginatedUrgentTasks = urgentTasks.slice((urgentTasksPage - 1) * ITEMS_PER_PAGE, urgentTasksPage * ITEMS_PER_PAGE);
+  const totalUrgentPages = Math.ceil(urgentTasks.length / ITEMS_PER_PAGE);
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Math.max(0, Date.now() - timestamp);
@@ -130,29 +142,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     }
   };
 
+  const handleNextRecent = () => {
+    if ((recentPage + 1) * ITEMS_PER_PAGE < recentlyVisited.length) {
+      setRecentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevRecent = () => {
+    if (recentPage > 0) {
+      setRecentPage(prev => prev - 1);
+    }
+  };
+
   // --- Helpers for Recently Visited ---
   const getCardTheme = (title: string, type: string) => {
     const lowerTitle = title.toLowerCase();
 
-    // Define premium themes
-    const themes = {
-      marketing: { from: 'from-pink-500', to: 'to-rose-500', icon: 'campaign', pattern: 'bg-[url("https://www.transparenttextures.com/patterns/cubes.png")]' },
-      production: { from: 'from-blue-600', to: 'to-cyan-500', icon: 'precision_manufacturing', pattern: 'bg-[url("https://www.transparenttextures.com/patterns/carbon-fibre.png")]' },
-      sales: { from: 'from-emerald-500', to: 'to-teal-400', icon: 'point_of_sale', pattern: 'bg-[url("https://www.transparenttextures.com/patterns/diamond-upholstery.png")]' },
-      finance: { from: 'from-indigo-600', to: 'to-violet-600', icon: 'payments', pattern: 'bg-[url("https://www.transparenttextures.com/patterns/hexellence.png")]' },
-      operations: { from: 'from-amber-500', to: 'to-orange-500', icon: 'engineering', pattern: 'bg-[url("https://www.transparenttextures.com/patterns/diagmonds-light.png")]' },
-      default: { from: 'from-slate-500', to: 'to-slate-600', icon: 'grid_view', pattern: '' }
+    // Local assets for premium look
+    const specificImages = {
+      marketing: '/assets/covers/marketing.png',
+      production: '/assets/covers/production.png',
+      finance: '/assets/covers/finance.png',
+      generic: '/assets/covers/generic.png'
     };
 
-    if (lowerTitle.includes('market')) return themes.marketing;
-    if (lowerTitle.includes('product')) return themes.production;
-    if (lowerTitle.includes('sale') || lowerTitle.includes('crm')) return themes.sales;
-    if (lowerTitle.includes('finance') || lowerTitle.includes('money')) return themes.finance;
-    if (lowerTitle.includes('ops') || lowerTitle.includes('maint')) return themes.operations;
+    // Pool of abstract images for variety
+    const abstractPool = [
+      '/assets/covers/generic.png',
+      '/assets/covers/abstract_blue.png',
+      '/assets/covers/abstract_orange.png',
+      '/assets/covers/abstract_purple.png',
+      '/assets/covers/abstract_green.png'
+    ];
 
-    return themes.default;
+    // Check for specific keywords first
+    if (lowerTitle.includes('market')) return specificImages.marketing;
+    if (lowerTitle.includes('design') || lowerTitle.includes('creative')) return specificImages.marketing;
+    if (lowerTitle.includes('product')) return specificImages.production;
+    if (lowerTitle.includes('ops') || lowerTitle.includes('maint')) return specificImages.production;
+    if (lowerTitle.includes('sale') || lowerTitle.includes('crm')) return specificImages.finance;
+    if (lowerTitle.includes('finance') || lowerTitle.includes('money')) return specificImages.finance;
+
+    // If no specific keyword, deterministic hash to pick an abstract image
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % abstractPool.length;
+
+    return abstractPool[index];
   };
-
   const getCardStats = (boardId?: string) => {
     if (!boardId) return null;
     const board = boards.find(b => b.id === boardId);
@@ -163,6 +202,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     const highPriority = board.tasks.filter(t => t.priority === 'High').length;
 
     return { total, done, highPriority };
+  };
+
+  const handleNewTaskSave = async (taskData: { name: string; priority: string; date: string }, location: { type: 'existing' | 'new'; boardId?: string; workspaceId?: string; newBoardName?: string }) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      let targetBoardId = location.boardId;
+
+      // If creating a new board first
+      if (location.type === 'new' && location.newBoardName && location.workspaceId) {
+        const newBoard: Board = {
+          id: Date.now().toString(), // Temp ID, server will assign real one
+          name: location.newBoardName,
+          workspaceId: location.workspaceId,
+          columns: [
+            { id: 'name', title: 'Name', type: 'text' },
+            { id: 'status', title: 'Status', type: 'status' },
+            { id: 'dueDate', title: 'Due date', type: 'date' },
+            { id: 'priority', title: 'Priority', type: 'priority' }
+          ],
+          tasks: [],
+          defaultView: 'table',
+          availableViews: ['table'],
+          icon: 'assignment'
+        };
+
+        // Create the board
+        const createdBoard = await boardService.createBoard(token, newBoard);
+        targetBoardId = createdBoard.id;
+
+        // Notify parent to update boards state
+        onBoardCreated(createdBoard);
+      }
+
+      if (targetBoardId) {
+        // Create the task object
+        const newTask: Task = {
+          id: `t-${Date.now()}`,
+          name: taskData.name,
+          priority: taskData.priority as 'High' | 'Medium' | 'Low',
+          date: taskData.date,
+          status: 'Not Started',
+          person: ''
+        };
+        // Use the prop to update local state AND backend
+        await onTaskCreated(targetBoardId, newTask);
+
+        if (location.type === 'new') {
+          // Already handled by onBoardCreated but let's navigate to it
+          onNavigate('board', targetBoardId);
+        } else {
+          onNavigate('board', targetBoardId);
+        }
+      }
+
+    } catch (e) {
+      console.error("Failed to create new task", e);
+      alert("Failed to create task. Please try again.");
+    }
   };
 
   return (
@@ -188,77 +287,101 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <span className="material-symbols-outlined text-gray-400">history</span>
               Recently Visited
             </h2>
+            {/* Pagination Controls */}
+            {recentlyVisited.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevRecent}
+                  disabled={recentPage === 0}
+                  className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${recentPage === 0 ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_left</span>
+                </button>
+                <button
+                  onClick={handleNextRecent}
+                  disabled={(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length}
+                  className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentlyVisited.length > 0 ? (
-              recentlyVisited.slice(0, 4).map(item => {
-                const theme = getCardTheme(item.title, item.type);
-                const stats = getCardStats(item.boardId);
+              recentlyVisited
+                .slice(recentPage * ITEMS_PER_PAGE, (recentPage + 1) * ITEMS_PER_PAGE)
+                .map(item => {
+                  const imageUrl = getCardTheme(item.title, item.type);
+                  const stats = getCardStats(item.boardId);
 
-                return (
-                  <div
-                    key={item.id}
-                    className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1"
-                  >
-                    {/* Cover Image */}
+                  return (
                     <div
-                      className={`h-28 bg-gradient-to-br ${theme.from} ${theme.to} relative cursor-pointer group-hover:brightness-110 transition-all`}
-                      onClick={() => onNavigate(item.type, item.boardId)}
+                      key={item.id}
+                      className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col"
                     >
-                      <div className={`absolute inset-0 opacity-20 ${theme.pattern}`}></div>
-                      <div className="absolute top-3 left-3 bg-white/20 backdrop-blur-md p-1.5 rounded-lg border border-white/30 text-white shadow-sm">
-                        <span className="material-symbols-outlined text-lg block">{theme.icon}</span>
+                      {/* Cover Image */}
+                      <div
+                        className="h-24 relative cursor-pointer bg-gray-200"
+                        onClick={() => onNavigate(item.type, item.boardId)}
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
+
+                        {/* Quick Actions (On Hover) */}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            className="bg-white/95 text-gray-700 p-1 rounded shadow-sm hover:text-blue-600 transition-colors"
+                            title="Open"
+                            onClick={(e) => { e.stopPropagation(); onNavigate(item.type, item.boardId); }}
+                          >
+                            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                          </button>
+                          <button
+                            className="bg-white/95 text-gray-700 p-1 rounded shadow-sm hover:text-yellow-600 transition-colors"
+                            title="Favorite"
+                            onClick={(e) => { e.stopPropagation(); /* TODO: Implement Favorite */ }}
+                          >
+                            <span className="material-symbols-outlined text-[16px]">star</span>
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Quick Actions (On Hover) */}
-                      <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                        <button
-                          className="bg-white/90 hover:bg-white text-gray-700 p-1.5 rounded-lg shadow-sm backdrop-blur-sm border border-white/50 transition-colors"
-                          title="Open"
-                          onClick={(e) => { e.stopPropagation(); onNavigate(item.type, item.boardId); }}
-                        >
-                          <span className="material-symbols-outlined text-sm">open_in_new</span>
-                        </button>
-                        <button
-                          className="bg-white/90 hover:bg-white text-gray-700 p-1.5 rounded-lg shadow-sm backdrop-blur-sm border border-white/50 transition-colors"
-                          title="Favorite"
-                          onClick={(e) => { e.stopPropagation(); /* TODO: Implement Favorite */ }}
-                        >
-                          <span className="material-symbols-outlined text-sm">star</span>
-                        </button>
+                      {/* Content */}
+                      <div className="p-4 cursor-pointer flex-1 flex flex-col justify-between" onClick={() => onNavigate(item.type, item.boardId)}>
+                        <div>
+                          <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-blue-600 transition-colors">{item.title}</h3>
+                          <p className="text-xs text-gray-500 mb-2 truncate">
+                            {item.boardId ? 'Project Board' : 'Application Module'}
+                          </p>
+                        </div>
+
+                        {/* Stats / Info */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1">
+                          {stats ? (
+                            <div className="flex gap-2 text-xs text-gray-500">
+                              <span className="flex items-center gap-0.5" title="Active Tasks">
+                                <span className="material-symbols-outlined text-[12px] text-gray-400">check_circle</span>
+                                {stats.total}
+                              </span>
+                              <span className="flex items-center gap-0.5" title="High Priority">
+                                <span className="material-symbols-outlined text-[12px] text-red-400">flag</span>
+                                {stats.highPriority}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Open</span>
+                          )}
+                          <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp)}</span>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Content */}
-                    <div className="p-4 cursor-pointer" onClick={() => onNavigate(item.type, item.boardId)}>
-                      <h3 className="font-bold text-gray-900 mb-1 truncate text-base leading-tight group-hover:text-blue-600 transition-colors">{item.title}</h3>
-                      <p className="text-xs text-gray-500 mb-3 truncate flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                        {item.boardId ? 'Project Board' : 'Application Module'}
-                      </p>
-
-                      {/* Stats / Info */}
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                        {stats ? (
-                          <div className="flex gap-3 text-xs text-gray-500">
-                            <span className="flex items-center gap-1" title="Active Tasks">
-                              <span className="material-symbols-outlined text-[10px] text-gray-400">check_circle</span>
-                              {stats.total}
-                            </span>
-                            <span className="flex items-center gap-1" title="High Priority">
-                              <span className="material-symbols-outlined text-[10px] text-red-400">flag</span>
-                              {stats.highPriority}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-400 italic">View details</div>
-                        )}
-                        <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })
             ) : (
               <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
                 <span className="material-symbols-outlined text-4xl mb-3 opacity-20">history</span>
@@ -283,40 +406,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <span className="material-symbols-outlined text-red-500">priority_high</span>
                     Urgent Tasks
                   </h2>
-                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                    <span className="material-symbols-outlined">more_horiz</span>
-                  </button>
-                </div>
-                <div className="space-y-4 flex-1 flex flex-col">
-                  {urgentTasks.length > 0 ? (
-                    urgentTasks.map(task => (
-                      <div key={task.id} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors group">
-                        <div className="flex items-center h-5">
-                          <input className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" type="checkbox" />
-                        </div>
-                        <div className="ml-4 flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
-                            <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                                  ${task.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
-                              {task.priority}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[10px]">event</span>
-                            {task.date || 'No Date'}
-                            <span className="mx-1">•</span>
-                            <span className="material-symbols-outlined text-[10px]">folder</span>
-                            {task.boardName}
-                          </p>
-                        </div>
-                        <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors">
-                            <span className="material-symbols-outlined text-lg">edit</span>
-                          </button>
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => onNavigate('my_work')}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      Show All
+                    </button>
+                    {totalUrgentPages > 1 && (
+                      <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                        <button
+                          onClick={() => setUrgentTasksPage(p => Math.max(1, p - 1))}
+                          disabled={urgentTasksPage === 1}
+                          className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        >
+                          <span className="material-symbols-outlined text-sm text-gray-500 block">chevron_left</span>
+                        </button>
+                        <span className="text-[10px] font-medium text-gray-500 px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
+                        <button
+                          onClick={() => setUrgentTasksPage(p => Math.min(totalUrgentPages, p + 1))}
+                          disabled={urgentTasksPage === totalUrgentPages}
+                          className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        >
+                          <span className="material-symbols-outlined text-sm text-gray-500 block">chevron_right</span>
+                        </button>
                       </div>
-                    ))
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-4 flex-1 flex flex-col h-[260px] overflow-y-auto pr-1 custom-scrollbar">
+                  {paginatedUrgentTasks.length > 0 ? (
+                    <>
+                      {paginatedUrgentTasks.map(task => (
+                        <div key={task.id} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors group">
+                          <div className="flex items-center h-5">
+                            <input className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" type="checkbox" />
+                          </div>
+                          <div className="ml-4 flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
+                              <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                  ${task.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
+                                {task.priority}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[10px]">event</span>
+                              {task.date || 'No Date'}
+                              <span className="mx-1">•</span>
+                              <span className="material-symbols-outlined text-[10px]">folder</span>
+                              {task.boardName}
+                            </p>
+                          </div>
+                          <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors">
+                              <span className="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
                       <span className="material-symbols-outlined text-gray-300 text-3xl mb-1">check_circle</span>
@@ -329,29 +478,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
             {/* Quick Actions */}
             <div className="lg:col-span-1">
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
+              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <span className="material-symbols-outlined text-amber-500">bolt</span>
                     Quick Actions
                   </h2>
                 </div>
-                <div className="grid grid-cols-2 gap-3 flex-1">
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-lg hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white">
-                    <span className="material-symbols-outlined text-2xl mb-1 text-gray-400 group-hover:text-blue-500">add_task</span>
-                    <span className="text-xs font-medium">New Task</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setIsNewTaskModalOpen(true)}
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                  >
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">add_task</span>
+                    <span className="text-xs font-medium whitespace-nowrap">New Task</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-lg hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white">
-                    <span className="material-symbols-outlined text-2xl mb-1 text-gray-400 group-hover:text-blue-500">group_add</span>
-                    <span className="text-xs font-medium">Invite</span>
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">group_add</span>
+                    <span className="text-xs font-medium whitespace-nowrap">Invite Member</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-lg hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white">
-                    <span className="material-symbols-outlined text-2xl mb-1 text-gray-400 group-hover:text-blue-500">calendar_today</span>
-                    <span className="text-xs font-medium">Events</span>
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">search</span>
+                    <span className="text-xs font-medium whitespace-nowrap">Search All</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-lg hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white">
-                    <span className="material-symbols-outlined text-2xl mb-1 text-gray-400 group-hover:text-blue-500">upload_file</span>
-                    <span className="text-xs font-medium">Upload</span>
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">dashboard_customize</span>
+                    <span className="text-xs font-medium whitespace-nowrap">New Board</span>
+                  </button>
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">calendar_today</span>
+                    <span className="text-xs font-medium whitespace-nowrap">Events</span>
+                  </button>
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <span className="material-symbols-outlined text-3xl mb-2 text-gray-400 group-hover:text-blue-500 transition-colors">upload_file</span>
+                    <span className="text-xs font-medium whitespace-nowrap">Upload</span>
                   </button>
                 </div>
               </section>
@@ -478,7 +638,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+
+      <NewTaskModal
+        isOpen={isNewTaskModalOpen}
+        onClose={() => setIsNewTaskModalOpen(false)}
+        boards={boards}
+        workspaces={workspaces}
+        onSave={handleNewTaskSave}
+        activeWorkspaceId={activeWorkspaceId}
+      />
+    </div >
   );
 };

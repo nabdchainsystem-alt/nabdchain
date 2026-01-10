@@ -8,7 +8,7 @@ import { VaultItem } from './types';
 import { CreateFolderModal } from './components/CreateFolderModal';
 import { CreateLinkModal } from './components/CreateLinkModal';
 import { vaultService } from '../../services/vaultService';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 
 export const VaultView: React.FC = () => {
     const { getToken, isSignedIn, isLoaded, userId } = useAuth();

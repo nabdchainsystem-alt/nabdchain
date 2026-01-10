@@ -12,7 +12,8 @@ import ProcessMapPage from './features/flowHub/ProcessMapPage';
 import { MyWorkPage } from './features/myWork/MyWorkPage';
 // import { AuthProvider, useAuth } from './contexts/AuthContext';
 // import { LoginPage } from './features/auth/LoginPage';
-import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from '@clerk/clerk-react';
+// import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from './auth-adapter';
 import { Logo } from './components/Logo';
 import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
@@ -26,7 +27,8 @@ import TeamsPage from './features/teams/TeamsPage';
 import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 // import { FocusWidget } from './components/features/focus/FocusWidget';
-import { RedirectToSignIn } from '@clerk/clerk-react';
+// import { RedirectToSignIn } from '@clerk/clerk-react';
+import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
 
 // Mock Initial Data
@@ -682,6 +684,8 @@ const AppContent: React.FC = () => {
                 onNavigate={handleNavigate}
                 boards={boards}
                 activeWorkspaceId={activeWorkspaceId}
+                workspaces={workspaces}
+                onTaskCreated={handleCreateTaskOnBoard}
               />
             ) : activeView === 'board' && activeBoard ? (
               <BoardView
@@ -796,9 +800,7 @@ const AppRoutes: React.FC = () => {
 
         {authView === 'signin' && (
           <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6">
-            <div className="flex flex-col items-center justify-center mb-2">
-              <Logo className="h-28 w-auto" showText={true} textClassName="scale-[2.0] ml-4 text-center items-center" />
-            </div>
+            {/* Logo removed as per request */}
             <SignIn
               fallbackRedirectUrl="/dashboard"
               appearance={{

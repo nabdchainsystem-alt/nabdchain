@@ -16,6 +16,37 @@ async function main() {
     const rawData = fs.readFileSync(dbPath, 'utf8');
     const data = JSON.parse(rawData);
 
+    // 0. Master User
+    console.log('Seeding Master User...');
+    const masterId = "user_master_local_admin";
+
+    // Check if user exists (though create won't checks this efficiently without unique constraint handling in code here, 
+    // but Prisma `upsert` is better. Let's use upsert).
+    await prisma.user.upsert({
+        where: { email: 'master@nabd.com' },
+        update: {},
+        create: {
+            id: masterId,
+            email: 'master@nabd.com',
+            name: 'Master Admin',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Master+Admin&background=0D8ABC&color=fff',
+            // Default workspace will be connected later if needed, or we can create one now.
+            // Let's ensure a default workspace exists for them.
+            workspace: {
+                connectOrCreate: {
+                    where: { id: 'w1' },
+                    create: {
+                        id: 'w1',
+                        name: 'Main Workspace',
+                        ownerId: masterId,
+                        icon: 'Briefcase',
+                        color: 'from-orange-400 to-red-500'
+                    }
+                }
+            }
+        }
+    });
+
     // 1. Procurement Requests
     if (data.procurementRequests) {
         console.log(`Seeding ${data.procurementRequests.length} Procurement Requests...`);
@@ -24,6 +55,7 @@ async function main() {
             // Create Request
             await prisma.procurementRequest.create({
                 data: {
+                    userId: masterId,
                     id: req.id,
                     name: req.name,
                     date: req.date,
@@ -64,6 +96,7 @@ async function main() {
 
             await prisma.rFQ.create({
                 data: {
+                    userId: masterId,
                     id: rfq.id,
                     requestId: requestExists ? rfq.requestId : null, // Connect if valid
                     date: rfq.date,
@@ -104,6 +137,7 @@ async function main() {
 
             await prisma.order.create({
                 data: {
+                    userId: masterId,
                     id: ord.id,
                     rfqId: rfqExists ? ord.rfqId : null,
                     requestId: null, // Basic linkage

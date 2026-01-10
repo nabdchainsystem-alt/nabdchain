@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
 import {
     Save, AlertTriangle, Layout, Check, Shield,

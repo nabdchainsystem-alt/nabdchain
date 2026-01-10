@@ -10,7 +10,7 @@ import { BoardTemplate } from '../board/data/templates';
 
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useUI } from '../../contexts/UIContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 
 import KanbanBoard from '../board/views/Kanban/KanbanBoard';
 import RoomTable from '../board/views/Table/RoomTable';

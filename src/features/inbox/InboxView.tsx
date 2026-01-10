@@ -13,7 +13,7 @@ import { ComposeView } from './ComposeView';
 import { ConnectAccount } from './components/ConnectAccount';
 import { emailService } from '../../services/emailService';
 import { ConfirmModal } from '../board/components/ConfirmModal';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 
 interface MailItem {
   id: string;

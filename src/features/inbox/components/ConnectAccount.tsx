@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, ArrowRight, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../../auth-adapter';
 import { emailService } from '../../../services/emailService';
 
 export const ConnectAccount: React.FC = () => {

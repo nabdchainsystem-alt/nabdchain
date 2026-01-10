@@ -2,7 +2,7 @@ import React from 'react';
 import { Bell, Search, HelpCircle, Grid3X3, Download, Link, Moon, Sun, Play, Pause, RotateCcw, X } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk } from '../../auth-adapter';
 import { LogOut, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useFocus } from '../../contexts/FocusContext';
 import { useState, useRef, useEffect } from 'react';

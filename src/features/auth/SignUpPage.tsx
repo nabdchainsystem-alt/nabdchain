@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSignUp } from '@clerk/clerk-react';
+import { useSignUp } from '../../auth-adapter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../../components/Logo';
 import {

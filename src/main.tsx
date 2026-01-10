@@ -1,14 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ClerkProvider } from '@clerk/clerk-react';
+// import { ClerkProvider } from '@clerk/clerk-react';
+import { AuthProvider } from './auth-adapter';
 import App from './App';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-if (!publishableKey) {
-  throw new Error("Missing Publishable Key")
-}
+// if (!publishableKey) {
+//   throw new Error("Missing Publishable Key")
+// }
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,10 +19,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+    <AuthProvider>
       <ErrorBoundary>
         <App />
       </ErrorBoundary>
-    </ClerkProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

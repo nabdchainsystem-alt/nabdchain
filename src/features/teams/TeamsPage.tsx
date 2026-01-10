@@ -5,7 +5,7 @@ import {
     MessageSquare, Settings, ArrowUpRight, Copy, X, Loader
 } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 import { inviteService } from '../../services/inviteService';
 import { MOCK_MEMBERS } from './data';
 import { TeamRole, TeamStatus } from './types';

@@ -15,7 +15,7 @@ interface ComposeViewProps {
     logActivity?: (type: string, content: string, metadata?: any, workspaceId?: string, boardId?: string) => Promise<void>;
 }
 
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../../auth-adapter';
 
 export const ComposeView: React.FC<ComposeViewProps> = ({ onDiscard, accounts, initialData, logActivity }) => {
     const { getToken } = useAuth();
