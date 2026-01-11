@@ -172,7 +172,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         }
     }, [initialOnUpdateTasks]);
 
-    const { board, tasks, addTask, updateTask, onUpdateTasks } = useRoomBoardData(effectiveKey, initialBoard, handleBoardSave);
+    const { board, tasks, addTask, updateTask, deleteTask, onUpdateTasks } = useRoomBoardData(effectiveKey, initialBoard, handleBoardSave);
 
     // Use the prop 'onUpdateBoard' if it exists, otherwise we might need a local handler if the hook provided one (it doesn't currently).
     // The hook provides 'setBoard'.
@@ -566,6 +566,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         return [...VIEW_OPTIONS, ...customOptions];
     }, [isWarehouseBoard, dashboardSections]);
 
+    const handleRenameBoard = (newName: string) => {
+        onUpdateBoard?.(board.id, { name: newName });
+    };
+
     const renderView = () => {
         switch (activeView) {
             case 'overview':
@@ -592,8 +596,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                         key={board.id}
                         roomId={board.id}
                         viewId="table-main"
+                        name={board.name}
                         tasks={tasks}
                         onUpdateTasks={onUpdateTasks}
+                        onDeleteTask={deleteTask}
                         onNavigate={onNavigate}
                     />
                 );

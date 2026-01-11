@@ -360,7 +360,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
     const handleAnalyzeBoard = useCallback(() => { }, []);
 
     // Flatten tasks from all groups for views that need a flat list
-    const tasks = board.groups.flatMap(g => g.tasks);
+    const tasks = board.groups.flatMap(g => g.tasks.map(t => ({ ...t, groupId: g.id })));
 
     // Update tasks from a flat list (reconcile with groups)
     const onUpdateTasks = useCallback((updatedTasks: any[]) => {

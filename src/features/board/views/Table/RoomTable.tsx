@@ -40,7 +40,10 @@ import {
     CalendarRange,
     EyeOff,
     UserCircle,
-    MoreHorizontal
+    MoreHorizontal,
+    Copy,
+    Archive,
+    Upload
 } from 'lucide-react';
 import {
     DndContext,
@@ -62,6 +65,7 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ColumnMenu } from '../../components/ColumnMenu';
 import { getPriorityClasses, normalizePriority, PRIORITY_LEVELS, PriorityLevel, comparePriority } from '../../../priorities/priorityUtils';
 import { useReminders } from '../../../reminders/reminderStore';
@@ -93,6 +97,7 @@ const DEFAULT_COLUMNS: Column[] = [
 
 export interface Row {
     id: string;
+    groupId?: string;
     [key: string]: any;
 }
 
@@ -104,7 +109,9 @@ interface RoomTableProps {
     name?: string;
     columns?: Column[];
     onUpdateTasks?: (tasks: any[]) => void;
+    onDeleteTask?: (groupId: string, taskId: string) => void;
     onNavigate?: (view: string) => void;
+    onRename?: (newName: string) => void;
     renderCustomActions?: (props: {
         setRows: React.Dispatch<React.SetStateAction<Row[]>>;
         setColumns: React.Dispatch<React.SetStateAction<Column[]>>;
@@ -292,12 +299,67 @@ const SelectPicker: React.FC<{
 };
 
 
+// --- Helper for Editable Name ---
+const EditableName: React.FC<{ name: string; onRename?: (name: string) => void; className?: string }> = ({ name, onRename, className }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [value, setValue] = useState(name);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setValue(name);
+    }, [name]);
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+
+    const handleSave = () => {
+        if (value.trim() && value.trim() !== name) {
+            onRename?.(value.trim());
+        } else {
+            setValue(name);
+        }
+        setIsEditing(false);
+    };
+
+    if (isEditing) {
+        return (
+            <input
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={handleSave}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSave();
+                    if (e.key === 'Escape') {
+                        setValue(name);
+                        setIsEditing(false);
+                    }
+                }}
+                className={`text-[14px] font-semibold tracking-tight bg-transparent border-b border-blue-500 outline-none p-0 min-w-[100px] ${className || 'text-stone-800 dark:text-stone-200'}`}
+            />
+        );
+    }
+
+    return (
+        <span
+            onDoubleClick={() => onRename && setIsEditing(true)}
+            className={`text-[14px] font-semibold tracking-tight ${onRename ? 'cursor-text hover:text-stone-600 dark:hover:text-stone-300' : ''} ${className || 'text-stone-800 dark:text-stone-200'}`}
+        >
+            {name || 'Main Table'}
+        </span>
+    );
+};
 
 // --- Main RoomTable Component ---
-const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, columns: externalColumns, onUpdateTasks, renderCustomActions, onNavigate }) => {
+const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, name: initialName, columns: externalColumns, onUpdateTasks, onDeleteTask, renderCustomActions, onRename, onNavigate }) => {
     // Keys for persistence
     const storageKeyColumns = `room-table-columns-v7-${roomId}-${viewId}`;
     const storageKeyRows = `room-table-rows-v7-${roomId}-${viewId}`;
+    const storageKeyName = `room-table-name-v7-${roomId}-${viewId}`;
 
     // --- DnD Sensors ---
     const sensors = useSensors(
@@ -338,7 +400,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [rowsPerPage, setRowsPerPage] = useState(-1);
 
     // Pinned Charts State
     const storageKeyPinnedCharts = `room-table-pinned-charts-${roomId}-${viewId}`;
@@ -434,6 +496,20 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     }, [rows, storageKeyRows, externalTasks]);
 
+    // Table Name State
+    const [tableName, setTableName] = useState<string>(() => {
+        try {
+            const saved = localStorage.getItem(storageKeyName);
+            return saved || initialName || 'Main Table';
+        } catch {
+            return initialName || 'Main Table';
+        }
+    });
+
+    useEffect(() => {
+        localStorage.setItem(storageKeyName, tableName);
+    }, [tableName, storageKeyName]);
+
     // Click Outside
     useEffect(() => {
         const handleClickOutside = () => {
@@ -471,11 +547,47 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     // Pagination Logic
     const isAllRows = rowsPerPage === -1;
     const totalPages = isAllRows ? 1 : Math.ceil(sortedRows.length / rowsPerPage);
+
     const paginatedRows = useMemo(() => {
         if (isAllRows) return sortedRows;
         const start = (currentPage - 1) * rowsPerPage;
         return sortedRows.slice(start, start + rowsPerPage);
     }, [sortedRows, currentPage, rowsPerPage, isAllRows]);
+
+    // Priority Summary Calculation
+    const priorityStats = useMemo(() => {
+        const total = rows.length;
+        if (total === 0) return null;
+
+        const counts = {
+            Urgent: 0,
+            High: 0,
+            Medium: 0,
+            Low: 0,
+            None: 0
+        };
+
+        rows.forEach(r => {
+            const p = r.priority;
+            if (p === 'Urgent') counts.Urgent++;
+            else if (p === 'High') counts.High++;
+            else if (p === 'Medium') counts.Medium++;
+            else if (p === 'Low') counts.Low++;
+            else counts.None++;
+        });
+
+        // Use colors matching the image concept approximately
+        return {
+            total,
+            segments: [
+                { label: 'Urgent', count: counts.Urgent, color: 'bg-orange-500' }, // Orange
+                { label: 'High', count: counts.High, color: 'bg-yellow-400' },   // Yellowish
+                { label: 'Medium', count: counts.Medium, color: 'bg-blue-400' },     // Blueish
+                { label: 'Low', count: counts.Low, color: 'bg-stone-300' },      // Grey
+                { label: 'None', count: counts.None, color: 'bg-stone-200' }     // Light Grey
+            ].filter(s => s.count > 0)
+        };
+    }, [rows]);
 
     // Virtualization Calculation
     const { visibleRows, paddingTop, paddingBottom } = useMemo(() => {
@@ -560,14 +672,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // --- Handlers ---
     const handleAddTask = () => {
-        if (!newTaskName.trim()) return;
+        const nameToAdd = newTaskName.trim() || 'New Item';
 
         // Find the "primary" column to put the task name in
         const primaryCol = columns.find(c => c.id === 'name') || columns.find(c => c.id !== 'select') || { id: 'name' };
 
         const newRow: Row = {
             id: Date.now().toString(),
-            [primaryCol.id]: newTaskName,
+            [primaryCol.id]: nameToAdd,
             status: 'To Do',
             dueDate: null,
             date: new Date().toISOString(),
@@ -1507,25 +1619,45 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         )
     };
 
+    // --- Selection State ---
+    const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
+
+    const toggleRowSelection = (rowId: string) => {
+        setCheckedRows(prev => {
+            const next = new Set(prev);
+            if (next.has(rowId)) next.delete(rowId);
+            else next.add(rowId);
+            return next;
+        });
+    };
+
     const renderRowContent = (row: Row, dragListeners?: any, isOverlay = false) => {
         return (
             <>
                 {/* Columns */}
                 {columns.map((col, index) => {
+                    // ... (rest of renderRowContent)
+
                     const isSticky = (index === 0 || index === 1) && !isOverlay;
                     const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
                     return (
                         <div
                             key={col.id}
                             style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky' }) }}
-                            className={`h-full border-e border-transparent ${!isOverlay ? 'group-hover:border-stone-100 dark:group-hover:border-stone-800' : ''} ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-white dark:bg-stone-900' : ''} ${index === 1 && !isOverlay ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                            className={`h-full border-e border-transparent ${!isOverlay ? 'group-hover:border-stone-100 dark:group-hover:border-stone-800' : ''} ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? `z-10 ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}` : ''} ${index === 1 && !isOverlay ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
                         >
                             {col.id === 'select' ? (
                                 <div
                                     {...dragListeners}
-                                    className="cursor-grab text-stone-300 hover:text-stone-600 flex items-center justify-center p-1 rounded hover:bg-stone-200/50 active:cursor-grabbing"
+                                    className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing touch-none px-2"
                                 >
-                                    <GripVertical size={14} />
+                                    <input
+                                        type="checkbox"
+                                        checked={checkedRows.has(row.id)}
+                                        onChange={() => toggleRowSelection(row.id)}
+                                        className="rounded border-stone-300 dark:border-stone-600 text-blue-600 focus:ring-blue-500 cursor-pointer w-4 h-4"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    />
                                 </div>
                             ) : (
                                 renderCellContent(col, row)
@@ -1620,8 +1752,125 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Secondary Toolbar */}
-                <div className="flex items-center justify-end h-12 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22] pl-0 pr-4 shrink-0 transition-colors z-20 gap-4">
+                    {/* Left: New Item */}
+                    <div className="flex items-center group">
+                        <button
+                            onClick={handleAddTask}
+                            className="text-blue-600 dark:text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 px-0 py-1.5 text-[13px] font-semibold flex items-center gap-2 transition-colors scale-90 origin-left"
+                        >
+                            <Plus size={16} strokeWidth={3} />
+                            New item
+                        </button>
+                    </div>
+
+                    {/* Left: Action Icons */}
+                    <div className="flex items-center gap-5 text-stone-500 dark:text-stone-400">
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <Search size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Search</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <UserCircle size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Person</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <Filter size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Filter</span>
+                            <ChevronDown size={12} className="opacity-50" />
+                        </div>
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <ArrowUpDown size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Sort</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <EyeOff size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Hide</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
+                            <Layers size={16} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[13px] font-medium">Group by</span>
+                        </div>
+
+                        {/* Selection Actions (Always Visible, Grey if disabled) */}
+                        <div className="flex items-center gap-4 ml-4">
+                            <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
+
+                            <button
+                                disabled={checkedRows.size === 0}
+                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
+                                    : 'cursor-default text-stone-300 dark:text-stone-700'
+                                    }`}
+                            >
+                                <Copy size={16} className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
+                                <span className="text-[13px] font-medium">Duplicate</span>
+                            </button>
+
+                            <button
+                                disabled={checkedRows.size === 0}
+                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
+                                    : 'cursor-default text-stone-300 dark:text-stone-700'
+                                    }`}
+                            >
+                                <Upload size={16} className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
+                                <span className="text-[13px] font-medium">Export</span>
+                            </button>
+
+                            <button
+                                disabled={checkedRows.size === 0}
+                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
+                                    : 'cursor-default text-stone-300 dark:text-stone-700'
+                                    }`}
+                            >
+                                <Archive size={16} className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
+                                <span className="text-[13px] font-medium">Archive</span>
+                            </button>
+
+                            <button
+                                disabled={checkedRows.size === 0}
+                                onClick={() => {
+                                    if (checkedRows.size === 0) return;
+                                    if (confirm(`Delete ${checkedRows.size} items?`)) {
+                                        const rowsToDelete = rows.filter(r => checkedRows.has(r.id));
+
+                                        // Optimistic local update
+                                        setRows(prev => prev.filter(r => !checkedRows.has(r.id)));
+
+                                        if (onDeleteTask) {
+                                            // Explicit deletion via hook
+                                            rowsToDelete.forEach(row => {
+                                                const groupId = row.groupId || row.status || 'To Do';
+                                                onDeleteTask(groupId, row.id);
+                                            });
+                                        } else {
+                                            // Fallback to sync update
+                                            const newRows = rows.filter(r => !checkedRows.has(r.id));
+                                            onUpdateTasks?.(newRows);
+                                        }
+
+                                        setCheckedRows(new Set());
+                                    }
+                                }}
+                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-red-600'
+                                    : 'cursor-default text-stone-300 dark:text-stone-700'
+                                    }`}
+                            >
+                                <Trash2 size={16} className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
+                                <span className="text-[13px] font-medium">Delete</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1" />
+
+
+
+                    {/* Right: Custom Actions */}
+                    <div className="flex items-center gap-3">
                         {renderCustomActions && renderCustomActions({
                             setRows,
                             setColumns,
@@ -1631,217 +1880,224 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     </div>
                 </div>
 
-                {/* Table Body */}
-                <div
-                    ref={tableBodyRef}
-                    onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-                    className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain"
-                >
-                    {/* Pinned Charts Section */}
-                    {pinnedCharts.length > 0 && (
-                        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50/50 dark:bg-stone-900/30 border-b border-stone-100 dark:border-stone-800">
-                            {pinnedCharts.map((config, idx) => (
-                                <AIChartCard
-                                    key={idx}
-                                    config={config}
-                                    columns={columns}
-                                    rows={rows}
-                                    onDelete={() => handleDeletePinnedChart(idx)}
-                                />
+                {/* Group Header */}
+                <div className="flex items-center gap-2 px-4 py-3 shrink-0 bg-white dark:bg-[#1a1c22]">
+                    <button
+                        onClick={() => setIsBodyVisible(!isBodyVisible)}
+                        className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors text-stone-500 hover:text-stone-700"
+                    >
+                        {isBodyVisible ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                    <EditableName name={tableName} onRename={setTableName} className="text-blue-600 dark:text-blue-400 text-[15px]" />
+                </div>
+
+
+                {/* Collapsed Summary View */}
+                {!isBodyVisible && priorityStats && (
+                    <div className="border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 p-4 flex items-center gap-8 animate-in slide-in-from-top-2 duration-200">
+                        <div className="text-sm font-medium text-stone-500">
+                            {priorityStats.total} Items
+                        </div>
+
+                        <div className="flex-1 flex max-w-md h-6 rounded-md overflow-hidden bg-stone-100 dark:bg-stone-800">
+                            {priorityStats.segments.map((seg, i) => (
+                                <div
+                                    key={seg.label}
+                                    className={`h-full ${seg.color} first:rounded-l-md last:rounded-r-md hover:opacity-90 transition-opacity relative group cursor-help`}
+                                    style={{ width: `${(seg.count / priorityStats.total) * 100}%` }}
+                                >
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-stone-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                                        {seg.label}: {seg.count} ({Math.round((seg.count / priorityStats.total) * 100)}%)
+                                    </div>
+                                </div>
                             ))}
                         </div>
-                    )}
 
-                    {/* Table Header */}
-                    <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
-                        {columns.map((col, index) => {
-                            const isSticky = index === 0 || index === 1;
-                            const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
-                            return (
-                                <div
-                                    key={col.id}
-                                    style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky' }) }}
-                                    className={`
-              h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
-              ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
-              ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
-              hover:bg-stone-100 dark:hover:bg-stone-800 ${col.id !== 'select' ? 'cursor-pointer' : 'cursor-default'} transition-colors select-none relative group
-              ${isSticky ? 'z-30 bg-stone-50 dark:bg-stone-900' : ''}
-              ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.1)]' : ''}
-            `}
-                                    onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
-                                >
-                                    {col.id === 'select' && (
-                                        <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
-                                    )}
-                                    {col.id !== 'select' && (
-                                        <div className="flex items-center justify-between w-full px-2">
-                                            <span className="truncate flex-1">{col.label}</span>
-                                            {!['name', 'select'].includes(col.id) && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                                                    title="Delete Column"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
+                        <div className="flex gap-4 text-xs text-stone-500">
+                            {priorityStats.segments.map(seg => (
+                                <div key={seg.label} className="flex items-center gap-1.5">
+                                    <div className={`w-2 h-2 rounded-full ${seg.color}`} />
+                                    <span>{seg.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Table Body & Footer Container */}
+                {isBodyVisible && (
+                    <div className="flex-1 flex flex-col min-h-0 relative">
+                        {/* Table Scrollable Area */}
+                        <div
+                            ref={tableBodyRef}
+                            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+                            className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative overscroll-y-contain"
+                        >
+                            {/* Pinned Charts Section */}
+                            {pinnedCharts.length > 0 && (
+                                <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50/50 dark:bg-stone-900/30 border-b border-stone-100 dark:border-stone-800">
+                                    {pinnedCharts.map((config, idx) => (
+                                        <AIChartCard
+                                            key={idx}
+                                            config={config}
+                                            columns={columns}
+                                            rows={rows}
+                                            onDelete={() => handleDeletePinnedChart(idx)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Table Header */}
+                            <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
+                                {columns.map((col, index) => {
+                                    const isSticky = index === 0 || index === 1;
+                                    const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
+                                    return (
+                                        <div
+                                            key={col.id}
+                                            style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky' }) }}
+                                            className={`
+                                              h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
+                                              ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
+                                              ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
+                                              hover:bg-stone-100 dark:hover:bg-stone-800 ${col.id !== 'select' ? 'cursor-pointer' : 'cursor-default'} transition-colors select-none relative group
+                                              ${isSticky ? 'z-30 bg-stone-50 dark:bg-stone-900' : ''}
+                                              ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.1)]' : ''}
+                                            `}
+                                            onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
+                                        >
+                                            {col.id === 'select' && (
+                                                <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
+                                            )}
+                                            {col.id !== 'select' && (
+                                                <div className="flex items-center justify-between w-full px-2">
+                                                    <span className="truncate flex-1">{col.label}</span>
+                                                    {!['name', 'select'].includes(col.id) && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
+                                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                                                            title="Delete Column"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {col.resizable && (
+                                                <div
+                                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
+                                                    onMouseDown={(e) => startResize(e, col.id, col.width)}
+                                                />
                                             )}
                                         </div>
-                                    )}
-                                    {col.resizable && (
-                                        <div
-                                            className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
-                                            onMouseDown={(e) => startResize(e, col.id, col.width)}
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
-                        {/* Add Column Button */}
-                        <div className="relative h-full flex flex-col justify-center shrink-0">
-                            <button
-                                onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    setActiveColumnMenu({ rect });
-                                }}
-                                className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-                            >
-                                <Plus size={14} />
-                            </button>
-                            {activeColumnMenu && createPortal(
-                                <>
-                                    {/* Backdrop */}
-                                    <div
-                                        className="fixed inset-0 z-[90] bg-transparent"
-                                        onClick={() => setActiveColumnMenu(null)}
-                                    />
-                                    {/* Dropdown Menu */}
-                                    <div
-                                        className="fixed z-[100]"
-                                        style={{
-                                            top: `${activeColumnMenu.rect.bottom + 8}px`,
-                                            right: `${window.innerWidth - activeColumnMenu.rect.right}px`,
+                                    );
+                                })}
+                                {/* Add Column Button */}
+                                <div className="relative h-full flex flex-col justify-center shrink-0">
+                                    <button
+                                        onClick={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setActiveColumnMenu({ rect });
                                         }}
+                                        className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
                                     >
-                                        <ColumnMenu
-                                            onClose={() => setActiveColumnMenu(null)}
-                                            onSelect={(type, label, options) => handleAddColumn(type, label, options)}
-                                        />
-                                    </div>
-                                </>,
-                                document.body
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Spacer Top */}
-                    <div style={{ height: paddingTop }} />
-
-                    {/* Tasks */}
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext items={visibleRows.map(r => r.id)} strategy={verticalListSortingStrategy}>
-                            {visibleRows.map((row) => (
-                                <SortableRow
-                                    key={row.id}
-                                    row={row}
-                                    className={`
-                                    group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 
-                                    hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors relative min-w-max bg-white dark:bg-stone-900
-                                    ${activeDragId === row.id ? 'opacity-30' : ''}
-                                `}
-                                >
-                                    {(dragListeners, isRowDragging) => renderRowContent(row, dragListeners, isRowDragging)}
-                                </SortableRow>
-                            ))}
-                        </SortableContext>
-
-                        <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
-                            {activeDragId ? (
-                                <div className="flex items-center h-10 border border-indigo-500 bg-white dark:bg-stone-800 shadow-xl rounded pointer-events-none opacity-90 scale-105 overflow-hidden min-w-max">
-                                    {(() => {
-                                        const row = rows.find(r => r.id === activeDragId);
-                                        if (!row) return null;
-                                        return renderRowContent(row, null, true);
-                                    })()}
+                                        <Plus size={14} />
+                                    </button>
+                                    {activeColumnMenu && createPortal(
+                                        <>
+                                            {/* Backdrop */}
+                                            <div
+                                                className="fixed inset-0 z-[90] bg-transparent"
+                                                onClick={() => setActiveColumnMenu(null)}
+                                            />
+                                            {/* Dropdown Menu */}
+                                            <div
+                                                className="fixed z-[100]"
+                                                style={{
+                                                    top: `${activeColumnMenu.rect.bottom + 8}px`,
+                                                    right: `${window.innerWidth - activeColumnMenu.rect.right}px`,
+                                                }}
+                                            >
+                                                <ColumnMenu
+                                                    onClose={() => setActiveColumnMenu(null)}
+                                                    onSelect={(type, label, options) => handleAddColumn(type, label, options)}
+                                                />
+                                            </div>
+                                        </>,
+                                        document.body
+                                    )}
                                 </div>
-                            ) : null}
-                        </DragOverlay>
-                    </DndContext>
+                            </div>
 
-                    {/* Spacer Bottom */}
-                    <div style={{ height: paddingBottom }} />
+                            {/* Spacer Top */}
+                            <div style={{ height: paddingTop }} />
 
-                    {/* Input Row */}
-                    <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max bg-white dark:bg-stone-900">
-                        <div style={{ width: columns[0].width, left: 0, position: 'sticky' }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900">
-                            <Plus size={14} className="text-stone-300 dark:text-stone-600" />
-                        </div>
-                        <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky' }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
-                            <input
-                                type="text"
-                                value={newTaskName}
-                                onChange={(e) => setNewTaskName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                                placeholder="Start typing..."
-                                className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
-                            />
-                        </div>
-                        {/* Empty cells for Input Row */}
-                        {columns.slice(2).map(col => (
-                            <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
-                        ))}
-                    </div>
-
-                    <div className="h-12" />
-
-                </div >
-
-                {/* Pagination Footer */}
-                <div className="flex items-center justify-between p-4 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-sm z-30">
-                    <div className="flex items-center gap-2">
-                        <span className="text-stone-500 dark:text-stone-400">Rows per page:</span>
-                        <select
-                            value={rowsPerPage}
-                            onChange={(e) => {
-                                setRowsPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded px-2 py-1 text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={50}>50</option>
-                            <option value={-1}>All</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-stone-600 dark:text-stone-400">
-                        <span>
-                            Page {currentPage} of {Math.max(1, totalPages)}
-                        </span>
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                            {/* Tasks */}
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
                             >
-                                <ChevronLeft size={18} />
-                            </button>
-                            <button
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage >= totalPages}
-                                className="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                            >
-                                <ChevronRight size={18} />
-                            </button>
+                                <SortableContext items={visibleRows.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                                    {visibleRows.map((row) => (
+                                        <SortableRow
+                                            key={row.id}
+                                            row={row}
+                                            className={`
+                                            group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 
+                                            hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors relative min-w-max
+                                            ${activeDragId === row.id ? 'opacity-30' : ''}
+                                            ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}
+                                        `}
+                                        >
+                                            {(dragListeners, isRowDragging) => renderRowContent(row, dragListeners, isRowDragging)}
+                                        </SortableRow>
+                                    ))}
+                                </SortableContext>
+
+                                <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
+                                    {activeDragId ? (
+                                        <div className="flex items-center h-10 border border-indigo-500 bg-white dark:bg-stone-800 shadow-xl rounded pointer-events-none opacity-90 scale-105 overflow-hidden min-w-max">
+                                            {(() => {
+                                                const row = rows.find(r => r.id === activeDragId);
+                                                if (!row) return null;
+                                                return renderRowContent(row, null, true);
+                                            })()}
+                                        </div>
+                                    ) : null}
+                                </DragOverlay>
+                            </DndContext>
+
+                            {/* Spacer Bottom */}
+                            <div style={{ height: paddingBottom }} />
+
+                            {/* Input Row */}
+                            <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max bg-white dark:bg-stone-900">
+                                <div style={{ width: columns[0].width, left: 0, position: 'sticky' }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900">
+                                    <Plus size={14} className="text-stone-300 dark:text-stone-600" />
+                                </div>
+                                <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky' }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
+                                    <input
+                                        type="text"
+                                        value={newTaskName}
+                                        onChange={(e) => setNewTaskName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                                        placeholder="Start typing..."
+                                        className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
+                                    />
+                                </div>
+                                {/* Empty cells for Input Row */}
+                                {columns.slice(2).map(col => (
+                                    <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
+                                ))}
+                            </div>
+
                         </div>
                     </div>
-                </div>
+                )}
 
                 {activeReminderTarget && (
                     <PortalPopup
