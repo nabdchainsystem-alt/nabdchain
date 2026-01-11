@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightSmall, X, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, Calendar as CalendarIcon } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SharedDatePickerProps {
@@ -119,27 +119,39 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
 
         switch (type) {
             case 'today':
-                // targetStart is today
+                break;
+            case 'later':
                 break;
             case 'tomorrow':
                 targetStart.setDate(today.getDate() + 1);
                 break;
             case 'nextWeek':
-                const daysToMon = (7 + 1 - today.getDay()) % 7 || 7;
+                const daysToMon = (8 - today.getDay()) % 7 || 7;
                 targetStart.setDate(today.getDate() + daysToMon);
                 break;
-            case 'oneWeek': // Range
+            case 'nextWeekend':
+                const daysToSat = (6 - today.getDay() + 7) % 7 || 7;
+                targetStart.setDate(today.getDate() + daysToSat);
+                break;
+            case '2weeks':
+                targetStart.setDate(today.getDate() + 14);
+                break;
+            case '4weeks':
+                targetStart.setDate(today.getDate() + 28);
+                break;
+            case '8weeks':
+                targetStart.setDate(today.getDate() + 56);
+                break;
+            case 'oneWeek':
                 targetEnd = new Date(today);
                 targetEnd.setDate(today.getDate() + 7);
                 break;
-            // ... Add range shortcuts if needed
         }
 
         if (mode === 'single') {
             onSelectDate?.(targetStart);
             onClose();
         } else {
-            // For range shortcuts, we might set a range
             if (targetEnd) {
                 setRangeStart(targetStart);
                 setRangeEnd(targetEnd);
@@ -152,31 +164,74 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
         }
     };
 
-    // ... (rest of imports and helpers similar) 
-    // Simplified for tool application - reusing existing helpers where possible or rewriting
+    const getShortcutLabel = (type: string) => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        let targetDate = new Date(now);
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        switch (type) {
+            case 'today':
+                return dayNames[now.getDay()];
+            case 'later':
+                const laterTime = new Date();
+                return laterTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+            case 'tomorrow':
+                targetDate.setDate(now.getDate() + 1);
+                return dayNames[targetDate.getDay()];
+            case 'nextWeek':
+                return 'Mon';
+            case 'nextWeekend':
+                return 'Sat';
+            case '2weeks':
+                targetDate.setDate(now.getDate() + 14);
+                return `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
+            case '4weeks':
+                targetDate.setDate(now.getDate() + 28);
+                return `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
+            case '8weeks':
+                targetDate.setDate(now.getDate() + 56);
+                return `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
+        }
+        return '';
+    };
 
     const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
     const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    const goToToday = () => setCurrentMonth(new Date());
     const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+    const shortcuts = [
+        { key: 'today', label: 'Today' },
+        { key: 'later', label: 'Later' },
+        { key: 'tomorrow', label: 'Tomorrow' },
+        { key: 'nextWeek', label: 'Next week' },
+        { key: 'nextWeekend', label: 'Next weekend' },
+        { key: '2weeks', label: '2 weeks' },
+        { key: '4weeks', label: '4 weeks' },
+        { key: '8weeks', label: '8 weeks' },
+    ];
+
     return (
-        <div className="bg-white dark:bg-stone-900 shadow-xl border border-stone-200 dark:border-stone-800 rounded-lg flex overflow-hidden w-[420px] max-w-[90vw] text-stone-800 dark:text-stone-200 font-sans">
+        <div className="bg-white dark:bg-stone-900 shadow-xl border border-stone-200 dark:border-stone-800 rounded-lg flex overflow-hidden w-[480px] max-w-[90vw] text-stone-800 dark:text-stone-200 font-sans">
             {/* Sidebar Shortcuts */}
-            <div className="w-1/3 bg-stone-50 dark:bg-stone-900 border-e border-stone-100 dark:border-stone-800 py-2 flex flex-col">
-                {/* ... Keep existing shortcuts ... */}
-                <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-                    {/* Simplified list for brevity in this edit - can restore full list */}
-                    <button type="button" onClick={() => handleShortcut('today')} className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-200 dark:hover:bg-stone-800 rounded text-start transition-colors">
-                        <span>Today</span>
-                    </button>
-                    <button type="button" onClick={() => handleShortcut('tomorrow')} className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-200 dark:hover:bg-stone-800 rounded text-start transition-colors">
-                        <span>Tomorrow</span>
-                    </button>
-                    <button type="button" onClick={() => handleShortcut('nextWeek')} className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-200 dark:hover:bg-stone-800 rounded text-start transition-colors">
-                        <span>Next week</span>
-                    </button>
+            <div className="w-[180px] bg-white dark:bg-stone-900 border-e border-stone-100 dark:border-stone-800 py-3 flex flex-col">
+                <div className="flex-1 overflow-y-auto">
+                    {shortcuts.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleShortcut(key)}
+                            className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                        >
+                            <span className="font-medium">{label}</span>
+                            <span className="text-stone-400 dark:text-stone-500 text-xs">{getShortcutLabel(key)}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
+
 
             {/* Main Calendar */}
             <div className="w-2/3 p-4 bg-white dark:bg-stone-900 flex flex-col">
@@ -191,7 +246,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                                 placeholder="MMM DD, YYYY"
                                 value={rangeStart ? rangeStart.toLocaleDateString() : (selectedDate ? new Date(selectedDate).toLocaleDateString() : '')}
                                 readOnly
-                                className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-indigo-500"
+                                className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
                             />
                             <CalendarIcon size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
                         </div>
@@ -207,7 +262,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                                     placeholder="MMM DD, YYYY"
                                     value={rangeEnd ? rangeEnd.toLocaleDateString() : ''}
                                     readOnly
-                                    className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
                                 />
                                 <CalendarIcon size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
                             </div>
@@ -215,13 +270,14 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                     )}
                 </div>
 
-                <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center justify-between mb-4">
+                    <span className="font-semibold text-gray-800 dark:text-stone-200 text-base">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"><ChevronLeft size={16} /></button>
-                        <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"><ChevronRight size={16} /></button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">Today</button>
+                        <div className="flex flex-col">
+                            <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><ChevronUp size={14} /></button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><ChevronDown size={14} /></button>
+                        </div>
                     </div>
                 </div>
 
@@ -238,9 +294,9 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                         const inRange = mode === 'range' && isDateInRange(date);
 
                         let bgClass = '';
-                        if (selected) bgClass = 'bg-indigo-600 text-white';
-                        else if (inRange) bgClass = 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
-                        else if (isToday) bgClass = 'border-2 border-indigo-500 text-indigo-600 font-bold';
+                        if (selected) bgClass = 'bg-blue-500 text-white';
+                        else if (inRange) bgClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+                        else if (isToday) bgClass = 'border-2 border-blue-500 text-blue-600 font-bold';
                         else bgClass = 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300';
 
                         return (
@@ -270,7 +326,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                     >
                         Clear date
                     </button>
-                    <button type="button" onClick={onClose} className="text-xs font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded shadow-sm hover:shadow transition-all">
+                    <button type="button" onClick={onClose} className="text-xs font-medium px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded shadow-sm hover:shadow transition-all">
                         Done
                     </button>
                 </div>

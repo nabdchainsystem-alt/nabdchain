@@ -15,6 +15,7 @@ export interface Task {
   status: string;
   date: string;
   priority?: PriorityLevel | null;
+  [key: string]: any;
 }
 
 export interface BoardColumn {

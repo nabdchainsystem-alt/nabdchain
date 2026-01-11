@@ -19,6 +19,7 @@ import {
     Circle,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     ArrowUpDown,
     GripVertical,
     Trash2,
@@ -36,7 +37,10 @@ import {
     FileText,
     UploadCloud,
     ExternalLink,
-    CalendarRange
+    CalendarRange,
+    EyeOff,
+    UserCircle,
+    MoreHorizontal
 } from 'lucide-react';
 import {
     DndContext,
@@ -97,6 +101,7 @@ interface RoomTableProps {
     viewId: string;
     defaultColumns?: Column[];
     tasks?: any[];
+    name?: string;
     columns?: Column[];
     onUpdateTasks?: (tasks: any[]) => void;
     onNavigate?: (view: string) => void;
@@ -408,6 +413,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const startX = useRef<number>(0);
     const startWidth = useRef<number>(0);
 
+    // Toolbar State
+    const [isBodyVisible, setIsBodyVisible] = useState(true);
+
     // Virtualization State
     const [scrollTop, setScrollTop] = useState(0);
     const tableBodyRef = useRef<HTMLDivElement>(null);
@@ -533,34 +541,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const handleHiddenFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setActiveUploadFile(e.target.files[0]);
-            // If we had a modal, we would open it here. 
-            // The logic seems to be: 
-            // 1. User clicks upload -> handleCellAction('upload') -> sets activeUploadCell -> opens modal? 
-            // Actually usually picking a file is Step 2.
-            // Let's assume handleCellAction('upload') opens a modal or triggers this input.
-            // If the user clicked "Upload" in cell, we set active cell and open modal...
-            // Wait, usually we pick file first?
-
-            // Re-reading logic:
-            // handleCellAction 'upload' -> setIsUploadModalOpen(true).
-            // But SaveToVaultModal expects fileToSave?
-            // Actually the SaveToVaultModal might handle the file input internally OR we pass it.
-            // If the modal handles it, we don't need hidden input here.
-            // But the previous code had hiddenFileInputRef.
-
-            // Let's assume the flow is:
-            // 1. Cell "Upload" button -> triggers hidden input click? Or opens modal?
-            // In handleCellAction 'upload': setIsUploadModalOpen(true); setActiveUploadFile(null);
-            // It seems SaveToVaultModal allows picking a file?
-
-            // If we use hidden input here, maybe it's for a different flow?
-            // "handleHiddenFileChange" implies we use it.
-            // Let's keep it simple: simpler flow = Modal handles file selection? 
-            // OR checks:
-            // If we want to support drag/drop to cell later, we might need this.
-            // For now, let's implement the handler to simply set the file and ensure modal is open.
             setIsUploadModalOpen(true);
         }
+        // Reset input value so same file can be selected again
+        e.target.value = '';
     };
 
     const handleSaveVaultSuccess = (item: VaultItem) => {
@@ -640,12 +624,35 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         if (activeCell?.rowId === rowId && activeCell?.colId === colId) {
             setActiveCell(null);
         } else {
-            // const rect = e.currentTarget.getBoundingClientRect();
-            // setActiveCell({ rowId, colId, rect });
-            // Optimization: Defer rect calculation or use ref if flickering occurs during DnD
-            // But for simple cell toggle it's fine.
-            // Store the element reference itself so gettingBoundingClientRect() is always live
-            setActiveCell({ rowId, colId, trigger: e.currentTarget as HTMLElement });
+            const trigger = e.currentTarget as HTMLElement;
+            const triggerRect = trigger.getBoundingClientRect();
+
+            // Find the column to check if it's a date/timeline type
+            const col = columns.find(c => c.id === colId);
+            const isDateColumn = col?.type === 'date' || col?.type === 'timeline' || col?.type === 'dueDate';
+
+            // Check if calendar would overflow (calendar is ~420px wide)
+            const CALENDAR_WIDTH = 420;
+            const VIEWPORT_PADDING = 20;
+            const availableSpace = window.innerWidth - triggerRect.left;
+
+            // If it's a date column near the right edge, auto-scroll the table
+            if (isDateColumn && availableSpace < CALENDAR_WIDTH + VIEWPORT_PADDING && tableBodyRef.current) {
+                const scrollAmount = CALENDAR_WIDTH - availableSpace + VIEWPORT_PADDING + 50; // Extra 50px buffer
+
+                // Smooth scroll the table to the left
+                tableBodyRef.current.scrollBy({
+                    left: scrollAmount,
+                    behavior: 'smooth'
+                });
+
+                // Delay setting activeCell to allow scroll animation to complete
+                setTimeout(() => {
+                    setActiveCell({ rowId, colId, trigger });
+                }, 150);
+            } else {
+                setActiveCell({ rowId, colId, trigger });
+            }
         }
     };
 
@@ -1094,8 +1101,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">Assign</span>
                         )}
                     </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.rect && (
-                        <div className="fixed z-[9999]" style={{ top: activeCell.rect.bottom + 4, left: activeCell.rect.left }}>
+                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
+                        <div className="fixed z-[9999]" style={{ top: activeCell.trigger.getBoundingClientRect().bottom + 4, left: activeCell.trigger.getBoundingClientRect().left }}>
                             <PeoplePicker
                                 current={value}
                                 onSelect={(person) => handleUpdateRow(row.id, { [col.id]: person })}
@@ -1112,32 +1119,61 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const hasFile = !!value; // Value could be file metadata or just truthy
             const fileName = value?.title || (hasFile ? 'File attached' : null);
 
+            // Helper to get file icon based on type/extension
+            const getFileIcon = (filename: string, mimeType?: string) => {
+                const ext = filename?.split('.').pop()?.toLowerCase();
+                const mime = mimeType?.toLowerCase() || '';
+
+                if (ext === 'pdf' || mime.includes('pdf')) {
+                    return <FileText size={14} className="text-red-500 shrink-0" />;
+                } else if (['doc', 'docx'].includes(ext || '') || mime.includes('word')) {
+                    return <FileText size={14} className="text-blue-600 shrink-0" />;
+                } else if (['xls', 'xlsx', 'csv'].includes(ext || '') || mime.includes('spreadsheet') || mime.includes('excel')) {
+                    return <FileText size={14} className="text-emerald-600 shrink-0" />;
+                } else if (['ppt', 'pptx'].includes(ext || '') || mime.includes('presentation')) {
+                    return <FileText size={14} className="text-orange-500 shrink-0" />;
+                } else if (mime.includes('image') || ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext || '')) {
+                    return <FileText size={14} className="text-purple-500 shrink-0" />;
+                }
+                return <FileText size={14} className="text-indigo-500 shrink-0" />;
+            };
+
+            // Get short name (truncate long filenames)
+            const getShortName = (name: string) => {
+                if (!name) return 'File';
+                if (name.length <= 15) return name;
+                const ext = name.split('.').pop();
+                const baseName = name.slice(0, name.lastIndexOf('.'));
+                return baseName.slice(0, 10) + '...' + (ext ? '.' + ext : '');
+            };
+
             return (
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center">
                     {hasFile ? (
-                        <div className="flex items-center gap-2 w-full px-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2 w-full px-3" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleCellAction('navigate', row.id, col.id);
                                 }}
                                 className="flex-1 flex items-center gap-2 min-w-0 p-1 hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded transition-colors text-start"
-                                title="View in Vault"
+                                title={`View in Vault: ${fileName}`}
                             >
-                                <FileText size={14} className="text-indigo-500 shrink-0" />
-                                <span className="text-xs truncate text-stone-600 dark:text-stone-300 underline decoration-stone-300 dark:decoration-stone-700 underline-offset-2">
-                                    {fileName}
+                                {getFileIcon(fileName, value?.metadata?.mimeType)}
+                                <span className="text-xs truncate text-stone-600 dark:text-stone-300 hover:underline decoration-stone-300 dark:decoration-stone-700 underline-offset-2">
+                                    {getShortName(fileName)}
                                 </span>
                             </button>
-                            {/* Optional: Add clear/delete button here if needed */}
                         </div>
                     ) : (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleCellAction('upload', row.id, col.id);
+                                // Trigger hidden file input - file selection first, then modal opens
+                                setActiveUploadCell({ rowId: row.id, colId: col.id });
+                                hiddenFileInputRef.current?.click();
                             }}
-                            className="w-full h-full flex items-center justify-center text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors gap-1.5"
+                            className="w-full h-full flex items-center px-3 text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors gap-1.5"
                             title="Upload file"
                         >
                             <UploadCloud size={14} />
@@ -1263,8 +1299,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className="text-xs text-stone-400">Set Status</span>
                         )}
                     </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.rect && (
-                        <div className="fixed z-[9999]" style={{ top: activeCell.rect.bottom + 4, left: activeCell.rect.left }}>
+                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
+                        <div className="fixed z-[9999]" style={{ top: activeCell.trigger.getBoundingClientRect().bottom + 4, left: activeCell.trigger.getBoundingClientRect().left }}>
                             <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl overflow-hidden min-w-[200px]">
                                 {(col.options || []).length > 0 ? (
                                     col.options!.map(opt => (
@@ -1378,8 +1414,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className="text-xs text-stone-400">Select Option</span>
                         )}
                     </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.rect && (
-                        <div className="fixed z-[9999]" style={{ top: activeCell.rect.bottom + 4, left: activeCell.rect.left }}>
+                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
+                        <div className="fixed z-[9999]" style={{ top: activeCell.trigger.getBoundingClientRect().bottom + 4, left: activeCell.trigger.getBoundingClientRect().left }}>
                             {/* Simple inline dropdown for generic options */}
                             <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl overflow-hidden min-w-[150px]">
                                 {(col.options || []).map(opt => (
@@ -1475,24 +1511,28 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         return (
             <>
                 {/* Columns */}
-                {columns.map(col => (
-                    <div
-                        key={col.id}
-                        style={{ width: col.width }}
-                        className={`h-full border-e border-transparent ${!isOverlay ? 'group-hover:border-stone-100 dark:group-hover:border-stone-800' : ''} ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''}`}
-                    >
-                        {col.id === 'select' ? (
-                            <div
-                                {...dragListeners}
-                                className="cursor-grab text-stone-300 hover:text-stone-600 flex items-center justify-center p-1 rounded hover:bg-stone-200/50 active:cursor-grabbing"
-                            >
-                                <GripVertical size={14} />
-                            </div>
-                        ) : (
-                            renderCellContent(col, row)
-                        )}
-                    </div>
-                ))}
+                {columns.map((col, index) => {
+                    const isSticky = (index === 0 || index === 1) && !isOverlay;
+                    const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
+                    return (
+                        <div
+                            key={col.id}
+                            style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky' }) }}
+                            className={`h-full border-e border-transparent ${!isOverlay ? 'group-hover:border-stone-100 dark:group-hover:border-stone-800' : ''} ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-white dark:bg-stone-900' : ''} ${index === 1 && !isOverlay ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                        >
+                            {col.id === 'select' ? (
+                                <div
+                                    {...dragListeners}
+                                    className="cursor-grab text-stone-300 hover:text-stone-600 flex items-center justify-center p-1 rounded hover:bg-stone-200/50 active:cursor-grabbing"
+                                >
+                                    <GripVertical size={14} />
+                                </div>
+                            ) : (
+                                renderCellContent(col, row)
+                            )}
+                        </div>
+                    );
+                })}
 
                 {/* Fixed Actions Column (Delete) */}
                 <div className="w-8 h-full flex items-center justify-center text-stone-300 border-s border-stone-100/50 dark:border-stone-800">
@@ -1512,10 +1552,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const renderSummaryRow = () => {
         return (
             <div className="flex items-center h-10 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50 min-w-max">
-                {/* Spacer for Select */}
-                <div style={{ width: columns[0].width }} className="h-full border-e border-transparent" />
-                {/* Name Column Spacer */}
-                <div style={{ width: columns[1].width }} className="h-full border-e border-transparent flex items-center px-3" >
+                {/* Spacer for Select - Sticky */}
+                <div style={{ width: columns[0].width, left: 0, position: 'sticky' }} className="h-full border-e border-transparent z-10 bg-stone-50/50 dark:bg-stone-900/50" />
+                {/* Name Column Spacer - Sticky */}
+                <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky' }} className="h-full border-e border-transparent flex items-center px-3 z-10 bg-stone-50/50 dark:bg-stone-900/50 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
                     <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Summary</span>
                 </div>
 
@@ -1614,43 +1654,49 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                     {/* Table Header */}
                     <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 sticky top-0 z-20 min-w-max">
-                        {columns.map((col, index) => (
-                            <div
-                                key={col.id}
-                                style={{ width: col.width }}
-                                className={`
+                        {columns.map((col, index) => {
+                            const isSticky = index === 0 || index === 1;
+                            const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
+                            return (
+                                <div
+                                    key={col.id}
+                                    style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky' }) }}
+                                    className={`
               h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
               ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
               ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
               hover:bg-stone-100 dark:hover:bg-stone-800 ${col.id !== 'select' ? 'cursor-pointer' : 'cursor-default'} transition-colors select-none relative group
+              ${isSticky ? 'z-30 bg-stone-50 dark:bg-stone-900' : ''}
+              ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.1)]' : ''}
             `}
-                                onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
-                            >
-                                {col.id === 'select' && (
-                                    <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
-                                )}
-                                {col.id !== 'select' && (
-                                    <div className="flex items-center justify-between w-full px-2">
-                                        <span className="truncate flex-1">{col.label}</span>
-                                        {!['name', 'select'].includes(col.id) && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
-                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                                                title="Delete Column"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                                {col.resizable && (
-                                    <div
-                                        className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
-                                        onMouseDown={(e) => startResize(e, col.id, col.width)}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                                    onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
+                                >
+                                    {col.id === 'select' && (
+                                        <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
+                                    )}
+                                    {col.id !== 'select' && (
+                                        <div className="flex items-center justify-between w-full px-2">
+                                            <span className="truncate flex-1">{col.label}</span>
+                                            {!['name', 'select'].includes(col.id) && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                                                    title="Delete Column"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                    {col.resizable && (
+                                        <div
+                                            className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
+                                            onMouseDown={(e) => startResize(e, col.id, col.width)}
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
                         {/* Add Column Button */}
                         <div className="relative h-full flex flex-col justify-center shrink-0">
                             <button
@@ -1731,11 +1777,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     <div style={{ height: paddingBottom }} />
 
                     {/* Input Row */}
-                    <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max">
-                        <div style={{ width: columns[0].width }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800">
+                    <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max bg-white dark:bg-stone-900">
+                        <div style={{ width: columns[0].width, left: 0, position: 'sticky' }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900">
                             <Plus size={14} className="text-stone-300 dark:text-stone-600" />
                         </div>
-                        <div style={{ width: columns[1].width }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800">
+                        <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky' }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
                             <input
                                 type="text"
                                 value={newTaskName}
@@ -1750,8 +1796,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
                         ))}
                     </div>
-
-                    {renderSummaryRow()}
 
                     <div className="h-12" />
 
@@ -1845,7 +1889,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 <SaveToVaultModal
                     isOpen={isUploadModalOpen}
                     onClose={() => setIsUploadModalOpen(false)}
-                    fileToSave={activeUploadFile}
+                    file={activeUploadFile}
                     onSuccess={handleSaveVaultSuccess}
                 />
                 <input

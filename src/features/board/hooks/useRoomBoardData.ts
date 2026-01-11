@@ -156,7 +156,8 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                                 personId: t.person,
                                 dueDate: t.date,
                                 textValues: {},
-                                selected: false
+                                selected: false,
+                                ...t
                             })),
                             columns: flatBoard.columns as any[],
                             isPinned: false
