@@ -480,7 +480,12 @@ const AppContent: React.FC = () => {
 
   const handleDeleteBoard = React.useCallback(async (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
-    if (!board) return;
+    if (!board) {
+      console.log('[Delete Board] Board not found in local state:', boardId);
+      return;
+    }
+
+    console.log('[Delete Board] Attempting to delete:', { boardId, boardName: board.name });
 
     // Optimistic update - remove from local state
     setBoards(prev => prev.filter(b => b.id !== boardId));
@@ -492,14 +497,16 @@ const AppContent: React.FC = () => {
     try {
       const token = await getToken();
       if (token) {
+        console.log('[Delete Board] Calling backend with token...');
         await boardService.deleteBoard(token, boardId);
+        console.log('[Delete Board] Backend delete successful');
       } else {
         // No token - revert optimistic update
-        console.error("No auth token available for board deletion");
+        console.error("[Delete Board] No auth token available");
         setBoards(prev => [...prev, board]);
       }
     } catch (e) {
-      console.error("Failed to delete board backend", e);
+      console.error("[Delete Board] Backend call failed:", e);
       // Revert optimistic update on failure
       setBoards(prev => [...prev, board]);
     }

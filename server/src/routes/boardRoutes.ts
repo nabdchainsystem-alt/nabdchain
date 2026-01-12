@@ -173,25 +173,38 @@ router.delete('/:id', requireAuth, async (req: any, res) => {
         const { id } = req.params;
         const userId = req.auth.userId;
 
+        console.log(`[Board Delete] Attempting to delete board ${id} by user ${userId}`);
+
         // Get board details before deleting for logging
         const board = await prisma.board.findUnique({ where: { id } });
 
-        if (board) {
-            await prisma.board.delete({ where: { id } });
-
-            // Log Activity
-            await prisma.activity.create({
-                data: {
-                    userId,
-                    workspaceId: board.workspaceId,
-                    boardId: id, // ID is preserved in activity log even if board is gone? Content covers it.
-                    type: 'BOARD_DELETED',
-                    content: `Deleted board: ${board.name}`,
-                }
-            });
+        if (!board) {
+            console.log(`[Board Delete] Board ${id} not found`);
+            return res.status(404).json({ error: "Board not found" });
         }
+
+        // Store values before deletion
+        const boardName = board.name;
+        const workspaceId = board.workspaceId;
+
+        // Delete the board
+        await prisma.board.delete({ where: { id } });
+        console.log(`[Board Delete] Successfully deleted board ${id}`);
+
+        // Log Activity - Note: boardId is null since the board is deleted
+        await prisma.activity.create({
+            data: {
+                userId,
+                workspaceId: workspaceId,
+                boardId: null, // Board is deleted, so we can't reference it
+                type: 'BOARD_DELETED',
+                content: `Deleted board: ${boardName}`,
+            }
+        });
+
         res.json({ success: true });
     } catch (error) {
+        console.error("[Board Delete] Error:", error);
         res.status(500).json({ error: "Failed to delete board" });
     }
 });
