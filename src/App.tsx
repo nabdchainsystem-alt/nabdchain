@@ -482,7 +482,7 @@ const AppContent: React.FC = () => {
     const board = boards.find(b => b.id === boardId);
     if (!board) return;
 
-    // Confirmation handled by UI components (Sidebar/Settings)
+    // Optimistic update - remove from local state
     setBoards(prev => prev.filter(b => b.id !== boardId));
     if (activeBoardId === boardId) {
       setActiveBoardId(null);
@@ -493,13 +493,17 @@ const AppContent: React.FC = () => {
       const token = await getToken();
       if (token) {
         await boardService.deleteBoard(token, boardId);
-        // const ws = workspaces.find(w => w.id === board.workspaceId);
-        // logActivity('BOARD_DELETED', `Deleted board: ${board.name}${ws ? ` from ${ws.name}` : ''}`, { boardId }, board.workspaceId);
+      } else {
+        // No token - revert optimistic update
+        console.error("No auth token available for board deletion");
+        setBoards(prev => [...prev, board]);
       }
     } catch (e) {
       console.error("Failed to delete board backend", e);
+      // Revert optimistic update on failure
+      setBoards(prev => [...prev, board]);
     }
-  }, [activeBoardId, getToken, boards, workspaces, logActivity]);
+  }, [activeBoardId, getToken, boards]);
 
   const handleToggleFavorite = (id: string) => {
     // Favorites not yet persisted in backend schema

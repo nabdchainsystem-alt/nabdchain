@@ -2566,11 +2566,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const renderSummaryRow = () => {
         return (
-            <div className="flex items-center h-10 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50 min-w-max">
+            <div className="flex items-center h-10 border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 min-w-max">
                 {/* Spacer for Select - Sticky */}
-                <div style={{ width: columns[0].width, left: 0, position: 'sticky', transform: 'translateZ(0)' }} className="h-full border-e border-transparent z-10 bg-stone-50/50 dark:bg-stone-900/50" />
+                <div style={{ width: columns[0].width, left: 0, position: 'sticky', transform: 'translateZ(0)' }} className="h-full border-e border-transparent z-10 bg-stone-50 dark:bg-stone-900" />
                 {/* Name Column Spacer - Sticky */}
-                <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky', transform: 'translateZ(0)' }} className="h-full border-e border-transparent flex items-center px-3 z-10 bg-stone-50/50 dark:bg-stone-900/50 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
+                <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky', transform: 'translateZ(0)' }} className="h-full border-e border-transparent flex items-center px-3 z-10 bg-stone-50 dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
                     <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Summary</span>
                 </div>
 
@@ -3319,13 +3319,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         >
                                             {/* Creation Row (Draft) at Top */}
                                             {/* We manually render a row-like structure for the creation row */}
-                                            <div className="group flex items-center h-10 border-b border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/30 dark:bg-indigo-900/10 min-w-max relative z-20">
+                                            <div className="group flex items-center h-10 border-b border-indigo-100 dark:border-indigo-900/30 bg-indigo-50 dark:bg-indigo-900/20 min-w-max relative z-20">
                                                 {/* Simulate Row Data for Helpers */}
                                                 {(() => {
                                                     const creationRowData: Row = {
                                                         id: CREATION_ROW_ID,
                                                         groupId: group.id,
-                                                        status: 'To Do',
+                                                        status: null,
                                                         dueDate: null,
                                                         date: new Date().toISOString(),
                                                         priority: null,
@@ -3349,7 +3349,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                     width: col.width,
                                                                     ...(isSticky && { left: leftPos, position: 'sticky' })
                                                                 }}
-                                                                className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-indigo-50/30 dark:bg-[#1a1c22]' : ''} ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                                                                className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-indigo-50 dark:bg-stone-900' : ''} ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
                                                             >
                                                                 {col.id === 'select' ? (
                                                                     <div className="w-full h-full flex items-center justify-center px-2">
