@@ -66,6 +66,7 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
+    horizontalListSortingStrategy,
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -135,6 +136,20 @@ const GROUP_COLORS = [
 
 // Helper to get color object from index
 const getGroupColor = (index: number) => GROUP_COLORS[index % GROUP_COLORS.length];
+
+// Helper to check if a status represents "Done"
+const isDoneStatus = (status: any): boolean => {
+    if (!status || typeof status !== 'string') return false;
+    const normalized = status.trim().toLowerCase();
+    return normalized === 'done' || normalized === 'completed';
+};
+
+// Helper to sort rows with Done statuses to the bottom
+const sortRowsWithDoneAtBottom = (rows: Row[]): Row[] => {
+    const nonDone = rows.filter(r => !isDoneStatus(r.status));
+    const done = rows.filter(r => isDoneStatus(r.status));
+    return [...nonDone, ...done];
+};
 
 interface RoomTableProps {
     roomId: string;
@@ -277,9 +292,26 @@ const StatusPicker: React.FC<{
     onSelect: (s: string) => void;
     onClose: () => void;
     current: string;
-}> = ({ onSelect, onClose, current }) => {
+    triggerRect?: DOMRect;
+}> = ({ onSelect, onClose, current, triggerRect }) => {
     const [customStatus, setCustomStatus] = useState('');
     const [statuses, setStatuses] = useState(['To Do', 'In Progress', 'Done']);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState<{ top: number; left: number; openUp: boolean }>({ top: 0, left: 0, openUp: false });
+
+    useEffect(() => {
+        if (triggerRect) {
+            const menuHeight = 250; // approximate height
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const openUp = spaceBelow < menuHeight && triggerRect.top > menuHeight;
+
+            setPosition({
+                top: openUp ? triggerRect.top - menuHeight : triggerRect.bottom + 4,
+                left: triggerRect.left,
+                openUp
+            });
+        }
+    }, [triggerRect]);
 
     const handleAddStatus = (e: React.FormEvent) => {
         e.preventDefault();
@@ -291,37 +323,45 @@ const StatusPicker: React.FC<{
         }
     };
 
-    return (
-        <div
-            onClick={(e) => e.stopPropagation()}
-            className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
-        >
-            <div className="px-3 py-2 bg-stone-50 dark:bg-stone-900/50 border-b border-stone-100 dark:border-stone-800">
-                <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-stone-400">Task Status</span>
+    const content = (
+        <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div
+                ref={menuRef}
+                onClick={(e) => e.stopPropagation()}
+                className="fixed w-56 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl z-[100] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                style={{ top: position.top, left: position.left }}
+            >
+                <div className="px-3 py-2 bg-stone-50 dark:bg-stone-900/50 border-b border-stone-100 dark:border-stone-800">
+                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-stone-400">Task Status</span>
+                </div>
+                <div className="p-1 max-h-48 overflow-y-auto">
+                    {statuses.map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => { onSelect(s); onClose(); }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${current === s ? 'bg-stone-50 dark:bg-stone-800/50' : ''}`}
+                        >
+                            {getStatusIcon(s)}
+                            <span className="text-stone-700 dark:text-stone-200">{s}</span>
+                        </button>
+                    ))}
+                </div>
+                <form onSubmit={handleAddStatus} className="p-2 border-t border-stone-100 dark:border-stone-800">
+                    <input
+                        type="text"
+                        value={customStatus}
+                        onChange={(e) => setCustomStatus(e.target.value)}
+                        placeholder="New status..."
+                        className="w-full px-2 py-1 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    />
+                </form>
             </div>
-            <div className="p-1 max-h-48 overflow-y-auto">
-                {statuses.map((s) => (
-                    <button
-                        key={s}
-                        onClick={() => { onSelect(s); onClose(); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${current === s ? 'bg-stone-50 dark:bg-stone-800/50' : ''}`}
-                    >
-                        {getStatusIcon(s)}
-                        <span className="text-stone-700 dark:text-stone-200">{s}</span>
-                    </button>
-                ))}
-            </div>
-            <form onSubmit={handleAddStatus} className="p-2 border-t border-stone-100 dark:border-stone-800">
-                <input
-                    type="text"
-                    value={customStatus}
-                    onChange={(e) => setCustomStatus(e.target.value)}
-                    placeholder="New status..."
-                    className="w-full px-2 py-1 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:ring-1 focus:ring-stone-400"
-                />
-            </form>
-        </div>
+        </>
     );
+
+    return createPortal(content, document.body);
 };
 
 const SelectPicker: React.FC<{
@@ -329,57 +369,82 @@ const SelectPicker: React.FC<{
     onClose: () => void;
     current: string;
     options: { id: string; label: string; color: string }[];
-}> = ({ onSelect, onClose, current, options }) => {
+    triggerRect?: DOMRect;
+}> = ({ onSelect, onClose, current, options, triggerRect }) => {
     const [search, setSearch] = useState('');
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState<{ top: number; left: number; openUp: boolean }>({ top: 0, left: 0, openUp: false });
+
+    useEffect(() => {
+        if (triggerRect) {
+            const menuHeight = 320; // approximate height with search and options
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const openUp = spaceBelow < menuHeight && triggerRect.top > menuHeight;
+
+            setPosition({
+                top: openUp ? triggerRect.top - menuHeight : triggerRect.bottom + 4,
+                left: triggerRect.left,
+                openUp
+            });
+        }
+    }, [triggerRect]);
 
     // Filter options based on search
     const filteredOptions = options.filter(opt =>
         opt.label.toLowerCase().includes(search.toLowerCase())
     );
 
-    return (
-        <div
-            onClick={(e) => e.stopPropagation()}
-            className="absolute top-full left-0 mt-2 w-[220px] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 p-2 gap-2"
-        >
-            {/* Search Input */}
-            <input
-                type="text"
-                autoFocus
-                placeholder="Search or add options..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border-2 border-primary/50 focus:border-primary rounded-md outline-none transition-all placeholder:text-stone-400"
-            />
+    const content = (
+        <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div
+                ref={menuRef}
+                onClick={(e) => e.stopPropagation()}
+                className="fixed w-[220px] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl z-[100] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 p-2 gap-2"
+                style={{ top: position.top, left: position.left }}
+            >
+                {/* Search Input */}
+                <input
+                    type="text"
+                    autoFocus
+                    placeholder="Search or add options..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border-2 border-primary/50 focus:border-primary rounded-md outline-none transition-all placeholder:text-stone-400"
+                />
 
-            <div className="flex flex-col gap-1 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                {/* Clear / None Option */}
-                <button
-                    onClick={() => { onSelect(''); onClose(); }}
-                    className="w-full h-8 border border-dashed border-stone-300 dark:border-stone-600 rounded flex items-center justify-center hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
-                >
-                    <span className="text-stone-400">-</span>
-                </button>
+                <div className="flex flex-col gap-1 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                    {/* Clear / None Option */}
+                    <button
+                        onClick={() => { onSelect(''); onClose(); }}
+                        className="w-full h-8 border border-dashed border-stone-300 dark:border-stone-600 rounded flex items-center justify-center hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+                    >
+                        <span className="text-stone-400">-</span>
+                    </button>
 
-                {/* Filtered Options */}
-                {filteredOptions.length > 0 ? (
-                    filteredOptions.map((opt) => (
-                        <button
-                            key={opt.id}
-                            onClick={() => { onSelect(opt.label); onClose(); }}
-                            className={`w-full py-1.5 px-3 rounded text-xs font-medium text-white transition-transform active:scale-95 ${opt.color || 'bg-stone-500'}`}
-                        >
-                            {opt.label}
-                        </button>
-                    ))
-                ) : (
-                    <div className="py-2 text-center text-xs text-stone-400">
-                        No options found
-                    </div>
-                )}
+                    {/* Filtered Options */}
+                    {filteredOptions.length > 0 ? (
+                        filteredOptions.map((opt) => (
+                            <button
+                                key={opt.id}
+                                onClick={() => { onSelect(opt.label); onClose(); }}
+                                className={`w-full py-1.5 px-3 rounded text-xs font-medium text-white transition-transform active:scale-95 ${opt.color || 'bg-stone-500'}`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))
+                    ) : (
+                        <div className="py-2 text-center text-xs text-stone-400">
+                            No options found
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
+
+    return createPortal(content, document.body);
 };
 
 
@@ -423,7 +488,7 @@ const EditableName: React.FC<{ name: string; onRename?: (name: string) => void; 
                         setIsEditing(false);
                     }
                 }}
-                className={`text-[14px] font-semibold tracking-tight bg-transparent border-b border-blue-500 outline-none p-0 min-w-[100px] ${className || 'text-stone-800 dark:text-stone-200'}`}
+                className={`font-semibold tracking-tight bg-transparent border-b border-blue-500 outline-none p-0 min-w-[100px] ${className || 'text-[14px] text-stone-800 dark:text-stone-200'}`}
             />
         );
     }
@@ -431,7 +496,7 @@ const EditableName: React.FC<{ name: string; onRename?: (name: string) => void; 
     return (
         <span
             onDoubleClick={() => onRename && setIsEditing(true)}
-            className={`text-[14px] font-semibold tracking-tight ${onRename ? 'cursor-text hover:text-stone-600 dark:hover:text-stone-300' : ''} ${className || 'text-stone-800 dark:text-stone-200'}`}
+            className={`font-semibold tracking-tight ${onRename ? 'cursor-text hover:text-stone-600 dark:hover:text-stone-300' : ''} ${className || 'text-[14px] text-stone-800 dark:text-stone-200'}`}
         >
             {name || 'Main Table'}
         </span>
@@ -483,9 +548,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 const parsed = JSON.parse(savedGroups);
                 if (parsed.length > 0) {
                     // Migration: Add colors to groups that don't have them
+                    // Note: Removed sortRowsWithDoneAtBottom to preserve saved order
                     return parsed.map((g: TableGroup, idx: number) => ({
                         ...g,
-                        color: g.color || getGroupColor(idx)
+                        color: g.color || getGroupColor(idx),
+                        rows: g.rows || []
                     }));
                 }
             }
@@ -521,6 +588,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Derived rows from all groups (for backward compatibility with filtering, sorting, reminders etc.)
     const rows = useMemo(() => tableGroups.flatMap(g => g.rows), [tableGroups]);
+
 
     // Wrapper setRows that updates the first group (for backward compatibility with some handlers)
     const setRows: React.Dispatch<React.SetStateAction<Row[]>> = useCallback((action) => {
@@ -570,18 +638,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     }, [externalColumns]);
 
-    useEffect(() => {
-        if (externalTasks) {
-            setRows(prev => {
-                // If the pointer is the same, do nothing. 
-                // If contents are effectively managed by parent, this prop update 
-                // ensures we stay in sync without triggering focus loss if React 
-                // is smart enough, but deep comparison or strict reference checking 
-                // is safer.
-                return prev === externalTasks ? prev : externalTasks;
-            });
-        }
-    }, [externalTasks]);
+    // NOTE: Removed useEffect that synced externalTasks to rows.
+    // TableGroups now manages its own persistence via localStorage (storageKeyGroups).
+    // Syncing from external would overwrite locally saved file references and other edits.
+    // The parent can still receive updates via onUpdateTasks callback.
 
     const { groupedByItem: remindersByItem, addReminder, updateReminder, deleteReminder } = useReminders(roomId);
     const [activeReminderTarget, setActiveReminderTarget] = useState<{ rowId: string; rect: DOMRect } | null>(null);
@@ -604,6 +664,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Drag & Drop State
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [activeColumnDragId, setActiveColumnDragId] = useState<string | null>(null);
 
     // Column Resize State
     const resizingColId = useRef<string | null>(null);
@@ -639,12 +700,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     }, [columns, storageKeyColumns, externalColumns]);
 
-    // Persist tableGroups
+    // Persist tableGroups to localStorage (Always persist, even if externalTasks are present)
     useEffect(() => {
-        if (!externalTasks) {
-            localStorage.setItem(storageKeyGroups, JSON.stringify(tableGroups));
-        }
-    }, [tableGroups, storageKeyGroups, externalTasks]);
+        localStorage.setItem(storageKeyGroups, JSON.stringify(tableGroups));
+    }, [tableGroups, storageKeyGroups]);
+
+    // NOTE: Removed sync effect to parent (onUpdateTasks) on every tableGroups change
+    // to avoid potential re-render/reconciliation issues. LocalStorage persistence is sufficient.
+    // Parent can be updated via direct calls in specific handlers if needed.
 
     // Handler to add a new table group
     const handleAddTableGroup = useCallback(() => {
@@ -676,6 +739,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         ));
     }, []);
 
+    // Handler to delete a group
+    const handleDeleteGroup = useCallback((groupId: string) => {
+        setTableGroups(prev => {
+            if (prev.length <= 1) {
+                alert('Cannot delete the last group.');
+                return prev;
+            }
+            return prev.filter(g => g.id !== groupId);
+        });
+    }, []);
+
     // Handler to add a row to a specific group
     const handleAddRowToGroup = useCallback((groupId: string, rowName?: string) => {
         const nameToAdd = rowName?.trim() || 'New Item';
@@ -697,6 +771,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 newRow[col.id] = null;
             }
         });
+
+        // Clear sorting so new item appears at bottom (natural order)
+        setSortRules([]);
+        setSortConfig(null);
 
         setTableGroups(prev => prev.map(g =>
             g.id === groupId ? { ...g, rows: [...g.rows, newRow] } : g
@@ -733,25 +811,258 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     }, [activeCell]);
 
     const filteredRows = useMemo(() => {
-        return rows.filter(r => priorityFilter === 'all' || formatPriorityLabel(r.priority) === priorityFilter);
-    }, [rows, priorityFilter]);
+        let result = rows;
+
+        // Apply priority filter (existing)
+        if (priorityFilter !== 'all') {
+            result = result.filter(r => formatPriorityLabel(r.priority) === priorityFilter);
+        }
+
+        // Apply search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(row => {
+                return Object.values(row).some(val => {
+                    if (typeof val === 'string') {
+                        return val.toLowerCase().includes(query);
+                    }
+                    return false;
+                });
+            });
+        }
+
+        // Apply person filter
+        if (personFilter) {
+            result = result.filter(row => {
+                const people = row.people || [];
+                return people.some((p: any) => (p?.name || p) === personFilter);
+            });
+        }
+
+        // Apply advanced filters
+        if (filters.length > 0) {
+            result = result.filter(row => {
+                return filters.every(filter => {
+                    if (!filter.column || !filter.condition) return true;
+
+                    const cellValue = row[filter.column];
+                    const filterValue = filter.value?.toLowerCase() || '';
+
+                    switch (filter.condition) {
+                        case 'contains':
+                            return String(cellValue || '').toLowerCase().includes(filterValue);
+                        case 'equals':
+                            return String(cellValue || '').toLowerCase() === filterValue;
+                        case 'not_contains':
+                            return !String(cellValue || '').toLowerCase().includes(filterValue);
+                        case 'is_empty':
+                            return !cellValue || cellValue === '';
+                        case 'is_not_empty':
+                            return cellValue && cellValue !== '';
+                        case 'is':
+                            return String(cellValue || '').toLowerCase() === filterValue;
+                        case 'is_not':
+                            return String(cellValue || '').toLowerCase() !== filterValue;
+                        case 'is_after':
+                            if (!cellValue || !filter.value) return true;
+                            return new Date(cellValue) > new Date(filter.value);
+                        case 'is_before':
+                            if (!cellValue || !filter.value) return true;
+                            return new Date(cellValue) < new Date(filter.value);
+                        default:
+                            return true;
+                    }
+                });
+            });
+        }
+
+        return result;
+    }, [rows, priorityFilter, searchQuery, personFilter, filters]);
 
     const sortedRows = useMemo(() => {
-        if (!sortConfig) return filteredRows;
-        return [...filteredRows].sort((a, b) => {
-            const aVal = a[sortConfig.columnId];
-            const bVal = b[sortConfig.columnId];
+        let result = filteredRows;
 
-            if (sortConfig.columnId === 'priority') {
-                const result = comparePriority(aVal, bVal);
-                return sortConfig.direction === 'asc' ? result : -result;
+        // Apply sortRules (new toolbar sort)
+        if (sortRules.length > 0) {
+            result = [...result].sort((a, b) => {
+                for (const rule of sortRules) {
+                    if (!rule.column) continue;
+
+                    const aVal = a[rule.column] || '';
+                    const bVal = b[rule.column] || '';
+
+                    // Handle priority special case
+                    if (rule.column === 'priority') {
+                        const comp = comparePriority(aVal, bVal);
+                        if (comp !== 0) return rule.direction === 'desc' ? -comp : comp;
+                        continue;
+                    }
+
+                    let comparison = 0;
+                    if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        comparison = aVal.localeCompare(bVal);
+                    } else {
+                        comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                    }
+
+                    if (comparison !== 0) {
+                        return rule.direction === 'desc' ? -comparison : comparison;
+                    }
+                }
+                return 0;
+            });
+        } else if (sortConfig) {
+            // Fallback to old sortConfig if no sortRules
+            result = [...result].sort((a, b) => {
+                const aVal = a[sortConfig.columnId];
+                const bVal = b[sortConfig.columnId];
+
+                if (sortConfig.columnId === 'priority') {
+                    const r = comparePriority(aVal, bVal);
+                    return sortConfig.direction === 'asc' ? r : -r;
+                }
+
+                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [filteredRows, sortConfig, sortRules]);
+
+    // Visible columns (excluding hidden ones)
+    const visibleColumns = useMemo(() => {
+        return columns.filter(col => !hiddenColumns.has(col.id));
+    }, [columns, hiddenColumns]);
+
+    // Helper function to filter rows
+    const filterRow = useCallback((row: Row): boolean => {
+        // Apply search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            const matchesSearch = Object.values(row).some(val => {
+                if (typeof val === 'string') {
+                    return val.toLowerCase().includes(query);
+                }
+                return false;
+            });
+            if (!matchesSearch) return false;
+        }
+
+        // Apply person filter
+        if (personFilter) {
+            const people = row.people || [];
+            const matchesPerson = people.some((p: any) => (p?.name || p) === personFilter);
+            if (!matchesPerson) return false;
+        }
+
+        // Apply advanced filters
+        if (filters.length > 0) {
+            const matchesFilters = filters.every(filter => {
+                if (!filter.column || !filter.condition) return true;
+
+                const cellValue = row[filter.column];
+                const filterValue = filter.value?.toLowerCase() || '';
+
+                switch (filter.condition) {
+                    case 'contains':
+                        return String(cellValue || '').toLowerCase().includes(filterValue);
+                    case 'equals':
+                        return String(cellValue || '').toLowerCase() === filterValue;
+                    case 'not_contains':
+                        return !String(cellValue || '').toLowerCase().includes(filterValue);
+                    case 'is_empty':
+                        return !cellValue || cellValue === '';
+                    case 'is_not_empty':
+                        return cellValue && cellValue !== '';
+                    case 'is':
+                        return String(cellValue || '').toLowerCase() === filterValue;
+                    case 'is_not':
+                        return String(cellValue || '').toLowerCase() !== filterValue;
+                    case 'is_after':
+                        if (!cellValue || !filter.value) return true;
+                        return new Date(cellValue) > new Date(filter.value);
+                    case 'is_before':
+                        if (!cellValue || !filter.value) return true;
+                        return new Date(cellValue) < new Date(filter.value);
+                    default:
+                        return true;
+                }
+            });
+            if (!matchesFilters) return false;
+        }
+
+        return true;
+    }, [searchQuery, personFilter, filters]);
+
+    // Filtered table groups - applies filters to each group's rows
+    const filteredTableGroups = useMemo(() => {
+        const hasActiveFilters = searchQuery.trim() || personFilter || filters.length > 0;
+
+        if (!hasActiveFilters && sortRules.length === 0) {
+            return tableGroups;
+        }
+
+        return tableGroups.map(group => {
+            // Filter rows
+            let filteredGroupRows = group.rows.filter(filterRow);
+
+            // Apply sort rules
+            if (sortRules.length > 0) {
+                filteredGroupRows = [...filteredGroupRows].sort((a, b) => {
+                    for (const rule of sortRules) {
+                        if (!rule.column) continue;
+
+                        const aVal = a[rule.column] || '';
+                        const bVal = b[rule.column] || '';
+
+                        if (rule.column === 'priority') {
+                            const comp = comparePriority(aVal, bVal);
+                            if (comp !== 0) return rule.direction === 'desc' ? -comp : comp;
+                            continue;
+                        }
+
+                        let comparison = 0;
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                            comparison = aVal.localeCompare(bVal);
+                        } else {
+                            comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                        }
+
+                        if (comparison !== 0) {
+                            return rule.direction === 'desc' ? -comparison : comparison;
+                        }
+                    }
+                    return 0;
+                });
             }
 
-            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
+            return {
+                ...group,
+                rows: filteredGroupRows
+            };
         });
-    }, [filteredRows, sortConfig]);
+    }, [tableGroups, filterRow, sortRules]);
+
+    // Click outside handler for toolbar panels
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // Don't close if clicking inside a panel or on a toolbar button
+            const isInsidePanel = target.closest('[data-toolbar-panel]');
+            const isToolbarButton = target.closest('[data-toolbar-button]');
+
+            if (!isInsidePanel && !isToolbarButton) {
+                setIsPersonFilterOpen(false);
+                setIsFilterPanelOpen(false);
+                setIsSortPanelOpen(false);
+                setIsHideColumnsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Pagination Logic
     const isAllRows = rowsPerPage === -1;
@@ -797,6 +1108,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             ].filter(s => s.count > 0)
         };
     }, [rows]);
+
+
 
     // Virtualization Calculation
     const { visibleRows, paddingTop, paddingBottom } = useMemo(() => {
@@ -923,30 +1236,87 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         if (updateTimeoutRef.current) {
             clearTimeout(updateTimeoutRef.current);
         }
+
+        // Find and update the row in the correct group
+        setTableGroups(prevGroups => {
+            return prevGroups.map(group => {
+                const rowIndex = group.rows.findIndex(r => r.id === id);
+                if (rowIndex === -1) return group;
+
+                const currentRow = group.rows[rowIndex];
+                const updatedRow = { ...currentRow, ...updates };
+
+                // Check if status is being changed to "Done"
+                const isBeingMarkedDone =
+                    updates.status &&
+                    isDoneStatus(updates.status) &&
+                    !isDoneStatus(currentRow.status);
+
+                if (isBeingMarkedDone) {
+                    // Remove from current position and add to end
+                    const rowsWithoutCurrent = group.rows.filter(r => r.id !== id);
+                    return {
+                        ...group,
+                        rows: [...rowsWithoutCurrent, updatedRow]
+                    };
+                }
+
+                // Normal update without reordering
+                return {
+                    ...group,
+                    rows: group.rows.map(r => r.id === id ? updatedRow : r)
+                };
+            });
+        });
+
+        // Also call onUpdateTasks with all rows for backward compatibility
         const updatedRows = rows.map(r => r.id === id ? { ...r, ...updates } : r);
-        setRows(updatedRows);
         if (onUpdateTasks) onUpdateTasks(updatedRows);
     };
 
     const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleTextChange = (id: string, colId: string, value: string) => {
-        const updatedRows = rows.map(r => r.id === id ? { ...r, [colId]: value } : r);
-        setRows(updatedRows);
+        // Update the row in the correct group
+        setTableGroups(prevGroups => {
+            return prevGroups.map(group => {
+                const rowExists = group.rows.some(r => r.id === id);
+                if (rowExists) {
+                    return {
+                        ...group,
+                        rows: group.rows.map(r => r.id === id ? { ...r, [colId]: value } : r)
+                    };
+                }
+                return group;
+            });
+        });
 
         if (updateTimeoutRef.current) {
             clearTimeout(updateTimeoutRef.current);
         }
 
         updateTimeoutRef.current = setTimeout(() => {
+            const updatedRows = rows.map(r => r.id === id ? { ...r, [colId]: value } : r);
             if (onUpdateTasks) onUpdateTasks(updatedRows);
         }, 800);
     };
 
     const handleDeleteRow = (id: string) => {
         if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+        // Delete the row from the correct group
+        setTableGroups(prevGroups => {
+            return prevGroups.map(group => {
+                const rowExists = group.rows.some(r => r.id === id);
+                if (rowExists) {
+                    return {
+                        ...group,
+                        rows: group.rows.filter(r => r.id !== id)
+                    };
+                }
+                return group;
+            });
+        });
         const updatedRows = rows.filter(r => r.id !== id);
-        setRows(updatedRows);
         if (onUpdateTasks) onUpdateTasks(updatedRows);
     };
 
@@ -998,10 +1368,20 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             options: options
         };
         setColumns([...columns, newCol]);
+
+        // Auto-scroll to the right to show the new column
+        setTimeout(() => {
+            if (tableBodyRef.current) {
+                tableBodyRef.current.scrollTo({
+                    left: tableBodyRef.current.scrollWidth,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100); // Small delay to allow DOM to update
     };
 
+    // Drag & Drop Handlers (Rows)
     const handleDragStart = (event: DragStartEvent) => {
-        if (sortConfig) return; // Disable DnD when sorting is active
         setActiveDragId(event.active.id as string);
     };
 
@@ -1023,6 +1403,43 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 return items;
             });
         }
+    };
+
+    // Drag & Drop Handlers (Columns)
+    const handleColumnDragStart = (event: DragStartEvent) => {
+        // ID format: "groupId__colId"
+        const activeId = event.active.id as string;
+        const colId = activeId.includes('__') ? activeId.split('__')[1] : activeId;
+        setActiveColumnDragId(colId);
+    };
+
+    const handleColumnDragOver = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        // Parse IDs to get real column IDs
+        const activeId = String(active.id);
+        const overId = String(over.id);
+
+        const activeColId = activeId.includes('__') ? activeId.split('__')[1] : activeId;
+        const overColId = overId.includes('__') ? overId.split('__')[1] : overId;
+
+        if (activeColId !== overColId) {
+            setColumns((items) => {
+                const oldIndex = items.findIndex((item) => item.id === activeColId);
+                const newIndex = items.findIndex((item) => item.id === overColId);
+
+                if (oldIndex !== -1 && newIndex !== -1) {
+                    return arrayMove(items, oldIndex, newIndex);
+                }
+                return items;
+            });
+        }
+    };
+
+    const handleColumnDragEnd = (event: DragEndEvent) => {
+        setActiveColumnDragId(null);
+        // Persistence can happen here if needed, keeping it simple for now as it syncs via state
     };
 
     // Column Resize
@@ -1308,11 +1725,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className="text-xs text-stone-400">Set Status</span>
                         )}
                     </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && (
+                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
                         <StatusPicker
                             current={value}
                             onSelect={(s) => handleUpdateRow(row.id, { [col.id]: s })}
                             onClose={() => setActiveCell(null)}
+                            triggerRect={activeCell.trigger.getBoundingClientRect()}
                         />
                     )}
                 </div>
@@ -1400,12 +1818,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className="text-xs text-stone-400">Select Option</span>
                         )}
                     </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && (
+                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
                         <SelectPicker
                             options={col.options || []}
                             current={value}
                             onSelect={(s) => handleUpdateRow(row.id, { [col.id]: s })}
                             onClose={() => setActiveCell(null)}
+                            triggerRect={activeCell.trigger.getBoundingClientRect()}
                         />
                     )}
                 </div>
@@ -2038,6 +2457,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         {/* Person Filter */}
                         <div className="relative">
                             <div
+                                data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isPersonFilterOpen || personFilter ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
                                 onClick={() => setIsPersonFilterOpen(!isPersonFilterOpen)}
                             >
@@ -2045,7 +2465,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-[13px] font-medium">Person</span>
                             </div>
                             {isPersonFilterOpen && (
-                                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 p-4 z-50 min-w-[280px]">
+                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-sm font-medium text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
                                             Filter this board by person
@@ -2064,8 +2484,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     setPersonFilter(personFilter === (person?.name || person) ? null : (person?.name || person));
                                                 }}
                                                 className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${personFilter === (person?.name || person)
-                                                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                                                        : 'border-stone-200 dark:border-stone-600 hover:border-stone-300 text-stone-600 dark:text-stone-300'
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                                                    : 'border-stone-200 dark:border-stone-600 hover:border-stone-300 text-stone-600 dark:text-stone-300'
                                                     }`}
                                             >
                                                 <UserCircle size={24} weight="regular" />
@@ -2084,6 +2504,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         {/* Filter Panel */}
                         <div className="relative">
                             <div
+                                data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isFilterPanelOpen || filters.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
                                 onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
                             >
@@ -2092,11 +2513,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <CaretDown size={12} weight="regular" className={`opacity-50 transition-transform ${isFilterPanelOpen ? 'rotate-180' : ''}`} />
                             </div>
                             {isFilterPanelOpen && (
-                                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 p-4 z-50 min-w-[600px]">
+                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">Advanced filters</span>
-                                            <span className="text-xs text-stone-400">Showing all of {rows.length} items</span>
+                                            <span className="text-xs text-stone-400">Showing {filteredTableGroups.reduce((acc, g) => acc + g.rows.length, 0)} of {rows.length} items</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {filters.length > 0 && (
@@ -2188,6 +2609,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         {/* Sort Panel */}
                         <div className="relative">
                             <div
+                                data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isSortPanelOpen || sortRules.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
                                 onClick={() => setIsSortPanelOpen(!isSortPanelOpen)}
                             >
@@ -2195,7 +2617,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-[13px] font-medium">Sort</span>
                             </div>
                             {isSortPanelOpen && (
-                                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 p-4 z-50 min-w-[400px]">
+                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[400px]">
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-sm font-medium text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
                                             Sort by
@@ -2266,6 +2688,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         {/* Hide Columns */}
                         <div className="relative">
                             <div
+                                data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isHideColumnsOpen || hiddenColumns.size > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
                                 onClick={() => setIsHideColumnsOpen(!isHideColumnsOpen)}
                             >
@@ -2273,7 +2696,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-[13px] font-medium">Hide</span>
                             </div>
                             {isHideColumnsOpen && (
-                                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 p-4 z-50 min-w-[280px]">
+                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Display columns</span>
                                         <button className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 border border-stone-200 dark:border-stone-600 px-2 py-1 rounded">
@@ -2339,10 +2762,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                         className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
                                                     />
                                                     <div className={`w-5 h-5 rounded flex items-center justify-center text-white text-xs ${col.type === 'people' ? 'bg-blue-500' :
-                                                            col.type === 'status' ? 'bg-emerald-500' :
-                                                                col.type === 'date' ? 'bg-amber-500' :
-                                                                    col.type === 'priority' ? 'bg-purple-500' :
-                                                                        'bg-stone-400'
+                                                        col.type === 'status' ? 'bg-emerald-500' :
+                                                            col.type === 'date' ? 'bg-amber-500' :
+                                                                col.type === 'priority' ? 'bg-purple-500' :
+                                                                    'bg-stone-400'
                                                         }`}>
                                                         {col.type === 'people' ? '👤' : col.type === 'status' ? '▣' : col.type === 'date' ? '📅' : col.type === 'priority' ? '!' : '≡'}
                                                     </div>
@@ -2475,184 +2898,261 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         </div>
                     )}
 
-                    {/* Table Groups */}
-                    {tableGroups.map((group, groupIndex) => (
-                        <div key={group.id} className="mb-4">
-                            {/* Group Header - wrapper spans full width, content is sticky left */}
-                            <div className="shrink-0 bg-white dark:bg-[#1a1c22] border-b border-stone-100 dark:border-stone-800/50 min-w-max">
-                                <div className="flex items-center gap-2 px-4 py-3 sticky left-0 w-fit bg-white dark:bg-[#1a1c22]" style={{ transform: 'translateZ(0)' }}>
-                                    {/* Color accent bar */}
-                                    <div className={`w-1 h-6 rounded-full ${group.color.bg}`} />
-                                    <button
-                                        onClick={() => handleToggleGroupCollapse(group.id)}
-                                        className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors text-stone-500 hover:text-stone-700"
-                                    >
-                                        {group.isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                                    </button>
-                                    <EditableName
-                                        name={group.name}
-                                        onRename={(newName) => handleUpdateGroupName(group.id, newName)}
-                                        className={`${group.color.text} text-[15px]`}
-                                    />
-                                    <span className="text-xs text-stone-400 ml-2">
-                                        {group.rows.length} {group.rows.length === 1 ? 'item' : 'items'}
-                                    </span>
-                                </div>
-                            </div>
 
-                            {/* Group Body (Table Header + Rows + Input) */}
-                            {!group.isCollapsed && (
-                                <>
-                                    {/* Table Header - show for ALL groups */}
-                                    <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/80 h-10 flex-shrink-0 min-w-max">
-                                        {columns.map((col, index) => {
-                                            const isSticky = index === 0 || index === 1;
-                                            const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
-                                            return (
-                                                <div
-                                                    key={col.id}
-                                                    style={{ width: col.width, ...(isSticky && { left: leftPos, position: 'sticky', transform: 'translateZ(0)' }) }}
-                                                    className={`
-                                                          h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
-                                                          ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
-                                                          ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
-                                                          hover:bg-stone-100 dark:hover:bg-stone-800 ${col.id !== 'select' ? 'cursor-pointer' : 'cursor-default'} transition-colors select-none relative group
-                                                          ${isSticky ? 'z-30 bg-stone-50 dark:bg-stone-900' : ''}
-                                                          ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.1)]' : ''}
-                                                        `}
-                                                    onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
-                                                >
-                                                    {col.id === 'select' && (
-                                                        <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
-                                                    )}
-                                                    {col.id !== 'select' && (
-                                                        <div className="flex items-center justify-between w-full px-2">
-                                                            <span className="truncate flex-1">{col.label}</span>
-                                                            {!['name', 'select'].includes(col.id) && (
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
-                                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                                                                    title="Delete Column"
-                                                                >
-                                                                    <Trash2 size={12} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    {col.resizable && (
-                                                        <div
-                                                            className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-stone-400/50 dark:hover:bg-stone-600/50 z-10"
-                                                            onMouseDown={(e) => startResize(e, col.id, col.width)}
-                                                        />
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        {/* Add Column Button */}
-                                        <div className="relative h-full flex flex-col justify-center shrink-0">
+
+                    {/* Table Groups - Wrapped in single DndContext for Columns */}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleColumnDragStart}
+                        onDragOver={handleColumnDragOver}
+                        onDragEnd={handleColumnDragEnd}
+                    >
+                        {filteredTableGroups.map((group, groupIndex) => (
+                            <div key={group.id} className="mb-4">
+                                {/* Group Header - wrapper spans full width, content is sticky left */}
+                                <div className="shrink-0 bg-white dark:bg-[#1a1c22] border-b border-stone-100 dark:border-stone-800/50 min-w-max sticky top-0 z-50">
+                                    <div className="flex items-center gap-2 px-4 py-3 sticky left-0 w-fit bg-white dark:bg-[#1a1c22]" style={{ transform: 'translateZ(0)' }}>
+                                        {/* Color accent bar */}
+                                        <div className={`w-1 h-6 rounded-full ${group.color.bg}`} />
+                                        <button
+                                            onClick={() => handleToggleGroupCollapse(group.id)}
+                                            className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors text-stone-500 hover:text-stone-700"
+                                        >
+                                            {group.isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                                        </button>
+                                        <EditableName
+                                            name={group.name}
+                                            onRename={(newName) => handleUpdateGroupName(group.id, newName)}
+                                            className={`${group.color.text} text-[24px]`}
+                                        />
+                                        <span className="text-xs text-stone-400 ml-2">
+                                            {group.rows.length} {group.rows.length === 1 ? 'item' : 'items'}
+                                        </span>
+                                        {/* 3-dot menu */}
+                                        <div className="relative ml-2">
                                             <button
                                                 onClick={(e) => {
-                                                    const rect = e.currentTarget.getBoundingClientRect();
-                                                    setActiveColumnMenu({ rect });
+                                                    e.stopPropagation();
+                                                    const menu = e.currentTarget.nextElementSibling;
+                                                    if (menu) {
+                                                        menu.classList.toggle('hidden');
+                                                    }
                                                 }}
-                                                className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded transition-colors"
                                             >
-                                                <Plus size={14} />
+                                                <MoreHorizontal size={16} className="text-stone-400" />
                                             </button>
-                                            {activeColumnMenu && createPortal(
-                                                <>
-                                                    {/* Backdrop */}
-                                                    <div
-                                                        className="fixed inset-0 z-[90] bg-transparent"
-                                                        onClick={() => setActiveColumnMenu(null)}
-                                                    />
-                                                    {/* Dropdown Menu */}
-                                                    <div
-                                                        className="fixed z-[100]"
-                                                        style={{
-                                                            top: `${activeColumnMenu.rect.bottom + 8}px`,
-                                                            right: `${window.innerWidth - activeColumnMenu.rect.right}px`,
-                                                        }}
-                                                    >
-                                                        <ColumnMenu
-                                                            onClose={() => setActiveColumnMenu(null)}
-                                                            onSelect={(type, label, options) => handleAddColumn(type, label, options)}
-                                                        />
-                                                    </div>
-                                                </>,
-                                                document.body
-                                            )}
+                                            <div className="hidden absolute left-0 top-full mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-xl z-50 min-w-[120px] py-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm(`Delete "${group.name}" and all its items?`)) {
+                                                            handleDeleteGroup(group.id);
+                                                        }
+                                                        const menu = e.currentTarget.parentElement;
+                                                        if (menu) menu.classList.add('hidden');
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Group Rows */}
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragStart={handleDragStart}
-                                        onDragEnd={handleDragEnd}
-                                    >
-                                        <SortableContext items={group.rows.map(r => r.id)} strategy={verticalListSortingStrategy}>
-                                            {group.rows.map((row) => (
-                                                <SortableRow
-                                                    key={row.id}
-                                                    row={row}
-                                                    className={`
+                                {/* Group Body (Table Header + Rows + Input) */}
+                                {!group.isCollapsed && (
+                                    <>
+                                        {/* Table Header - show for ALL groups */}
+                                        {/* Table Header - show for ALL groups */}
+                                        <SortableContext items={columns.map(c => `${group.id}__${c.id}`)} strategy={horizontalListSortingStrategy}>
+                                            <div className="flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 h-10 flex-shrink-0 min-w-max sticky top-[48px] z-[35]">
+                                                {columns.map((col, index) => {
+                                                    const uniqueId = `${group.id}__${col.id}`;
+                                                    const isSticky = index === 0 || index === 1;
+                                                    const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
+                                                    return (
+                                                        <SortableHeader
+                                                            key={uniqueId}
+                                                            col={{ ...col, id: uniqueId }}
+                                                            index={index}
+                                                            className={`
+                                                                h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
+                                                                ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
+                                                                ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
+                                                                hover:bg-stone-100 dark:hover:bg-stone-800 ${col.id !== 'select' ? 'cursor-pointer' : 'cursor-default'} transition-colors select-none relative group
+                                                                ${isSticky ? 'z-50 bg-stone-50 dark:bg-stone-900' : 'bg-stone-50 dark:bg-stone-900'}
+                                                                ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.1)]' : ''}
+                                                                ${activeColumnDragId === col.id ? 'opacity-30' : ''}
+                                                            `}
+                                                            style={{
+                                                                width: col.width,
+                                                                ...(isSticky && { left: leftPos, position: 'sticky' })
+                                                            }}
+                                                            onClick={() => col.id !== 'select' ? handleSort(col.id) : undefined}
+                                                        >
+                                                            {col.id === 'select' && (
+                                                                <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
+                                                            )}
+                                                            {col.id !== 'select' && (
+                                                                <div className="flex items-center justify-between w-full px-2">
+                                                                    <span className="truncate flex-1">{col.label}</span>
+                                                                    {!['name', 'select'].includes(col.id) && (
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
+                                                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
+                                                                            title="Delete Column"
+                                                                        >
+                                                                            <Trash2 size={12} />
+                                                                        </button>
+                                                                    )}
+                                                                    <div
+                                                                        className="w-1 h-3/4 mx-1 cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-600 rounded opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 top-1/2 -translate-y-1/2"
+                                                                        onMouseDown={(e) => startResize(e, col.id, col.width)}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </SortableHeader>
+                                                    );
+                                                })}
+                                                {/* Add Column Button */}
+                                                <div className="relative h-full flex flex-col justify-center shrink-0">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setActiveColumnMenu({ rect });
+                                                        }}
+                                                        className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                    {activeColumnMenu && createPortal(
+                                                        <>
+                                                            {/* Backdrop */}
+                                                            <div
+                                                                className="fixed inset-0 z-[90] bg-transparent"
+                                                                onClick={() => setActiveColumnMenu(null)}
+                                                            />
+                                                            {/* Dropdown Menu */}
+                                                            <div
+                                                                className="fixed z-[100]"
+                                                                style={{
+                                                                    top: `${activeColumnMenu.rect.bottom + 8}px`,
+                                                                    right: `${window.innerWidth - activeColumnMenu.rect.right}px`,
+                                                                }}
+                                                            >
+                                                                <ColumnMenu
+                                                                    onClose={() => setActiveColumnMenu(null)}
+                                                                    onSelect={(type, label, options) => { handleAddColumn(type, label, options); setActiveColumnMenu(null); }}
+                                                                />
+                                                            </div>
+                                                        </>,
+                                                        document.body
+                                                    )}
+                                                </div>
+                                                {/* Right spacer */}
+                                                <div className="w-24 shrink-0" />
+                                            </div>
+                                        </SortableContext>
+
+                                        {/* Group Rows */}
+                                        <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragStart={handleDragStart}
+                                            onDragEnd={handleDragEnd}
+                                        >
+                                            <SortableContext items={group.rows.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                                                {group.rows.map((row) => (
+                                                    <SortableRow
+                                                        key={row.id}
+                                                        row={row}
+                                                        className={`
                                                     group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 
                                                     hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors relative min-w-max
                                                     ${activeDragId === row.id ? 'opacity-30' : ''}
                                                     ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}
                                                 `}
-                                                >
-                                                    {(dragListeners, isRowDragging) => renderRowContent(row, dragListeners, isRowDragging)}
-                                                </SortableRow>
-                                            ))}
-                                        </SortableContext>
+                                                    >
+                                                        {(dragListeners, isRowDragging) => renderRowContent(row, dragListeners, isRowDragging)}
+                                                    </SortableRow>
+                                                ))}
+                                            </SortableContext>
 
-                                        <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
-                                            {activeDragId ? (
-                                                <div className="flex items-center h-10 border border-indigo-500 bg-white dark:bg-stone-800 shadow-xl rounded pointer-events-none opacity-90 scale-105 overflow-hidden min-w-max">
-                                                    {(() => {
-                                                        const row = rows.find(r => r.id === activeDragId);
-                                                        if (!row) return null;
-                                                        return renderRowContent(row, null, true);
-                                                    })()}
-                                                </div>
-                                            ) : null}
-                                        </DragOverlay>
-                                    </DndContext>
+                                            {createPortal(
+                                                <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
+                                                    {activeDragId ? (
+                                                        <div className="flex items-center h-10 border border-indigo-500 bg-white dark:bg-stone-800 shadow-xl rounded pointer-events-none opacity-90 scale-105 overflow-hidden min-w-max">
+                                                            {(() => {
+                                                                const row = rows.find(r => r.id === activeDragId);
+                                                                if (!row) return null;
+                                                                return renderRowContent(row, null, true);
+                                                            })()}
+                                                        </div>
+                                                    ) : null}
+                                                </DragOverlay>,
+                                                document.body
+                                            )}
+                                        </DndContext>
 
-                                    {/* Input Row for this group */}
-                                    <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max bg-white dark:bg-stone-900">
-                                        <div style={{ width: columns[0].width, left: 0, position: 'sticky', transform: 'translateZ(0)' }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900">
-                                            <Plus size={14} className="text-stone-300 dark:text-stone-600" />
-                                        </div>
-                                        <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky', transform: 'translateZ(0)' }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
-                                            <input
-                                                type="text"
-                                                placeholder="Start typing..."
-                                                className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const input = e.currentTarget;
-                                                        const value = input.value.trim();
-                                                        if (value) {
-                                                            handleAddRowToGroup(group.id, value);
-                                                            input.value = '';
+                                        {/* Input Row for this group */}
+                                        <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors focus-within:bg-stone-50 dark:focus-within:bg-stone-800/50 min-w-max bg-white dark:bg-stone-900">
+                                            <div style={{ width: columns[0].width, left: 0, position: 'sticky', transform: 'translateZ(0)' }} className="h-full flex items-center justify-center border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900">
+                                                <Plus size={14} className="text-stone-300 dark:text-stone-600" />
+                                            </div>
+                                            <div style={{ width: columns[1].width, left: columns[0].width, position: 'sticky', transform: 'translateZ(0)' }} className="h-full flex items-center px-3 border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 z-10 bg-white dark:bg-stone-900 after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Start typing..."
+                                                    className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            const input = e.currentTarget;
+                                                            const value = input.value.trim();
+                                                            if (value) {
+                                                                handleAddRowToGroup(group.id, value);
+                                                                input.value = '';
+                                                            }
                                                         }
-                                                    }
-                                                }}
-                                            />
+                                                    }}
+                                                />
+                                            </div>
+                                            {/* Empty cells for Input Row */}
+                                            {columns.slice(2).map(col => (
+                                                <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
+                                            ))}
                                         </div>
-                                        {/* Empty cells for Input Row */}
-                                        {columns.slice(2).map(col => (
-                                            <div key={col.id} style={{ width: col.width }} className="h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800" />
-                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                        {createPortal(
+                            <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+                                {activeColumnDragId ? (
+                                    <div
+                                        className="h-10 px-3 flex items-center bg-white dark:bg-stone-800 shadow-xl border border-blue-500/50 rounded cursor-grabbing"
+                                        style={{ width: columns.find(c => c.id === activeColumnDragId)?.width }}
+                                    >
+                                        <div className="flex items-center justify-between w-full px-2">
+                                            <span className="text-xs font-sans font-medium text-stone-600 dark:text-stone-300 truncate flex-1">
+                                                {columns.find(c => c.id === activeColumnDragId)?.label}
+                                            </span>
+                                            <div className="flex items-center text-stone-400">
+                                                <div className="w-1 h-3/4 mx-1 rounded bg-stone-200 dark:bg-stone-700 opacity-50" />
+                                            </div>
+                                        </div>
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    ))}
+                                ) : null}
+                            </DragOverlay>,
+                            document.body
+                        )}
+                    </DndContext>
+                    {/* Bottom spacer */}
+                    <div className="h-32 shrink-0" />
                 </div>
 
                 {activeReminderTarget && (
@@ -2711,6 +3211,48 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     onChange={handleHiddenFileChange}
                 />
             </div>
+        </div >
+    );
+};
+
+// --- Sortable Header Wrapper ---
+interface SortableHeaderProps {
+    col: Column;
+    index: number;
+    children: React.ReactNode;
+    className?: string;
+    style?: React.CSSProperties;
+    onClick?: () => void;
+}
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, children, className, style, onClick }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        isDragging,
+    } = useSortable({
+        id: col.id,
+        disabled: col.id.endsWith('__select') || col.id === 'select'
+    });
+
+    // Do NOT apply transform - let DragOverlay handle visual movement
+    const dndStyle: React.CSSProperties = {
+        opacity: isDragging ? 0.3 : 1,
+        cursor: (col.id.endsWith('__select') || col.id === 'select') ? 'default' : 'grab',
+        ...style,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={dndStyle}
+            className={className}
+            onClick={onClick}
+            {...attributes}
+            {...listeners}
+        >
+            {children}
         </div>
     );
 };

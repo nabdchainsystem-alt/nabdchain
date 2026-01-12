@@ -56,7 +56,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
 
     const essentials: ColumnType[] = [
         { id: 'custom', label: 'Custom', icon: CircleDashed, color: 'bg-gray-400', description: 'Custom column' },
-
+        { id: 'status', label: 'Status', icon: CheckSquare, color: 'bg-emerald-500', description: 'Track task status' },
         { id: 'dropdown', label: 'Dropdown', icon: List, color: 'bg-emerald-500', description: 'Select options' },
         { id: 'text', label: 'Text', icon: Type, color: 'bg-yellow-400', description: 'Free text' },
         { id: 'date', label: 'Date', icon: Calendar, color: 'bg-purple-500', description: 'Dates' },
@@ -127,7 +127,18 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         }
 
         let options: any[] = [];
-        // if (type.id === 'dropdown') { ... } // Removed old static logic
+
+        // Provide default status options for status columns
+        if (type.id === 'status') {
+            options = [
+                { id: 'todo', label: 'To Do', color: 'bg-stone-400' },
+                { id: 'in_progress', label: 'In Progress', color: 'bg-amber-500' },
+                { id: 'done', label: 'Done', color: 'bg-emerald-500' },
+                { id: 'stuck', label: 'Stuck', color: 'bg-red-500' },
+                { id: 'pending', label: 'Pending', color: 'bg-orange-400' },
+            ];
+        }
+
         onSelect(type.id, type.label, options);
     };
 

@@ -388,7 +388,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                         key={col.id}
                         style={{ width: col.width }}
                         className={`
-              h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400
+              h-full flex items-center text-[12.6px] font-sans font-medium text-stone-500 dark:text-stone-400
               ${col.id === 'select' ? 'justify-center px-0' : 'px-3'}
               ${index !== columns.length - 1 ? 'border-e border-stone-200/50 dark:border-stone-800' : ''}
               hover:bg-stone-100 dark:hover:bg-stone-800 cursor-default transition-colors select-none relative group

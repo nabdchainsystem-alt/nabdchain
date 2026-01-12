@@ -437,7 +437,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                     <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-[#20232b]">
                         <tr>
                             {/* Top-Left Corner (Row Label) */}
-                            <th className="p-4 text-left text-sm font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 border-r dark:border-gray-800 w-48 bg-gray-100/50 dark:bg-[#252830]">
+                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 border-r dark:border-gray-800 w-48 bg-gray-100/50 dark:bg-[#252830]">
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400 font-normal">{AVAILABLE_FIELDS.find(f => f.id === config.rowGroup)?.label}</span>
                                     <ChevronDown size={12} className="-rotate-90 text-gray-300" />
@@ -447,11 +447,11 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
 
                             {/* Column Headers */}
                             {pivotedData.colHeaders.map(colHeader => (
-                                <th key={colHeader} className="p-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800 min-w-[150px]">
+                                <th key={colHeader} className="p-4 text-left text-[14.7px] font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800 min-w-[150px]">
                                     {colHeader}
                                 </th>
                             ))}
-                            <th className="p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#20232b] min-w-[100px]">
+                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#20232b] min-w-[100px]">
                                 Total
                             </th>
                         </tr>

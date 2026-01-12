@@ -244,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
     };
 
-    const displayedWidth = isCollapsed ? 64 : width;
+    const displayedWidth = isCollapsed ? 40 : width;
     const textBase = 'transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden';
     const textVisibility = isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[200px] opacity-100';
 
@@ -256,660 +256,655 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
         >
             <div className="h-full min-h-0 flex flex-col">
-                {/* 1. Top Navigation */}
-                <div className={`pt-3 pb-3 space-y-0.5 pl-5 pr-3 transition-[padding] duration-300`}>
-                    <button
-                        onClick={() => onNavigate('dashboard')}
-                        title={t('home')}
-                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                {/* Content wrapper - hidden when collapsed */}
+                <div className={`h-full min-h-0 flex flex-col transition-opacity duration-300 ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                    {/* 1. Top Navigation */}
+                    <div className={`pt-3 pb-3 space-y-0.5 pl-5 pr-3 transition-[padding] duration-300`}>
+                        <button
+                            onClick={() => onNavigate('dashboard')}
+                            title={t('home')}
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                         ${activeView === 'dashboard'
-                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                         `}
-                    >
-                        <House size={17} weight="light" className="flex-shrink-0" />
-                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
-                    </button>
-                    {pageVisibility['flow_hub'] !== false && (
-                        <button
-                            onClick={() => onNavigate('flow_hub')}
-                            title="Flow Hub"
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                        >
+                            <House size={17} weight="light" className="flex-shrink-0" />
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
+                        </button>
+                        {pageVisibility['flow_hub'] !== false && (
+                            <button
+                                onClick={() => onNavigate('flow_hub')}
+                                title="Flow Hub"
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'flow_hub'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
-                        >
-                            <Sparkle size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Flow Hub</span>
-                        </button>
-                    )}
-                    {pageVisibility['process_map'] !== false && (
-                        <button
-                            onClick={() => onNavigate('process_map')}
-                            title="Process Map"
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            >
+                                <Sparkle size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Flow Hub</span>
+                            </button>
+                        )}
+                        {pageVisibility['process_map'] !== false && (
+                            <button
+                                onClick={() => onNavigate('process_map')}
+                                title="Process Map"
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'process_map'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
-                        >
-                            <Activity size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Process Map</span>
-                        </button>
-                    )}
-                    {pageVisibility['my_work'] !== false && (
-                        <button
-                            onClick={() => onNavigate('my_work')}
-                            title={t('my_work')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            >
+                                <Activity size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Process Map</span>
+                            </button>
+                        )}
+                        {pageVisibility['my_work'] !== false && (
+                            <button
+                                onClick={() => onNavigate('my_work')}
+                                title={t('my_work')}
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'my_work'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
                             `}
-                        >
-                            <SquaresFour size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
-                        </button>
-                    )}
-
-                    {/* New Pages */}
-                    {pageVisibility['inbox'] !== false && (
-                        <button
-                            onClick={() => onNavigate('inbox')}
-                            title={t('inbox')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'inbox'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                        >
-                            <Tray size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
-                        </button>
-                    )}
-                    {pageVisibility['talk'] !== false && (
-                        <button
-                            onClick={() => onNavigate('talk')}
-                            title={t('talk')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'talk'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                        >
-                            <ChatCircleText size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
-                        </button>
-                    )}
-
-                    {pageVisibility['teams'] !== false && (
-                        <button
-                            onClick={() => onNavigate('teams')}
-                            title={t('teams')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'teams'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                        >
-                            <Users size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
-                        </button>
-                    )}
-                    {pageVisibility['vault'] !== false && (
-                        <button
-                            onClick={() => onNavigate('vault')}
-                            title={t('vault')}
-                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'vault'
-                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                        >
-                            <Lock size={17} weight="light" className="flex-shrink-0" />
-                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
-                        </button>
-                    )}
-                </div>
-
-
-                <div className="border-t border-gray-100 dark:border-monday-dark-border my-2 mx-6"></div>
-
-                {/* 2. Scrollable Content */}
-                <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar pl-5 pr-3 transition-[padding] duration-300`}>
-
-
-                    {/* Departments Section */}
-                    <div className="mb-3">
-                        {!isCollapsed && (
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">Departments</span>
-                            </div>
+                            >
+                                <SquaresFour size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
+                            </button>
                         )}
 
-                        <div className="space-y-1">
-                            {/* Overview */}
-                            <div className="mb-1">
-                                <div
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                    onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
-                                    title="Overview"
-                                >
-                                    <Layout size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Overview</span>
-                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                </div>
-                                {expandedDepartments.has('mini_overview') && !isCollapsed && (
-                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                        <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Layout size={14} weight="light" /> <span>Dashboards</span>
-                                        </button>
-                                        <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <FileText size={14} weight="light" /> <span>Reports</span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                        {/* New Pages */}
+                        {pageVisibility['inbox'] !== false && (
+                            <button
+                                onClick={() => onNavigate('inbox')}
+                                title={t('inbox')}
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            ${activeView === 'inbox'
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            `}
+                            >
+                                <Tray size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                            </button>
+                        )}
+                        {pageVisibility['talk'] !== false && (
+                            <button
+                                onClick={() => onNavigate('talk')}
+                                title={t('talk')}
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            ${activeView === 'talk'
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            `}
+                            >
+                                <ChatCircleText size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
+                            </button>
+                        )}
 
-                            {/* Operations */}
-                            <div className="mb-1">
-                                <div
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                    onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
-                                    title="Operations"
-                                >
-                                    <Factory size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Operations</span>
-                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                </div>
-                                {expandedDepartments.has('mini_operations') && !isCollapsed && (
-                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                        <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Megaphone size={14} weight="light" /> <span>Sales</span>
-                                        </button>
-                                        <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <ShoppingCart size={14} weight="light" /> <span>Purchases</span>
-                                        </button>
-                                        <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Package size={14} weight="light" /> <span>Stock / Inventory</span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Finance */}
-                            <div className="mb-1">
-                                <div
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                    onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
-                                    title="Finance"
-                                >
-                                    <Money size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Finance</span>
-                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                </div>
-                                {expandedDepartments.has('mini_finance') && !isCollapsed && (
-                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                        <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Money size={14} weight="light" /> <span>Expenses</span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* People */}
-                            <div className="mb-1">
-                                <div
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                    onClick={() => !isCollapsed && toggleDepartment('mini_people')}
-                                    title="People"
-                                >
-                                    <UsersThree size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>People</span>
-                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                </div>
-                                {expandedDepartments.has('mini_people') && !isCollapsed && (
-                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                        <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Users size={14} weight="light" /> <span>Customers</span>
-                                        </button>
-                                        <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                            <Truck size={14} weight="light" /> <span>Suppliers</span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Supply Chain */}
-                            {pageVisibility['supply_chain'] !== false && (
-                                <div className="mb-1">
-                                    <div
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                        onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
-                                        title="Supply Chain"
-                                    >
-                                        <Package size={17} weight="light" className="flex-shrink-0" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Supply Chain</span>
-                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                    </div>
-                                    {expandedDepartments.has('supply_chain') && !isCollapsed && (
-                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                            {pageVisibility['procurement'] !== false && (
-                                                <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <ShoppingCart size={14} weight="light" /> <span>Procurement</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['warehouse'] !== false && (
-                                                <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <House size={14} weight="light" /> <span>Warehouse</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['shipping'] !== false && (
-                                                <button onClick={() => onNavigate('sourcing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sourcing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <UsersThree size={14} weight="light" /> <span>Sourcing</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['fleet'] !== false && (
-                                                <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Truck size={14} weight="light" /> <span>Fleet</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['vendors'] !== false && (
-                                                <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <UsersThree size={14} weight="light" /> <span>Vendors</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['planning'] !== false && (
-                                                <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Gauge size={14} weight="light" /> <span>Planning</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Manufacturing (Legacy Operations) */}
-                            {pageVisibility['operations'] !== false && (
-                                <div className="mb-1">
-                                    <div
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                        onClick={() => !isCollapsed && toggleDepartment('operations')}
-                                        title="Manufacturing"
-                                    >
-                                        <Factory size={17} weight="light" className="flex-shrink-0" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Manufacturing</span>
-                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                    </div>
-                                    {expandedDepartments.has('operations') && !isCollapsed && (
-                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                            {pageVisibility['maintenance'] !== false && (
-                                                <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Wrench size={14} /> <span>Maintenance</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['production'] !== false && (
-                                                <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Factory size={14} /> <span>Production</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['quality'] !== false && (
-                                                <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <ShieldCheck size={14} weight="light" /> <span>Quality</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Business */}
-                            {pageVisibility['business'] !== false && (
-                                <div className="mb-1">
-                                    <div
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                        onClick={() => !isCollapsed && toggleDepartment('business')}
-                                        title="Business"
-                                    >
-                                        <Buildings size={17} weight="light" className="flex-shrink-0" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Business</span>
-                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                    </div>
-                                    {expandedDepartments.has('business') && !isCollapsed && (
-                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                            {pageVisibility['sales_listing'] !== false && (
-                                                <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Table size={14} weight="light" /> <span>Listings</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['sales_factory'] !== false && (
-                                                <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Factory size={14} /> <span>Sales Factory</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Business Support */}
-                            {pageVisibility['business_support'] !== false && (
-                                <div className="mb-1">
-                                    <div
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                        onClick={() => !isCollapsed && toggleDepartment('business_support')}
-                                        title="Business Support"
-                                    >
-                                        <Users size={17} weight="light" className="flex-shrink-0" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Support</span>
-                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                    </div>
-                                    {expandedDepartments.has('business_support') && !isCollapsed && (
-                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                            {pageVisibility['it_support'] !== false && (
-                                                <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Monitor size={14} /> <span>IT</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['hr'] !== false && (
-                                                <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <UsersThree size={14} weight="light" /> <span>HR</span>
-                                                </button>
-                                            )}
-                                            {pageVisibility['marketing'] !== false && (
-                                                <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
-                                                    <Megaphone size={14} /> <span>Marketing</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        {pageVisibility['teams'] !== false && (
+                            <button
+                                onClick={() => onNavigate('teams')}
+                                title={t('teams')}
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            ${activeView === 'teams'
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            `}
+                            >
+                                <Users size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                            </button>
+                        )}
+                        {pageVisibility['vault'] !== false && (
+                            <button
+                                onClick={() => onNavigate('vault')}
+                                title={t('vault')}
+                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                            ${activeView === 'vault'
+                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                            `}
+                            >
+                                <Lock size={17} weight="light" className="flex-shrink-0" />
+                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                            </button>
+                        )}
                     </div>
 
-                    {/* Favorites Section */}
-                    {!isCollapsed && favoriteBoards.length > 0 && (
-                        <div className="mb-6 mt-6">
-                            <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm py-1">
-                                <span className="text-[14px] font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
-                                    {t('favorites')} <CaretRight size={14} weight="light" className="text-gray-400" />
-                                </span>
-                            </div>
+
+                    <div className="border-t border-gray-100 dark:border-monday-dark-border my-2 mx-6"></div>
+
+                    {/* 2. Scrollable Content */}
+                    <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar pl-5 pr-3 transition-[padding] duration-300`}>
+
+
+                        {/* Departments Section */}
+                        <div className="mb-3">
+                            {!isCollapsed && (
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">Departments</span>
+                                </div>
+                            )}
+
                             <div className="space-y-1">
-                                {favoriteBoards.map(board => (
+                                {/* Overview */}
+                                <div className="mb-1">
                                     <div
-                                        key={board.id}
-                                        onClick={() => onNavigate('board', board.id)}
-                                        className={`flex items-center justify-between px-3 py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                        onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
+                                        title="Overview"
                                     >
-                                        <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
-                                        <span className="text-[14px] truncate flex-1">{board.name}</span>
+                                        <Layout size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Overview</span>
+                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                     </div>
-                                ))}
+                                    {expandedDepartments.has('mini_overview') && !isCollapsed && (
+                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                            <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Layout size={14} weight="light" /> <span>Dashboards</span>
+                                            </button>
+                                            <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <FileText size={14} weight="light" /> <span>Reports</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Operations */}
+                                <div className="mb-1">
+                                    <div
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                        onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
+                                        title="Operations"
+                                    >
+                                        <Factory size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Operations</span>
+                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                    </div>
+                                    {expandedDepartments.has('mini_operations') && !isCollapsed && (
+                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                            <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Megaphone size={14} weight="light" /> <span>Sales</span>
+                                            </button>
+                                            <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <ShoppingCart size={14} weight="light" /> <span>Purchases</span>
+                                            </button>
+                                            <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Package size={14} weight="light" /> <span>Stock / Inventory</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Finance */}
+                                <div className="mb-1">
+                                    <div
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                        onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
+                                        title="Finance"
+                                    >
+                                        <Money size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Finance</span>
+                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                    </div>
+                                    {expandedDepartments.has('mini_finance') && !isCollapsed && (
+                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                            <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Money size={14} weight="light" /> <span>Expenses</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* People */}
+                                <div className="mb-1">
+                                    <div
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                        onClick={() => !isCollapsed && toggleDepartment('mini_people')}
+                                        title="People"
+                                    >
+                                        <UsersThree size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>People</span>
+                                        <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                    </div>
+                                    {expandedDepartments.has('mini_people') && !isCollapsed && (
+                                        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                            <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Users size={14} weight="light" /> <span>Customers</span>
+                                            </button>
+                                            <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                <Truck size={14} weight="light" /> <span>Suppliers</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Supply Chain */}
+                                {pageVisibility['supply_chain'] !== false && (
+                                    <div className="mb-1">
+                                        <div
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                            onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
+                                            title="Supply Chain"
+                                        >
+                                            <Package size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Supply Chain</span>
+                                            <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                        </div>
+                                        {expandedDepartments.has('supply_chain') && !isCollapsed && (
+                                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                {pageVisibility['procurement'] !== false && (
+                                                    <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <ShoppingCart size={14} weight="light" /> <span>Procurement</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['warehouse'] !== false && (
+                                                    <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <House size={14} weight="light" /> <span>Warehouse</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['shipping'] !== false && (
+                                                    <button onClick={() => onNavigate('sourcing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sourcing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <UsersThree size={14} weight="light" /> <span>Sourcing</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['fleet'] !== false && (
+                                                    <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Truck size={14} weight="light" /> <span>Fleet</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['vendors'] !== false && (
+                                                    <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <UsersThree size={14} weight="light" /> <span>Vendors</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['planning'] !== false && (
+                                                    <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Gauge size={14} weight="light" /> <span>Planning</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Manufacturing (Legacy Operations) */}
+                                {pageVisibility['operations'] !== false && (
+                                    <div className="mb-1">
+                                        <div
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                            onClick={() => !isCollapsed && toggleDepartment('operations')}
+                                            title="Manufacturing"
+                                        >
+                                            <Factory size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Manufacturing</span>
+                                            <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                        </div>
+                                        {expandedDepartments.has('operations') && !isCollapsed && (
+                                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                {pageVisibility['maintenance'] !== false && (
+                                                    <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Wrench size={14} /> <span>Maintenance</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['production'] !== false && (
+                                                    <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Factory size={14} /> <span>Production</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['quality'] !== false && (
+                                                    <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <ShieldCheck size={14} weight="light" /> <span>Quality</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Business */}
+                                {pageVisibility['business'] !== false && (
+                                    <div className="mb-1">
+                                        <div
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                            onClick={() => !isCollapsed && toggleDepartment('business')}
+                                            title="Business"
+                                        >
+                                            <Buildings size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Business</span>
+                                            <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                        </div>
+                                        {expandedDepartments.has('business') && !isCollapsed && (
+                                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                {pageVisibility['sales_listing'] !== false && (
+                                                    <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Table size={14} weight="light" /> <span>Listings</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['sales_factory'] !== false && (
+                                                    <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Factory size={14} /> <span>Sales Factory</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Business Support */}
+                                {pageVisibility['business_support'] !== false && (
+                                    <div className="mb-1">
+                                        <div
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                            onClick={() => !isCollapsed && toggleDepartment('business_support')}
+                                            title="Business Support"
+                                        >
+                                            <Users size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Support</span>
+                                            <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                        </div>
+                                        {expandedDepartments.has('business_support') && !isCollapsed && (
+                                            <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                {pageVisibility['it_support'] !== false && (
+                                                    <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Monitor size={14} /> <span>IT</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['hr'] !== false && (
+                                                    <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <UsersThree size={14} weight="light" /> <span>HR</span>
+                                                    </button>
+                                                )}
+                                                {pageVisibility['marketing'] !== false && (
+                                                    <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? 'bg-blue-50 text-blue-600 dark:bg-monday-dark-hover' : ''}`}>
+                                                        <Megaphone size={14} /> <span>Marketing</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {/* Workspaces Header */}
-                    <div className="mt-0">
-                        {!isCollapsed && (
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
-                                <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
-                                    <MagnifyingGlass size={14} weight="light" className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
+                        {/* Favorites Section */}
+                        {!isCollapsed && favoriteBoards.length > 0 && (
+                            <div className="mb-6 mt-6">
+                                <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm py-1">
+                                    <span className="text-[14px] font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
+                                        {t('favorites')} <CaretRight size={14} weight="light" className="text-gray-400" />
+                                    </span>
+                                </div>
+                                <div className="space-y-1">
+                                    {favoriteBoards.map(board => (
+                                        <div
+                                            key={board.id}
+                                            onClick={() => onNavigate('board', board.id)}
+                                            className={`flex items-center justify-between px-3 py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
+                                        >
+                                            <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
+                                            <span className="text-[14px] truncate flex-1">{board.name}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Active Workspace Card */}
-                        <div className="relative group/workspace-card">
-                            <div
-                                onClick={(e) => {
-                                    if (isCollapsed) return;
-                                    e.stopPropagation();
-                                    setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
-                                }}
-                                className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-sm py-1.5 flex items-center cursor-pointer transition-all duration-300 hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
-                            >
-                                <div className={`w-6 h-6 rounded-sm bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
-                                    {activeWorkspace.name.charAt(0)}
-                                </div>
-                                <span className={`font-normal text-[14px] text-[#323338] dark:text-[#dcdde2] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
-
-                                {!isCollapsed && (
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            ref={addButtonRef}
-                                            onClick={toggleAddMenu}
-                                            title={t('add_new')}
-                                            className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded-sm border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all duration-300 ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
-                                        >
-                                            <Plus size={12} weight="light" />
-                                        </button>
-                                        <div className="text-gray-400 dark:text-gray-500 group-hover/workspace-card:text-gray-600 dark:group-hover/workspace-card:text-gray-300">
-                                            <CaretDown size={14} weight="light" />
-                                        </div>
+                        {/* Workspaces Header */}
+                        <div className="mt-0">
+                            {!isCollapsed && (
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
+                                    <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
+                                        <MagnifyingGlass size={14} weight="light" className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {/* Add New Menu - Fixed Position (Right Side) */}
-                                {isAddMenuOpen && (
-                                    <div
-                                        ref={addMenuRef}
-                                        className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 w-48 overflow-hidden"
-                                        style={{
-                                            top: addMenuPos.top,
-                                            left: addMenuPos.left
-                                        }}
-                                    >
-                                        <div className="px-4 py-3 border-b border-gray-100 dark:border-monday-dark-border">
-                                            <span className="text-[14px] font-semibold text-gray-800 dark:text-monday-dark-text">{t('add_new')}</span>
+                            {/* Active Workspace Card */}
+                            <div className="relative group/workspace-card">
+                                <div
+                                    onClick={(e) => {
+                                        if (isCollapsed) return;
+                                        e.stopPropagation();
+                                        setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+                                    }}
+                                    className={`relative border border-transparent hover:bg-white/40 dark:hover:bg-monday-dark-hover rounded-sm py-1.5 flex items-center cursor-pointer transition-all duration-300 hover:shadow-sm hover:border-gray-200/50 dark:hover:border-monday-dark-border ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
+                                >
+                                    <div className={`w-6 h-6 rounded-sm bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm`}>
+                                        {activeWorkspace.name.charAt(0)}
+                                    </div>
+                                    <span className={`font-normal text-[14px] text-[#323338] dark:text-[#dcdde2] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
+
+                                    {!isCollapsed && (
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                ref={addButtonRef}
+                                                onClick={toggleAddMenu}
+                                                title={t('add_new')}
+                                                className={`w-5 h-5 flex items-center justify-center hover:bg-monday-blue hover:text-white rounded-sm border border-gray-200 dark:border-monday-dark-border shadow-sm transition-all duration-300 ${isAddMenuOpen ? 'opacity-100 bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500 dark:text-gray-400 opacity-0 group-hover/workspace-card:opacity-100'}`}
+                                            >
+                                                <Plus size={12} weight="light" />
+                                            </button>
+                                            <div className="text-gray-400 dark:text-gray-500 group-hover/workspace-card:text-gray-600 dark:group-hover/workspace-card:text-gray-300">
+                                                <CaretDown size={14} weight="light" />
+                                            </div>
                                         </div>
-                                        <div className="py-2">
+                                    )}
+
+                                    {/* Add New Menu - Fixed Position (Right Side) */}
+                                    {isAddMenuOpen && (
+                                        <div
+                                            ref={addMenuRef}
+                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 w-48 overflow-hidden"
+                                            style={{
+                                                top: addMenuPos.top,
+                                                left: addMenuPos.left
+                                            }}
+                                        >
+                                            <div className="px-4 py-3 border-b border-gray-100 dark:border-monday-dark-border">
+                                                <span className="text-[14px] font-semibold text-gray-800 dark:text-monday-dark-text">{t('add_new')}</span>
+                                            </div>
+                                            <div className="py-2">
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsAddWorkspaceModalOpen(true);
+                                                        setIsAddMenuOpen(false);
+                                                    }}
+                                                    className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
+                                                >
+                                                    <Briefcase size={16} className="text-gray-500 dark:text-gray-400" />
+                                                    <span>{t('workspace')}</span>
+                                                </div>
+
+                                                <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
+
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCreationStep('details');
+                                                        setSelectedTemplate(undefined);
+                                                        setParentBoardIdForCreation(undefined);
+                                                        setIsNewBoardModalOpen(true);
+                                                        setIsAddMenuOpen(false);
+                                                    }}
+                                                    className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
+                                                >
+                                                    <Table size={16} className="text-monday-blue" />
+                                                    <span>{t('board')}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Workspace Dropdown */}
+                                {isWorkspaceMenuOpen && !isCollapsed && (
+                                    <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
+                                        {workspaces.map(ws => (
                                             <div
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
+                                                key={ws.id}
+                                                className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
+                                                onClick={() => {
+                                                    onWorkspaceChange(ws.id);
+                                                    setIsWorkspaceMenuOpen(false);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
+                                                    <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
+                                                        {ws.name}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
+                                                    onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
+                                                >
+                                                    <DotsThree size={12} weight="light" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
+                                            <button
+                                                onClick={() => {
                                                     setIsAddWorkspaceModalOpen(true);
-                                                    setIsAddMenuOpen(false);
+                                                    setIsWorkspaceMenuOpen(false);
                                                 }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
+                                                className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
                                             >
-                                                <Briefcase size={16} className="text-gray-500 dark:text-gray-400" />
-                                                <span>{t('workspace')}</span>
-                                            </div>
-
-                                            <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-
-                                            <div
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setCreationStep('details');
-                                                    setSelectedTemplate(undefined);
-                                                    setParentBoardIdForCreation(undefined);
-                                                    setIsNewBoardModalOpen(true);
-                                                    setIsAddMenuOpen(false);
-                                                }}
-                                                className="px-3 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-monday-dark-hover cursor-pointer text-gray-700 dark:text-gray-200 text-[14px] group"
-                                            >
-                                                <Table size={16} className="text-monday-blue" />
-                                                <span>{t('board')}</span>
-                                            </div>
+                                                <Plus size={14} weight="light" /> {t('add_workspace')}
+                                            </button>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Workspace Dropdown */}
-                            {isWorkspaceMenuOpen && !isCollapsed && (
-                                <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
-                                    {workspaces.map(ws => (
-                                        <div
-                                            key={ws.id}
-                                            className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
-                                            onClick={() => {
-                                                onWorkspaceChange(ws.id);
-                                                setIsWorkspaceMenuOpen(false);
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-2 truncate">
-                                                <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
-                                                <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
-                                                    {ws.name}
-                                                </span>
-                                            </div>
-                                            <div
-                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
-                                                onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
-                                            >
-                                                <DotsThree size={12} weight="light" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
-                                        <button
-                                            onClick={() => {
-                                                setIsAddWorkspaceModalOpen(true);
-                                                setIsWorkspaceMenuOpen(false);
-                                            }}
-                                            className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
-                                        >
-                                            <Plus size={14} weight="light" /> {t('add_workspace')}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                            {/* Boards List */}
+                            <div className="mt-2 space-y-1">
+                                {(() => {
+                                    const renderBoardItem = (board: Board, level: number = 0) => {
+                                        const isActive = activeView === 'board' && activeBoardId === board.id;
+                                        const subBoards = workspaceBoards.filter(b => b.parentId === board.id);
+                                        const hasChildren = subBoards.length > 0;
+                                        const isChild = level > 0;
+                                        const isExpanded = expandedBoards.has(board.id);
 
-                        {/* Boards List */}
-                        <div className="mt-2 space-y-1">
-                            {(() => {
-                                const renderBoardItem = (board: Board, level: number = 0) => {
-                                    const isActive = activeView === 'board' && activeBoardId === board.id;
-                                    const subBoards = workspaceBoards.filter(b => b.parentId === board.id);
-                                    const hasChildren = subBoards.length > 0;
-                                    const isChild = level > 0;
-                                    const isExpanded = expandedBoards.has(board.id);
-
-                                    return (
-                                        <div key={board.id} className="relative">
-                                            <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} py-1.5 rounded-sm cursor-pointer group transition-all duration-300 select-none
+                                        return (
+                                            <div key={board.id} className="relative">
+                                                <div
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} py-1.5 rounded-sm cursor-pointer group transition-all duration-300 select-none
                                                 ${isActive ? 'bg-white/60 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
                                                 ${isChild ? 'ml-3' : ''}
                                             `}
-                                                onClick={() => onNavigate('board', board.id)}
-                                                title={board.name}
-                                            >
-                                                {/* Expand Arrow for parents */}
-                                                {!isCollapsed && hasChildren ? (
-                                                    <div
-                                                        onClick={(e) => toggleExpand(board.id, e)}
-                                                        className="p-0.5 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors flex-shrink-0"
-                                                    >
-                                                        <CaretRight size={12} weight="light" className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                                                    </div>
-                                                ) : !isCollapsed && (
-                                                    <div className="w-4 flex-shrink-0"></div>
-                                                )}
+                                                    onClick={() => onNavigate('board', board.id)}
+                                                    title={board.name}
+                                                >
+                                                    {/* Expand Arrow for parents */}
+                                                    {!isCollapsed && hasChildren ? (
+                                                        <div
+                                                            onClick={(e) => toggleExpand(board.id, e)}
+                                                            className="p-0.5 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors flex-shrink-0"
+                                                        >
+                                                            <CaretRight size={12} weight="light" className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                                                        </div>
+                                                    ) : !isCollapsed && (
+                                                        <div className="w-4 flex-shrink-0"></div>
+                                                    )}
 
-                                                {React.createElement(ICON_MAP[board.icon || 'Table'] || Table, {
-                                                    size: isChild ? 14 : 17,
-                                                    className: `${isActive ? 'text-monday-blue' : ''} flex-shrink-0`
-                                                })}
-                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{board.name}</span>
-                                                {!isCollapsed && (
-                                                    <div className="flex items-center gap-1">
-                                                        <div
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setParentBoardIdForCreation(board.id);
-                                                                setCreationStep('details');
-                                                                setSelectedTemplate(undefined);
-                                                                setIsNewBoardModalOpen(true);
-                                                            }}
-                                                            className={`p-1 rounded-sm hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
-                                                            title="Add sub-board"
-                                                        >
-                                                            <Plus size={isChild ? 12 : 14} weight="light" className="" />
+                                                    {React.createElement(ICON_MAP[board.icon || 'Table'] || Table, {
+                                                        size: isChild ? 14 : 17,
+                                                        className: `${isActive ? 'text-monday-blue' : ''} flex-shrink-0`
+                                                    })}
+                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{board.name}</span>
+                                                    {!isCollapsed && (
+                                                        <div className="flex items-center gap-1">
+                                                            <div
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setParentBoardIdForCreation(board.id);
+                                                                    setCreationStep('details');
+                                                                    setSelectedTemplate(undefined);
+                                                                    setIsNewBoardModalOpen(true);
+                                                                }}
+                                                                className={`p-1 rounded-sm hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                                title="Add sub-board"
+                                                            >
+                                                                <Plus size={isChild ? 12 : 14} weight="light" className="" />
+                                                            </div>
+                                                            <div
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setBoardToDelete(board.id);
+                                                                }}
+                                                                className={`p-1 rounded-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
+                                                                title="Delete board"
+                                                            >
+                                                                <Trash size={isChild ? 12 : 14} weight="light" className="" />
+                                                            </div>
+                                                            <div
+                                                                onClick={(e) => handleContextMenu(e, board.id)}
+                                                                className={`p-1 rounded-sm hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
+                                                            >
+                                                                <DotsThree size={isChild ? 12 : 14} weight="light" className="text-gray-500 dark:text-gray-400" />
+                                                            </div>
                                                         </div>
-                                                        <div
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setBoardToDelete(board.id);
-                                                            }}
-                                                            className={`p-1 rounded-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border invisible group-hover:visible`}
-                                                            title="Delete board"
-                                                        >
-                                                            <Trash size={isChild ? 12 : 14} weight="light" className="" />
-                                                        </div>
-                                                        <div
-                                                            onClick={(e) => handleContextMenu(e, board.id)}
-                                                            className={`p-1 rounded-sm hover:bg-white/50 dark:hover:bg-monday-dark-border ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
-                                                        >
-                                                            <DotsThree size={isChild ? 12 : 14} weight="light" className="text-gray-500 dark:text-gray-400" />
-                                                        </div>
+                                                    )}
+                                                </div>
+                                                {hasChildren && !isCollapsed && isExpanded && (
+                                                    <div className="ml-4 pl-1 border-l border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5">
+                                                        {subBoards.map(sb => renderBoardItem(sb, level + 1))}
                                                     </div>
                                                 )}
                                             </div>
-                                            {hasChildren && !isCollapsed && isExpanded && (
-                                                <div className="ml-4 pl-1 border-l border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5">
-                                                    {subBoards.map(sb => renderBoardItem(sb, level + 1))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                };
+                                        );
+                                    };
 
-                                // Filter for root boards
-                                const rootBoards = workspaceBoards.filter(b => !b.parentId || !workspaceBoards.find(p => p.id === b.parentId));
+                                    // Filter for root boards
+                                    const rootBoards = workspaceBoards.filter(b => !b.parentId || !workspaceBoards.find(p => p.id === b.parentId));
 
-                                return rootBoards.map(board => renderBoardItem(board));
-                            })()}
-                        </div>
-                    </div>
-
-                    {/* Marketplace Section */}
-                    {(pageVisibility['local_marketplace'] !== false || pageVisibility['foreign_marketplace'] !== false) && (
-                        <div className="mt-6">
-                            {!isCollapsed && (
-                                <div className="flex items-center mb-2 px-1">
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
-                                </div>
-                            )}
-                            <div className="space-y-1">
-                                {pageVisibility['local_marketplace'] !== false && (
-                                    <button
-                                        onClick={() => onNavigate('local_marketplace')}
-                                        title="Local Marketplace"
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
-                                    >
-                                        <ShoppingCart size={16} weight="light" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
-                                    </button>
-                                )}
-                                {pageVisibility['foreign_marketplace'] !== false && (
-                                    <button
-                                        onClick={() => onNavigate('foreign_marketplace')}
-                                        title="Foreign Marketplace"
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
-                                    >
-                                        <Globe size={16} weight="light" />
-                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
-                                    </button>
-                                )}
+                                    return rootBoards.map(board => renderBoardItem(board));
+                                })()}
                             </div>
                         </div>
-                    )}
 
-                    {/* Resize/Collapse Handle */}
-                    <button
-                        onClick={onToggleCollapse}
-                        className="absolute top-8 -right-3 rtl:-left-3 w-6 h-6 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-full flex items-center justify-center text-gray-400 hover:text-monday-blue shadow-sm z-40 opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
-                    >
-                        {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={14} weight="light" /> : <CaretLeft size={14} weight="light" />}
-                    </button>
+                        {/* Marketplace Section */}
+                        {(pageVisibility['local_marketplace'] !== false || pageVisibility['foreign_marketplace'] !== false) && (
+                            <div className="mt-6">
+                                {!isCollapsed && (
+                                    <div className="flex items-center mb-2 px-1">
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">MARKETPLACE</span>
+                                    </div>
+                                )}
+                                <div className="space-y-1">
+                                    {pageVisibility['local_marketplace'] !== false && (
+                                        <button
+                                            onClick={() => onNavigate('local_marketplace')}
+                                            title="Local Marketplace"
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                        >
+                                            <ShoppingCart size={16} weight="light" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Local Marketplace</span>
+                                        </button>
+                                    )}
+                                    {pageVisibility['foreign_marketplace'] !== false && (
+                                        <button
+                                            onClick={() => onNavigate('foreign_marketplace')}
+                                            title="Foreign Marketplace"
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                        >
+                                            <Globe size={16} weight="light" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>Foreign Marketplace</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div> {/* End of content wrapper */}
 
                     {/* Resize Drag Zone */}
                     {!isCollapsed && (
@@ -923,411 +918,419 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
 
                 </div>
+            </div>
 
-                {/* Board Context Menu */}
-                {contextMenu && (
-                    <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
-                        style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
-                    >
-                        <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
-                            <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
-                        </div>
-                        {/* ... other context items would be translated similarly, omitting for brevity ... */}
-                        <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-                        <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
-                            onClick={() => {
-                                onDeleteBoard(contextMenu.boardId);
-                                setContextMenu(null);
-                            }}
-                        >
-                            <Trash size={14} weight="light" /> {t('delete')}
-                        </div>
+            {/* Collapse/Expand Button - OUTSIDE all content wrappers for guaranteed visibility */}
+            <button
+                onClick={onToggleCollapse}
+                className={`absolute top-8 -right-3 rtl:-left-3 w-6 h-6 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-full flex items-center justify-center text-gray-400 hover:text-monday-blue shadow-md z-50 transition-all duration-300 ${isCollapsed ? 'opacity-100' : 'opacity-0 group-hover/sidebar:opacity-100'}`}
+            >
+                {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={14} weight="light" /> : <CaretLeft size={14} weight="light" />}
+            </button>
+
+            {/* Board Context Menu */}
+            {contextMenu && (
+                <div
+                    className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
+                >
+                    <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
+                        <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
                     </div>
-                )}
-
-                {/* Workspace Context Menu */}
-                {workspaceContextMenu && (
+                    {/* ... other context items would be translated similarly, omitting for brevity ... */}
+                    <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
                     <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
-                        style={{ top: Math.min(workspaceContextMenu.y, window.innerHeight - 150), left: dir === 'rtl' ? (workspaceContextMenu.x - 224) : (workspaceContextMenu.x + 10) }}
+                        className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
+                        onClick={() => {
+                            onDeleteBoard(contextMenu.boardId);
+                            setContextMenu(null);
+                        }}
                     >
-                        <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]"
-                            onClick={() => {
-                                // Edit functionality could go here
-                                setWorkspaceContextMenu(null);
-                            }}
-                        >
-                            <Pencil size={14} weight="light" className="text-gray-500" /> Rename
-                        </div>
-                        <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-                        <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
-                            onClick={() => {
-                                if (workspaces.length <= 1) {
-                                    alert(t('Cannot delete the only workspace. Create another one first.'));
-                                    return;
-                                }
-                                setWorkspaceToDelete(workspaceContextMenu.workspaceId);
-                                setWorkspaceContextMenu(null);
-                            }}
-                        >
-                            <Trash size={14} weight="light" /> {t('delete')}
-                        </div>
+                        <Trash size={14} weight="light" /> {t('delete')}
                     </div>
-                )}
+                </div>
+            )}
+
+            {/* Workspace Context Menu */}
+            {workspaceContextMenu && (
+                <div
+                    className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: Math.min(workspaceContextMenu.y, window.innerHeight - 150), left: dir === 'rtl' ? (workspaceContextMenu.x - 224) : (workspaceContextMenu.x + 10) }}
+                >
+                    <div
+                        className="px-3 py-1.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]"
+                        onClick={() => {
+                            // Edit functionality could go here
+                            setWorkspaceContextMenu(null);
+                        }}
+                    >
+                        <Pencil size={14} weight="light" className="text-gray-500" /> Rename
+                    </div>
+                    <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
+                    <div
+                        className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
+                        onClick={() => {
+                            if (workspaces.length <= 1) {
+                                alert(t('Cannot delete the only workspace. Create another one first.'));
+                                return;
+                            }
+                            setWorkspaceToDelete(workspaceContextMenu.workspaceId);
+                            setWorkspaceContextMenu(null);
+                        }}
+                    >
+                        <Trash size={14} weight="light" /> {t('delete')}
+                    </div>
+                </div>
+            )}
 
 
 
-                {/* Create Workspace Modal */}
-                {isAddWorkspaceModalOpen && (
-                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
-                        <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-[450px] border border-gray-100 dark:border-monday-dark-border">
-                            <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-gray-50/50 dark:bg-monday-dark-bg/50 rounded-t-xl">
-                                <h3 className="font-semibold text-lg text-gray-800 dark:text-monday-dark-text">{t('add_workspace')}</h3>
-                                <button onClick={() => setIsAddWorkspaceModalOpen(false)} className="hover:bg-gray-200 dark:hover:bg-monday-dark-hover p-1 rounded-md transition-colors">
-                                    <CaretDown className="rotate-180 text-gray-500" size={20} weight="light" />
-                                </button>
+            {/* Create Workspace Modal */}
+            {isAddWorkspaceModalOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
+                    <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-[450px] border border-gray-100 dark:border-monday-dark-border">
+                        <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-gray-50/50 dark:bg-monday-dark-bg/50 rounded-t-xl">
+                            <h3 className="font-semibold text-lg text-gray-800 dark:text-monday-dark-text">{t('add_workspace')}</h3>
+                            <button onClick={() => setIsAddWorkspaceModalOpen(false)} className="hover:bg-gray-200 dark:hover:bg-monday-dark-hover p-1 rounded-md transition-colors">
+                                <CaretDown className="rotate-180 text-gray-500" size={20} weight="light" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateWorkspace} className="p-6 space-y-5">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Name</label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    value={newWorkspaceName}
+                                    onChange={(e) => setNewWorkspaceName(e.target.value)}
+                                    className="w-full border border-gray-300 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-monday-dark-text rounded-sm p-3 text-[14px] focus:border-monday-blue focus:ring-2 focus:ring-monday-blue/20 outline-none transition-all duration-300 shadow-sm"
+                                    placeholder="e.g. Marketing Team"
+                                />
                             </div>
-                            <form onSubmit={handleCreateWorkspace} className="p-6 space-y-5">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Name</label>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        value={newWorkspaceName}
-                                        onChange={(e) => setNewWorkspaceName(e.target.value)}
-                                        className="w-full border border-gray-300 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-monday-dark-text rounded-sm p-3 text-[14px] focus:border-monday-blue focus:ring-2 focus:ring-monday-blue/20 outline-none transition-all duration-300 shadow-sm"
-                                        placeholder="e.g. Marketing Team"
-                                    />
-                                </div>
 
-                                {/* High Graphics Icon Picker */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Icon</label>
-                                    <div className="relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsWorkspaceIconPickerOpen(!isWorkspaceIconPickerOpen)}
-                                            className="w-full flex items-center justify-between p-3 rounded-sm border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg hover:border-monday-blue dark:hover:border-monday-blue transition-all duration-300 group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                                                    {React.createElement(ICON_MAP[newWorkspaceIcon] || Briefcase, { size: 20 })}
-                                                </div>
-                                                <span className="font-medium text-gray-700 dark:text-gray-200">{newWorkspaceIcon}</span>
+                            {/* High Graphics Icon Picker */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Icon</label>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsWorkspaceIconPickerOpen(!isWorkspaceIconPickerOpen)}
+                                        className="w-full flex items-center justify-between p-3 rounded-sm border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg hover:border-monday-blue dark:hover:border-monday-blue transition-all duration-300 group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                                                {React.createElement(ICON_MAP[newWorkspaceIcon] || Briefcase, { size: 20 })}
                                             </div>
-                                            <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isWorkspaceIconPickerOpen ? 'rotate-180' : ''}`} />
-                                        </button>
+                                            <span className="font-medium text-gray-700 dark:text-gray-200">{newWorkspaceIcon}</span>
+                                        </div>
+                                        <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isWorkspaceIconPickerOpen ? 'rotate-180' : ''}`} />
+                                    </button>
 
-                                        {isWorkspaceIconPickerOpen && (
-                                            <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-2xl rounded-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-300">
-                                                <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-1">
-                                                    {Object.keys(ICON_MAP).map((iconName, index) => {
-                                                        // Generate a unique gradient for each icon based on index
-                                                        const gradients = [
-                                                            'from-blue-500 to-cyan-500',
-                                                            'from-purple-500 to-pink-500',
-                                                            'from-orange-500 to-red-500',
-                                                            'from-green-500 to-emerald-500',
-                                                            'from-indigo-500 to-violet-500',
-                                                            'from-pink-500 to-rose-500',
-                                                            'from-teal-500 to-green-500',
-                                                            'from-amber-500 to-orange-500'
-                                                        ];
-                                                        const gradient = gradients[index % gradients.length];
-                                                        const isSelected = newWorkspaceIcon === iconName;
+                                    {isWorkspaceIconPickerOpen && (
+                                        <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-2xl rounded-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-300">
+                                            <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                                                {Object.keys(ICON_MAP).map((iconName, index) => {
+                                                    // Generate a unique gradient for each icon based on index
+                                                    const gradients = [
+                                                        'from-blue-500 to-cyan-500',
+                                                        'from-purple-500 to-pink-500',
+                                                        'from-orange-500 to-red-500',
+                                                        'from-green-500 to-emerald-500',
+                                                        'from-indigo-500 to-violet-500',
+                                                        'from-pink-500 to-rose-500',
+                                                        'from-teal-500 to-green-500',
+                                                        'from-amber-500 to-orange-500'
+                                                    ];
+                                                    const gradient = gradients[index % gradients.length];
+                                                    const isSelected = newWorkspaceIcon === iconName;
 
-                                                        return (
-                                                            <button
-                                                                key={iconName}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setNewWorkspaceIcon(iconName);
-                                                                    setIsWorkspaceIconPickerOpen(false);
-                                                                }}
-                                                                className={`
+                                                    return (
+                                                        <button
+                                                            key={iconName}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setNewWorkspaceIcon(iconName);
+                                                                setIsWorkspaceIconPickerOpen(false);
+                                                            }}
+                                                            className={`
                                                                     aspect-square rounded-sm flex items-center justify-center transition-all duration-300
                                                                     bg-gradient-to-br ${gradient} text-white
                                                                     ${isSelected
-                                                                        ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
-                                                                        : 'opacity-70 hover:opacity-100 hover:scale-110 shadow-sm'}
+                                                                    ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
+                                                                    : 'opacity-70 hover:opacity-100 hover:scale-110 shadow-sm'}
                                                                 `}
-                                                                title={iconName}
-                                                            >
-                                                                {React.createElement(ICON_MAP[iconName], { size: 20 })}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                                            title={iconName}
+                                                        >
+                                                            {React.createElement(ICON_MAP[iconName], { size: 20 })}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-monday-dark-border">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsAddWorkspaceModalOpen(false)}
-                                        className="px-5 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
-                                    >
-                                        {t('cancel')}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={!newWorkspaceName.trim()}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
-                                    >
-                                        {t('add_workspace')}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-                {/* Create Board Modal */}
-                {/* Create Board Modal */}
-                {isNewBoardModalOpen && (
-                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
-                        <div className={`bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl transition-all duration-300 flex flex-col ${creationStep === 'template' ? 'w-[90vw] max-w-5xl h-[80vh]' : 'w-96 max-h-[90vh]'}`}>
-                            {/* Header */}
-                            <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-white dark:bg-monday-dark-surface rounded-t-xl flex-shrink-0">
-                                <div className="flex items-center gap-2">
-                                    {creationStep === 'details' && (
-                                        <button
-                                            onClick={() => setCreationStep('template')}
-                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors group"
-                                        >
-                                            <CaretLeft size={20} weight="light" className="text-gray-400 group-hover:text-gray-600 dark:text-gray-500" />
-                                        </button>
+                                        </div>
                                     )}
-                                    <h3 className="font-semibold text-xl text-gray-800 dark:text-gray-100">
-                                        {creationStep === 'template' ? t('new_board') : t('create_board')}
-                                    </h3>
                                 </div>
-                                <button
-                                    onClick={() => setIsNewBoardModalOpen(false)}
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors text-gray-400 hover:text-gray-600"
-                                >
-                                    <CaretDown className="rotate-180" size={20} weight="light" />
-                                </button>
                             </div>
 
-                            {/* Content */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                                {creationStep === 'template' ? (
-                                    <div className="flex flex-col h-full bg-stone-50 dark:bg-stone-900/50">
-                                        {/* Start from scratch option + Picker */}
-                                        <div className="flex-1 overflow-hidden p-4">
-                                            <div className="mb-4 flex justify-center">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedTemplate(undefined);
-                                                        setNewBoardName('');
-                                                        setCreationStep('details');
-                                                    }}
-                                                    className="text-[14px] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline"
-                                                >
-                                                    Start from scratch
-                                                </button>
-                                            </div>
-                                            <TemplatePicker
-                                                onSelect={(template) => {
-                                                    setSelectedTemplate(template);
-                                                    if (!newBoardName) setNewBoardName(template.name);
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-monday-dark-border">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddWorkspaceModalOpen(false)}
+                                    className="px-5 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!newWorkspaceName.trim()}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
+                                >
+                                    {t('add_workspace')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Board Modal */}
+            {/* Create Board Modal */}
+            {isNewBoardModalOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
+                    <div className={`bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl transition-all duration-300 flex flex-col ${creationStep === 'template' ? 'w-[90vw] max-w-5xl h-[80vh]' : 'w-96 max-h-[90vh]'}`}>
+                        {/* Header */}
+                        <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-white dark:bg-monday-dark-surface rounded-t-xl flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                {creationStep === 'details' && (
+                                    <button
+                                        onClick={() => setCreationStep('template')}
+                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors group"
+                                    >
+                                        <CaretLeft size={20} weight="light" className="text-gray-400 group-hover:text-gray-600 dark:text-gray-500" />
+                                    </button>
+                                )}
+                                <h3 className="font-semibold text-xl text-gray-800 dark:text-gray-100">
+                                    {creationStep === 'template' ? t('new_board') : t('create_board')}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setIsNewBoardModalOpen(false)}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm transition-colors text-gray-400 hover:text-gray-600"
+                            >
+                                <CaretDown className="rotate-180" size={20} weight="light" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                            {creationStep === 'template' ? (
+                                <div className="flex flex-col h-full bg-stone-50 dark:bg-stone-900/50">
+                                    {/* Start from scratch option + Picker */}
+                                    <div className="flex-1 overflow-hidden p-4">
+                                        <div className="mb-4 flex justify-center">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedTemplate(undefined);
+                                                    setNewBoardName('');
                                                     setCreationStep('details');
                                                 }}
-                                                selectedTemplateId={selectedTemplate?.id}
-                                            />
+                                                className="text-[14px] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline"
+                                            >
+                                                Start from scratch
+                                            </button>
                                         </div>
+                                        <TemplatePicker
+                                            onSelect={(template) => {
+                                                setSelectedTemplate(template);
+                                                if (!newBoardName) setNewBoardName(template.name);
+                                                setCreationStep('details');
+                                            }}
+                                            selectedTemplateId={selectedTemplate?.id}
+                                        />
                                     </div>
-                                ) : (
-                                    <form onSubmit={handleCreateBoard} className="p-6 space-y-6">
-                                        {/* Board Name Input */}
-                                        <div className="space-y-2">
-                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-gray-300">
-                                                Board Name
-                                            </label>
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                value={newBoardName}
-                                                onChange={(e) => setNewBoardName(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-monday-dark-hover border border-gray-200 dark:border-monday-dark-border rounded-xl focus:ring-2 focus:ring-monday-blue/20 focus:border-monday-blue transition-all duration-300 outline-none font-medium text-gray-900 dark:text-white placeholder:text-gray-400"
-                                                placeholder="e.g. Q4 Marketing Plan"
-                                            />
-                                        </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleCreateBoard} className="p-6 space-y-6">
+                                    {/* Board Name Input */}
+                                    <div className="space-y-2">
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-gray-300">
+                                            Board Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={newBoardName}
+                                            onChange={(e) => setNewBoardName(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-monday-dark-hover border border-gray-200 dark:border-monday-dark-border rounded-xl focus:ring-2 focus:ring-monday-blue/20 focus:border-monday-blue transition-all duration-300 outline-none font-medium text-gray-900 dark:text-white placeholder:text-gray-400"
+                                            placeholder="e.g. Q4 Marketing Plan"
+                                        />
+                                    </div>
 
-                                        {/* Layout Selection */}
-                                        <div className="space-y-3">
-                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Choose Layout</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {[
-                                                    { id: 'table', label: 'Table', icon: Table, description: 'Spreadsheet view' },
-                                                    { id: 'kanban', label: 'Kanban', icon: Kanban, description: 'Visual workflow' },
-                                                    { id: 'list', label: 'List', icon: List, description: 'Simple task list' },
-                                                    { id: 'datatable', label: 'Data Table', icon: Database, description: 'High performance' }
-                                                ].map((tool) => (
-                                                    <button
-                                                        key={tool.id}
-                                                        type="button"
-                                                        onClick={() => setSelectedLayout(tool.id as any)}
-                                                        className={`
+                                    {/* Layout Selection */}
+                                    <div className="space-y-3">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Choose Layout</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {[
+                                                { id: 'table', label: 'Table', icon: Table, description: 'Spreadsheet view' },
+                                                { id: 'kanban', label: 'Kanban', icon: Kanban, description: 'Visual workflow' },
+                                                { id: 'list', label: 'List', icon: List, description: 'Simple task list' },
+                                                { id: 'datatable', label: 'Data Table', icon: Database, description: 'High performance' }
+                                            ].map((tool) => (
+                                                <button
+                                                    key={tool.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedLayout(tool.id as any)}
+                                                    className={`
                                                         relative flex flex-col gap-2 p-3 rounded-xl border-2 text-left transition-all duration-300 group
                                                         ${selectedLayout === tool.id
-                                                                ? 'border-monday-blue bg-blue-50/50 dark:bg-blue-900/20 shadow-sm'
-                                                                : 'border-transparent bg-gray-50 dark:bg-monday-dark-hover hover:scale-[1.02]'}
+                                                            ? 'border-monday-blue bg-blue-50/50 dark:bg-blue-900/20 shadow-sm'
+                                                            : 'border-transparent bg-gray-50 dark:bg-monday-dark-hover hover:scale-[1.02]'}
                                                     `}
-                                                    >
-                                                        <div className={`
+                                                >
+                                                    <div className={`
                                                         w-8 h-8 rounded-sm flex items-center justify-center transition-colors
                                                         ${selectedLayout === tool.id ? 'bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500'}
                                                     `}>
-                                                            <tool.icon size={16} />
+                                                        <tool.icon size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className={`font-bold text-[14px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                            {tool.label}
+                                                        </h4>
+                                                        <p className="text-[10px] text-gray-500 font-medium truncate">
+                                                            {tool.description}
+                                                        </p>
+                                                    </div>
+                                                    {selectedLayout === tool.id && (
+                                                        <div className="absolute top-2 right-2 text-monday-blue">
+                                                            <CheckSquare size={14} weight="fill" className="fill-current" />
                                                         </div>
-                                                        <div>
-                                                            <h4 className={`font-bold text-[14px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
-                                                                {tool.label}
-                                                            </h4>
-                                                            <p className="text-[10px] text-gray-500 font-medium truncate">
-                                                                {tool.description}
-                                                            </p>
-                                                        </div>
-                                                        {selectedLayout === tool.id && (
-                                                            <div className="absolute top-2 right-2 text-monday-blue">
-                                                                <CheckSquare size={14} weight="fill" className="fill-current" />
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                                    )}
+                                                </button>
+                                            ))}
                                         </div>
+                                    </div>
 
-                                        {/* Icon Picker */}
-                                        <div className="space-y-3">
-                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Board Icon</label>
+                                    {/* Icon Picker */}
+                                    <div className="space-y-3">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Board Icon</label>
 
-                                            <div className="relative">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
-                                                    className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-surface hover:border-gray-300 transition-all duration-300 group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        {(() => {
-                                                            // Calculate gradient for current icon
-                                                            const iconIndex = Object.keys(ICON_MAP).indexOf(newBoardIcon);
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
+                                                className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-surface hover:border-gray-300 transition-all duration-300 group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {(() => {
+                                                        // Calculate gradient for current icon
+                                                        const iconIndex = Object.keys(ICON_MAP).indexOf(newBoardIcon);
+                                                        const gradients = [
+                                                            'from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500',
+                                                            'from-green-500 to-emerald-500', 'from-indigo-500 to-violet-500', 'from-pink-500 to-rose-500',
+                                                            'from-teal-500 to-green-500', 'from-amber-500 to-orange-500'
+                                                        ];
+                                                        const gradient = gradients[Math.max(0, iconIndex) % gradients.length];
+                                                        return (
+                                                            <div className={`w-10 h-10 rounded-sm flex items-center justify-center text-white bg-gradient-to-br ${gradient} shadow-md`}>
+                                                                {React.createElement(ICON_MAP[newBoardIcon] || Table, { size: 20 })}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                    <div className="text-left">
+                                                        <div className="text-[14px] font-semibold text-gray-700 dark:text-gray-200">{newBoardIcon}</div>
+                                                        <div className="text-xs text-gray-400">Click to change icon</div>
+                                                    </div>
+                                                </div>
+                                                <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isIconPickerOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {isIconPickerOpen && (
+                                                <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-2xl rounded-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-300">
+                                                    <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                                                        {Object.keys(ICON_MAP).map((iconName, index) => {
                                                             const gradients = [
                                                                 'from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500',
                                                                 'from-green-500 to-emerald-500', 'from-indigo-500 to-violet-500', 'from-pink-500 to-rose-500',
                                                                 'from-teal-500 to-green-500', 'from-amber-500 to-orange-500'
                                                             ];
-                                                            const gradient = gradients[Math.max(0, iconIndex) % gradients.length];
+                                                            const gradient = gradients[index % gradients.length];
+                                                            const isSelected = newBoardIcon === iconName;
+
                                                             return (
-                                                                <div className={`w-10 h-10 rounded-sm flex items-center justify-center text-white bg-gradient-to-br ${gradient} shadow-md`}>
-                                                                    {React.createElement(ICON_MAP[newBoardIcon] || Table, { size: 20 })}
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                        <div className="text-left">
-                                                            <div className="text-[14px] font-semibold text-gray-700 dark:text-gray-200">{newBoardIcon}</div>
-                                                            <div className="text-xs text-gray-400">Click to change icon</div>
-                                                        </div>
-                                                    </div>
-                                                    <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isIconPickerOpen ? 'rotate-180' : ''}`} />
-                                                </button>
-
-                                                {isIconPickerOpen && (
-                                                    <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-2xl rounded-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-300">
-                                                        <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-1">
-                                                            {Object.keys(ICON_MAP).map((iconName, index) => {
-                                                                const gradients = [
-                                                                    'from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500',
-                                                                    'from-green-500 to-emerald-500', 'from-indigo-500 to-violet-500', 'from-pink-500 to-rose-500',
-                                                                    'from-teal-500 to-green-500', 'from-amber-500 to-orange-500'
-                                                                ];
-                                                                const gradient = gradients[index % gradients.length];
-                                                                const isSelected = newBoardIcon === iconName;
-
-                                                                return (
-                                                                    <button
-                                                                        key={iconName}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            setNewBoardIcon(iconName);
-                                                                            setIsIconPickerOpen(false);
-                                                                        }}
-                                                                        className={`
+                                                                <button
+                                                                    key={iconName}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setNewBoardIcon(iconName);
+                                                                        setIsIconPickerOpen(false);
+                                                                    }}
+                                                                    className={`
                                                                             aspect-square rounded-sm flex items-center justify-center transition-all duration-300
                                                                             bg-gradient-to-br ${gradient} text-white
                                                                             ${isSelected
-                                                                                ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
-                                                                                : 'opacity-70 hover:opacity-100 hover:scale-110 shadow-sm'}
+                                                                            ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
+                                                                            : 'opacity-70 hover:opacity-100 hover:scale-110 shadow-sm'}
                                                                         `}
-                                                                        title={iconName}
-                                                                    >
-                                                                        {React.createElement(ICON_MAP[iconName], { size: 20 })}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
+                                                                    title={iconName}
+                                                                >
+                                                                    {React.createElement(ICON_MAP[iconName], { size: 20 })}
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
+                                    </div>
 
-                                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-monday-dark-border mt-6">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsNewBoardModalOpen(false)}
-                                                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
-                                            >
-                                                {t('cancel')}
-                                            </button>
-                                            <button
-                                                type="submit"
-                                                disabled={!newBoardName.trim()}
-                                                className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
-                                            >
-                                                {t('create_board')}
-                                            </button>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-monday-dark-border mt-6">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsNewBoardModalOpen(false)}
+                                            className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-monday-dark-hover rounded-sm text-[14px] font-medium transition-colors"
+                                        >
+                                            {t('cancel')}
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={!newBoardName.trim()}
+                                            className="px-6 py-2.5 bg-gradient-to-r from-monday-blue to-blue-600 text-white text-[14px] font-medium rounded-sm hover:shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
+                                        >
+                                            {t('create_board')}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     </div>
-                )}
-                {/* Delete Confirmation Modal */}
-                <ConfirmModal
-                    isOpen={!!boardToDelete}
-                    onClose={() => setBoardToDelete(null)}
-                    onConfirm={() => {
-                        if (boardToDelete) {
-                            onDeleteBoard(boardToDelete);
-                            setBoardToDelete(null);
-                        }
-                    }}
-                    title={t('Delete Board')}
-                    message={t('Are you sure you want to delete this board? This action cannot be undone.')}
-                />
-                {/* Workspace Delete Confirmation Modal */}
-                <ConfirmModal
-                    isOpen={!!workspaceToDelete}
-                    onClose={() => setWorkspaceToDelete(null)}
-                    onConfirm={() => {
-                        if (workspaceToDelete) {
-                            onDeleteWorkspace(workspaceToDelete);
-                            setWorkspaceToDelete(null);
-                        }
-                    }}
-                    title={t('Delete Workspace')}
-                    message={t('Are you sure you want to delete this workspace? All boards within it will be deleted. This action cannot be undone.')}
-                />
-            </div>
-        </div >
+                </div>
+            )}
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!boardToDelete}
+                onClose={() => setBoardToDelete(null)}
+                onConfirm={() => {
+                    if (boardToDelete) {
+                        onDeleteBoard(boardToDelete);
+                        setBoardToDelete(null);
+                    }
+                }}
+                title={t('Delete Board')}
+                message={t('Are you sure you want to delete this board? This action cannot be undone.')}
+            />
+            {/* Workspace Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!workspaceToDelete}
+                onClose={() => setWorkspaceToDelete(null)}
+                onConfirm={() => {
+                    if (workspaceToDelete) {
+                        onDeleteWorkspace(workspaceToDelete);
+                        setWorkspaceToDelete(null);
+                    }
+                }}
+                title={t('Delete Workspace')}
+                message={t('Are you sure you want to delete this workspace? All boards within it will be deleted. This action cannot be undone.')}
+            />
+        </div>
     );
 };

@@ -128,13 +128,13 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
             </div>
 
             {/* Item Header - Centered */}
-            <div className="flex-grow min-w-[300px] border-r border-gray-200 bg-white py-2 px-3 text-[14px] font-normal text-[#323338] flex items-center justify-center">
+            <div className="flex-grow min-w-[300px] border-r border-gray-200 bg-white py-2 px-3 text-[14.7px] font-normal text-[#323338] flex items-center justify-center">
               Item
             </div>
 
             {/* Resizable Headers - CENTERED & HIGH VISIBILITY RESIZER */}
             <div
-              className="border-r border-gray-200 bg-white py-2 px-3 text-[14px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
+              className="border-r border-gray-200 bg-white py-2 px-3 text-[14.7px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
               style={{ width: colWidths.person }}
             >
               Person
@@ -145,7 +145,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
               ></div>
             </div>
             <div
-              className="border-r border-gray-200 bg-white py-2 px-3 text-[14px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
+              className="border-r border-gray-200 bg-white py-2 px-3 text-[14.7px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
               style={{ width: colWidths.status }}
             >
               Status
@@ -156,7 +156,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
               ></div>
             </div>
             <div
-              className="border-r border-gray-200 bg-white py-2 px-3 text-[14px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
+              className="border-r border-gray-200 bg-white py-2 px-3 text-[14.7px] font-normal text-[#323338] flex items-center justify-center text-center relative select-none group/col"
               style={{ width: colWidths.date }}
             >
               Date

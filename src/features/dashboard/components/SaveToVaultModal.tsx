@@ -18,6 +18,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
     const [newFolderName, setNewFolderName] = useState('');
     const [tags, setTags] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [fileName, setFileName] = useState(''); // For renaming file before save
 
     useEffect(() => {
         if (isOpen) {
@@ -27,8 +28,10 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
             setIsCreatingFolder(false);
             setNewFolderName('');
             setTags('');
+            // Initialize filename from file
+            setFileName(file?.name || '');
         }
-    }, [isOpen]);
+    }, [isOpen, file]);
 
     const loadFolders = async () => {
         try {
@@ -69,9 +72,9 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                 try {
                     const base64Content = reader.result as string;
 
-                    // Save file
+                    // Save file with edited name
                     const savedItem = await vaultService.create(token, {
-                        title: file.name,
+                        title: fileName.trim() || file.name, // Use edited name or fallback to original
                         type: file.type.startsWith('image/') ? 'image' : 'document',
                         userId: userId, // Ensure userId is passed
                         folderId: targetFolderId || undefined,
@@ -130,13 +133,25 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                 <div className="p-6 space-y-5">
                     {/* File Info */}
                     <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                             <span className="material-symbols-outlined">description</span>
                         </div>
-                        <div className="min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-500 mb-1">Original: {file.name}</p>
+                            <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</p>
                         </div>
+                    </div>
+
+                    {/* File Name Input */}
+                    <div>
+                        <label className="text-sm font-semibold text-gray-700 block mb-2">File Name</label>
+                        <input
+                            type="text"
+                            value={fileName}
+                            onChange={(e) => setFileName(e.target.value)}
+                            placeholder="Enter file name"
+                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        />
                     </div>
 
                     {/* Folder Selection */}
