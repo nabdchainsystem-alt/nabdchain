@@ -47,6 +47,7 @@ export interface ITask {
     textValues: Record<string, string>;
     selected: boolean;
     subtasks?: ITask[];
+    people?: any; // To support rich person object sync
     [key: string]: any; // Allow for dynamic column data (e.g. file attachments)
 }
 

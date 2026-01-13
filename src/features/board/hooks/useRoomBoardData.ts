@@ -476,6 +476,8 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                         // If it doesn't have a groupId, but was originally in this group
                         const originalIndex = g.tasks.findIndex(ot => ot.id === t.id);
                         if (originalIndex !== -1 && !t.groupId) return true;
+                        // Special check: If we are not using groupId, rely on status matching if available?
+                        // No, let's trust the current filter logic for now but ensure we map correctly.
                         return false;
                     })
                     .map(t => {
@@ -487,6 +489,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                         }
 
                         // Merge: original <- existing flat task properties <- new updates
+                        // CRITICAL: We must ensure that 'people' and other loose props from 't' overwrite 'original'
                         return { ...(original || {}), ...t };
                     });
 

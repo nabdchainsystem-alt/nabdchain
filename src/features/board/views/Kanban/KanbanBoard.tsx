@@ -18,15 +18,17 @@ import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { getPriorityClasses, normalizePriority, PRIORITY_LEVELS } from '../../../priorities/priorityUtils';
 import { useReminders, ReminderRecord, ReminderStatus } from '../../../reminders/reminderStore';
 import { ReminderPanel } from '../../../reminders/ReminderPanel';
-import { PeoplePicker } from '../../components/cells/PeoplePicker';
+import { PeoplePicker, MOCK_PEOPLE } from '../../components/cells/PeoplePicker';
 
-// Mock Data (Shared with PeoplePicker)
+// Mock Data (Shared with PeoplePicker) - IMPORTED
+/*
 const MOCK_PEOPLE = [
     { id: '1', name: 'Max Mustermann', avatar: 'https://i.pravatar.cc/150?u=1' },
     { id: '2', name: 'Sarah Connor', avatar: 'https://i.pravatar.cc/150?u=2' },
     { id: '3', name: 'John Doe', avatar: 'https://i.pravatar.cc/150?u=3' },
     { id: '4', name: 'Jane Smith', avatar: 'https://i.pravatar.cc/150?u=4' },
 ];
+*/
 
 // --- Types ---
 
@@ -286,9 +288,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
                     title={assigneePerson ? assigneePerson.name : "Assign"}
                 >
                     {assigneePerson ? (
-                        <img src={assigneePerson.avatar} alt={assigneePerson.name} className="w-full h-full object-cover" />
+                        <img src={assigneePerson.avatar} alt={assigneePerson.name} className="w-full h-full object-cover pointer-events-none" />
                     ) : (
-                        <UserCircle size={14} />
+                        <UserCircle size={14} className="pointer-events-none" />
                     )}
                 </button>
 
@@ -383,7 +385,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
             )}
 
             {/* Other Menus */}
-            {activeMenu !== 'none' && activeMenu !== 'date' && (
+            {activeMenu !== 'none' && activeMenu !== 'date' && activeMenu !== 'assignee' && (
                 <div
                     ref={menuRef}
                     className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden"
@@ -1030,7 +1032,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                 dueDate: t.dueDate || null,
                 priority: t.priority === 'none' ? null : (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)),
                 personId: t.assignee, // Map back to personId
-                people: t.assigneeObj || (t.assignee ? MOCK_PEOPLE.find(p => p.id === t.assignee) : null), // Use passed obj or fallback
+                people: t.assigneeObj || (t.assignee ? MOCK_PEOPLE.find(p => String(p.id) === String(t.assignee)) : null), // Use passed obj or fallback
             };
             return mapped;
         });

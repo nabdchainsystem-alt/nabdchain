@@ -10,7 +10,7 @@ interface PeoplePickerProps {
 }
 
 // Mock Data
-const MOCK_PEOPLE = [
+export const MOCK_PEOPLE = [
     { id: '1', name: 'Max Mustermann', avatar: 'https://i.pravatar.cc/150?u=1' },
     { id: '2', name: 'Sarah Connor', avatar: 'https://i.pravatar.cc/150?u=2' },
     { id: '3', name: 'John Doe', avatar: 'https://i.pravatar.cc/150?u=3' },
@@ -84,7 +84,13 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({ onSelect, onClose, c
                         return (
                             <button
                                 key={person.id}
-                                onClick={() => { onSelect(person); onClose(); }}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // console.log('PeoplePicker: Clicked person', person.name); 
+                                    onSelect(person);
+                                    onClose();
+                                }}
                                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                             >
                                 <img src={person.avatar} alt={person.name} className="w-6 h-6 rounded-full bg-stone-200 object-cover" />
