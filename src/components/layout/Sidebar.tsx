@@ -687,7 +687,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className={`relative border border-gray-200 dark:border-monday-dark-border bg-gray-50/50 dark:bg-monday-dark-surface hover:bg-gray-100/80 dark:hover:bg-monday-dark-hover rounded-md py-1.5 flex items-center cursor-pointer transition-all duration-300 ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
                                 >
                                     <div className={`w-6 h-6 rounded-md bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0`}>
-                                        {activeWorkspace.name.charAt(0)}
+                                        {(() => {
+                                            const WorkspaceIcon = ICON_MAP[activeWorkspace.icon];
+                                            return WorkspaceIcon ? <WorkspaceIcon size={14} weight="bold" /> : activeWorkspace.name.charAt(0);
+                                        })()}
                                     </div>
                                     <span className={`font-medium text-[14px] text-[#323338] dark:text-[#dcdde2] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
 
@@ -777,7 +780,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             }}
                                         >
                                             <div className="flex items-center gap-2 truncate">
-                                                <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>{ws.name.charAt(0)}</div>
+                                                <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>
+                                                    {(() => {
+                                                        const WorkspaceIcon = ICON_MAP[ws.icon];
+                                                        return WorkspaceIcon ? <WorkspaceIcon size={12} weight="bold" /> : ws.name.charAt(0);
+                                                    })()}
+                                                </div>
                                                 <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
                                                     {ws.name}
                                                 </span>

@@ -132,8 +132,33 @@ const AppContent: React.FC = () => {
     fetchWorkspaces();
   }, [isSignedIn, getToken]); // Only runs once on sign-in
 
-  // Switch to standard state, fetched from API
-  const [boards, setBoards] = useState<Board[]>([]);
+  // Switch to standard state, fetched from API OR local storage
+  const [boards, setBoards] = useState<Board[]>(() => {
+    const saved = localStorage.getItem('app-boards');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Track boards that haven't been synced to server yet
+  const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('app-unsynced-boards');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Track boards that have been deleted locally but might still be on server
+  const [deletedBoardIds, setDeletedBoardIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('app-deleted-boards');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Persist deleted boards
+  useEffect(() => {
+    localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(deletedBoardIds)));
+  }, [deletedBoardIds]);
+
+  // Persist unsynced boards
+  useEffect(() => {
+    localStorage.setItem('app-unsynced-boards', JSON.stringify(Array.from(unsyncedBoardIds)));
+  }, [unsyncedBoardIds]);
 
   // Fetch Boards from API
   useEffect(() => {
@@ -143,7 +168,68 @@ const AppContent: React.FC = () => {
         const token = await getToken();
         if (token) {
           const fetchedBoards = await boardService.getAllBoards(token, activeWorkspaceId);
-          setBoards(fetchedBoards);
+
+          // CRITICAL: Read deletedBoardIds directly from localStorage to avoid stale closure issues
+          const savedDeletedIds = localStorage.getItem('app-deleted-boards');
+          const currentDeletedIds: Set<string> = savedDeletedIds
+            ? new Set(JSON.parse(savedDeletedIds))
+            : new Set();
+
+          // Read unsyncedBoardIds directly from localStorage too for consistency
+          const savedUnsyncedIds = localStorage.getItem('app-unsynced-boards');
+          const currentUnsyncedIds: Set<string> = savedUnsyncedIds
+            ? new Set(JSON.parse(savedUnsyncedIds))
+            : new Set();
+
+          // CRITICAL: Merge Strategy V2 - Unsynced Tracking
+          // 1. Mark fetched boards as synced (remove from unsynced list)
+          setUnsyncedBoardIds(prev => {
+            const next = new Set(prev);
+            fetchedBoards.forEach((b: Board) => next.delete(b.id));
+            return next;
+          });
+
+          // 2. Clean up deletedBoardIds - if board is NOT in fetched list, server confirmed deletion
+          const fetchedBoardIds = new Set(fetchedBoards.map((b: Board) => b.id));
+          setDeletedBoardIds(prev => {
+            const next = new Set(prev);
+            prev.forEach(deletedId => {
+              // If server no longer has this board, deletion is confirmed - stop tracking
+              if (!fetchedBoardIds.has(deletedId)) {
+                next.delete(deletedId);
+              }
+            });
+            return next;
+          });
+
+          // 3. Merge: Keep Server Boards + Keep Unsynced Local Boards - Exclude Deleted Boards
+          // Drop local boards that are NOT on server AND NOT in unsynced list (confirmed deletions)
+          setBoards(prev => {
+            const boardMap = new Map();
+
+            // Server truth first, but filter out known deleted ones (use fresh localStorage value)
+            fetchedBoards.forEach((b: Board) => {
+              if (!currentDeletedIds.has(b.id)) {
+                boardMap.set(b.id, b);
+              }
+            });
+
+            // Restore local boards ONLY if they are pending sync
+            prev.forEach(localBoard => {
+              // If we haven't seen this board active on server yet...
+              if (!boardMap.has(localBoard.id)) {
+                // ...check if it's marked as unsynced (use fresh localStorage value)
+                const isUnsynced = currentUnsyncedIds.has(localBoard.id);
+                // Also make sure it's not deleted
+                const isDeleted = currentDeletedIds.has(localBoard.id);
+                if (isUnsynced && !isDeleted) {
+                  boardMap.set(localBoard.id, localBoard);
+                }
+              }
+            });
+
+            return Array.from(boardMap.values());
+          });
 
           // Sync activeWorkspaceId if it's still 'w1' or default and we have real boards
           if (fetchedBoards.length > 0) {
@@ -202,7 +288,10 @@ const AppContent: React.FC = () => {
     localStorage.setItem('app-workspaces', JSON.stringify(workspaces));
   }, [workspaces]);
 
-  // Boards persistence REMOVED (now handled by API)
+  // Boards persistence RESTORED (fallback for offline/refresh)
+  useEffect(() => {
+    localStorage.setItem('app-boards', JSON.stringify(boards));
+  }, [boards]);
 
   useEffect(() => {
     localStorage.setItem('app-active-workspace', activeWorkspaceId);
@@ -387,6 +476,10 @@ const AppContent: React.FC = () => {
       icon: icon,
       parentId: parentId
     };
+
+    // Mark as unsynced immediately
+    setUnsyncedBoardIds(prev => new Set(prev).add(newBoardId));
+
     handleBoardCreated(newBoard);
   };
 
@@ -558,28 +651,42 @@ const AppContent: React.FC = () => {
 
     console.log('[Delete Board] Attempting to delete:', { boardId, boardName: board.name });
 
-    // Optimistic update - remove from local state
+    // Optimistic update - remove from local state IMMEDIATELY
     setBoards(prev => prev.filter(b => b.id !== boardId));
+    // Mark as deleted to prevent zombie reappearance (persisted to localStorage)
+    setDeletedBoardIds(prev => new Set(prev).add(boardId));
+    // Also update localStorage immediately to ensure it's persisted before any async operations
+    const currentDeleted = localStorage.getItem('app-deleted-boards');
+    const deletedSet = currentDeleted ? new Set(JSON.parse(currentDeleted)) : new Set();
+    deletedSet.add(boardId);
+    localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(deletedSet)));
+
     if (activeBoardId === boardId) {
       setActiveBoardId(null);
       setActiveView('dashboard');
     }
 
+    // Try backend deletion - but don't revert UI on failure (user expects immediate feedback)
     try {
       const token = await getToken();
       if (token) {
         console.log('[Delete Board] Calling backend with token...');
         await boardService.deleteBoard(token, boardId);
         console.log('[Delete Board] Backend delete successful');
+        // On success, we can remove from deletedBoardIds since server no longer has it
+        setDeletedBoardIds(prev => {
+          const next = new Set(prev);
+          next.delete(boardId);
+          return next;
+        });
       } else {
-        // No token - revert optimistic update
-        console.error("[Delete Board] No auth token available");
-        setBoards(prev => [...prev, board]);
+        console.error("[Delete Board] No auth token available - keeping local deletion");
+        // Keep the board in deletedBoardIds so it stays filtered out on refresh
       }
     } catch (e) {
       console.error("[Delete Board] Backend call failed:", e);
-      // Revert optimistic update on failure
-      setBoards(prev => [...prev, board]);
+      // Keep the board in deletedBoardIds so it stays filtered out on refresh
+      // The user will see immediate feedback, and on next successful sync it will be deleted
     }
   }, [activeBoardId, getToken, boards]);
 

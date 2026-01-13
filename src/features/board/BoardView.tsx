@@ -620,15 +620,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                         onUpdateTasks={onUpdateTasks}
                         onDeleteTask={deleteTask}
                         onNavigate={onNavigate}
-                        renderCustomActions={() => (
-                            <button
-                                onClick={toggleFullScreen}
-                                className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
-                                title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                            >
-                                {isFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                            </button>
-                        )}
+
+                    // Global full screen button is now in BoardView header/overlay
                     />
                 );
             case 'datatable':
@@ -819,7 +812,13 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
                             {/* Right: Actions */}
                             <div className="flex items-center gap-1 md:gap-3">
-                                {/* Icons removed as requested */}
+                                <button
+                                    onClick={toggleFullScreen}
+                                    className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
+                                    title="Enter Full Screen"
+                                >
+                                    <Maximize2 size={18} />
+                                </button>
                             </div>
                         </div>
 
@@ -1039,6 +1038,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             {/* Main Content Area */}
             <div className="flex-1 overflow-hidden bg-transparent flex flex-col relative bg-white dark:bg-[#1a1d24] px-6">
                 {renderView()}
+
+                {/* Global Exit Full Screen Floating Button */}
+                {isFullScreen && (
+                    <button
+                        onClick={toggleFullScreen}
+                        className="absolute top-3 right-6 z-50 p-2 bg-white dark:bg-[#1a1d24] border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
+                        title="Exit Full Screen"
+                    >
+                        <Minimize2 size={18} />
+                    </button>
+                )}
             </div>
 
             {/* Context Menu Portal/Overlay */}

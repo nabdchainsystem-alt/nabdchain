@@ -90,6 +90,32 @@ import { TextCellContextMenu } from './components/TextCellContextMenu';
 import { HeaderContextMenu } from './components/HeaderContextMenu';
 
 // --- Types ---
+// --- Constants for Status ---
+const STATUS_STYLES: Record<string, string> = {
+    'Done': 'bg-[#10B981] text-white', // Green (Option 3)
+    'Working on it': 'bg-[#F59E0B] text-white', // Amber/Orange
+    'In Progress': 'bg-[#3B82F6] text-white', // Blue
+    'Stuck': 'bg-[#EF4444] text-white', // Red (Option 1)
+    'To Do': 'bg-[#A855F7] text-white', // Purple (Option 2) - using purple for To Do to match user preference? Or maybe Gray? Let's use darker gray for To Do usually, but user showed purple. Let's make 'To Do' gray and map 'Option 2' color to a generic purple status if they had one.
+    // Actually, let's map common names to vibrant colors:
+    'Rejected': 'bg-[#6B7280] text-white',
+};
+
+// Generic color map for fallback
+const GENERIC_COLORS = [
+    'bg-[#A855F7] text-white', // Purple
+    'bg-[#EC4899] text-white', // Pink
+    'bg-[#F97316] text-white', // Orange
+    'bg-[#14B8A6] text-white', // Teal
+];
+
+const PRIORITY_STYLES: Record<string, string> = {
+    'Urgent': 'bg-[#EF4444] text-white', // Red
+    'High': 'bg-[#F59E0B] text-white', // Orange
+    'Medium': 'bg-[#3B82F6] text-white', // Blue
+    'Low': 'bg-[#10B981] text-white', // Green
+};
+
 export interface Column {
     id: string;
     label: string;
@@ -887,24 +913,24 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const processedIds = new Set<string>();
 
             // 1. Update existing rows in their *current* groups (preserve groupId)
-            // AND remove rows that are no longer in externalTasks (Strict Sync)
+            // We NO LONGER filter out rows missing from externalTasks to prevent data loss on refresh 
+            // if external persistence is slower or empty.
+            // This favors "keeping local data" over "strict sync deletion".
             const updatedGroups = prevGroups.map(group => {
-                const updatedGroupRows = group.rows
-                    .filter(row => externalTaskMap.has(row.id)) // REMOVE if not in external source
-                    .map(row => {
-                        const externalUpdate = externalTaskMap.get(row.id);
-                        if (externalUpdate) {
-                            processedIds.add(row.id);
-                            // Merge external update but exclude groupId to keep it in this TableGroup
-                            const { groupId, ...updateWithoutGroupId } = externalUpdate as any;
-                            // SYNC: Ensure incoming dueDate updates date as well
-                            if (updateWithoutGroupId.dueDate) {
-                                (updateWithoutGroupId as any).date = updateWithoutGroupId.dueDate;
-                            }
-                            return { ...row, ...updateWithoutGroupId };
+                const updatedGroupRows = group.rows.map(row => {
+                    const externalUpdate = externalTaskMap.get(row.id);
+                    if (externalUpdate) {
+                        processedIds.add(row.id);
+                        // Merge external update but exclude groupId to keep it in this TableGroup
+                        const { groupId, ...updateWithoutGroupId } = externalUpdate as any;
+                        // SYNC: Ensure incoming dueDate updates date as well
+                        if (updateWithoutGroupId.dueDate) {
+                            (updateWithoutGroupId as any).date = updateWithoutGroupId.dueDate;
                         }
-                        return row;
-                    });
+                        return { ...row, ...updateWithoutGroupId };
+                    }
+                    return row;
+                });
                 return { ...group, rows: updatedGroupRows };
             });
 
@@ -1018,6 +1044,72 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             return updated;
         });
     }, [storageKeyStatuses]);
+
+
+    // Select All / Deselect All Handler
+    const handleSelectAll = useCallback((checked: boolean) => {
+        const primaryCol = columns.find(c => c.id === 'name') || { id: 'name' };
+
+        // We only want to select/deselect 'real' rows? The user requested "main checkbox activate it when user clicks all will be marked".
+        // This implies selecting ALL items.
+        // We need to iterate over all groups and their rows.
+
+        // But tableGroups is state. We need to update ALL rows in ALL groups.
+        // Wait, handleUpdateRow updates a single row. We should probably do a bulk update or just update local state if performance allows.
+        // Actually, handleUpdateRow updates local state `tableGroups`.
+
+        setTableGroups(prevGroups => {
+            return prevGroups.map(group => ({
+                ...group,
+                rows: group.rows.map(row => ({
+                    ...row,
+                    [columns.find(c => c.id === 'select')?.id || 'select']: checked
+                }))
+            }));
+        });
+    }, [columns]);
+
+    // Export Handler
+    const handleExportTable = useCallback(() => {
+        // Gather data
+        // If anything is selected, export ONLY selected. Else export select all.
+        // Check selection across all groups
+        let allRows: Row[] = [];
+        tableGroups.forEach(g => {
+            allRows = [...allRows, ...g.rows];
+        });
+
+        const selectedRows = allRows.filter(r => !!r['select']);
+        const rowsToExport = selectedRows.length > 0 ? selectedRows : allRows;
+
+        if (rowsToExport.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+
+        // Format data for Excel
+        const data = rowsToExport.map(r => {
+            const rowObj: any = {};
+            columns.forEach(c => {
+                if (c.id === 'select') return; // Skip select column
+                let val = r[c.id];
+                // Format values if needed
+                if (c.type === 'people' && val) val = (val as any).name;
+                if (c.type === 'files' && val) val = (val as any).title || 'File';
+                // Doc, Date, etc are strings or simple enough
+                rowObj[c.label] = val;
+            });
+            return rowObj;
+        });
+
+        // Generate Sheet
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Board Export");
+        const dateStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `Table_Export_${dateStr}.xlsx`);
+    }, [tableGroups, columns]);
+
     const [scrollTop, setScrollTop] = useState(0);
     const tableBodyRef = useRef<HTMLDivElement>(null);
     const ROW_HEIGHT = 40; // h-10 = 40px
@@ -2154,20 +2246,33 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const renderCellContent = (col: Column, row: Row) => {
         const value = row[col.id];
 
-        if (col.type === 'status') {
+        if (col.id === 'select') {
             return (
-                <div className="relative w-full h-full">
+                <div className="flex items-center justify-center w-full h-full">
+                    <input
+                        type="checkbox"
+                        checked={!!value}
+                        onChange={(e) => handleUpdateRow(row.id, { [col.id]: e.target.checked })}
+                        className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4 accent-blue-600"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            );
+        }
+
+        if (col.type === 'status') {
+            const statusStyle = STATUS_STYLES[value] || (value ? 'bg-[#A855F7] text-white' : 'bg-transparent text-stone-400');
+
+            return (
+                <div className="relative w-full h-full flex items-center justify-center p-1">
                     <button
                         onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
+                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded shadow-sm' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
                     >
                         {value ? (
-                            <div className="flex items-center gap-2 truncate">
-                                {getStatusIcon(value)}
-                                <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">{value}</span>
-                            </div>
+                            <span className="text-xs font-semibold font-sans truncate">{value}</span>
                         ) : (
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Set Status</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400 group-hover:text-stone-500`}>-</span>
                         )}
                     </button>
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
@@ -2675,20 +2780,20 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
         if (col.type === 'priority') {
             const normalized = formatPriorityLabel(value);
-            const classes = getPriorityClasses(value);
+            // Use the PRIORITY_STYLES map for the gradient background
+            const bgClass = (normalized && PRIORITY_STYLES[normalized]) ? PRIORITY_STYLES[normalized] : 'hover:bg-stone-100 dark:hover:bg-stone-800/50';
+            const textClass = normalized ? 'text-white' : 'text-stone-400';
+
             return (
-                <div className="relative w-full h-full">
+                <div className="relative w-full h-full flex items-center justify-center p-1">
                     <button
                         onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
+                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${normalized ? bgClass + ' rounded shadow-sm' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
                     >
                         {normalized ? (
-                            <div className="flex items-center justify-center gap-2 truncate">
-                                <span className={`w-2 h-2 rounded-full ${classes.dot}`} />
-                                <span className={`text-sm font-sans truncate ${classes.text}`}>{normalized}</span>
-                            </div>
+                            <span className={`text-xs font-semibold font-sans truncate ${textClass}`}>{normalized}</span>
                         ) : (
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Set Priority</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} ${textClass} opacity-50`}>-</span>
                         )}
                     </button>
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
@@ -2906,15 +3011,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     };
 
     // --- Selection State ---
-    const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
+    // --- Selection State ---
+    // Derived from the actual row data (single source of truth)
+    const checkedRows = useMemo(() => {
+        return new Set(rows.filter(r => !!r['select']).map(r => r.id));
+    }, [rows]);
 
     const toggleRowSelection = (rowId: string) => {
-        setCheckedRows(prev => {
-            const next = new Set(prev);
-            if (next.has(rowId)) next.delete(rowId);
-            else next.add(rowId);
-            return next;
-        });
+        // Find current value
+        const row = rows.find(r => r.id === rowId);
+        if (row) {
+            handleUpdateRow(rowId, { 'select': !row['select'] });
+        }
     };
 
     const renderRowContent = (row: Row, dragListeners?: any, isOverlay = false) => {
@@ -3064,6 +3172,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                     {/* Left: Action Icons */}
                     <div className="flex items-center gap-3 text-stone-500 dark:text-stone-400 relative">
+                        {/* Export Button */}
+                        <button
+                            onClick={handleExportTable}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-[#1a1c22] border border-stone-200 dark:border-stone-700 rounded-md hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 transition-colors shadow-sm"
+                            title="Export to Excel"
+                        >
+                            <Download size={14} className="text-stone-500" />
+                            Export
+                        </button>
+
                         {/* Search - Expandable */}
                         <div className="relative flex items-center">
                             <div
@@ -3456,13 +3574,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             </button>
 
                             <button
-                                disabled={checkedRows.size === 0}
-                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
-                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
-                                    : 'cursor-default text-stone-300 dark:text-stone-700'
-                                    }`}
+                                onClick={handleExportTable}
+                                className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600"
                             >
-                                <Export size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
+                                <Export size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Export</span>
                             </button>
 
@@ -3503,7 +3618,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                 onUpdateTasks?.(newRows);
                                             }
 
-                                            setCheckedRows(new Set());
+                                            // setCheckedRows(new Set()); // No longer needed as checkedRows is derived from rows
                                         }
                                     });
                                 }}
@@ -3646,6 +3761,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                         const uniqueId = `${group.id}__${col.id}`;
                                                         const isSticky = index === 0 || index === 1;
                                                         const leftPos = index === 0 ? 0 : index === 1 ? columns[0].width : undefined;
+
+                                                        // Check if All Selected (for 'select' column header)
+                                                        const isSelectCol = col.id === 'select';
+                                                        let isAllSelected = false;
+                                                        if (isSelectCol) {
+                                                            // Calculate across ALL visible rows for a "Global" select all
+                                                            // We use 'rows' which is the flattened list of all rows in the component scope
+                                                            const allRowsCount = rows.length;
+                                                            const selectedCount = rows.filter(r => !!r['select']).length;
+                                                            isAllSelected = allRowsCount > 0 && selectedCount === allRowsCount;
+                                                        }
+
                                                         return (
                                                             <SortableHeader
                                                                 key={uniqueId}
@@ -3675,10 +3802,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                     });
                                                                 }}
                                                             >
-                                                                {col.id === 'select' && (
-                                                                    <div className="w-3.5 h-3.5 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-800 hover:border-stone-400 transition-colors" />
-                                                                )}
-                                                                {col.id !== 'select' && (
+                                                                {isSelectCol ? (
+                                                                    <div className="flex items-center justify-center w-full h-full">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isAllSelected}
+                                                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                                                            className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4 accent-blue-600"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        />
+                                                                    </div>
+                                                                ) : (
                                                                     <div className={`flex items-center ${col.id === 'name' ? 'justify-between' : 'justify-center'} w-full px-2`}>
                                                                         <span className="truncate flex-1 text-center">{col.label}</span>
                                                                         {!['name', 'select'].includes(col.id) && (
