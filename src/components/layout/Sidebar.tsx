@@ -50,6 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     const { t, dir } = useAppContext();
     const [isResizing, setIsResizing] = useState(false);
+    const [initialMouseX, setInitialMouseX] = useState(0);
+    const [initialWidth, setInitialWidth] = useState(width);
     const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
@@ -152,7 +154,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isResizing) return;
-            const newWidth = dir === 'rtl' ? (window.innerWidth - e.clientX) : e.clientX;
+
+            const delta = dir === 'rtl'
+                ? initialMouseX - e.clientX
+                : e.clientX - initialMouseX;
+
+            const newWidth = initialWidth + delta;
+
             if (newWidth > 200 && newWidth < 450) {
                 onResize(newWidth);
             }
@@ -170,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isResizing, onResize, dir]);
+    }, [isResizing, onResize, dir, initialMouseX, initialWidth, width]);
 
     const handleContextMenu = (e: React.MouseEvent, boardId: string) => {
         e.preventDefault();
@@ -909,10 +917,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {/* Resize Drag Zone */}
                     {!isCollapsed && (
                         <div
-                            className="absolute top-0 right-0 rtl:left-0 w-1 h-full cursor-col-resize hover:bg-monday-blue/20 transition-colors z-30"
+                            className="absolute top-0 right-0 rtl:left-0 w-2 h-full cursor-col-resize hover:bg-monday-blue/20 transition-colors z-30"
                             onMouseDown={(e) => {
                                 e.preventDefault();
                                 setIsResizing(true);
+                                setInitialMouseX(e.clientX);
+                                setInitialWidth(width);
                             }}
                         ></div>
                     )}

@@ -771,10 +771,66 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     }, [externalColumns]);
 
-    // NOTE: Removed useEffect that synced externalTasks to rows.
-    // TableGroups now manages its own persistence via localStorage (storageKeyGroups).
-    // Syncing from external would overwrite locally saved file references and other edits.
-    // The parent can still receive updates via onUpdateTasks callback.
+    // Sync externalTasks to tableGroups if they change
+    useEffect(() => {
+        if (!externalTasks || externalTasks.length === 0) return;
+
+        setTableGroups(prevGroups => {
+            // If the incoming tasks are exactly the same as current rows, skip update to avoid loops/jitter
+            const currentRows = prevGroups.flatMap(g => g.rows);
+            // Simple title/status/priority comparison logic
+            const isSame = externalTasks.length === currentRows.length &&
+                externalTasks.every((et, i) => {
+                    const cr = currentRows[i];
+                    return cr && et.id === cr.id && et.name === cr.name && et.status === cr.status && et.priority === cr.priority;
+                });
+
+            // If strictly same count and essential fields, skip. 
+            // BUT: If a new task was added in Kanban, length will be different, so we proceed.
+            if (isSame) return prevGroups;
+
+            // Create a map for fast lookup of external task updates
+            const externalTaskMap = new Map(externalTasks.map(t => [t.id, t]));
+            const processedIds = new Set<string>();
+
+            // 1. Update existing rows in their *current* groups (preserve groupId)
+            const updatedGroups = prevGroups.map(group => {
+                const updatedGroupRows = group.rows.map(row => {
+                    const externalUpdate = externalTaskMap.get(row.id);
+                    if (externalUpdate) {
+                        processedIds.add(row.id);
+                        // Merge external update but exclude groupId to keep it in this TableGroup
+                        // (Table groups are local, Kanban groups are Status-based)
+                        const { groupId, ...updateWithoutGroupId } = externalUpdate as any;
+                        return { ...row, ...updateWithoutGroupId };
+                    }
+                    return row;
+                });
+                return { ...group, rows: updatedGroupRows };
+            });
+
+            // 2. Identify new tasks (in externalTasks but not in any TableGroup)
+            // We ignore tasks that mistakenly claim to belong to a group if we haven't seen them yet,
+            // or simply just put them in the first group.
+            const newTasksRaw = externalTasks.filter(t => !processedIds.has(t.id));
+
+            if (newTasksRaw.length > 0 && updatedGroups.length > 0) {
+                // Add new tasks to the FIRST group by default
+                // This ensures they appear in the table. User can move them later.
+                const taskToAdd = newTasksRaw.map(t => {
+                    // Ensure the new row has the correct groupId for the table group
+                    return { ...t, groupId: updatedGroups[0].id };
+                });
+
+                updatedGroups[0] = {
+                    ...updatedGroups[0],
+                    rows: [...updatedGroups[0].rows, ...taskToAdd]
+                };
+            }
+
+            return updatedGroups;
+        });
+    }, [externalTasks]);
 
     const { groupedByItem: remindersByItem, addReminder, updateReminder, deleteReminder } = useReminders(roomId);
     const [activeReminderTarget, setActiveReminderTarget] = useState<{ rowId: string; rect: DOMRect } | null>(null);
@@ -842,10 +898,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     useEffect(() => {
         localStorage.setItem(storageKeyGroups, JSON.stringify(tableGroups));
     }, [tableGroups, storageKeyGroups]);
-
-    // NOTE: Removed sync effect to parent (onUpdateTasks) on every tableGroups change
-    // to avoid potential re-render/reconciliation issues. LocalStorage persistence is sufficient.
-    // Parent can be updated via direct calls in specific handlers if needed.
 
     // Handler to add a new table group
     const handleAddTableGroup = useCallback(() => {
@@ -1950,7 +2002,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">{value}</span>
                             </div>
                         ) : (
-                            <span className="text-xs text-stone-400">Set Status</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Set Status</span>
                         )}
                     </button>
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
@@ -2272,7 +2324,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">{value}</span>
                             </div>
                         ) : (
-                            <span className="text-xs text-stone-400">Set Status</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Set Status</span>
                         )}
                     </button>
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
@@ -2427,7 +2479,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className={`text-sm font-sans truncate ${classes.text}`}>{normalized}</span>
                             </div>
                         ) : (
-                            <span className="text-xs text-stone-400">Set Priority</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Set Priority</span>
                         )}
                     </button>
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
@@ -2456,7 +2508,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             }
                         }}
                         placeholder={row.id === CREATION_ROW_ID ? "Start typing..." : ""}
-                        className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm font-sans text-stone-800 dark:text-stone-200 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors py-1"
+                        className={`flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-stone-800 dark:text-stone-200 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors py-1 ${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-sm'}`}
                     />
 
                     {/* Open Side Panel Button */}
@@ -3424,7 +3476,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         >
                                             {/* Creation Row (Draft) at Top */}
                                             {/* We manually render a row-like structure for the creation row */}
-                                            <div className="group flex items-center h-10 border-b border-indigo-100 dark:border-indigo-900/30 bg-indigo-50 dark:bg-indigo-900/20 min-w-max relative z-20">
+                                            <div className="group flex items-center h-10 border-b border-stone-100 dark:border-stone-800/50 bg-white dark:bg-stone-900 min-w-max relative z-20">
                                                 {/* Simulate Row Data for Helpers */}
                                                 {(() => {
                                                     const creationRowData: Row = {
@@ -3454,11 +3506,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                     width: col.width,
                                                                     ...(isSticky && { left: leftPos, position: 'sticky' })
                                                                 }}
-                                                                className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-indigo-50 dark:bg-stone-900' : ''} ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                                                                className={`h-full border-e border-transparent group-hover:border-stone-100 dark:group-hover:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-white dark:bg-stone-900' : ''} ${index === 1 ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
                                                             >
                                                                 {col.id === 'select' ? (
                                                                     <div className="w-full h-full flex items-center justify-center px-2">
-                                                                        <Plus size={14} className="text-indigo-400" />
+                                                                        <Plus size={14} className="text-stone-400" />
                                                                     </div>
                                                                 ) : (
                                                                     renderCellContent(col, creationRowData)

@@ -553,13 +553,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             <input className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" type="checkbox" />
                           </div>
                           <div className="ml-4 flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
-                              <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                                  ${task.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
-                                {task.priority}
-                              </span>
-                            </div>
+                            <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
                             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                               <CalendarBlank size={12} weight="light" />
                               {task.date || 'No Date'}
@@ -568,6 +562,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               {task.boardName}
                             </p>
                           </div>
+
+                          {/* Priority Badge Aligned to Right */}
+                          <div className="flex-shrink-0 w-20 flex justify-center ml-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
+                                ${task.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
+                              {task.priority}
+                            </span>
+                          </div>
+
                           <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors">
                               <PencilSimple size={18} weight="light" />
@@ -649,7 +652,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     Recent Activity
                   </h2>
                 </div>
-                <div className="flow-root flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flow-root flex-1 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
                   <ul className="-mb-8" role="list">
                     {activities.length > 0 ? (
                       activities.slice(0, 5).map((activity, idx) => (

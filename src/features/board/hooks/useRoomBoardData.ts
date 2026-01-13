@@ -369,59 +369,49 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
             const updatedTaskMap = new Map(updatedTasks.map(t => [t.id, t]));
 
             const newGroups = prev.groups.map(g => {
-                // 1. Identify tasks that currently belong to this group
-                const currentGroupTaskIds = new Set(g.tasks.map(t => t.id));
+                // 1. Reconstruct the group's tasks.
+                // We keep tasks that were originally in this group OR moved to this group.
+                // For this simplistic implementation, we assume if a task object in updatedTasks 
+                // matches an ID in this group, it belongs here. 
+                // If it has a groupId property, we respect that.
 
-                // 2. Reconstruct the group's tasks based on the ORDER in updatedTasks.
-                // We filter updatedTasks to find those that belong to this group.
-                // This preserves the new sort order delivered by the UI.
                 const newGroupTasks = updatedTasks
-                    .filter(t => currentGroupTaskIds.has(t.id))
+                    .filter(t => {
+                        // If the task explicitly has a groupId matching this group
+                        if (t.groupId === g.id) return true;
+                        // If it doesn't have a groupId, but was originally in this group
+                        const originalIndex = g.tasks.findIndex(ot => ot.id === t.id);
+                        if (originalIndex !== -1 && !t.groupId) return true;
+                        return false;
+                    })
                     .map(t => {
-                        // Merge with original to ensure we don't lose properties not present in the flat view
-                        // though updatedTasks usually comes from the view which has the full object.
-                        // But we safely merge just in case.
-                        // Find the *original* task object to preserve hidden props if any, 
-                        // but prioritize 't' (the update).
-                        const original = g.tasks.find(ot => ot.id === t.id);
+                        // Find the *original* task object across ALL groups to preserve hidden props
+                        let original: ITask | undefined;
+                        for (const group of prev.groups) {
+                            original = group.tasks.find(ot => ot.id === t.id);
+                            if (original) break;
+                        }
+
+                        // Merge: original <- existing flat task properties <- new updates
                         return { ...(original || {}), ...t };
                     });
 
-                // 3. If there are tasks in the group that are NOT in updatedTasks 
-                // (e.g. if the view was filtered), we should append them at the end 
-                // so they are not lost.
-                const tasksNotInUpdate = g.tasks.filter(t => !updatedTaskMap.has(t.id));
-
-                return { ...g, tasks: [...newGroupTasks, ...tasksNotInUpdate] };
+                return { ...g, tasks: newGroupTasks };
             });
 
-            // 3. Handle New Tasks (remaining in map that were NOT in any group)
-            // If there are tasks in updatedTasks that weren't in any group, add them to the first group
-            // We need to check which IDs were processed
+            // 2. Handle tasks that might have been "lost" (e.g. if the view was filtered)
+            // We should ideally keep them in their original groups.
             const allProcessedIds = new Set(newGroups.flatMap(g => g.tasks.map(t => t.id)));
-            const newTasksToAdd: ITask[] = [];
 
-            updatedTasks.forEach(task => {
-                if (!allProcessedIds.has(task.id)) {
-                    newTasksToAdd.push({
-                        id: task.id || uuidv4(),
-                        name: task.name || 'New Task',
-                        status: task.status || Status.New,
-                        priority: task.priority || Priority.Normal,
-                        personId: task.personId || null,
-                        dueDate: task.dueDate || '',
-                        textValues: task.textValues || {},
-                        selected: false,
-                        ...task
-                    });
+            const reconciledGroups = newGroups.map(g => {
+                const missingFromUpdate = g.tasks.filter(t => !updatedTaskMap.has(t.id) && !allProcessedIds.has(t.id));
+                if (missingFromUpdate.length > 0) {
+                    return { ...g, tasks: [...g.tasks, ...missingFromUpdate] };
                 }
+                return g;
             });
 
-            if (newTasksToAdd.length > 0 && newGroups.length > 0) {
-                newGroups[0].tasks = [...newGroups[0].tasks, ...newTasksToAdd];
-            }
-
-            return { ...prev, groups: newGroups };
+            return { ...prev, groups: reconciledGroups };
         });
     }, []);
 

@@ -501,7 +501,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                                         <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">{task.status}</span>
                                     </div>
                                 ) : (
-                                    <span className="text-xs text-stone-400">Set Status</span>
+                                    <span className="text-[11px] text-stone-400">Set Status</span>
                                 )}
                             </button>
                             {activeCell?.rowId === task.id && activeCell?.colId === 'status' && (
@@ -554,7 +554,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                                         <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">{task.priority}</span>
                                     </div>
                                 ) : (
-                                    <span className="text-xs text-stone-400">Set Priority</span>
+                                    <span className="text-[11px] text-stone-400">Set Priority</span>
                                 )}
                             </button>
                             {activeCell?.rowId === task.id && activeCell?.colId === 'priority' && (
@@ -621,7 +621,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                             onChange={(e) => setNewTaskName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                             placeholder="Start typing..."
-                            className="w-full bg-transparent border-none outline-none text-sm font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
+                            className="w-full bg-transparent border-none outline-none text-[11px] font-serif placeholder:text-stone-400 text-stone-800 dark:text-stone-200 p-0"
                         />
                     </div>
 
