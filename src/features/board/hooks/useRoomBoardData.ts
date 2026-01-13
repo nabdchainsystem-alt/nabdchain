@@ -9,35 +9,41 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'To Do',
             title: 'To Do',
-            color: '#579bfc',
-            tasks: [
-                {
-                    id: 't1',
-                    name: 'need to define',
-                    status: Status.Working,
-                    priority: Priority.High,
-                    personId: '1',
-                    dueDate: '',
-                    textValues: {},
-                    selected: false
-                },
-                {
-                    id: 't2',
-                    name: 'max 1',
-                    status: Status.Working,
-                    priority: Priority.Medium,
-                    personId: '1',
-                    dueDate: '',
-                    textValues: {},
-                    selected: false
-                }
-            ],
-            columns: [
-                { id: 'col_name', title: 'Item', type: 'name', width: 380 },
-                { id: 'col_owner', title: 'Person', type: 'person', width: 100 },
-                { id: 'col_status', title: 'Status', type: 'status', width: 140 },
-                { id: 'col_date', title: 'Date', type: 'date', width: 120 }
-            ],
+            color: '#c4c4c4',
+            tasks: [],
+            columns: [],
+            isPinned: false
+        },
+        {
+            id: 'In Progress',
+            title: 'In Progress',
+            color: '#fdab3d',
+            tasks: [],
+            columns: [],
+            isPinned: false
+        },
+        {
+            id: 'Stuck',
+            title: 'Stuck',
+            color: '#e2445c',
+            tasks: [],
+            columns: [],
+            isPinned: false
+        },
+        {
+            id: 'Done',
+            title: 'Done',
+            color: '#00c875',
+            tasks: [],
+            columns: [],
+            isPinned: false
+        },
+        {
+            id: 'Rejected',
+            title: 'Rejected',
+            color: '#333333',
+            tasks: [],
+            columns: [],
             isPinned: false
         }
     ]
@@ -87,7 +93,29 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
             const saved = localStorage.getItem(persistenceKey);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (parsed && parsed.id) return parsed;
+                if (parsed && parsed.id) {
+                    // FIX: Ensure new default statuses are present if missing
+                    const requiredGroups = [
+                        { id: 'Stuck', title: 'Stuck', color: '#e2445c' },
+                        { id: 'Rejected', title: 'Rejected', color: '#333333' }
+                    ];
+
+                    if (parsed.groups && Array.isArray(parsed.groups)) {
+                        requiredGroups.forEach(req => {
+                            if (!parsed.groups.find((g: any) => g.id === req.id || g.title === req.title)) {
+                                parsed.groups.push({
+                                    id: req.id,
+                                    title: req.title,
+                                    color: req.color,
+                                    tasks: [],
+                                    isPinned: false,
+                                    columns: []
+                                });
+                            }
+                        });
+                    }
+                    return parsed;
+                }
             }
         } catch (e) { }
         return INITIAL_BOARD;
@@ -137,7 +165,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                     return initialBoardData as IBoard;
                 } else {
                     const flatBoard = initialBoardData as Board;
-                    return {
+                    const boardData = {
                         id: flatBoard.id,
                         name: flatBoard.name,
                         description: flatBoard.description,
@@ -163,6 +191,27 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                             isPinned: false
                         }]
                     };
+
+                    // FIX: Ensure new default statuses are present if missing
+                    const requiredGroups = [
+                        { id: 'Stuck', title: 'Stuck', color: '#e2445c' },
+                        { id: 'Rejected', title: 'Rejected', color: '#333333' }
+                    ];
+
+                    requiredGroups.forEach(req => {
+                        if (!boardData.groups.find(g => g.id === req.id || g.title === req.title)) {
+                            boardData.groups.push({
+                                id: req.id,
+                                title: req.title,
+                                color: req.color,
+                                tasks: [],
+                                isPinned: false,
+                                columns: [] // Or inherit default columns
+                            });
+                        }
+                    });
+
+                    return boardData;
                 }
             }
 
@@ -203,7 +252,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                 if (g.id === groupId) {
                     return {
                         ...g,
-                        tasks: [...g.tasks, {
+                        tasks: [{
                             id: uuidv4(),
                             name,
                             status: Status.New,
@@ -213,7 +262,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                             textValues: {},
                             selected: false,
                             ...defaults
-                        }]
+                        }, ...g.tasks]
                     };
                 }
                 return g;
@@ -222,24 +271,69 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
     }, []);
 
     const updateTask = useCallback((groupId: string, taskId: string, updates: Partial<ITask>) => {
-        setBoard(prev => ({
-            ...prev,
-            groups: prev.groups.map(g => {
-                if (g.id === groupId) {
-                    return {
-                        ...g,
-                        tasks: g.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
-                    };
+        setBoard(prev => {
+            // Check if status is changing and if we need to move the task
+            if (updates.status) {
+                const targetAttributes = [updates.status, updates.status.toLowerCase()];
+                const targetGroup = prev.groups.find(g =>
+                    targetAttributes.includes(g.id) ||
+                    targetAttributes.includes(g.title) ||
+                    (g.id.toLowerCase() === updates.status?.toLowerCase())
+                );
+
+                // If we found a valid target group and it's different from the current one
+                if (targetGroup && targetGroup.id !== groupId) {
+                    const sourceGroup = prev.groups.find(g => g.id === groupId);
+                    const taskToMove = sourceGroup?.tasks.find(t => t.id === taskId);
+
+                    if (sourceGroup && taskToMove) {
+                        return {
+                            ...prev,
+                            groups: prev.groups.map(g => {
+                                // Remove from source
+                                if (g.id === groupId) {
+                                    return {
+                                        ...g,
+                                        tasks: g.tasks.filter(t => t.id !== taskId)
+                                    };
+                                }
+                                // Add to target
+                                if (g.id === targetGroup.id) {
+                                    return {
+                                        ...g,
+                                        tasks: [...g.tasks, { ...taskToMove, ...updates }]
+                                    };
+                                }
+                                return g;
+                            })
+                        };
+                    }
                 }
-                return g;
-            })
-        }));
+            }
+
+            // Fallback: Just update in place if no move is needed/possible
+            return {
+                ...prev,
+                groups: prev.groups.map(g => {
+                    if (g.id === groupId) {
+                        return {
+                            ...g,
+                            tasks: g.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
+                        };
+                    }
+                    return g;
+                })
+            };
+        });
     }, []);
 
     const deleteTask = useCallback((groupId: string, taskId: string) => {
         setBoard(prev => ({
             ...prev,
-            groups: prev.groups.map(g => g.id === groupId ? { ...g, tasks: g.tasks.filter(t => t.id !== taskId) } : g)
+            groups: prev.groups.map(g => ({
+                ...g,
+                tasks: g.tasks.filter(t => t.id !== taskId)
+            }))
         }));
     }, []);
 
@@ -398,6 +492,27 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
 
                 return { ...g, tasks: newGroupTasks };
             });
+
+            // 1.5 Handle "Orphan" tasks (e.g. created in Table view with internal IDs)
+            // Any task in updatedTasks that wasn't placed in a group above should go to the first group.
+            const placedTaskIds = new Set(newGroups.flatMap(g => g.tasks.map(t => t.id)));
+            const orphans = updatedTasks.filter(t => !placedTaskIds.has(t.id));
+
+            if (orphans.length > 0 && newGroups.length > 0) {
+                // Assign to first group
+                const firstGroup = newGroups[0];
+                const validatedOrphans = orphans.map(t => ({
+                    ...t,
+                    groupId: firstGroup.id,
+                    // Ensure status matches group if it's a status-based board
+                    status: t.status || firstGroup.id
+                }));
+
+                newGroups[0] = {
+                    ...firstGroup,
+                    tasks: [...validatedOrphans, ...firstGroup.tasks]
+                };
+            }
 
             // 2. Handle tasks that might have been "lost" (e.g. if the view was filtered)
             // We should ideally keep them in their original groups.

@@ -10,7 +10,7 @@ const PRIORITY_ORDER: Record<PriorityLevel, number> = {
 };
 
 export const PRIORITY_COLORS: Record<PriorityLevel, { text: string; dot: string; badge: string }> = {
-  Urgent: { text: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200' },
+  Urgent: { text: 'text-red-600 dark:text-red-400', dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-200' },
   High: { text: 'text-blue-600 dark:text-blue-400', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200' },
   Medium: { text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200' },
   Low: { text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' }
@@ -23,7 +23,7 @@ export const PRIORITY_COLORS: Record<PriorityLevel, { text: string; dot: string;
 export const normalizePriority = (value?: string | null): PriorityLevel | null => {
   if (!value) return null;
   const lower = value.toLowerCase();
-  if (lower === 'urgent') return 'Urgent';
+  if (lower.includes('urgent')) return 'Urgent';
   if (lower.includes('high')) return 'High';
   if (lower.includes('medium') || lower === 'normal') return 'Medium';
   if (lower.includes('low')) return 'Low';

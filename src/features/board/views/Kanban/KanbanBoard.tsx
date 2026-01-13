@@ -18,6 +18,15 @@ import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { getPriorityClasses, normalizePriority, PRIORITY_LEVELS } from '../../../priorities/priorityUtils';
 import { useReminders, ReminderRecord, ReminderStatus } from '../../../reminders/reminderStore';
 import { ReminderPanel } from '../../../reminders/ReminderPanel';
+import { PeoplePicker } from '../../components/cells/PeoplePicker';
+
+// Mock Data (Shared with PeoplePicker)
+const MOCK_PEOPLE = [
+    { id: '1', name: 'Max Mustermann', avatar: 'https://i.pravatar.cc/150?u=1' },
+    { id: '2', name: 'Sarah Connor', avatar: 'https://i.pravatar.cc/150?u=2' },
+    { id: '3', name: 'John Doe', avatar: 'https://i.pravatar.cc/150?u=3' },
+    { id: '4', name: 'Jane Smith', avatar: 'https://i.pravatar.cc/150?u=4' },
+];
 
 // --- Types ---
 
@@ -41,6 +50,7 @@ export interface Task {
     tags: string[];
     subtasks: Subtask[];
     assignee?: string;
+    assigneeObj?: { id: string; name: string; avatar?: string };
 }
 
 export interface ColumnType {
@@ -62,6 +72,8 @@ export const INITIAL_DATA: BoardData = {
         { id: 'To Do', title: 'To Do', color: 'gray' },
         { id: 'In Progress', title: 'In Progress', color: 'blue' },
         { id: 'Done', title: 'Done', color: 'emerald' },
+        { id: 'Rejected', title: 'Rejected', color: 'rose' },
+        { id: 'Stuck', title: 'Stuck', color: 'rose' },
     ],
     tasks: []
 };
@@ -70,12 +82,14 @@ const HIGH_CLASSES = getPriorityClasses('High');
 const MEDIUM_CLASSES = getPriorityClasses('Medium');
 const LOW_CLASSES = getPriorityClasses('Low');
 
+const URGENT_CLASSES = getPriorityClasses('Urgent');
+
 export const priorityConfig: Record<Priority, { color: string; label: string; dot: string }> = {
     high: { color: HIGH_CLASSES.text, dot: HIGH_CLASSES.dot, label: 'High' },
     medium: { color: MEDIUM_CLASSES.text, dot: MEDIUM_CLASSES.dot, label: 'Medium' },
     low: { color: LOW_CLASSES.text, dot: LOW_CLASSES.dot, label: 'Low' },
     none: { color: 'text-stone-400', dot: 'bg-stone-300', label: 'Clear' },
-    urgent: { color: HIGH_CLASSES.text, dot: HIGH_CLASSES.dot, label: 'Urgent' },
+    urgent: { color: URGENT_CLASSES.text, dot: URGENT_CLASSES.dot, label: 'Urgent' },
     normal: { color: MEDIUM_CLASSES.text, dot: MEDIUM_CLASSES.dot, label: 'Medium' },
 };
 
@@ -171,10 +185,11 @@ interface TaskCardProps {
     onDuplicateTask: (task: Task) => void;
     reminders: ReminderRecord[];
     onOpenReminder: (taskId: string, rect: DOMRect) => void;
+    statusColor: string;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder }) => {
-    const [activeMenu, setActiveMenu] = useState<'none' | 'priority' | 'tags' | 'context' | 'date'>('none');
+const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
+    const [activeMenu, setActiveMenu] = useState<'none' | 'priority' | 'tags' | 'context' | 'date' | 'assignee'>('none');
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameTitle, setRenameTitle] = useState(task.title);
 
@@ -183,6 +198,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
 
     const inputRef = useRef<HTMLInputElement>(null);
     const dateBtnRef = useRef<HTMLButtonElement>(null);
+    const assigneeBtnRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         if (isRenaming && inputRef.current) {
@@ -213,9 +229,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
             ? 'text-amber-500'
             : 'text-stone-300';
 
+    // Lookup assignee
+    const assigneePerson = task.assigneeObj || (task.assignee ? MOCK_PEOPLE.find(p => p.id === task.assignee) : null);
+
     return (
         <div
             draggable={!isRenaming}
+            // ... (omitting unchanged lines for brevity if possible, keeping context)
+            // But I need to replace the whole TaskCard block or targeted sections.
+            // Let's target the SECTION relevant to assignee.
+
             onDragStart={(e) => {
                 if (activeMenu !== 'none' || isRenaming) {
                     e.preventDefault();
@@ -252,9 +275,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
             </div>
 
             <div className="flex items-center gap-1.5 relative flex-wrap">
-                {/* Assignee Button (New) */}
-                <button className="w-6 h-6 flex items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors" title="Assign">
-                    <UserCircle size={14} />
+                {/* Assignee Button */}
+                <button
+                    ref={assigneeBtnRef}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenu(activeMenu === 'assignee' ? 'none' : 'assignee');
+                    }}
+                    className={`w-6 h-6 flex items-center justify-center rounded-full border border-dashed text-gray-400 hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors ${assigneePerson ? 'border-transparent p-0 overflow-hidden' : 'border-gray-300'}`}
+                    title={assigneePerson ? assigneePerson.name : "Assign"}
+                >
+                    {assigneePerson ? (
+                        <img src={assigneePerson.avatar} alt={assigneePerson.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <UserCircle size={14} />
+                    )}
                 </button>
 
                 {/* Calendar Button */}
@@ -313,6 +348,24 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
             </div>
 
             {/* Popups / Menus */}
+            {/* Portal People Picker */}
+            {activeMenu === 'assignee' && (
+                <PeoplePicker
+                    current={assigneePerson || null}
+                    onSelect={(person) => {
+                        // console.log('KanbanBoard: Selected person', person);
+                        onUpdateTask({
+                            ...task,
+                            assignee: person?.id,
+                            assigneeObj: person || undefined
+                        });
+                        setActiveMenu('none');
+                    }}
+                    onClose={() => setActiveMenu('none')}
+                    triggerRect={assigneeBtnRef.current?.getBoundingClientRect()}
+                />
+            )}
+
             {/* Portal Date Picker */}
             {activeMenu === 'date' && (
                 <PortalPopup triggerRef={dateBtnRef} onClose={() => setActiveMenu('none')} side="bottom">
@@ -337,8 +390,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
                     style={{
                         top: '100%',
                         left: '0',
-                        minWidth: activeMenu === 'date' ? 'auto' : '16rem',
-                        width: activeMenu === 'date' ? 'auto' : '16rem'
+                        minWidth: activeMenu === 'date' || activeMenu === 'assignee' ? 'auto' : '16rem',
+                        width: activeMenu === 'date' || activeMenu === 'assignee' ? 'auto' : '16rem'
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                 >
@@ -407,6 +460,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
                     )}
                 </div>
             )}
+            {/* Status Color Line */}
+            {/* Status Color Line */}
+            <div className={`absolute right-0 top-0 bottom-0 w-1.5 rounded-r-xl ${priorityKey === 'urgent' ? 'bg-red-500' :
+                priorityKey === 'high' ? 'bg-blue-500' :
+                    priorityKey === 'medium' ? 'bg-amber-500' :
+                        priorityKey === 'low' ? 'bg-emerald-500' :
+                            (statusColor.startsWith('#') ? '' : `bg-${statusColor}-500`)
+                }`} style={
+                    ['urgent', 'high', 'medium', 'low'].includes(priorityKey) ? {} :
+                        (statusColor.startsWith('#') ? { backgroundColor: statusColor } : {})
+                }></div>
         </div>
     );
 };
@@ -434,7 +498,7 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
     const [title, setTitle] = useState('');
     const [priority, setPriority] = useState<Priority>('none');
     const [tags, setTags] = useState<string[]>([]);
-    const [date, setDate] = useState<string | undefined>(undefined);
+    const [date, setDate] = useState<string | undefined>(new Date().toISOString());
 
     const [activePopup, setActivePopup] = useState<'none' | 'date' | 'priority' | 'tags'>('none');
     const containerRef = useRef<HTMLDivElement>(null);
@@ -584,7 +648,6 @@ const Column: React.FC<ColumnProps> = ({
     onDeleteTask, onDuplicateTask, onClearColumn, onRenameColumn, onColorChange, onDeleteColumn, remindersByItem, onOpenReminder
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
-    const [isAddingBottom, setIsAddingBottom] = useState(false);
     const [isAddingTop, setIsAddingTop] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -642,6 +705,7 @@ const Column: React.FC<ColumnProps> = ({
             yellow: 'bg-yellow-500 text-white',
             orange: 'bg-orange-500 text-white',
             red: 'bg-red-600 text-white',
+            rose: 'bg-rose-600 text-white',
             pink: 'bg-pink-600 text-white',
             purple: 'bg-purple-600 text-white',
             emerald: 'bg-emerald-600 text-white',
@@ -657,6 +721,7 @@ const Column: React.FC<ColumnProps> = ({
             yellow: 'bg-yellow-50/50',
             orange: 'bg-orange-50/50',
             red: 'bg-red-50/50',
+            rose: 'bg-rose-50/50',
             pink: 'bg-pink-50/50',
             purple: 'bg-purple-50/50',
             emerald: 'bg-emerald-50/50',
@@ -672,6 +737,7 @@ const Column: React.FC<ColumnProps> = ({
             yellow: 'text-yellow-700 hover:text-yellow-800 hover:bg-yellow-100',
             orange: 'text-orange-700 hover:text-orange-800 hover:bg-orange-100',
             red: 'text-red-700 hover:text-red-800 hover:bg-red-100',
+            rose: 'text-rose-700 hover:text-rose-800 hover:bg-rose-100',
             pink: 'text-pink-700 hover:text-pink-800 hover:bg-pink-100',
             purple: 'text-purple-700 hover:text-purple-800 hover:bg-purple-100',
             emerald: 'text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100',
@@ -726,10 +792,11 @@ const Column: React.FC<ColumnProps> = ({
                                 backgroundColor:
                                     column.title.toLowerCase().includes('done') ? '#22c55e' :
                                         column.title.toLowerCase().includes('progress') ? '#3b82f6' :
-                                            column.title.toLowerCase().includes('stuck') ? '#ef4444' :
-                                                column.title.toLowerCase().includes('review') ? '#a855f7' :
-                                                    column.color.startsWith('#') ? column.color :
-                                                        (column.color === 'emerald' ? '#22c55e' : column.color === 'blue' ? '#3b82f6' : '#94a3b8')
+                                            column.title.toLowerCase().includes('stuck') ? '#e11d48' :
+                                                column.title.toLowerCase().includes('rejected') ? '#be123c' :
+                                                    column.title.toLowerCase().includes('review') ? '#a855f7' :
+                                                        column.color.startsWith('#') ? column.color :
+                                                            (column.color === 'emerald' ? '#22c55e' : column.color === 'blue' ? '#3b82f6' : '#94a3b8')
                             }}
                         ></div>
                         {column.title}
@@ -787,6 +854,16 @@ const Column: React.FC<ColumnProps> = ({
             {/* Task List */}
             <div className="flex-1 overflow-y-auto px-1 pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
+                {!isAddingTop && (
+                    <button
+                        onClick={() => setIsAddingTop(true)}
+                        className={`w-full py-2 flex items-center gap-2 text-sm font-medium pl-2 transition-colors rounded-lg mb-2 ${getButtonStyles(column.color)}`}
+                    >
+                        <PlusIcon size={18} />
+                        Add Task
+                    </button>
+                )}
+
                 {isAddingTop && (
                     <TaskCreationForm
                         onSave={(title, priority, tags, date) => {
@@ -808,27 +885,9 @@ const Column: React.FC<ColumnProps> = ({
                         onDuplicateTask={onDuplicateTask}
                         reminders={remindersByItem[task.id] || []}
                         onOpenReminder={(taskId, rect) => onOpenReminder(taskId, rect)}
+                        statusColor={column.color}
                     />
                 ))}
-
-                {isAddingBottom ? (
-                    <TaskCreationForm
-                        onSave={(title, priority, tags, date) => {
-                            onAddTask(column.id, title, { priority, tags, dueDate: date });
-                            setIsAddingBottom(false);
-                        }}
-                        onCancel={() => setIsAddingBottom(false)}
-                        columnColor={column.color}
-                    />
-                ) : (
-                    <button
-                        onClick={() => setIsAddingBottom(true)}
-                        className={`w-full py-2 flex items-center gap-2 text-sm font-medium pl-2 transition-colors rounded-lg mt-1 ${getButtonStyles(column.color)}`}
-                    >
-                        <PlusIcon size={18} />
-                        Add Task
-                    </button>
-                )}
             </div>
         </div>
     );
@@ -865,7 +924,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                             let color = 'gray';
                             if (lower.includes('done') || lower.includes('complete') || lower.includes('finished')) color = 'emerald';
                             else if (lower.includes('progress') || lower.includes('working') || lower.includes('active')) color = 'blue';
-                            else if (lower.includes('stuck') || lower.includes('block') || lower.includes('error')) color = 'red';
+                            else if (lower.includes('stuck') || lower.includes('block') || lower.includes('error')) color = 'rose';
+                            else if (lower.includes('rejected')) color = 'rose';
                             else if (lower.includes('review') || lower.includes('teat')) color = 'purple';
                             else if (lower.includes('hold') || lower.includes('wait')) color = 'yellow';
                             return { id: s, title: s, color };
@@ -877,7 +937,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                             let color = s.color || 'gray';
                             if (lower.includes('done') || lower.includes('complete')) color = 'emerald';
                             else if (lower.includes('progress') || lower.includes('working')) color = 'blue';
-                            else if (lower.includes('stuck') || lower.includes('error')) color = 'red';
+                            else if (lower.includes('stuck') || lower.includes('error')) color = 'rose';
+                            else if (lower.includes('rejected')) color = 'rose';
                             else if (lower.includes('review')) color = 'purple';
                             else if (lower.includes('hold') || lower.includes('wait')) color = 'yellow';
                             return { id: s.id || title, title, color };
@@ -888,6 +949,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
         } catch (e) {
             console.error('Failed to load shared statuses in Kanban', e);
         }
+
+        // --- MERGE LOGIC: Ensure Rejected / Stuck exist ---
+        const hasRejected = loadedColumns.some(c => c.title.toLowerCase() === 'rejected');
+        const hasStuck = loadedColumns.some(c => c.title.toLowerCase() === 'stuck');
+
+        if (!hasRejected || !hasStuck) {
+            const newColumns = [...loadedColumns];
+
+            const doneIndex = newColumns.findIndex(c => c.title.toLowerCase() === 'done');
+            const insertIndex = doneIndex !== -1 ? doneIndex + 1 : newColumns.length;
+
+            const missingColumns: ColumnType[] = [];
+            if (!hasRejected) missingColumns.push({ id: 'Rejected', title: 'Rejected', color: 'rose' });
+            if (!hasStuck) missingColumns.push({ id: 'Stuck', title: 'Stuck', color: 'rose' });
+
+            newColumns.splice(insertIndex, 0, ...missingColumns);
+            return newColumns;
+        }
+
         return loadedColumns;
     });
 
@@ -896,29 +976,64 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
     // ----------------------------------------------------------------------
     const tasks = useMemo<Task[]>(() => {
         if (!externalTasks || !Array.isArray(externalTasks)) return [];
-        return externalTasks.map((row: any) => ({
-            id: row.id,
-            title: row.name || 'Untitled',
-            statusId: row.statusId || row.status || 'To Do',
-            priority: row.priority ? row.priority.toLowerCase() : 'none',
-            dueDate: row.dueDate,
-            tags: [],
-            subtasks: [],
-            assignee: '',
-            description: ''
-        }));
+        return externalTasks.map((row: any) => {
+            // Robustly handle people/personId mapping
+            // Prioritize 'people' object/array as it's the richer source used by Table View
+            let assigneeId = undefined;
+
+            if (row.people) {
+                if (Array.isArray(row.people) && row.people.length > 0) {
+                    assigneeId = row.people[0].id;
+                } else if (typeof row.people === 'object') {
+                    assigneeId = row.people.id;
+                }
+            }
+
+            // Fallback to personId if people didn't give us an I
+            if (!assigneeId) {
+                assigneeId = row.personId;
+            }
+
+            let assigneeObj = undefined;
+            if (row.people) {
+                if (Array.isArray(row.people) && row.people.length > 0) {
+                    assigneeObj = row.people[0];
+                } else if (typeof row.people === 'object') {
+                    assigneeObj = row.people;
+                }
+            }
+
+            return {
+                id: row.id,
+                title: row.name || 'Untitled',
+                statusId: row.statusId || row.status || 'To Do',
+                priority: row.priority ? row.priority.toLowerCase() : 'none',
+                dueDate: row.dueDate || row.date,
+                tags: [],
+                subtasks: [],
+                assignee: assigneeId,
+                assigneeObj: assigneeObj,
+                description: ''
+            };
+        });
     }, [externalTasks]);
 
     // Helper to update parent
     const updateParent = (newTasks: Task[]) => {
-        const mappedTasks = newTasks.map(t => ({
-            id: t.id,
-            name: t.title,
-            status: t.statusId,
-            statusId: t.statusId,
-            dueDate: t.dueDate || null,
-            priority: t.priority === 'none' ? null : (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)),
-        }));
+        // console.log('KanbanBoard: updateParent called with', newTasks.length, 'tasks');
+        const mappedTasks = newTasks.map(t => {
+            const mapped = {
+                id: t.id,
+                name: t.title,
+                status: t.statusId,
+                statusId: t.statusId,
+                dueDate: t.dueDate || null,
+                priority: t.priority === 'none' ? null : (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)),
+                personId: t.assignee, // Map back to personId
+                people: t.assigneeObj || (t.assignee ? MOCK_PEOPLE.find(p => p.id === t.assignee) : null), // Use passed obj or fallback
+            };
+            return mapped;
+        });
         onUpdateTasks(mappedTasks);
     };
 

@@ -245,7 +245,7 @@ const getPriorityDot = (priority: string | null) => getPriorityClasses(priority)
 const getStatusIcon = (status: string) => {
     switch (status) {
         case 'Done': return <CheckCircle2 size={14} className="text-emerald-600" />;
-        case 'In Progress': return <Clock size={14} className="text-amber-600" />;
+        case 'In Progress': return <Clock size={14} className="text-blue-600" />;
         case 'To Do': return <Circle size={14} className="text-stone-400" />;
         case 'Rejected': return <XCircle size={14} className="text-red-500" />;
         case 'Stuck': return <AlertCircle size={14} className="text-orange-500" />;
@@ -794,18 +794,24 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const processedIds = new Set<string>();
 
             // 1. Update existing rows in their *current* groups (preserve groupId)
+            // AND remove rows that are no longer in externalTasks (Strict Sync)
             const updatedGroups = prevGroups.map(group => {
-                const updatedGroupRows = group.rows.map(row => {
-                    const externalUpdate = externalTaskMap.get(row.id);
-                    if (externalUpdate) {
-                        processedIds.add(row.id);
-                        // Merge external update but exclude groupId to keep it in this TableGroup
-                        // (Table groups are local, Kanban groups are Status-based)
-                        const { groupId, ...updateWithoutGroupId } = externalUpdate as any;
-                        return { ...row, ...updateWithoutGroupId };
-                    }
-                    return row;
-                });
+                const updatedGroupRows = group.rows
+                    .filter(row => externalTaskMap.has(row.id)) // REMOVE if not in external source
+                    .map(row => {
+                        const externalUpdate = externalTaskMap.get(row.id);
+                        if (externalUpdate) {
+                            processedIds.add(row.id);
+                            // Merge external update but exclude groupId to keep it in this TableGroup
+                            const { groupId, ...updateWithoutGroupId } = externalUpdate as any;
+                            // SYNC: Ensure incoming dueDate updates date as well
+                            if (updateWithoutGroupId.dueDate) {
+                                (updateWithoutGroupId as any).date = updateWithoutGroupId.dueDate;
+                            }
+                            return { ...row, ...updateWithoutGroupId };
+                        }
+                        return row;
+                    });
                 return { ...group, rows: updatedGroupRows };
             });
 
@@ -824,11 +830,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                 updatedGroups[0] = {
                     ...updatedGroups[0],
-                    rows: [...updatedGroups[0].rows, ...taskToAdd]
+                    rows: [...taskToAdd, ...updatedGroups[0].rows]
                 };
             }
 
-            return updatedGroups;
+            return updatedGroups.map(g => ({
+                ...g,
+                rows: sortRowsWithDoneAtBottom(g.rows)
+            }));
         });
     }, [externalTasks]);
 
@@ -1011,9 +1020,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         setSortRules([]);
         setSortConfig(null);
 
-        setTableGroups(prev => prev.map(g =>
+
+        const updatedGroups = tableGroups.map(g =>
             g.id === groupId ? { ...g, rows: [newRow, ...g.rows] } : g
-        ));
+        );
+
+        setTableGroups(updatedGroups);
+
+        // Explicitly sync with parent (Kanban/Board)
+        if (onUpdateTasks) {
+            const allRows = updatedGroups.flatMap(g => g.rows);
+            onUpdateTasks(allRows);
+        }
 
         // Reset creation row
         setCreationRow({});
@@ -1396,7 +1414,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     // --- Handlers ---
     const handleCellAction = (action: string, rowId: string, colId: string, value?: any) => {
         if (action === 'navigate') {
-            // Navigate to Vault with folder/highlight
+            // Navigate to Vault
             const row = rows.find(r => r.id === rowId);
             if (!row) return;
             const fileData = row[colId];
@@ -1466,7 +1484,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             id: Date.now().toString(),
             [primaryCol.id]: nameToAdd,
             status: 'To Do',
-            dueDate: null,
+            dueDate: new Date().toISOString(),
             date: new Date().toISOString(),
             priority: null
         };
@@ -1566,7 +1584,22 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const handleDeleteRow = (id: string) => {
         if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
-        // Delete the row from the correct group
+
+        // Find the group AND the row
+        const group = tableGroups.find(g => g.rows.some(r => r.id === id));
+        const row = group?.rows.find(r => r.id === id);
+
+        // Preference: Use Board Group ID from externalTasks -> row.groupId -> group.id (Table Group)
+        // We look in externalTasks because RoomTable might strip groupId during sync
+        const externalTask = externalTasks?.find(t => t.id === id);
+        const targetGroupId = externalTask?.groupId || row?.groupId || group?.id;
+
+        // Use the explicit delete handler if available (Preferred)
+        if (onDeleteTask && targetGroupId) {
+            onDeleteTask(targetGroupId, id);
+        }
+
+        // Optimistically delete locally to update UI immediately
         setTableGroups(prevGroups => {
             return prevGroups.map(group => {
                 const rowExists = group.rows.some(r => r.id === id);
@@ -1579,8 +1612,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 return group;
             });
         });
-        const updatedRows = rows.filter(r => r.id !== id);
-        if (onUpdateTasks) onUpdateTasks(updatedRows);
+
+        // Only trigger onUpdateTasks if we DIDN'T use onDeleteTask (Legacy fallback)
+        if (!onDeleteTask) {
+            const updatedRows = rows.filter(r => r.id !== id);
+            if (onUpdateTasks) onUpdateTasks(updatedRows);
+        }
     };
 
     const toggleCell = (e: React.MouseEvent, rowId: string, colId: string) => {
@@ -2380,8 +2417,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         >
                             <SharedDatePicker
                                 selectedDate={value}
-                                onSelectDate={(dueDate) => handleUpdateRow(row.id, { [col.id]: dueDate.toISOString() })}
-                                onClear={() => handleUpdateRow(row.id, { [col.id]: null })}
+                                onSelectDate={(selectedDate) => {
+                                    const isoDate = selectedDate.toISOString();
+                                    // SYNC: Update both date fields to keep them in sync
+                                    handleUpdateRow(row.id, {
+                                        [col.id]: isoDate,
+                                        date: isoDate,
+                                        dueDate: isoDate
+                                    });
+                                }}
+                                onClear={() => handleUpdateRow(row.id, { [col.id]: null, date: null, dueDate: null })}
                                 onClose={() => setActiveCell(null)}
                             />
                         </PortalPopup>
@@ -3278,95 +3323,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             </div>
                                         </div>
 
-                                        {/* Compact KPI Cards - dots with numbers only */}
-                                        {(() => {
-                                            const statusCounts = group.rows.reduce((acc, row) => {
-                                                const s = row.status || 'To Do';
-                                                acc[s] = (acc[s] || 0) + 1;
-                                                return acc;
-                                            }, {} as Record<string, number>);
-                                            const priorityCounts = group.rows.reduce((acc, row) => {
-                                                const p = formatPriorityLabel(row.priority) || 'No Priority';
-                                                acc[p] = (acc[p] || 0) + 1;
-                                                return acc;
-                                            }, {} as Record<string, number>);
-                                            const hasPriorities = !Object.keys(priorityCounts).every(k => k === 'No Priority');
-                                            const totalRows = group.rows.length;
 
-                                            if (totalRows === 0) return null;
-
-                                            return (
-
-                                                <div className="flex items-center gap-3 ml-4">
-                                                    {/* Status KPI */}
-                                                    <div className="flex items-center gap-1 px-2 py-1 bg-stone-50 dark:bg-stone-800/50 rounded border border-stone-200 dark:border-stone-700">
-                                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mr-2">S</span>
-                                                        <div className="h-3 w-[1px] bg-stone-200 dark:bg-stone-700 mr-1" />
-                                                        {(() => {
-                                                            const visibleStatuses = ['Done', 'In Progress', 'To Do', 'Stuck', 'Rejected'].filter(s => statusCounts[s]);
-                                                            const isCompact = visibleStatuses.length > 3;
-
-                                                            return visibleStatuses.map(s => {
-                                                                const colors: Record<string, string> = { 'Done': 'bg-green-500', 'In Progress': 'bg-blue-500', 'To Do': 'bg-stone-400', 'Stuck': 'bg-orange-500', 'Rejected': 'bg-red-500' };
-                                                                const isSelected = activeKpiFilter?.type === 'status' && activeKpiFilter?.value === s;
-
-                                                                return (
-                                                                    <button
-                                                                        key={s}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setActiveKpiFilter(isSelected ? null : { type: 'status', value: s });
-                                                                        }}
-                                                                        title={s}
-                                                                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all ${isSelected ? 'bg-white dark:bg-stone-700 shadow-sm ring-1 ring-stone-200 dark:ring-stone-600' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`}
-                                                                    >
-                                                                        <div className={`w-2 h-2 rounded-full ${colors[s]}`} />
-                                                                        <span className={`text-xs font-medium ${isSelected ? 'text-stone-900 dark:text-stone-100' : 'text-stone-600 dark:text-stone-400'}`}>
-                                                                            {isCompact ? statusCounts[s] : `${s} (${statusCounts[s]})`}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            });
-                                                        })()}
-                                                    </div>
-
-                                                    {/* Priority KPI */}
-                                                    {hasPriorities && (
-                                                        <div className="flex items-center gap-1 px-2 py-1 bg-stone-50 dark:bg-stone-800/50 rounded border border-stone-200 dark:border-stone-700">
-                                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mr-2">P</span>
-                                                            <div className="h-3 w-[1px] bg-stone-200 dark:bg-stone-700 mr-1" />
-                                                            {(() => {
-                                                                const visiblePriorities = ['Urgent', 'High', 'Medium', 'Low'].filter(p => priorityCounts[p]);
-                                                                const isCompact = false;
-
-                                                                return visiblePriorities.map(p => {
-                                                                    const colors: Record<string, string> = { 'Urgent': 'bg-red-500', 'High': 'bg-blue-500', 'Medium': 'bg-orange-500', 'Low': 'bg-green-500' };
-                                                                    const isSelected = activeKpiFilter?.type === 'priority' && activeKpiFilter?.value === p;
-
-                                                                    return (
-                                                                        <button
-                                                                            key={p}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setActiveKpiFilter(isSelected ? null : { type: 'priority', value: p });
-                                                                            }}
-                                                                            title={p}
-                                                                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all ${isSelected ? 'bg-white dark:bg-stone-700 shadow-sm ring-1 ring-stone-200 dark:ring-stone-600' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`}
-                                                                        >
-                                                                            <div className={`w-2 h-2 rounded-full ${colors[p]}`} />
-                                                                            <span className={`text-xs font-medium ${isSelected ? 'text-stone-900 dark:text-stone-100' : 'text-stone-600 dark:text-stone-400'}`}>
-                                                                                {isCompact ? priorityCounts[p] : `${p} (${priorityCounts[p]})`}
-                                                                            </span>
-                                                                        </button>
-                                                                    );
-                                                                });
-                                                            })()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-
-                                        })()}
                                     </div>
                                 </div>
 

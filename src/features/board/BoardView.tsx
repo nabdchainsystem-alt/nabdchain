@@ -898,14 +898,25 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                 onClick={() => {
                                                                     setShowAddViewMenu(false);
                                                                     const viewId = option.id as BoardViewType;
+                                                                    console.log('[BoardView] Attempting to add view:', viewId);
+                                                                    console.log('[BoardView] Current board.availableViews:', board.availableViews);
+
                                                                     if (onUpdateBoard) {
                                                                         const currentAvailable = board.availableViews && board.availableViews.length > 0
                                                                             ? board.availableViews
                                                                             : DEFAULT_VIEWS;
 
+                                                                        console.log('[BoardView] Effective currentAvailable:', currentAvailable);
+
                                                                         if (!currentAvailable.includes(viewId)) {
-                                                                            onUpdateBoard(board.id, { availableViews: [...currentAvailable, viewId] });
+                                                                            const newViews = [...currentAvailable, viewId];
+                                                                            console.log('[BoardView] Updating board with new views:', newViews);
+                                                                            onUpdateBoard(board.id, { availableViews: newViews });
+                                                                        } else {
+                                                                            console.log('[BoardView] View already exists in list, skipping update');
                                                                         }
+                                                                    } else {
+                                                                        console.warn('[BoardView] onUpdateBoard is undefined!');
                                                                     }
                                                                     setActiveView(viewId);
                                                                 }}

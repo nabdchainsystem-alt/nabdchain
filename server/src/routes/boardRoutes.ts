@@ -143,6 +143,11 @@ router.put('/:id', requireAuth, async (req: any, res) => {
         const { id } = req.params;
         const { name, tasks, columns, availableViews, ...updates } = req.body;
 
+        console.log(`[Board Update] Updating board ${id}. availableViews present?`, !!availableViews);
+        if (availableViews) {
+            console.log(`[Board Update] New availableViews:`, availableViews);
+        }
+
         const data: any = { ...updates };
         if (name) data.name = name;
         if (req.body.type) data.type = req.body.type;

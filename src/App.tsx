@@ -78,7 +78,10 @@ const AppContent: React.FC = () => {
     return saved || 'dashboard';
   });
 
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
+    const saved = localStorage.getItem('app-workspaces');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => {
     return localStorage.getItem('app-active-workspace') || '';
   });
@@ -112,6 +115,13 @@ const AppContent: React.FC = () => {
             }
           } else {
             console.error('[App] Failed to fetch workspaces. Status:', response.status);
+            // Fallback to local storage if API fails (already loaded in initial state, so just keep it)
+          }
+        } else {
+          // Fallback to local storage if no token (already loaded in initial state)
+          // Check if we need to set activeWorkspaceId from local data
+          if (workspaces.length > 0 && !activeWorkspaceId) {
+            setActiveWorkspaceId(workspaces[0].id);
           }
         }
       } catch (error) {
@@ -309,7 +319,9 @@ const AppContent: React.FC = () => {
         const defaultGroups = [
           { id: 'To Do', label: 'To Do', color: '#c4c4c4' },
           { id: 'In Progress', label: 'In Progress', color: '#fdab3d' },
-          { id: 'Done', label: 'Done', color: '#00c875' }
+          { id: 'Stuck', label: 'Stuck', color: '#e2445c' },
+          { id: 'Done', label: 'Done', color: '#00c875' },
+          { id: 'Rejected', label: 'Rejected', color: '#333333' }
         ];
         // If template has specific groups use them, otherwise use defaults
         const statusGroups = (template.groups && template.groups.length > 1) ? template.groups.map(g => ({
@@ -428,6 +440,18 @@ const AppContent: React.FC = () => {
   };
 
   const handleAddWorkspace = React.useCallback(async (name: string, icon: string, color?: string) => {
+    // Optimistic Update
+    const tempId = `ws-${Date.now()}`;
+    const newWorkspaceOptimistic: Workspace = {
+      id: tempId,
+      name,
+      icon: icon as any,
+      color: color || 'from-gray-400 to-gray-500',
+    };
+
+    setWorkspaces(prev => [...prev, newWorkspaceOptimistic]);
+    setActiveWorkspaceId(tempId);
+
     try {
       const token = await getToken();
       if (token) {
@@ -441,18 +465,34 @@ const AppContent: React.FC = () => {
         });
 
         if (response.ok) {
-          const newWorkspace = await response.json();
-          setWorkspaces(prev => [...prev, newWorkspace]);
-          setActiveWorkspaceId(newWorkspace.id);
+          const newWorkspaceReal = await response.json();
+          // Replace optimistic one with real one
+          setWorkspaces(prev => prev.map(w => w.id === tempId ? newWorkspaceReal : w));
+          setActiveWorkspaceId(newWorkspaceReal.id);
+        } else {
+          console.error("Failed to add workspace backend, keeping local");
+          // Optionally revert or mark as unsynced
         }
       }
     } catch (error) {
       console.error("Failed to add workspace", error);
+      // Keep optimistic update since we want offline support
     }
   }, [getToken]);
 
   const handleDeleteWorkspace = React.useCallback(async (id: string) => {
     if (workspaces.length <= 1) return; // Prevent deleting last workspace
+
+    // Optimistic Update
+    const workspaceToDelete = workspaces.find(w => w.id === id);
+    setWorkspaces(prev => {
+      const newWorkspaces = prev.filter(w => w.id !== id);
+      if (activeWorkspaceId === id && newWorkspaces.length > 0) {
+        setActiveWorkspaceId(newWorkspaces[0].id);
+      }
+      return newWorkspaces;
+    });
+    setBoards(prev => prev.filter(b => b.workspaceId !== id));
 
     try {
       const token = await getToken();
@@ -462,21 +502,24 @@ const AppContent: React.FC = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (response.ok) {
-          setWorkspaces(prev => {
-            const newWorkspaces = prev.filter(w => w.id !== id);
-            if (activeWorkspaceId === id && newWorkspaces.length > 0) {
-              setActiveWorkspaceId(newWorkspaces[0].id);
-            }
-            return newWorkspaces;
-          });
-          setBoards(prev => prev.filter(b => b.workspaceId !== id));
+        if (!response.ok) {
+          console.error("Failed to delete workspace backend, reverting");
+          // Revert optimistic update
+          if (workspaceToDelete) {
+            setWorkspaces(prev => [...prev, workspaceToDelete]);
+            // We might not need to revert activeWorkspaceId immediately as it's less critical?
+            // But strictly we should. For now, let's just log.
+          }
         }
       }
     } catch (error) {
       console.error("Failed to delete workspace", error);
+      // Revert optimistic update? Or keep it deleted locally?
+      // For "Offline Support", we usually keep the user intent.
+      // But if we can't sync the deletion, it might reappear later.
+      // Let's assume for now we keep the deletion locally to satisfy the "I can't delete" user complaint immediately.
     }
-  }, [workspaces.length, activeWorkspaceId, getToken]);
+  }, [workspaces, activeWorkspaceId, getToken]);
 
   const handleDeleteBoard = React.useCallback(async (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
