@@ -96,13 +96,12 @@ import { TableHeaderCell } from './components/TableHeaderCell';
 // --- Types ---
 // --- Constants for Status ---
 const STATUS_STYLES: Record<string, string> = {
-    'Done': 'bg-[#10B981] text-white', // Green (Option 3)
-    'Working on it': 'bg-[#F59E0B] text-white', // Amber/Orange
-    'In Progress': 'bg-[#3B82F6] text-white', // Blue
-    'Stuck': 'bg-[#EF4444] text-white', // Red (Option 1)
-    'To Do': 'bg-[#A855F7] text-white', // Purple (Option 2) - using purple for To Do to match user preference? Or maybe Gray? Let's use darker gray for To Do usually, but user showed purple. Let's make 'To Do' gray and map 'Option 2' color to a generic purple status if they had one.
-    // Actually, let's map common names to vibrant colors:
-    'Rejected': 'bg-[#6B7280] text-white',
+    'Done': 'bg-emerald-600 text-white',
+    'Working on it': 'bg-amber-500 text-white',
+    'In Progress': 'bg-blue-600 text-white',
+    'Stuck': 'bg-rose-600 text-white',
+    'To Do': 'bg-gray-100 text-gray-700',
+    'Rejected': 'bg-rose-600 text-white',
 };
 
 // Generic color map for fallback
