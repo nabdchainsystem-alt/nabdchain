@@ -7,6 +7,7 @@ interface HeaderContextMenuProps {
     onClose: () => void;
     onHeaderColorSelect: (color: string) => void;
     onColumnColorSelect: (color: string) => void;
+    onRename?: () => void;
     currentHeaderColor?: string;
     currentColumnColor?: string;
     position: { x: number; y: number };
@@ -32,7 +33,7 @@ const COLORS = [
     { label: 'Mist', value: '#e2e8f0' }, // slate-200
 ];
 
-export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, onHeaderColorSelect, onColumnColorSelect, currentHeaderColor, currentColumnColor, position }) => {
+export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, onHeaderColorSelect, onColumnColorSelect, onRename, currentHeaderColor, currentColumnColor, position }) => {
     const menuRef = useRef<HTMLDivElement>(null);
     useClickOutside(menuRef, onClose);
 
@@ -119,6 +120,20 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
             className="fixed z-[9999] w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1"
             style={menuStyle}
         >
+            {onRename && (
+                <div className="p-1 mb-1">
+                    <button
+                        onClick={() => {
+                            onRename();
+                            onClose();
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
+                    >
+                        <span className="font-medium">Rename Column</span>
+                    </button>
+                    <div className="h-px bg-stone-100 dark:bg-stone-800 my-1" />
+                </div>
+            )}
             <div className="px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800 mb-1">
                 <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Header Background</span>
             </div>

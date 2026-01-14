@@ -158,7 +158,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         onSelect('dropdown', dropdownName, dropdownOptions);
     };
 
-    const RenderItem: React.FC<{ type: ColumnType }> = ({ type }) => (
+    const RenderItem: React.FC<{ type: ColumnType, showPlus?: boolean }> = ({ type, showPlus = true }) => (
         <button
             onClick={() => handleSelect(type)}
             className="flex items-center gap-3 w-full p-1.5 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors group text-left"
@@ -166,9 +166,12 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
             <div className={`shrink-0 w-6 h-6 rounded flex items-center justify-center ${type.color} text-white shadow-sm`}>
                 <type.icon size={12} strokeWidth={2.5} />
             </div>
-            <span className="text-[13px] text-gray-700 dark:text-stone-300 group-hover:text-gray-900 dark:group-hover:text-white truncate">
+            <span className="text-[13px] text-gray-700 dark:text-stone-300 group-hover:text-gray-900 dark:group-hover:text-white truncate flex-1">
                 {type.label}
             </span>
+            {showPlus && (
+                <Plus size={14} className="text-gray-400 group-hover:text-stone-600 dark:text-stone-500 dark:group-hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
         </button>
     );
 
@@ -370,7 +373,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Essentials</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredEssentials.map(type => (
-                                <RenderItem key={type.id} type={type} />
+                                <RenderItem key={type.id} type={type} showPlus={true} />
                             ))}
                         </div>
                     </div>
@@ -382,7 +385,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Super useful</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredUseful.map(type => (
-                                <RenderItem key={type.id} type={type} />
+                                <RenderItem key={type.id} type={type} showPlus={true} />
                             ))}
                         </div>
                     </div>
@@ -394,7 +397,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Board Power Ups</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredPowerUps.map(type => (
-                                <RenderItem key={type.id} type={type} />
+                                <RenderItem key={type.id} type={type} showPlus={true} />
                             ))}
                         </div>
                     </div>
