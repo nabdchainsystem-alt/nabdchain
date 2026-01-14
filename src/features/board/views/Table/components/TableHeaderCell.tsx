@@ -160,7 +160,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                         </button>
                     )}
                     <div
-                        className="w-1 h-3/4 mx-1 cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-600 rounded opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 top-1/2 -translate-y-1/2"
+                        className="w-1 h-3/4 cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-600 rounded opacity-0 group-hover:opacity-100 transition-opacity absolute -right-[2px] top-1/2 -translate-y-1/2 z-10"
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => { e.stopPropagation(); startResize(e, col.id, col.width); }}
                         onClick={(e) => e.stopPropagation()}

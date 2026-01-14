@@ -16,7 +16,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
     currentPage,
     onPageChange,
     onPageSizeChange,
-    pageSizeOptions = [10, 25, 50, 100]
+    pageSizeOptions = [5, 10, 25, 50]
 }) => {
     const totalPages = Math.ceil(totalItems / pageSize);
     const startItem = (currentPage - 1) * pageSize + 1;
@@ -25,7 +25,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
     if (totalItems === 0) return null;
 
     return (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-xs text-stone-600 dark:text-stone-400 font-sans">
+        <div className="sticky bottom-0 z-40 flex items-center justify-between px-4 py-3 border-t border-stone-200 dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm text-xs text-stone-600 dark:text-stone-400 font-sans shadow-[0_-4px_12px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.2)]">
             {/* Left: Info */}
             <div className="flex items-center gap-4">
                 <span>
@@ -59,27 +59,13 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
                     <ChevronLeft size={14} />
                 </button>
 
-                {/* Page Numbers - Simplified for now: just Show max 5 page buttons around current */}
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Logic to center current page
-                    let p = i + 1;
-                    if (totalPages > 5) {
-                        if (currentPage > 3) p = currentPage - 2 + i;
-                        if (p > totalPages) p = totalPages - 4 + i;
-                    }
-
-                    // Simple clamp if near end
-                    if (currentPage > totalPages - 2) {
-                        // handled by shifting window
-                    }
-
-                    // Actually, let's keep it simple: just show generic range logic or just all if small
-                    // Re-implementing a simple sliding window
+                {/* Page Numbers - Limited to max 3 buttons near current page */}
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                     let pageNum = i + 1;
-                    if (totalPages > 5) {
-                        if (currentPage <= 3) pageNum = i + 1;
-                        else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                        else pageNum = currentPage - 2 + i;
+                    if (totalPages > 3) {
+                        if (currentPage <= 2) pageNum = i + 1;
+                        else if (currentPage >= totalPages - 1) pageNum = totalPages - 2 + i;
+                        else pageNum = currentPage - 1 + i;
                     }
 
                     return (

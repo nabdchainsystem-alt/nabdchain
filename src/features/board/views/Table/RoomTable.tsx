@@ -90,6 +90,7 @@ import { ChartBuilderConfig } from '../../components/chart-builder/types';
 import { AIChartCard } from '../../components/AIChartCard';
 import { TextCellContextMenu } from './components/TextCellContextMenu';
 import { HeaderContextMenu } from './components/HeaderContextMenu';
+import { TablePagination } from './components/TablePagination';
 import { TableHeaderCell } from './components/TableHeaderCell';
 
 // --- Types ---
@@ -215,6 +216,9 @@ interface RoomTableProps {
         setIsChartModalOpen: (open: boolean) => void;
         setIsAIReportModalOpen: (open: boolean) => void;
     }) => React.ReactNode;
+    enableImport?: boolean;
+    hideGroupHeader?: boolean;
+    showPagination?: boolean;
 }
 
 // --- Filter and Sort Types ---
@@ -830,7 +834,7 @@ const EditableName: React.FC<{ name: string; onRename?: (name: string) => void; 
 };
 
 // --- Main RoomTable Component ---
-const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, name: initialName, columns: externalColumns, onUpdateTasks, onDeleteTask, renderCustomActions, onRename, onNavigate }) => {
+const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, name: initialName, columns: externalColumns, onUpdateTasks, onDeleteTask, renderCustomActions, onRename, onNavigate, enableImport, hideGroupHeader, showPagination }) => {
     // Keys for persistence
     const storageKeyColumns = `room-table-columns-v7-${roomId}-${viewId}`;
     const storageKeyRows = `room-table-rows-v7-${roomId}-${viewId}`;
@@ -935,7 +939,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(-1);
+    const [rowsPerPage, setRowsPerPage] = useState(showPagination ? 10 : -1);
 
     // Pinned Charts State
     const storageKeyPinnedCharts = `room-table-pinned-charts-${roomId}-${viewId}`;
@@ -1056,7 +1060,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const [activeColumnMenu, setActiveColumnMenu] = useState<{ rect: DOMRect } | null>(null);
     const [isChartModalOpen, setIsChartModalOpen] = useState(false);
     const [isAIReportModalOpen, setIsAIReportModalOpen] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // File Upload State
     const [activeUploadCell, setActiveUploadCell] = useState<{ rowId: string, colId: string } | null>(null);
@@ -1191,6 +1194,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     }, [tableGroups, columns]);
 
     const [scrollTop, setScrollTop] = useState(0);
+    // creationRowInputRef is already defined at line 854
     const tableBodyRef = useRef<HTMLDivElement>(null);
     const ROW_HEIGHT = 40; // h-10 = 40px
 
@@ -1364,6 +1368,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         });
     };
 
+
     // Handler to delete a row from groups
     const handleDeleteRowFromGroup = useCallback((rowId: string) => {
         setTableGroups(prev => prev.map(g => ({
@@ -1371,6 +1376,153 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             rows: g.rows.filter(r => r.id !== rowId)
         })));
     }, []);
+
+    // --- Import Functionality ---
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            // Get raw data (array of arrays)
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+            if (jsonData.length === 0) {
+                console.warn('Empty file imported');
+                return;
+            }
+
+            // 1. Process Columns from First Row
+            const headerRow = jsonData[0];
+            const newColumns: Column[] = headerRow.map((header: string, index: number) => ({
+                id: header.toLowerCase().replace(/\s+/g, '_') || `col_${index}`,
+                label: header || `Column ${index + 1}`,
+                type: 'text', // Default to text, user can change later
+                width: 150,
+                pinned: index === 0,
+                minWidth: 100,
+                resizable: true,
+                // Wait, "first column in the excel as head columns"? 
+                // User said: "read the first column in the excel as head columns and the others below".
+                // This usually means "First ROW is headers". "First COLUMN" effectively means it's a list. 
+                // Standard import is: Row 1 = Headers. 
+                // "read the first column in the excel as head columns" -> This phrasing is odd. 
+                // "read the first column... as head columns". Maybe they mean "First Row"? 
+                // "head columns and the others below" -> implies vertical structure.
+                // Standard convention is Row 1 = Headers. I will assume this.
+                // "first column... as head columns" -> grammatical slip for "first row"?
+                // Let's assume Row 1 = Headers.
+            }));
+
+            // Ensure we keep 'select' column if it's special
+            const hasSelect = newColumns.find(c => c.id === 'select');
+            if (!hasSelect) {
+                // Add select column at start if not present (unlikely from excel)
+                newColumns.unshift({ id: 'select', label: '', type: 'text', width: 40, pinned: true, minWidth: 40, resizable: false });
+            }
+
+            // 2. Process Rows
+            // Assuming first column in Excel becomes the 'name' / primary column? 
+            // Or just map by index?
+            // Let's try to map 'name' to the first actual data column.
+
+            // Refine Name Column: 
+            // If we have a column named 'name' or 'title', use that as ID 'name'.
+            // Otherwise, set the first non-select column as 'name'.
+
+            // Let's look at the generated IDs.
+            let nameColIndex = newColumns.findIndex(c => c.id === 'name' || c.label.toLowerCase() === 'name' || c.label.toLowerCase() === 'title');
+            if (nameColIndex === -1) {
+                // No explicit name column found, use the first non-select column
+                nameColIndex = newColumns.findIndex(c => c.id !== 'select');
+            }
+
+            if (nameColIndex !== -1) {
+                // Force ID to be 'name' for the primary column implementation
+                // Actually, our table relies on 'name' col ID? 
+                // Yes, `col.id === 'name'` is checked in many places.
+                // So we MUST have a column with id 'name'.
+
+                // Update the ID of that column to 'name'
+                newColumns[nameColIndex] = { ...newColumns[nameColIndex], id: 'name', pinned: true };
+            }
+
+            const newRows: Row[] = jsonData.slice(1).map((rowArray: any[], rowIndex: number) => {
+                const rowData: any = {
+                    id: Date.now().toString() + rowIndex,
+                    groupId: tableGroups[0]?.id || 'group_1', // Add to first group by default
+                    status: 'To Do', // Defaults
+                    priority: null,
+                };
+
+                // Map array values to column IDs
+                // Note: newColumns includes 'select' at index 0 probably. 
+                // headerRow might NOT have 'select'.
+                // Need to align indexes.
+
+                // headerRow index i corresponds to data row index i.
+                // We constructed newColumns from headerRow.
+                // BUT we might have unshifted 'select'.
+
+                // Let's reconstruct cleanly.
+                // Headers: [A, B, C] -> Cols: [Select, A, B, C] (if we added select)
+                // Data: [1, 2, 3]
+                // A -> 1, B -> 2, C -> 3
+
+                // Re-find the mapped columns excluding 'select' if it wasn't in file.
+                // Actually, I set IDs based on header content.
+                // Let's check if 'select' was added artificially.
+
+                const dataColumns = newColumns.filter(c => c.id !== 'select'); // These correspond to the file columns in order
+
+                rowArray.forEach((cellValue, idx) => {
+                    if (dataColumns[idx]) {
+                        rowData[dataColumns[idx].id] = cellValue;
+                    }
+                });
+
+                return rowData as Row;
+            });
+
+            // 3. Update State
+            setColumns(newColumns);
+
+            // Replace rows in first group? Or append?
+            // User implies "importing" -> might replace or add.
+            // Usually "Import" to a fresh table means replace. 
+            // "Import" to existing might mean append.
+            // Let's APPEND to the first group, or REPLACE if empty?
+            // "data table will read... meaning 100% correct importing".
+            // If I replace columns, I should probably replace rows too to match the schema.
+            // Retaining old rows with new schema might break if IDs don't match.
+            // Warning: This is a destructive operation for existing columns structure.
+
+            // Let's REPLACE for now as it maps schema.
+            const newGroups = [{ ...tableGroups[0], rows: newRows }];
+            setTableGroups(newGroups);
+
+            // Reset filters/sorts
+            setSortRules([]);
+            setSortConfig(null);
+
+        } catch (error) {
+            console.error("Import failed:", error);
+            // Could add toast notification here
+        } finally {
+            // Reset input
+            if (e.target) e.target.value = '';
+        }
+    };
 
     // Click Outside
     useEffect(() => {
@@ -1676,6 +1828,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         const start = (currentPage - 1) * rowsPerPage;
         return sortedRows.slice(start, start + rowsPerPage);
     }, [sortedRows, currentPage, rowsPerPage, isAllRows]);
+
+    // Paginated Groups - ensure we only show the rows that belong to the current page
+    const paginatedGroups = useMemo(() => {
+        if (isAllRows) return filteredTableGroups;
+
+        const paginatedRowIds = new Set(paginatedRows.map(r => r.id));
+
+        return filteredTableGroups.map(group => ({
+            ...group,
+            rows: group.rows.filter(r => paginatedRowIds.has(r.id))
+        })).filter(group => group.rows.length > 0 || group.isPinned);
+    }, [filteredTableGroups, paginatedRows, isAllRows]);
 
     // Priority Summary Calculation
     const priorityStats = useMemo(() => {
@@ -3797,13 +3961,32 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
 
                     {/* Right: Custom Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
+                        {enableImport && (
+                            <button
+                                onClick={handleImportClick}
+                                className="flex items-center gap-1.5 px-2 py-1 text-stone-600 dark:text-stone-300 hover:text-blue-600 transition-colors group"
+                            >
+                                <UploadCloud size={16} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-[13px] font-medium">Import</span>
+                            </button>
+                        )}
+
                         {renderCustomActions && renderCustomActions({
                             setRows,
                             setColumns,
                             setIsChartModalOpen,
                             setIsAIReportModalOpen
                         })}
+
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImport}
+                            accept=".csv, .xlsx, .xls"
+                            className="hidden"
+                        />
                     </div>
                 </div>
 
@@ -3845,88 +4028,93 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         onDragEnd={handleStructureDragEnd}
                     >
                         <SortableContext
-                            items={filteredTableGroups.map(g => g.id)}
+                            items={paginatedGroups.map(g => g.id)}
                             strategy={verticalListSortingStrategy}
                         >
-                            {filteredTableGroups.map((group, groupIndex) => {
+                            {paginatedGroups.map((group, groupIndex) => {
                                 const totalWidth = columns.reduce((acc, col) => acc + col.width, 0);
                                 return (
                                     <SortableGroupWrapper key={group.id} group={group}>
                                         <div className="mb-4">
                                             {/* Group Header - wrapper spans full width, content is sticky left */}
-                                            <div
-                                                className="shrink-0 bg-white dark:bg-[#1a1c22] border-b border-stone-100 dark:border-stone-800/50 sticky top-0 z-50"
-                                                style={{ minWidth: totalWidth }}
-                                            >
-                                                <div className="flex items-center gap-2 px-4 py-3 sticky left-0 z-10 w-fit bg-white dark:bg-[#1a1c22]">
-                                                    {/* Color accent bar (Drag Handle) */}
-                                                    <GroupDragHandle colorClass={group.color.bg} />
-                                                    <button
-                                                        onClick={() => handleToggleGroupCollapse(group.id)}
-                                                        className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors text-stone-500 hover:text-stone-700"
-                                                    >
-                                                        {group.isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                                                    </button>
-
-                                                    {/* Pin Button */}
-                                                    <button
-                                                        onClick={() => handleToggleGroupPin(group.id)}
-                                                        className={`p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors ${group.isPinned ? 'text-blue-600 dark:text-blue-400 rotate-45' : 'text-stone-400 hover:text-stone-600'}`}
-                                                        title={group.isPinned ? "Unpin Group" : "Pin Group"}
-                                                    >
-                                                        <Pin size={16} className={group.isPinned ? "fill-current" : ""} />
-                                                    </button>
-                                                    <EditableName
-                                                        name={group.name}
-                                                        onRename={(newName) => handleUpdateGroupName(group.id, newName)}
-                                                        className={`${group.color.text} text-[24px]`}
-                                                    />
-                                                    <span className="text-xs text-stone-400 ml-2">
-                                                        {group.rows.length} {group.rows.length === 1 ? 'item' : 'items'}
-                                                    </span>
-                                                    {/* 3-dot menu */}
-                                                    <div className="relative ml-2">
+                                            {!hideGroupHeader && (
+                                                <div
+                                                    className="shrink-0 bg-white dark:bg-[#1a1c22] border-b border-stone-100 dark:border-stone-800/50 sticky top-0 z-50"
+                                                    style={{ minWidth: totalWidth }}
+                                                >
+                                                    <div className="flex items-center gap-2 px-4 py-3 sticky left-0 z-10 w-fit bg-white dark:bg-[#1a1c22]">
+                                                        {/* Color accent bar (Drag Handle) */}
+                                                        <GroupDragHandle colorClass={group.color.bg} />
                                                         <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const menu = e.currentTarget.nextElementSibling;
-                                                                if (menu) {
-                                                                    menu.classList.toggle('hidden');
-                                                                }
-                                                            }}
-                                                            className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded transition-colors"
+                                                            onClick={() => handleToggleGroupCollapse(group.id)}
+                                                            className="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors text-stone-500 hover:text-stone-700"
                                                         >
-                                                            <MoreHorizontal size={16} className="text-stone-400" />
+                                                            {group.isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                                                         </button>
-                                                        <div className="hidden absolute left-0 top-full mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-xl z-50 min-w-[120px] py-1">
+
+                                                        {/* Pin Button */}
+                                                        <button
+                                                            onClick={() => handleToggleGroupPin(group.id)}
+                                                            className={`p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors ${group.isPinned ? 'text-blue-600 dark:text-blue-400 rotate-45' : 'text-stone-400 hover:text-stone-600'}`}
+                                                            title={group.isPinned ? "Unpin Group" : "Pin Group"}
+                                                        >
+                                                            <Pin size={16} className={group.isPinned ? "fill-current" : ""} />
+                                                        </button>
+                                                        <EditableName
+                                                            name={group.name}
+                                                            onRename={(newName) => handleUpdateGroupName(group.id, newName)}
+                                                            className={`${group.color.text} text-[24px]`}
+                                                        />
+                                                        <span className="text-xs text-stone-400 ml-2">
+                                                            {group.rows.length} {group.rows.length === 1 ? 'item' : 'items'}
+                                                        </span>
+                                                        {/* 3-dot menu */}
+                                                        <div className="relative ml-2">
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    setDeleteConfig({
-                                                                        isOpen: true,
-                                                                        title: `Delete "${group.name}" and all its items?`,
-                                                                        description: "This will permanently remove the group and all tasks within it.",
-                                                                        onConfirm: () => handleDeleteGroup(group.id)
-                                                                    });
-                                                                    const menu = e.currentTarget.parentElement;
-                                                                    if (menu) menu.classList.add('hidden');
+                                                                    const menu = e.currentTarget.nextElementSibling;
+                                                                    if (menu) {
+                                                                        menu.classList.toggle('hidden');
+                                                                    }
                                                                 }}
-                                                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                                className="p-1 hover:bg-stone-200 dark:hover:bg-stone-700 rounded transition-colors"
                                                             >
-                                                                <Trash2 size={14} />
-                                                                Delete
+                                                                <MoreHorizontal size={16} className="text-stone-400" />
                                                             </button>
+                                                            <div className="hidden absolute left-0 top-full mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-xl z-50 min-w-[120px] py-1">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDeleteConfig({
+                                                                            isOpen: true,
+                                                                            title: `Delete "${group.name}" and all its items?`,
+                                                                            description: "This will permanently remove the group and all tasks within it.",
+                                                                            onConfirm: () => handleDeleteGroup(group.id)
+                                                                        });
+                                                                        const menu = e.currentTarget.parentElement;
+                                                                        if (menu) menu.classList.add('hidden');
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                    Delete
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {!group.isCollapsed && (
                                                 <>
                                                     {/* Table Header - show for ALL groups */}
                                                     {/* Table Header - show for ALL groups */}
                                                     <SortableContext items={columns.map(c => `${group.id}__${c.id}`)} strategy={horizontalListSortingStrategy}>
-                                                        <div className="group flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 h-10 flex-shrink-0 min-w-max sticky top-[57px] z-[35]">
+                                                        <div
+                                                            className="group flex items-center border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 h-10 flex-shrink-0 min-w-max sticky z-[35]"
+                                                            style={{ top: hideGroupHeader ? 0 : '57px' }}
+                                                        >
                                                             {columns.map((col, index) => {
                                                                 const isSticky = !!col.pinned;
                                                                 let leftPos = 0;
@@ -3969,7 +4157,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                                         setActiveColumnMenu({ rect });
                                                                     }}
-                                                                    className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    className="flex items-center justify-center w-8 h-full border-s border-stone-200/50 dark:border-stone-800 text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
                                                                 >
                                                                     <Plus size={14} />
                                                                 </button>
@@ -4147,8 +4335,21 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             document.body
                         )}
                     </DndContext>
-                    {/* Bottom spacer */}
-                    <div className="h-32 shrink-0" />
+                    {showPagination && (
+                        <TablePagination
+                            totalItems={rows.length}
+                            pageSize={rowsPerPage}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={(size) => {
+                                setRowsPerPage(size);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    )}
+                    {!showPagination && (
+                        <div className="h-32 shrink-0" />
+                    )}
                 </div>
 
                 {
