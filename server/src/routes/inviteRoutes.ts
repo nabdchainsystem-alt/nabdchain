@@ -17,14 +17,16 @@ router.post('/create', requireAuth, async (req: any, res) => {
 
         if (!user) {
             // Should exist if auth passed, but create if missing (lazy sync)
-            user = await prisma.user.create({
-                data: { id: userId, email: "unknown@placeholder.com" } // Email should come from Clerk in real app
+            const newUser = await prisma.user.create({
+                data: { id: userId, email: "unknown@placeholder.com" },
+                include: { workspace: true }
             });
+            user = newUser;
         }
 
-        let workspaceId = user.workspaceId;
+        let workspaceId = user?.workspaceId;
 
-        if (!workspaceId) {
+        if (!workspaceId && user) {
             // Create a default workspace for this user
             const workspace = await prisma.workspace.create({
                 data: {

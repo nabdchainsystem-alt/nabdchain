@@ -35,15 +35,17 @@ const getPca = () => {
     return pca;
 };
 
-export const getOutlookAuthURL = async () => {
+export const getOutlookAuthURL = async (userId: string) => {
     const client = getPca();
+    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
     return await client.getAuthCodeUrl({
         scopes: SCOPES,
         redirectUri: REDIRECT_URI,
+        state
     });
 };
 
-export const handleOutlookCallback = async (code: string) => {
+export const handleOutlookCallback = async (code: string, userId: string) => {
     const client = getPca();
     const tokenRequest = {
         code,
@@ -64,31 +66,22 @@ export const handleOutlookCallback = async (code: string) => {
         where: { email, provider: 'outlook' }
     });
 
-    // MSAL doesn't expose refresh token explicitly in response always, but it caches it. 
-    // However, for Manual CRUD, we might need to rely on the fact that MSAL manages it. 
-    // BUT, since we are doing a simple API integration, we might want to store the raw refresh token if possible?
-    // MSAL Node is designed to manage the token cache. 
-    // HACK: For this simplified one-off integration, we might act as if we are managing tokens manually 
-    // OR we just store the access token and assume user reconnects if expired (MVP).
-    // Better: MSAL response usually includes `refresh_token` if we look at the raw network response, 
-    // but the library abstracts it. 
-    // Let's switch to simple-oauth2 or manual fetch for Outlook if MSAL proves too black-boxy for simple DB storage.
-    // Actually, response.fromCache might obscure it. 
-    // Let's stick to storing what we have. If token expires, we'll ask user to re-login for this MVP.
-
-    // NOTE: 'offline_access' scope gives a refresh token.
-    // We will trust that we can get a new one or just ask user to re-login.
+    // NOTE: MSAL manages refresh tokens internally. For MVP, we store access token
+    // and ask user to re-login if token expires.
 
     const data = {
         provider: 'outlook',
         email,
         accessToken: encrypt(accessToken),
-        // Storing empty refresh token as MSAL handles it internally or we skip it for MVP
         refreshToken: '',
         tokenExpiry: expiresOn || new Date(Date.now() + 3600 * 1000)
     };
 
     if (existing) {
+        // Verify ownership
+        if (existing.userId !== userId) {
+            throw new Error('This email is already connected to another user.');
+        }
         return prisma.emailAccount.update({
             where: { id: existing.id },
             data: {
@@ -98,7 +91,10 @@ export const handleOutlookCallback = async (code: string) => {
         });
     } else {
         return prisma.emailAccount.create({
-            data
+            data: {
+                ...data,
+                userId
+            }
         });
     }
 };

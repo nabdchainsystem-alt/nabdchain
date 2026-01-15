@@ -23,7 +23,7 @@ import {
     useDroppable
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { ITask, Status, PEOPLE, IBoard } from '../../types/boardTypes';
+import { ITask, Status, PEOPLE, IBoard, STATUS_COLORS } from '../../types/boardTypes';
 import { useRoomBoardData } from '../../hooks/useRoomBoardData';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { CalendarEventModal } from './components/CalendarEventModal';
@@ -62,10 +62,8 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
     };
 
     // New "Dot + Text" style
-    let dotColor = 'bg-gray-400';
-    if (task.status === Status.Done) dotColor = 'bg-green-500';
-    else if (task.status === Status.WorkingOnIt) dotColor = 'bg-amber-500';
-    else if (task.status === Status.Stuck) dotColor = 'bg-red-500';
+    // Use STATUS_COLORS for dynamic coloring
+    const dotColor = STATUS_COLORS[task.status] || '#c4c4c4';
 
     return (
         <div
@@ -76,7 +74,7 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
             onClick={onClick}
             className="group flex items-center gap-2 px-2 py-1 bg-white dark:bg-[#252830] border border-gray-100 dark:border-gray-800 rounded shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-grab active:cursor-grabbing select-none mb-1 overflow-hidden"
         >
-            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
             <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate leading-tight">
                 {task.name}
             </span>
@@ -110,7 +108,6 @@ const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isTod
     let hiddenCount = 0;
 
     if (tasks.length > MAX_VISIBLE) {
-        // If we overflow, we show (MAX-1) items + 1 button to keep total elements <= MAX
         visibleTasks = tasks.slice(0, MAX_VISIBLE - 1);
         hiddenCount = tasks.length - (MAX_VISIBLE - 1);
     }
@@ -121,24 +118,14 @@ const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isTod
             onClick={onClick}
             className={`
                 relative flex flex-col transition-all cursor-pointer h-full min-h-[120px]
-                border-b border-r border-[#E5E7EB] dark:border-gray-800
-                ${!isCurrentMonth ? 'bg-gray-50/30 dark:bg-gray-900/10' : 'bg-white dark:bg-[#1a1d24]'}
+                border-b border-r border-gray-100 dark:border-gray-800
+                bg-white dark:bg-[#1a1d24]
                 ${isOver ? 'ring-inset ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'}
+                ${isToday ? 'ring-inset ring-1 ring-black dark:ring-white z-10' : ''}
                 group
             `}
         >
-            <div className="flex items-start justify-between p-2">
-                <span className={`
-                    text-[12px] font-medium w-6 h-6 flex items-center justify-center rounded-full
-                    ${isToday
-                        ? 'bg-black dark:bg-white text-white dark:text-black'
-                        : isCurrentMonth ? 'text-gray-500 dark:text-gray-400' : 'text-gray-300 dark:text-gray-600'}
-                `}>
-                    {date.getDate()}
-                </span>
-            </div>
-
-            <div className="flex-1 px-1.5 pb-2 overflow-y-auto space-y-0.5 no-scrollbar">
+            <div className="flex-1 px-1.5 pt-2 pb-8 overflow-y-auto space-y-0.5 no-scrollbar">
                 {visibleTasks.map(({ task, groupId }) => (
                     <DraggableTask
                         key={task.id}
@@ -200,6 +187,13 @@ const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isTod
                         )}
                     </>
                 )}
+            </div>
+
+            <div className={`
+                absolute bottom-2 right-3 text-xs font-normal
+                ${isToday ? 'text-black dark:text-white font-medium' : isCurrentMonth ? 'text-gray-400 dark:text-gray-500' : 'text-gray-200 dark:text-gray-700'}
+            `}>
+                {date.getDate()}
             </div>
         </div>
     );
@@ -418,7 +412,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                 {/* --- Header Section --- */}
                 <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
                     {/* Top Row: Title, Nav, Actions */}
-                    <div className="flex items-center justify-start gap-4 px-0 py-3">
+                    <div className="flex items-center justify-start gap-4 pl-[24px] pr-[20px] py-3">
                         <div className="flex items-center gap-3">
                             {/* Today Button */}
                             <button

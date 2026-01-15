@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Board, Workspace } from '../../types';
 
 interface NewTaskModalProps {
@@ -66,7 +67,7 @@ export const NewTaskModal: React.FC<NewTaskModalProps> = ({
     }, [selectedWorkspaceId, boards, locationType, selectedBoardId]);
 
 
-    if (!isOpen) return null;
+
 
     const handleSave = () => {
         if (!taskName.trim()) return;
@@ -93,161 +94,193 @@ export const NewTaskModal: React.FC<NewTaskModalProps> = ({
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-
-                {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-600">add_task</span>
-                        New Task
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100 transition-colors">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-
-                {/* content */}
-                <div className="p-6 space-y-5">
-
-                    {/* Task Name */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Task Name</label>
-                        <input
-                            autoFocus
-                            type="text"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            placeholder="What needs to be done?"
-                            value={taskName}
-                            onChange={e => setTaskName(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Priority */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Priority</label>
-                            <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                value={priority}
-                                onChange={e => setPriority(e.target.value)}
-                            >
-                                <option value="High">High</option>
-                                <option value="Medium">Medium</option>
-                                <option value="Low">Low</option>
-                            </select>
-                        </div>
-
-                        {/* Date */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date</label>
-                            <input
-                                type="date"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={date}
-                                onChange={e => setDate(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <hr className="border-gray-100" />
-
-                    {/* Location Selection */}
-                    <div className="space-y-3">
-                        <div className="flex bg-gray-100 p-1 rounded-lg">
-                            <button
-                                className={`flex-1 text-sm font-medium py-1.5 px-3 rounded-md transition-all ${locationType === 'existing' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setLocationType('existing')}
-                            >
-                                Existing Board
-                            </button>
-                            <button
-                                className={`flex-1 text-sm font-medium py-1.5 px-3 rounded-md transition-all ${locationType === 'new' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setLocationType('new')}
-                            >
-                                New Board
-                            </button>
-                        </div>
-
-                        {locationType === 'existing' ? (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Workspace</label>
-                                    <select
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                        value={selectedWorkspaceId}
-                                        onChange={e => setSelectedWorkspaceId(e.target.value)}
-                                    >
-                                        {workspaces.map(ws => (
-                                            <option key={ws.id} value={ws.id}>{ws.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Board</label>
-                                    <select
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white disabled:bg-gray-50 disabled:text-gray-400"
-                                        value={selectedBoardId}
-                                        onChange={e => setSelectedBoardId(e.target.value)}
-                                        disabled={boards.filter(b => b.workspaceId === selectedWorkspaceId).length === 0}
-                                    >
-                                        {boards.filter(b => b.workspaceId === selectedWorkspaceId).map(b => (
-                                            <option key={b.id} value={b.id}>{b.name}</option>
-                                        ))}
-                                        {boards.filter(b => b.workspaceId === selectedWorkspaceId).length === 0 && (
-                                            <option>No boards found</option>
-                                        )}
-                                    </select>
-                                </div>
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    className="fixed inset-0 z-[9999] flex justify-end bg-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={onClose}
+                >
+                    <motion.div
+                        className="bg-white w-full max-w-[360px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <form
+                            className="flex flex-col h-full"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleSave();
+                            }}
+                        >
+                            {/* Header */}
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-blue-600">add_task</span>
+                                    New Task
+                                </h2>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="text-gray-400 hover:text-gray-600 rounded-full p-2 hover:bg-gray-100 transition-colors"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
                             </div>
-                        ) : (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+
+                            {/* Content */}
+                            <div className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+
+                                {/* Task Name */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Workspace</label>
-                                    <select
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                        value={selectedWorkspaceId}
-                                        onChange={e => setSelectedWorkspaceId(e.target.value)}
-                                    >
-                                        {workspaces.map(ws => (
-                                            <option key={ws.id} value={ws.id}>{ws.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">New Board Name</label>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Task Name</label>
                                     <input
+                                        autoFocus
                                         type="text"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                        placeholder="e.g. Marketing Projects"
-                                        value={newBoardName}
-                                        onChange={e => setNewBoardName(e.target.value)}
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400"
+                                        placeholder="What needs to be done?"
+                                        value={taskName}
+                                        onChange={e => setTaskName(e.target.value)}
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* Priority */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Priority</label>
+                                        <select
+                                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                                            value={priority}
+                                            onChange={e => setPriority(e.target.value)}
+                                        >
+                                            <option value="High">High</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Low">Low</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Date */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                                            value={date}
+                                            onChange={e => setDate(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <hr className="border-gray-100" />
+
+                                {/* Location Selection */}
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">Location</label>
+                                    <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                                        <button
+                                            type="button"
+                                            className={`flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all ${locationType === 'existing' ? 'bg-white text-blue-600 shadow-sm border border-gray-100' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setLocationType('existing')}
+                                        >
+                                            Existing Board
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`flex-1 text-sm font-medium py-2 px-3 rounded-lg transition-all ${locationType === 'new' ? 'bg-white text-blue-600 shadow-sm border border-gray-100' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setLocationType('new')}
+                                        >
+                                            New Board
+                                        </button>
+                                    </div>
+
+                                    {locationType === 'existing' ? (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">Workspace</label>
+                                                <select
+                                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                                                    value={selectedWorkspaceId}
+                                                    onChange={e => setSelectedWorkspaceId(e.target.value)}
+                                                >
+                                                    {workspaces.map(ws => (
+                                                        <option key={ws.id} value={ws.id}>{ws.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">Board</label>
+                                                <select
+                                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white disabled:bg-gray-50 disabled:text-gray-400"
+                                                    value={selectedBoardId}
+                                                    onChange={e => setSelectedBoardId(e.target.value)}
+                                                    disabled={boards.filter(b => b.workspaceId === selectedWorkspaceId).length === 0}
+                                                >
+                                                    {boards.filter(b => b.workspaceId === selectedWorkspaceId).map(b => (
+                                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                                    ))}
+                                                    {boards.filter(b => b.workspaceId === selectedWorkspaceId).length === 0 && (
+                                                        <option>No boards found</option>
+                                                    )}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">Workspace</label>
+                                                <select
+                                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                                                    value={selectedWorkspaceId}
+                                                    onChange={e => setSelectedWorkspaceId(e.target.value)}
+                                                >
+                                                    {workspaces.map(ws => (
+                                                        <option key={ws.id} value={ws.id}>{ws.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">New Board Name</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                                                    placeholder="e.g. Marketing Projects"
+                                                    value={newBoardName}
+                                                    onChange={e => setNewBoardName(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
-                        )}
-                    </div>
 
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm hover:shadow transition-all"
-                    >
-                        Create Task
-                    </button>
-                </div>
-
-            </div>
-        </div>,
+                            {/* Footer */}
+                            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5"
+                                >
+                                    Create Task
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>,
         document.body
     );
 };

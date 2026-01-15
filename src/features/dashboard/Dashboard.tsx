@@ -6,10 +6,12 @@ import {
   CheckCircle, Flag, WarningCircle, CalendarBlank, Folder,
   PencilSimple, ListPlus, UserPlus, MagnifyingGlass, SquaresFour,
   UploadSimple, Clock, Trash, ChatCircle, PaperPlaneRight,
-  EnvelopeSimple, Archive, NotePencil, Bell
+  EnvelopeSimple, Archive, NotePencil, Bell, Funnel, SortAscending, ArrowsDownUp, User, X
 } from 'phosphor-react';
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
+import { CreateEventModal } from './components/CreateEventModal';
 import { SaveToVaultModal } from './components/SaveToVaultModal';
+import { GlobalSearchDrawer } from './components/GlobalSearchDrawer';
 import { boardService } from '../../services/boardService';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../auth-adapter';
@@ -39,12 +41,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [quickNote, setQuickNote] = useState('');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [urgentTasksPage, setUrgentTasksPage] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'overdue' | 'person'>('all');
   const [recentPage, setRecentPage] = useState(0);
+
+  // Person Filter State
+  const [isPersonSearchOpen, setIsPersonSearchOpen] = useState(false);
+  const [personSearchQuery, setPersonSearchQuery] = useState('');
+  const [selectedPersons, setSelectedPersons] = useState<string[]>([]);
+  const MOCK_PEOPLE = ['Max', 'Sarah', 'Mike', 'Ali', 'Emma', 'Design Team', 'Dev Team'];
   const ITEMS_PER_PAGE = 3;
 
   // Upload Logic
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -73,24 +84,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [weather, setWeather] = useState<{ temp: number; condition: string; city: string; country: string } | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Update every minute
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now);
 
-    // Initial greeting set
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good morning');
-    else if (hour < 18) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
+      // Update greeting
+      const hour = now.getHours();
+      if (hour < 12) setGreeting('Good morning');
+      else if (hour < 18) setGreeting('Good afternoon');
+      else setGreeting('Good evening');
+    };
 
-    return () => clearInterval(timer);
+    // Initial update
+    updateTime();
+
+    const timer = setInterval(updateTime, 60000); // Update every minute
+
+    // Update immediately when tab becomes visible or focused
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateTime();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', updateTime);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', updateTime);
+    };
   }, []);
 
-  // Update greeting when time changes significantly (lazy way checks on re-render or could be in effect)
-  useEffect(() => {
-    const hour = currentTime.getHours();
-    if (hour < 12) setGreeting('Good morning');
-    else if (hour < 18) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
-  }, [currentTime]);
+
 
   // Fetch Weather & Location
   useEffect(() => {
@@ -196,12 +223,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       }
     });
     // Sort by due date (ascending) - handling empty dates by putting them last
-    return allTasks.sort((a, b) => {
+    const sortedAll = allTasks.sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    // Apply Filters
+    let filteredTasks = sortedAll;
+
+    if (activeFilter === 'high') {
+      filteredTasks = filteredTasks.filter(t => t.priority === 'High');
+    } else if (activeFilter === 'overdue') {
+      const now = new Date();
+      filteredTasks = filteredTasks.filter(t => t.date && new Date(t.date) < now && t.status !== 'Done' && t.status !== 'Completed');
+    } else if (activeFilter === 'person') {
+      if (selectedPersons.length > 0) {
+        filteredTasks = filteredTasks.filter(t => t.person && selectedPersons.some(p => t.person.includes(p)));
+      } else if (userDisplayName) {
+        // Default to current user if no specific person selected but filter is active (fallback)
+        filteredTasks = filteredTasks.filter(t => t.person?.includes(userDisplayName));
+      }
+    }
+
+    // Sort by due date (ascending) - handling empty dates by putting them last
+    return filteredTasks.sort((a, b) => {
       if (!a.date) return 1;
       if (!b.date) return -1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     }).slice(0, 15); // increased limit to support pagination
-  }, [boards]);
+  }, [boards, activeFilter, userDisplayName, selectedPersons]);
 
   const paginatedUrgentTasks = urgentTasks.slice((urgentTasksPage - 1) * ITEMS_PER_PAGE, urgentTasksPage * ITEMS_PER_PAGE);
   const totalUrgentPages = Math.ceil(urgentTasks.length / ITEMS_PER_PAGE);
@@ -353,6 +404,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     } catch (e) {
       console.error("Failed to create new task", e);
       alert("Failed to create task. Please try again.");
+    }
+  };
+
+  const handleEventSave = async (eventData: any, boardId: string) => {
+    try {
+      if (!boardId) return;
+
+      const newTask: Task = {
+        id: `e-${Date.now()}`,
+        name: eventData.name,
+        priority: eventData.priority as 'High' | 'Medium' | 'Low',
+        date: eventData.date,
+        status: 'Not Started', // Events default to this for now
+        person: eventData.attendees, // Storing attendees in person field
+        description: eventData.description,
+        type: 'event'
+      };
+
+      await onTaskCreated(boardId, newTask);
+      onNavigate('board', boardId); // Navigate to the board where event was added
+    } catch (e) {
+      console.error("Failed to create event", e);
     }
   };
 
@@ -512,36 +585,137 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             <div className="lg:col-span-2">
               <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <WarningCircle size={24} weight="light" className="text-red-500" />
-                    Urgent Tasks
-                  </h2>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => onNavigate('my_work')}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                    >
-                      Show All
-                    </button>
-                    {totalUrgentPages > 1 && (
-                      <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+
+                  {/* Left Side: Title & Controls */}
+                  <div className="flex items-center gap-6">
+                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <WarningCircle size={24} weight="light" className="text-red-500" />
+                      Urgent Tasks
+                    </h2>
+
+                    <div className="h-6 w-px bg-gray-200"></div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onNavigate('my_work')}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline mr-1"
+                      >
+                        Show All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Filters */}
+                  <div className="flex items-center justify-end min-w-[80px]">
+                    {/* Filter Toolbar */}
+                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                      {/* Standard Filters */}
+                      <div className={`flex items-center transition-all duration-300 ease-out overflow-hidden ${isPersonSearchOpen ? 'w-0 opacity-0 p-0' : 'w-auto opacity-100'}`}>
                         <button
-                          onClick={() => setUrgentTasksPage(p => Math.max(1, p - 1))}
-                          disabled={urgentTasksPage === 1}
-                          className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                          onClick={() => setActiveFilter('all')}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          title="All Tasks"
                         >
-                          <CaretLeft size={14} weight="light" />
+                          <SquaresFour size={16} weight={activeFilter === 'all' ? 'fill' : 'regular'} />
                         </button>
-                        <span className="text-[10px] font-medium text-gray-500 px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
                         <button
-                          onClick={() => setUrgentTasksPage(p => Math.min(totalUrgentPages, p + 1))}
-                          disabled={urgentTasksPage === totalUrgentPages}
-                          className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                          onClick={() => setActiveFilter('high')}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'high' ? 'bg-white shadow-sm text-red-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          title="High Priority"
                         >
-                          <CaretRight size={14} weight="light" />
+                          <WarningCircle size={16} weight={activeFilter === 'high' ? 'fill' : 'regular'} />
+                        </button>
+                        <button
+                          onClick={() => setActiveFilter('overdue')}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'overdue' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          title="Overdue"
+                        >
+                          <CalendarBlank size={16} weight={activeFilter === 'overdue' ? 'fill' : 'regular'} />
                         </button>
                       </div>
-                    )}
+
+                      {/* Person Search - Expandable from center */}
+                      <div className={`relative flex items-center transition-all duration-300 ease-out ${isPersonSearchOpen ? 'w-[220px]' : 'w-8'}`}>
+                        {isPersonSearchOpen ? (
+                          <div
+                            className="flex items-center w-full bg-white rounded-md shadow-sm border border-blue-100 overflow-hidden origin-right"
+                          >
+                            <div className="pl-2 pr-1 text-indigo-500 shrink-0">
+                              <User size={14} weight="fill" />
+                            </div>
+                            <div className="flex-1 flex items-center overflow-hidden min-w-0">
+                              {selectedPersons.length > 0 && (
+                                <div className="flex items-center gap-1 px-1 shrink-0">
+                                  <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                    {selectedPersons[0]}
+                                    {selectedPersons.length > 1 && ` +${selectedPersons.length - 1}`}
+                                  </span>
+                                </div>
+                              )}
+                              <input
+                                autoFocus
+                                type="text"
+                                className="w-full text-xs border-none focus:ring-0 p-1.5 pl-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent min-w-[50px]"
+                                placeholder={selectedPersons.length === 0 ? "Search..." : ""}
+                                value={personSearchQuery}
+                                onChange={(e) => setPersonSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') {
+                                    setIsPersonSearchOpen(false);
+                                  }
+                                }}
+                              />
+                            </div>
+                            <button
+                              onClick={() => {
+                                setIsPersonSearchOpen(false);
+                                setPersonSearchQuery('');
+                                if (activeFilter === 'person' && selectedPersons.length === 0) setActiveFilter('all');
+                              }}
+                              className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-600 shrink-0"
+                            >
+                              <X size={12} />
+                            </button>
+
+                            {/* Dropdown */}
+                            {personSearchQuery && (
+                              <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 max-h-48 overflow-y-auto">
+                                {MOCK_PEOPLE.filter(p => p.toLowerCase().includes(personSearchQuery.toLowerCase()) && !selectedPersons.includes(p)).map(person => (
+                                  <button
+                                    key={person}
+                                    onClick={() => {
+                                      setSelectedPersons(prev => [...prev, person]);
+                                      setPersonSearchQuery('');
+                                      setActiveFilter('person');
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2"
+                                  >
+                                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">
+                                      {person.charAt(0)}
+                                    </div>
+                                    {person}
+                                  </button>
+                                ))}
+                                {MOCK_PEOPLE.filter(p => p.toLowerCase().includes(personSearchQuery.toLowerCase()) && !selectedPersons.includes(p)).length === 0 && (
+                                  <div className="px-3 py-2 text-xs text-gray-400 text-center">No matches</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setIsPersonSearchOpen(true);
+                              setActiveFilter('person');
+                            }}
+                            className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                            title="Filter by Person"
+                          >
+                            <User size={16} weight={activeFilter === 'person' ? 'fill' : 'regular'} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4 flex-1 flex flex-col h-[260px] overflow-y-auto pr-1 custom-scrollbar">
@@ -586,6 +760,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     </div>
                   )}
                 </div>
+                {/* Footer: Pagination */}
+                <div className="flex items-center justify-end pt-4 mt-auto">
+                  {totalUrgentPages > 1 && (
+                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100 shadow-sm">
+                      <button
+                        onClick={() => setUrgentTasksPage(p => Math.max(1, p - 1))}
+                        disabled={urgentTasksPage === 1}
+                        className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      >
+                        <CaretLeft size={14} weight="light" />
+                      </button>
+                      <span className="text-[10px] font-medium text-gray-500 px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
+                      <button
+                        onClick={() => setUrgentTasksPage(p => Math.min(totalUrgentPages, p + 1))}
+                        disabled={urgentTasksPage === totalUrgentPages}
+                        className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      >
+                        <CaretRight size={14} weight="light" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </section>
             </div>
 
@@ -610,7 +806,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <UserPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Invite Member</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                  <button
+                    onClick={() => setIsGlobalSearchOpen(true)}
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                  >
                     <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Search All</span>
                   </button>
@@ -618,7 +817,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">New Board</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                  <button
+                    onClick={() => setIsEventModalOpen(true)}
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
                     <CalendarBlank size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">Events</span>
                   </button>
@@ -757,6 +958,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           setUploadFile(null);
         }}
         file={uploadFile}
+      />
+
+      <CreateEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        boards={boards}
+        workspaces={workspaces}
+        onSave={handleEventSave}
+        activeWorkspaceId={activeWorkspaceId}
+      />
+      <GlobalSearchDrawer
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        boards={boards}
+        onNavigate={onNavigate}
       />
     </div>
   );

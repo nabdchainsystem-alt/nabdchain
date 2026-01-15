@@ -139,7 +139,25 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
   };
 
   // Logic: Today -> Yesterday -> Pending
-  const now = new Date();
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const updateNow = () => setNow(new Date());
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') updateNow();
+    };
+
+    window.addEventListener('focus', updateNow);
+    document.addEventListener('visibilitychange', handleVisibility);
+    // Update every minute (optional but good for midnight crossover)
+    const timer = setInterval(updateNow, 60000);
+
+    return () => {
+      window.removeEventListener('focus', updateNow);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(timer);
+    };
+  }, []);
   const todayItems = inboxItems.filter(item => {
     const itemDate = new Date(item.createdAt);
     return itemDate.toDateString() === now.toDateString();

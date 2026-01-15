@@ -441,18 +441,38 @@ const GroupDragHandle: React.FC<{ colorClass?: string }> = ({ colorClass }) => {
     );
 };
 
+export interface StatusOption {
+    id: string;
+    title: string;
+    color: string;
+}
+
 const StatusPicker: React.FC<{
     onSelect: (s: string) => void;
     onClose: () => void;
     current: string;
     triggerRect?: DOMRect;
-    options?: string[];
+    options?: StatusOption[];
     onAdd?: (s: string) => void;
     onDelete?: (s: string) => void;
 }> = ({ onSelect, onClose, current, triggerRect, options, onAdd, onDelete }) => {
     const [customStatus, setCustomStatus] = useState('');
-    const defaultStatuses = ['To Do', 'In Progress', 'Done', 'Stuck', 'Rejected'];
-    const displayStatuses = Array.from(new Set([...defaultStatuses, ...(options || [])]));
+
+    // Default statuses with colors matching KanbanBoard
+    const defaultStatuses: StatusOption[] = [
+        { id: 'To Do', title: 'To Do', color: 'gray' },
+        { id: 'In Progress', title: 'In Progress', color: 'blue' },
+        { id: 'Q&A', title: 'Q&A', color: 'purple' },
+        { id: 'Done', title: 'Done', color: 'emerald' },
+        { id: 'Stuck', title: 'Stuck', color: 'orange' },
+        { id: 'Rejected', title: 'Rejected', color: 'rose' }
+    ];
+
+    // Merge defaults with custom options, prioritizing custom options if IDs match
+    // actually, we should just show the options passed in from the parent which should contain EVERYTHING
+    // But for safety, we ensure defaults exist if options is empty
+    const displayStatuses = options && options.length > 0 ? options : defaultStatuses;
+
     const menuRef = useRef<HTMLDivElement>(null);
     const [positionStyle, setPositionStyle] = useState<React.CSSProperties>(() => {
         if (triggerRect) {
@@ -906,21 +926,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             isCollapsed: g.isCollapsed,
                             color: g.color,
                             isPinned: g.isPinned,
-                            // We do NOT trust g.rows or g.name from storage if we have externalTasks? 
-                            // Actually name might be local? No, name should come from board if synced.
-                            // But for now, let's assume externalTasks doesn't carry group names easily unless we look at board.groups.
-                            // Limitation: externalTasks is flat. Group Names are not in generic ITask strictly speaking?
-                            // Actually ITask has groupId.
-                            // We need IBoard to get Group Names. But we only have externalTasks here.
-                            // We trust local storage for Group Names and View State.
-                            name: g.name
+                            // If we are in standalone mode (no externalTasks), we MUST trust the saved name and rows
+                            name: g.name,
+                            rows: g.rows,
                         };
                     });
                 }
             }
         } catch { }
 
-        // If no external source, return empty or default
+        // If external source exists, sync with it
         if (externalTasks && externalTasks.length > 0) {
             const tasksByGroup: Record<string, Row[]> = {};
             // Keep track of order found in tasks if possible, or just unique IDs
@@ -956,13 +971,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
             return allIds
                 .filter(id => tasksByGroup[id] !== undefined || savedGroupsMap[id] !== undefined) // Only show if has tasks or existed
-                .filter(id => tasksByGroup[id] && tasksByGroup[id].length > 0) // OPTIONAL: Filter out empty groups if that's desired behavior? No, keep empty groups if they exist.
-                // Actually, if we restrict to only groups present in externalTasks? 
-                // BoardView passes ALL tasks. If a group is empty in Board, it has NO tasks.
-                // So externalTasks will NOT have that group ID.
-                // Does RoomTable support empty groups synced from Board?
-                // Only if onUpdateTasks/onAddGroup logic handles it.
-                // For now, let's just show groups that have tasks in the view.
+                .filter(id => tasksByGroup[id] && tasksByGroup[id].length > 0)
                 .filter(id => tasksByGroup[id] !== undefined)
                 .map((id, idx) => {
                     const saved = savedGroupsMap[id] || {};
@@ -977,13 +986,21 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 });
         }
 
-        // Fallback to legacy loading if no external tasks (or empty)
-        // ... (Keep existing logic or simplify to empty)
-        try {
-            if (externalTasks) return []; // If passed but empty, return empty.
-            // Only load from storage if externalTasks is UNDEFINED (not just empty array)
-            // But usually it is defined.
-        } catch { }
+        // STANDALONE MODE: If no external tasks are provided, load purely from LocalStorage
+        // This is crucial for "Data Table" import persistence.
+        if (!externalTasks) {
+            try {
+                const savedGroupsStr = localStorage.getItem(storageKeyGroups);
+                if (savedGroupsStr) {
+                    const parsed = JSON.parse(savedGroupsStr);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load generic table data", e);
+            }
+        }
 
         return [{
             id: 'group-1',
@@ -1153,39 +1170,86 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    // Custom Statuses State
-    const [customStatuses, setCustomStatuses] = useState<string[]>([]);
-    const storageKeyStatuses = `room-statuses-${roomId}`;
+    // Custom Statuses State (Unified with Kanban)
+    const [customStatuses, setCustomStatuses] = useState<StatusOption[]>([]);
+    const storageKeyStatuses = `board-statuses-${roomId}`; // Changed to match KanbanBoard
+
+    // Default Statuses (Source of Truth for Fallback)
+    const DEFAULT_STATUSES: StatusOption[] = [
+        { id: 'To Do', title: 'To Do', color: 'gray' },
+        { id: 'In Progress', title: 'In Progress', color: 'blue' },
+        { id: 'Done', title: 'Done', color: 'emerald' },
+        { id: 'Stuck', title: 'Stuck', color: 'orange' },
+        { id: 'Rejected', title: 'Rejected', color: 'rose' }
+    ];
 
     // Load custom statuses on mount
     useEffect(() => {
         const saved = localStorage.getItem(storageKeyStatuses);
         if (saved) {
             try {
-                setCustomStatuses(JSON.parse(saved));
+                const parsed = JSON.parse(saved);
+                // Handle schema migration: if array of strings, convert to objects
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    if (typeof parsed[0] === 'string') {
+                        const migrated = parsed.map((s: string) => {
+                            // Basic color inference
+                            const lower = s.toLowerCase();
+                            let color = 'gray';
+                            if (lower.includes('done')) color = 'emerald';
+                            else if (lower.includes('progress')) color = 'blue';
+                            else if (lower.includes('stuck')) color = 'orange';
+                            else if (lower.includes('rejected')) color = 'rose';
+                            return { id: s, title: s, color };
+                        });
+                        setCustomStatuses(migrated);
+                    } else {
+                        setCustomStatuses(parsed);
+                    }
+                } else {
+                    setCustomStatuses(DEFAULT_STATUSES);
+                }
             } catch (e) {
-                console.error("Failed to parse custom statuses", e);
+                console.error("Failed to parse board statuses", e);
+                setCustomStatuses(DEFAULT_STATUSES);
             }
+        } else {
+            // Initialize with defaults if nothing saved
+            setCustomStatuses(DEFAULT_STATUSES);
         }
     }, [storageKeyStatuses]);
 
     // Handler to add custom status
-    const handleAddCustomStatus = useCallback((newStatus: string) => {
+    const handleAddCustomStatus = useCallback((newStatusTitle: string) => {
         setCustomStatuses(prev => {
-            const updated = [...prev, newStatus];
+            // Check if exists
+            if (prev.find(s => s.title.toLowerCase() === newStatusTitle.toLowerCase())) return prev;
+
+            // Assign cyclical color
+            const COLORS = ['gray', 'blue', 'emerald', 'orange', 'rose', 'purple', 'yellow', 'pink'];
+            const nextColor = COLORS[prev.length % COLORS.length];
+
+            const newOption: StatusOption = {
+                id: newStatusTitle,
+                title: newStatusTitle,
+                color: nextColor
+            };
+
+            const updated = [...prev, newOption];
             localStorage.setItem(storageKeyStatuses, JSON.stringify(updated));
             return updated;
         });
     }, [storageKeyStatuses]);
 
     // Handler to delete custom status
-    const handleDeleteCustomStatus = useCallback((statusToDelete: string) => {
+    const handleDeleteCustomStatus = useCallback((statusIdToDelete: string) => {
         setCustomStatuses(prev => {
-            const updated = prev.filter(s => s !== statusToDelete);
+            const updated = prev.filter(s => s.id !== statusIdToDelete);
             localStorage.setItem(storageKeyStatuses, JSON.stringify(updated));
             return updated;
         });
     }, [storageKeyStatuses]);
+
 
 
     // Select All / Deselect All Handler
@@ -2633,13 +2697,39 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
 
         if (col.type === 'status') {
-            const statusStyle = STATUS_STYLES[value] || (value ? 'bg-[#A855F7] text-white' : 'bg-transparent text-stone-400');
+            // Helper to find status color
+            const statusObj = customStatuses.find(s => s.title === value || s.id === value);
+            // Fallback for defaults if not found in custom list (rare if initialized correctly)
+            const color = statusObj?.color ||
+                (value === 'Done' ? 'emerald' :
+                    value === 'In Progress' ? 'blue' :
+                        value === 'Stuck' ? 'orange' :
+                            value === 'Rejected' ? 'rose' : 'gray');
+
+            // Map standard color names to Tailwind classes
+            const getColorClasses = (c: string) => {
+                const map: Record<string, string> = {
+                    gray: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
+                    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                    green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                    emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                    red: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                    rose: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+                    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+                    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+                };
+                return map[c] || map['gray'];
+            };
+
+            const statusStyle = value ? getColorClasses(color) : 'bg-transparent text-stone-400';
 
             return (
                 <div className="relative w-full h-full flex items-center justify-center p-1">
                     <button
                         onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded shadow-sm' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
+                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded-md shadow-sm border border-transparent' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
                     >
                         {value ? (
                             <span className="text-xs font-semibold font-sans truncate">{value}</span>
@@ -2647,6 +2737,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400 group-hover:text-stone-500`}>-</span>
                         )}
                     </button>
+
                     {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
                         <StatusPicker
                             current={value}
@@ -3488,7 +3579,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Secondary Toolbar */}
-                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22] pl-0 pr-4 shrink-0 transition-colors z-20 gap-4">
+                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22] pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
                     {/* Left: New Table */}
 
 

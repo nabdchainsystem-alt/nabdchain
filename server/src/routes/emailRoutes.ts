@@ -1,14 +1,30 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { decrypt, encrypt } from '../utils/encryption';
+import { decrypt } from '../utils/encryption';
 import { google } from 'googleapis';
 import { googleOAuth2Client } from '../services/googleAuth';
-import * as msal from '@azure/msal-node';
 import 'isomorphic-fetch';
 import { Client } from '@microsoft/microsoft-graph-client';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+import { z } from 'zod';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// Input validation schemas
+const sendEmailSchema = z.object({
+    to: z.string().min(1).max(1000),
+    subject: z.string().max(500),
+    body: z.string().max(500000), // 500KB limit
+    provider: z.enum(['google', 'outlook']),
+    cc: z.string().max(1000).optional(),
+    bcc: z.string().max(1000).optional(),
+});
+
+const emailActionSchema = z.object({
+    id: z.string().min(1).max(500),
+    provider: z.enum(['google', 'outlook']),
+});
 
 // Helper to get Google Client
 const getGoogleClient = (accessToken: string, refreshToken: string) => {
@@ -34,9 +50,14 @@ const getGraphClient = (accessToken: string) => {
 };
 
 // --- Folder Routes ---
-router.get('/folders', async (req, res) => {
+router.get('/folders', requireAuth, async (req, res: Response) => {
     try {
-        const accounts = await prisma.emailAccount.findMany();
+        const userId = (req as AuthRequest).auth.userId;
+
+        // Only fetch THIS user's accounts
+        const accounts = await prisma.emailAccount.findMany({
+            where: { userId }
+        });
         let allFolders: any[] = [];
 
         for (const account of accounts) {
@@ -48,7 +69,6 @@ router.get('/folders', async (req, res) => {
                     const response = await gmail.users.labels.list({ userId: 'me' });
                     const labels = response.data.labels || [];
 
-                    // Filter system labels we care about + user labels
                     const relevantLabels = labels.filter(l =>
                         l.type === 'user' ||
                         ['INBOX', 'SENT', 'TRASH', 'DRAFT', 'IMPORTANT', 'STARRED'].includes(l.id || '')
@@ -67,11 +87,11 @@ router.get('/folders', async (req, res) => {
             } else if (account.provider === 'outlook') {
                 try {
                     const client = getGraphClient(accessToken);
-                    const response = await client.api('/me/mailFolders').top(50).get(); // fetch top 50 folders
+                    const response = await client.api('/me/mailFolders').top(50).get();
                     const folders = response.value.map((f: any) => ({
                         id: f.id,
                         name: f.displayName,
-                        type: 'system', // Outlook doesn't distinguish nicely in top level list easily, but all are folders
+                        type: 'system',
                         provider: 'outlook',
                         accountEmail: account.email
                     }));
@@ -88,31 +108,26 @@ router.get('/folders', async (req, res) => {
     }
 });
 
-router.get('/list', async (req, res) => {
+router.get('/list', requireAuth, async (req, res: Response) => {
+    const userId = (req as AuthRequest).auth.userId;
     const { folderId, provider } = req.query;
 
     try {
-        const accounts = await prisma.emailAccount.findMany();
+        // Only fetch THIS user's accounts
+        const accounts = await prisma.emailAccount.findMany({
+            where: { userId }
+        });
         let allEmails: any[] = [];
 
         for (const account of accounts) {
-            // Filter by provider if specified (optimization)
             if (provider && account.provider !== provider) continue;
 
             const accessToken = decrypt(account.accessToken);
-            // TODO: check expiry and refresh if needed
 
             if (account.provider === 'google') {
                 try {
                     const auth = getGoogleClient(accessToken, decrypt(account.refreshToken));
-
-                    // Refresh if needed (simple check)
-                    // googleapis handles refresh automatically if refresh_token is set? 
-                    // Verify expiry? For now, let's assume valid or let it fail.
-
                     const gmail = google.gmail({ version: 'v1', auth });
-
-                    // Default to INBOX if no folder specified, or use the labelId
 
                     const response = await gmail.users.messages.list({
                         userId: 'me',
@@ -122,8 +137,6 @@ router.get('/list', async (req, res) => {
 
                     const messages = response.data.messages || [];
 
-                    // Fetch details
-                    // Fetch details
                     const details = await Promise.all(messages.map(async (msg) => {
                         const content = await gmail.users.messages.get({
                             userId: 'me',
@@ -134,7 +147,6 @@ router.get('/list', async (req, res) => {
                         const from = headers?.find(h => h.name === 'From')?.value || 'Unknown';
                         const date = headers?.find(h => h.name === 'Date')?.value || '';
 
-                        // Helper to recursively find HTML body
                         const findHtmlBody = (payload: any): string | null => {
                             if (!payload) return null;
                             if (payload.mimeType === 'text/html' && payload.body?.data) {
@@ -149,7 +161,6 @@ router.get('/list', async (req, res) => {
                             return null;
                         };
 
-                        // Helper to find Plain Text if HTML fails
                         const findTextBody = (payload: any): string | null => {
                             if (!payload) return null;
                             if (payload.mimeType === 'text/plain' && payload.body?.data) {
@@ -164,9 +175,7 @@ router.get('/list', async (req, res) => {
                             return null;
                         };
 
-                        // Extract Body
                         let body = findHtmlBody(content.data.payload) || findTextBody(content.data.payload) || '';
-                        // Simple fallback if body is empty but snippet exists, maybe wrap snippet in p tags
                         if (!body && content.data.snippet) {
                             body = `<p>${content.data.snippet}</p>`;
                         }
@@ -177,8 +186,8 @@ router.get('/list', async (req, res) => {
                             accountEmail: account.email,
                             subject,
                             sender: from,
-                            preview: content.data.snippet, // Keep preview for list view
-                            body, // Full body for reading pane
+                            preview: content.data.snippet,
+                            body,
                             time: date,
                             initial: from.charAt(0).toUpperCase(),
                             color: 'bg-blue-500',
@@ -193,9 +202,9 @@ router.get('/list', async (req, res) => {
             } else if (account.provider === 'outlook') {
                 try {
                     const client = getGraphClient(accessToken);
-                    // If folderId is provided, use it. Otherwise default to 'inbox' (well-known name)
-                    // Outlook graph api: /me/mailFolders/{id}/messages
-                    const endpoint = folderId ? `/me/mailFolders/${folderId}/messages` : '/me/mailFolders/inbox/messages';
+                    const endpoint = folderId
+                        ? `/me/mailFolders/${encodeURIComponent(folderId as string)}/messages`
+                        : '/me/mailFolders/inbox/messages';
 
                     const response = await client.api(endpoint)
                         .top(10)
@@ -209,7 +218,7 @@ router.get('/list', async (req, res) => {
                         subject: msg.subject,
                         sender: msg.from?.emailAddress?.name || msg.from?.emailAddress?.address,
                         preview: msg.bodyPreview,
-                        body: msg.body?.content, // Outlook gives HTML directly
+                        body: msg.body?.content,
                         time: msg.receivedDateTime,
                         initial: (msg.from?.emailAddress?.name || 'O').charAt(0),
                         color: 'bg-blue-600',
@@ -223,8 +232,6 @@ router.get('/list', async (req, res) => {
             }
         }
 
-
-        // Sort by time
         allEmails.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
         res.json(allEmails);
@@ -234,15 +241,20 @@ router.get('/list', async (req, res) => {
     }
 });
 
-router.post('/send', async (req, res) => {
-    const { to, subject, body, provider } = req.body;
-
+router.post('/send', requireAuth, async (req, res: Response) => {
     try {
+        const userId = (req as AuthRequest).auth.userId;
+        const data = sendEmailSchema.parse(req.body);
+        const { to, subject, body, provider, cc, bcc } = data;
+
+        // Only use THIS user's account
         const account = await prisma.emailAccount.findFirst({
-            where: { provider: provider }
+            where: { userId, provider }
         });
 
-        if (!account) return res.status(404).json({ error: "No connected account found" });
+        if (!account) {
+            return res.status(404).json({ error: "No connected account found for this provider" });
+        }
 
         const accessToken = decrypt(account.accessToken);
 
@@ -250,7 +262,6 @@ router.post('/send', async (req, res) => {
             const auth = getGoogleClient(accessToken, decrypt(account.refreshToken));
             const gmail = google.gmail({ version: 'v1', auth });
 
-            // Construct MIME message with support for UTF-8
             const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
 
             let messageParts = [
@@ -260,7 +271,6 @@ router.post('/send', async (req, res) => {
                 `MIME-Version: 1.0`
             ];
 
-            const { cc, bcc } = req.body;
             if (cc) messageParts.push(`Cc: ${cc}`);
             if (bcc) messageParts.push(`Bcc: ${bcc}`);
 
@@ -282,7 +292,6 @@ router.post('/send', async (req, res) => {
             });
         } else if (account.provider === 'outlook') {
             const client = getGraphClient(accessToken);
-            const { cc, bcc } = req.body;
 
             const sendPayload: any = {
                 message: {
@@ -291,15 +300,21 @@ router.post('/send', async (req, res) => {
                         contentType: "HTML",
                         content: body
                     },
-                    toRecipients: to.split(',').map(email => ({ emailAddress: { address: email.trim() } }))
+                    toRecipients: to.split(',').map((email: string) => ({
+                        emailAddress: { address: email.trim() }
+                    }))
                 }
             };
 
             if (cc) {
-                sendPayload.message.ccRecipients = cc.split(',').map((email: string) => ({ emailAddress: { address: email.trim() } }));
+                sendPayload.message.ccRecipients = cc.split(',').map((email: string) => ({
+                    emailAddress: { address: email.trim() }
+                }));
             }
             if (bcc) {
-                sendPayload.message.bccRecipients = bcc.split(',').map((email: string) => ({ emailAddress: { address: email.trim() } }));
+                sendPayload.message.bccRecipients = bcc.split(',').map((email: string) => ({
+                    emailAddress: { address: email.trim() }
+                }));
             }
 
             await client.api('/me/sendMail').post(sendPayload);
@@ -307,6 +322,9 @@ router.post('/send', async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         console.error("Send Error", error);
         res.status(500).json({ error: "Failed to send email" });
     }
@@ -314,13 +332,16 @@ router.post('/send', async (req, res) => {
 
 // --- Action Routes ---
 
-router.post('/trash', async (req, res) => {
-    const { id, provider } = req.body;
-    // Implementation placeholder: requires precise account matching logic
-    // For MVP, we'll try to find the account that owns this message ID or just default to the first one of that provider type (Not ideal but fits current pattern)
+router.post('/trash', requireAuth, async (req, res: Response) => {
     try {
-        const account = await prisma.emailAccount.findFirst({ where: { provider } });
+        const userId = (req as AuthRequest).auth.userId;
+        const { id, provider } = emailActionSchema.parse(req.body);
+
+        const account = await prisma.emailAccount.findFirst({
+            where: { userId, provider }
+        });
         if (!account) return res.status(404).json({ error: 'Account not found' });
+
         const accessToken = decrypt(account.accessToken);
 
         if (provider === 'google') {
@@ -329,50 +350,88 @@ router.post('/trash', async (req, res) => {
             await gmail.users.messages.trash({ userId: 'me', id });
         } else {
             const client = getGraphClient(accessToken);
-            await client.api(`/me/messages/${id}/move`).post({ destinationId: 'deleteditems' });
+            await client.api(`/me/messages/${encodeURIComponent(id)}/move`).post({
+                destinationId: 'deleteditems'
+            });
         }
         res.json({ success: true });
-    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to trash' }); }
+    } catch (e) {
+        if (e instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+        console.error(e);
+        res.status(500).json({ error: 'Failed to trash' });
+    }
 });
 
-router.post('/archive', async (req, res) => {
-    const { id, provider } = req.body;
+router.post('/archive', requireAuth, async (req, res: Response) => {
     try {
-        const account = await prisma.emailAccount.findFirst({ where: { provider } });
+        const userId = (req as AuthRequest).auth.userId;
+        const { id, provider } = emailActionSchema.parse(req.body);
+
+        const account = await prisma.emailAccount.findFirst({
+            where: { userId, provider }
+        });
         if (!account) return res.status(404).json({ error: 'Account not found' });
+
         const accessToken = decrypt(account.accessToken);
 
         if (provider === 'google') {
             const auth = getGoogleClient(accessToken, decrypt(account.refreshToken));
             const gmail = google.gmail({ version: 'v1', auth });
-            // Remove INBOX label
-            await gmail.users.messages.modify({ userId: 'me', id, requestBody: { removeLabelIds: ['INBOX'] } });
+            await gmail.users.messages.modify({
+                userId: 'me',
+                id,
+                requestBody: { removeLabelIds: ['INBOX'] }
+            });
         } else {
             const client = getGraphClient(accessToken);
-            await client.api(`/me/messages/${id}/move`).post({ destinationId: 'archive' });
+            await client.api(`/me/messages/${encodeURIComponent(id)}/move`).post({
+                destinationId: 'archive'
+            });
         }
         res.json({ success: true });
-    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to archive' }); }
+    } catch (e) {
+        if (e instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+        console.error(e);
+        res.status(500).json({ error: 'Failed to archive' });
+    }
 });
 
-router.post('/read', async (req, res) => {
-    // Only handling "mark as read" for now
-    const { id, provider } = req.body;
+router.post('/read', requireAuth, async (req, res: Response) => {
     try {
-        const account = await prisma.emailAccount.findFirst({ where: { provider } });
+        const userId = (req as AuthRequest).auth.userId;
+        const { id, provider } = emailActionSchema.parse(req.body);
+
+        const account = await prisma.emailAccount.findFirst({
+            where: { userId, provider }
+        });
         if (!account) return res.status(404).json({ error: 'Account not found' });
+
         const accessToken = decrypt(account.accessToken);
 
         if (provider === 'google') {
             const auth = getGoogleClient(accessToken, decrypt(account.refreshToken));
             const gmail = google.gmail({ version: 'v1', auth });
-            await gmail.users.messages.modify({ userId: 'me', id, requestBody: { removeLabelIds: ['UNREAD'] } });
+            await gmail.users.messages.modify({
+                userId: 'me',
+                id,
+                requestBody: { removeLabelIds: ['UNREAD'] }
+            });
         } else {
             const client = getGraphClient(accessToken);
-            await client.api(`/me/messages/${id}`).patch({ isRead: true });
+            await client.api(`/me/messages/${encodeURIComponent(id)}`).patch({ isRead: true });
         }
         res.json({ success: true });
-    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to mark read' }); }
+    } catch (e) {
+        if (e instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+        console.error(e);
+        res.status(500).json({ error: 'Failed to mark read' });
+    }
 });
 
 export default router;

@@ -1,29 +1,27 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Schema for creating/updating vault items
 const vaultItemSchema = z.object({
-    title: z.string().min(1),
-    type: z.enum(['folder', 'file', 'image', 'note', 'weblink', 'document']), // Aligning with frontend types
-    subtitle: z.string().optional(),
-    content: z.string().optional(),
-    metadata: z.string().optional(),
+    title: z.string().min(1).max(255),
+    type: z.enum(['folder', 'file', 'image', 'note', 'weblink', 'document']),
+    subtitle: z.string().max(500).optional(),
+    content: z.string().max(100000).optional(), // 100KB limit for content
+    metadata: z.string().max(10000).optional(),
     isFavorite: z.boolean().optional(),
-    folderId: z.string().optional().nullable(),
-    color: z.string().optional(),
+    folderId: z.string().uuid().optional().nullable(),
+    color: z.string().max(50).optional(),
 });
 
 // GET all items for the user
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res: Response) => {
     try {
-        // In a real app we'd get userId from auth middleware
-        // For now we'll use a hardcoded user or query param if available, or just fetch all 
-        // Assuming single user/workspace context for this demo or userId passed in query
-        const userId = (req.query.userId as string) || "user-1";
+        const userId = (req as AuthRequest).auth.userId;
 
         const items = await prisma.vaultItem.findMany({
             where: { userId },
@@ -37,31 +35,40 @@ router.get('/', async (req, res) => {
 });
 
 // CREATE a new item
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res: Response) => {
     try {
-        const userId = (req.body.userId as string) || "user-1";
+        const userId = (req as AuthRequest).auth.userId;
         const data = vaultItemSchema.parse(req.body);
 
         const newItem = await prisma.vaultItem.create({
             data: {
                 ...data,
                 userId,
-                // Make sure folderId is null if undefined or empty string
                 folderId: data.folderId || null,
             },
         });
         res.json(newItem);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         console.error('Error creating vault item:', error);
-        res.status(400).json({ error: 'Invalid input' });
+        res.status(500).json({ error: 'Failed to create vault item' });
     }
 });
 
 // UPDATE an item
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, async (req, res: Response) => {
     try {
+        const userId = (req as AuthRequest).auth.userId;
         const { id } = req.params;
         const data = vaultItemSchema.partial().parse(req.body);
+
+        // Verify ownership before update
+        const existing = await prisma.vaultItem.findUnique({ where: { id } });
+        if (!existing || existing.userId !== userId) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
 
         const updatedItem = await prisma.vaultItem.update({
             where: { id },
@@ -72,19 +79,25 @@ router.put('/:id', async (req, res) => {
         });
         res.json(updatedItem);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         console.error('Error updating vault item:', error);
-        res.status(400).json({ error: 'Failed to update vault item' });
+        res.status(500).json({ error: 'Failed to update vault item' });
     }
 });
 
 // DELETE an item
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
+        const userId = (req as AuthRequest).auth.userId;
         const { id } = req.params;
 
-        // Note: Prisma cascade delete will handle children if configured, 
-        // but our schema has @relation("FolderItems", ... onDelete: Cascade)
-        // so deleting a folder should delete its contents.
+        // Verify ownership before delete
+        const existing = await prisma.vaultItem.findUnique({ where: { id } });
+        if (!existing || existing.userId !== userId) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
 
         await prisma.vaultItem.delete({
             where: { id },

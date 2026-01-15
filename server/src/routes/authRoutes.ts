@@ -1,5 +1,5 @@
 import express from 'express';
-import { getGoogleAuthURL, handleGoogleCallback, saveGoogleToken, googleOAuth2Client } from '../services/googleAuth';
+import { getGoogleAuthURL, saveGoogleToken, googleOAuth2Client } from '../services/googleAuth';
 import { getOutlookAuthURL, handleOutlookCallback } from '../services/outlookAuth';
 import { PrismaClient } from '@prisma/client';
 import { google } from 'googleapis';
@@ -47,9 +47,13 @@ router.get('/google/callback', async (req, res) => {
 });
 
 // Outlook Auth
-router.get('/outlook', async (req, res) => {
+router.get('/outlook', async (req: any, res) => {
     try {
-        const url = await getOutlookAuthURL();
+        const userId = req.auth?.userId;
+        if (!userId) {
+            return res.status(401).send("Unauthorized: User ID required to connect Outlook Account");
+        }
+        const url = await getOutlookAuthURL(userId);
         res.json({ url });
     } catch (err) {
         console.error(err);
@@ -58,9 +62,18 @@ router.get('/outlook', async (req, res) => {
 });
 
 router.get('/outlook/callback', async (req, res) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
+
+    if (!state) {
+        console.error("Outlook Auth Callback missing state");
+        return res.redirect('http://localhost:3000/inbox?status=error&message=missing_state');
+    }
+
     try {
-        await handleOutlookCallback(code as string);
+        const decodedState = JSON.parse(Buffer.from(state as string, 'base64').toString('utf-8'));
+        const userId = decodedState.userId;
+
+        await handleOutlookCallback(code as string, userId);
         res.redirect('http://localhost:3000/inbox?status=success&provider=outlook');
     } catch (error) {
         console.error('Outlook Auth Error:', error);

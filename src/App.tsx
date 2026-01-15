@@ -1,19 +1,16 @@
-import React, { Suspense, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Sidebar } from "./components/layout/Sidebar";
 import { TopBar } from './components/layout/TopBar';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { BoardView } from './features/board/BoardView';
 import { InboxView } from './features/inbox/InboxView';
 import { VaultView } from './features/vault/VaultView';
+import { NabdFab } from './components/ui/NabdFab';
 import FlowHubPage from './features/flowHub/FlowHubPage';
 import ProcessMapPage from './features/flowHub/ProcessMapPage';
 import { MyWorkPage } from './features/myWork/MyWorkPage';
-// import { AuthProvider, useAuth } from './contexts/AuthContext';
-// import { LoginPage } from './features/auth/LoginPage';
-// import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from '@clerk/clerk-react';
-import { SignedIn, SignedOut, SignIn, SignUp, useUser, useAuth } from './auth-adapter';
-import { Logo } from './components/Logo';
+import { SignedIn, SignedOut, SignIn, useUser, useAuth } from './auth-adapter';
 import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
 import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem } from './types';
@@ -25,52 +22,9 @@ import { NavigationProvider } from './contexts/NavigationContext';
 import TeamsPage from './features/teams/TeamsPage';
 import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
-// import { FocusWidget } from './components/features/focus/FocusWidget';
-// import { RedirectToSignIn } from '@clerk/clerk-react';
 import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
 const TalkPage = React.lazy(() => import('./features/talk/TalkPage'));
-
-// Mock Initial Data
-const INITIAL_WORKSPACES: Workspace[] = [
-  { id: 'w1', name: 'Main workspace', icon: 'Briefcase', color: 'from-orange-400 to-red-500' }
-];
-
-const INITIAL_BOARDS: Board[] = [
-  {
-    id: 'default-1',
-    name: 'Marketing Campaign',
-    description: 'Q4 Product Launch Activities',
-    workspaceId: 'w1',
-    columns: [
-      { id: 'c1', title: 'Owner', type: 'person' },
-      { id: 'c2', title: 'Status', type: 'status' },
-      { id: 'c3', title: 'Due Date', type: 'date' }
-    ],
-    tasks: [
-      { id: 't1', name: 'Design Ad Creatives', person: 'Alice', status: 'Working on it', date: '2023-10-15', priority: 'High' },
-      { id: 't2', name: 'Approve Budget', person: 'Bob', status: 'Done', date: '2023-10-01', priority: 'Medium' },
-      { id: 't3', name: 'Launch Social Ads', person: 'Charlie', status: 'Stuck', date: '2023-10-20', priority: 'Low' },
-      { id: 't4', name: 'Review Analytics', person: 'Alice', status: '', date: '2023-11-01', priority: null }
-    ],
-    defaultView: 'overview',
-    availableViews: ['overview', 'table', 'kanban']
-  },
-  {
-    id: 'default-2',
-    name: 'Product Roadmap',
-    description: '2024 Roadmap',
-    workspaceId: 'w1',
-    columns: [
-      { id: 'c1', title: 'Owner', type: 'person' },
-      { id: 'c2', title: 'Status', type: 'status' }
-    ],
-    tasks: [],
-    isFavorite: false,
-    defaultView: 'overview',
-    availableViews: ['overview', 'table']
-  }
-];
 
 const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
@@ -257,7 +211,6 @@ const AppContent: React.FC = () => {
   });
 
   const lastLoggedUpdate = React.useRef<string>('');
-  const processingRef = React.useRef<boolean>(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('app-sidebar-width');
     return saved ? parseInt(saved, 10) : 260;
@@ -1002,8 +955,6 @@ const AppContent: React.FC = () => {
               <LocalMarketplacePage />
             ) : activeView === 'foreign_marketplace' ? (
               <ForeignMarketplacePage />
-            ) : activeView === 'marketing' ? (
-              <MarketingPage />
             ) : activeView === 'cornell_notes' ? (
               <CornellNotesPage />
             ) : activeView === 'settings' ? (
@@ -1019,6 +970,7 @@ const AppContent: React.FC = () => {
         </main>
       </div>
       {/* <FocusWidget /> */}
+      <NabdFab />
     </div>
   );
 };

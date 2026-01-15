@@ -22,7 +22,14 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
   // Date picker state
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const initialDate = date ? new Date(date) : today;
+
+  // Use local parsing for initial date to match how we save it
+  const parseDateLocal = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const initialDate = date ? parseDateLocal(date) : today;
   const [viewDate, setViewDate] = useState(initialDate);
 
   const handleOpen = (e: React.MouseEvent) => {
@@ -34,7 +41,7 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
         left: rect.left + window.scrollX
       });
       setIsOpen(true);
-      setViewDate(date ? new Date(date) : new Date());
+      setViewDate(date ? parseDateLocal(date) : new Date());
     }
   };
 
@@ -48,9 +55,17 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
     setViewDate(new Date());
   };
 
+  // Helper to format date as YYYY-MM-DD in local time
+  const formatDateLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleDateSelect = (day: number) => {
     const selectedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    const dateString = formatDateLocal(selectedDate);
     onChange(dateString);
     setIsOpen(false);
   };
@@ -92,7 +107,7 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
         break;
     }
 
-    const dateString = targetDate.toISOString().split('T')[0];
+    const dateString = formatDateLocal(targetDate);
     onChange(dateString);
     setIsOpen(false);
   };

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild"]
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -15,11 +18,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^7.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
-    "prisma": "^5.22.0",
+    "prisma": "^7.2.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

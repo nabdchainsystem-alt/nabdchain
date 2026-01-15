@@ -28,7 +28,7 @@ export const getGoogleAuthURL = (userId: string) => {
     });
 };
 
-export const handleGoogleCallback = async (code: string) => {
+export const handleGoogleCallback = async (code: string, userId: string) => {
     const { tokens } = await googleOAuth2Client.getToken(code);
     googleOAuth2Client.setCredentials(tokens);
 
@@ -40,29 +40,42 @@ export const handleGoogleCallback = async (code: string) => {
         throw new Error('Could not retrieve email from Google');
     }
 
-    // Save or Update Account in DB
-    const emailAccount = await prisma.emailAccount.upsert({
-        where: {
-            // In a real app we'd need a unique constraint on email+provider, likely manually checked or composite ID
-            // For now, let's assume one google account per user or just findFirst. 
-            // Actually schema lacks unique constraint on email. Let's fix this logic to simple search first.
-            // Since 'id' is uuid, we can't upsert by email solely unless it's unique.
-            // Let's doing findFirst then update or create.
-            id: 'temp-placeholder-logic'
-        },
-        update: {}, // Overridden below
-        create: {
-            provider: 'google',
-            email: userInfo.data.email,
-            accessToken: encrypt(tokens.access_token!),
-            refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : '',
-            tokenExpiry: new Date(tokens.expiry_date || Date.now() + 3600 * 1000),
-            // id is auto-generated
-        }
+    const email = userInfo.data.email;
+
+    // Check if this email is already connected
+    const existing = await prisma.emailAccount.findFirst({
+        where: { email, provider: 'google' }
     });
 
-    // Correction: Standard Prisma upsert requires a unique field. We don't have one on email.
-    // Let's implement manual logic.
+    const data = {
+        provider: 'google',
+        email,
+        accessToken: encrypt(tokens.access_token!),
+        refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : '',
+        tokenExpiry: new Date(tokens.expiry_date || Date.now() + 3600 * 1000),
+    };
+
+    if (existing) {
+        // Verify ownership
+        if (existing.userId !== userId) {
+            throw new Error('This email is already connected to another user.');
+        }
+        return prisma.emailAccount.update({
+            where: { id: existing.id },
+            data: {
+                accessToken: data.accessToken,
+                tokenExpiry: data.tokenExpiry,
+                ...(tokens.refresh_token ? { refreshToken: data.refreshToken } : {})
+            }
+        });
+    } else {
+        return prisma.emailAccount.create({
+            data: {
+                ...data,
+                userId
+            }
+        });
+    }
 };
 
 export const saveGoogleToken = async (email: string, tokens: any, userId: string) => {

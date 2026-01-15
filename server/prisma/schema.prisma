@@ -7,12 +7,11 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 // User System (SaaS)
 model User {
-  id        String   @id // Will store the Auth Provider ID (e.g. Clerk user_id)
+  id        String   @id // Stores Auth Provider ID (e.g. Clerk user_id)
   email     String   @unique
   name      String?
   avatarUrl String?
@@ -25,15 +24,15 @@ model User {
 
   // Relations
   procurementRequests ProcurementRequest[]
-  rfqs               RFQ[]
-  orders             Order[]
-  boards             Board[]
-  rooms              Room[]
-  emailAccounts      EmailAccount[]
-  vaultItems         VaultItem[]
-  activities         Activity[]
-  
-  // Pivot for many-to-many if needed later, but simple 1-workspace for now
+  rfqs                RFQ[]
+  orders              Order[]
+  boards              Board[]
+  rooms               Room[]
+  emailAccounts       EmailAccount[]
+  vaultItems          VaultItem[]
+  activities          Activity[]
+
+  @@index([workspaceId])
 }
 
 model Activity {
@@ -43,12 +42,17 @@ model Activity {
   boardId     String?
   type        String   // e.g., "TASK_CREATED", "BOARD_CREATED", etc.
   content     String   // Display message
-  metadata    String?  // JSON string for extra data (boardId, taskId, etc.)
+  metadata    String?  // JSON string for extra data
   createdAt   DateTime @default(now())
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   board     Board?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([boardId])
+  @@index([createdAt])
 }
 
 model Workspace {
@@ -80,9 +84,9 @@ model Invitation {
 // Procurement System
 model ProcurementRequest {
   id             String    @id
-  userId         String    // SaaS Multi-tenancy
+  userId         String
   name           String
-  date           String 
+  date           String
   department     String
   warehouse      String?
   relatedTo      String?
@@ -97,23 +101,28 @@ model ProcurementRequest {
   user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   items RequestItem[]
   rfqs  RFQ[]
+
+  @@index([userId])
+  @@index([status])
 }
 
 model RequestItem {
-  id            String  @id @default(uuid())
-  requestId     String
-  itemCode      String
-  description   String
-  quantity      Float
-  dueDate       String?
-  unitPrice     Float?
-  
+  id          String  @id @default(uuid())
+  requestId   String
+  itemCode    String
+  description String
+  quantity    Float
+  dueDate     String?
+  unitPrice   Float?
+
   request ProcurementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
 }
 
 model RFQ {
   id          String   @id
-  userId      String   // SaaS Multi-tenancy
+  userId      String
   requestId   String?
   date        String
   department  String
@@ -126,20 +135,23 @@ model RFQ {
   relatedTo   String?
   sentToOrder Boolean  @default(false)
   orderId     String?
-  
   unitPrice   Float?
   quantity    Float?
   vatAmount   Float?
   totalExVat  Float?
 
-  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   request ProcurementRequest? @relation(fields: [requestId], references: [id])
   items   RFQItem[]
-  Order   Order[]
+  orders  Order[]
+
+  @@index([userId])
+  @@index([requestId])
+  @@index([status])
 }
 
 model RFQItem {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   rfqId       String
   itemCode    String
   description String
@@ -148,11 +160,13 @@ model RFQItem {
   unitPrice   Float?
 
   rfq RFQ @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
 }
 
 model Order {
   id          String   @id
-  userId      String   // SaaS Multi-tenancy
+  userId      String
   rfqId       String?
   requestId   String?
   supplier    String
@@ -165,14 +179,18 @@ model Order {
   status      String   @default("Open")
   approvals   String?
   relatedTo   String?
-  
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rfq   RFQ?  @relation(fields: [rfqId], references: [id])
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rfq   RFQ?        @relation(fields: [rfqId], references: [id])
   items OrderItem[]
+
+  @@index([userId])
+  @@index([rfqId])
+  @@index([status])
 }
 
 model OrderItem {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   orderId     String
   itemCode    String
   description String
@@ -181,75 +199,108 @@ model OrderItem {
   unitPrice   Float?
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 // Board System
 model Board {
   id             String   @id @default(uuid())
-  userId         String   // SaaS Multi-tenancy
-  name           String   
+  userId         String
+  workspaceId    String?
+  name           String
   icon           String?
   description    String?
-  availableViews String?  
-  pinnedViews    String?  
-  columns        String?  
+  availableViews String?
+  pinnedViews    String?
+  columns        String?
   defaultView    String?
-  tasks          String   @default("[]") // Storing tasks as JSON for flexibility
-  type           String   @default("project") // "project"
+  tasks          String   @default("[]") // JSON for flexibility
+  type           String   @default("project")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  workspaceId String?
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id]) // Optional for now to support private boards? Or enforce it? Let's make it optional for migration safety but intended for use.
-  
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace  Workspace? @relation(fields: [workspaceId], references: [id])
   cards      Card[]
   activities Activity[]
+
+  @@index([userId])
+  @@index([workspaceId])
 }
 
 model Card {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   boardId     String
   title       String
   description String?
   columnId    String?
-  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+}
+
+// Doc/Page System (Notion-like pages)
+model DocPage {
+  id         String   @id @default(uuid())
+  roomId     String?
+  boardId    String?
+  title      String   @default("Untitled")
+  content    String?  // JSON/HTML content
+  icon       String?
+  coverImage String?
+  parentId   String?  // For nested pages
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([boardId])
+  @@index([parentId])
 }
 
 // Room/Table System
 model Room {
   id        String   @id @default(uuid())
-  userId    String   // SaaS Multi-tenancy
+  userId    String
   name      String
   type      String   @default("table")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rows Row[]
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rows         Row[]
+  columnStores ColumnStore[]
+
+  @@index([userId])
 }
 
 model Row {
-  id        String   @id @default(uuid())
-  roomId    String
-  // Storing dynamic row data as JSON string
-  content   String   @default("{}") 
-  
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid())
+  roomId  String
+  content String @default("{}") // JSON for dynamic row data
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
 }
 
 model ColumnStore {
-  id        String @id @default(uuid())
-  roomId    String 
-  columns   String // JSON string of Column[] definitions
+  id      String @id @default(uuid())
+  roomId  String
+  columns String // JSON string of Column[] definitions
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
 }
 
 // Email Integration
 model EmailAccount {
   id           String   @id @default(uuid())
-  userId       String   // SaaS Multi-tenancy
-  provider     String   
+  userId       String
+  provider     String
   email        String
   accessToken  String
   refreshToken String
@@ -258,24 +309,31 @@ model EmailAccount {
   updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([email, provider])
+  @@index([userId])
 }
 
 // Vault System
 model VaultItem {
-  id          String   @id @default(uuid())
-  userId      String   // SaaS Multi-tenancy
-  title       String
-  type        String   // folder, file, note, weblink
-  subtitle    String?
-  content     String?  // For notes or text content
-  metadata    String?  // JSON string for file size, mimeType, dimensions, etc.
-  isFavorite  Boolean  @default(false)
-  folderId    String?  // Parent folder ID
-  color       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  title      String
+  type       String   // folder, file, note, weblink
+  subtitle   String?
+  content    String?  // For notes or text content
+  metadata   String?  // JSON for file size, mimeType, etc.
+  isFavorite Boolean  @default(false)
+  folderId   String?  // Parent folder ID
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent  VaultItem? @relation("FolderItems", fields: [folderId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   VaultItem?  @relation("FolderItems", fields: [folderId], references: [id], onDelete: Cascade)
   children VaultItem[] @relation("FolderItems")
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([type])
 }

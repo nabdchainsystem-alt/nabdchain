@@ -737,7 +737,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             onSubmit={(e) => {
                                                 e.preventDefault();
                                                 if (newBoardName.trim()) {
-                                                    const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban' };
+                                                    const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
                                                     // Default to active workspace
                                                     const workspaceId = activeWorkspaceId;
                                                     // We can't easily pass workspaceId to onAddBoard if it doesn't accept it, 
@@ -771,11 +771,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-1 mb-3">
+                                            <div className="grid grid-cols-2 gap-1 mb-3">
                                                 {[
                                                     { id: 'table', label: 'Table', icon: Table },
                                                     { id: 'datatable', label: 'Data', icon: Database },
-                                                    { id: 'kanban', label: 'Kanban', icon: Kanban }
+                                                    { id: 'kanban', label: 'Kanban', icon: Kanban },
+                                                    { id: 'gtd', label: 'GTD', icon: CheckSquare }
                                                 ].map((layout) => (
                                                     <button
                                                         key={layout.id}
@@ -1033,7 +1034,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onSubmit={(e) => {
                             e.preventDefault();
                             if (newBoardName.trim()) {
-                                const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban' };
+                                const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
                                 onAddBoard(newBoardName.trim(), iconMap[selectedLayout] || 'Table', undefined, selectedLayout as any, quickAddMenu.parentId);
                                 setNewBoardName('');
                                 setSelectedLayout('table');
@@ -1052,11 +1053,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         />
 
                         {/* Layout Type Selection */}
-                        <div className="grid grid-cols-3 gap-1 mt-3">
+                        <div className="grid grid-cols-2 gap-1 mt-3">
                             {[
                                 { id: 'table', label: 'Table', icon: Table },
                                 { id: 'datatable', label: 'Data', icon: Database },
-                                { id: 'kanban', label: 'Kanban', icon: Kanban }
+                                { id: 'kanban', label: 'Kanban', icon: Kanban },
+                                { id: 'gtd', label: 'GTD', icon: CheckSquare }
                             ].map((layout) => (
                                 <button
                                     key={layout.id}

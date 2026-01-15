@@ -29,7 +29,8 @@ import {
     Target as PhTarget,
     ArrowsClockwise as PhRecurring,
     Cube as PhWarehouse,
-    Layout as PhLayout
+    Layout as PhLayout,
+    PresentationChart as PhWhiteboard
 } from 'phosphor-react';
 import {
     DndContext,
@@ -78,6 +79,9 @@ import GoalsOKRsView from '../tools/GoalsOKRsView';
 import WorkloadView from '../tools/WorkloadView';
 import RecurringLogicView from '../tools/RecurringLogicView';
 import SmartSheetView from '../tools/SpreadsheetView';
+import { TimelineView } from './views/Timeline/TimelineView';
+
+
 import { useUI } from '../../contexts/UIContext';
 
 // --- Sortable Tab Component ---
@@ -604,6 +608,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         { label: 'Automation Rules', icon: PhAutomation, id: 'automation_rules', description: 'Simple trigger → action' },
         { label: 'Goals & OKRs', icon: PhTarget, id: 'goals_okrs', description: 'Align work to outcomes' },
         { label: 'Recurring Logic', icon: PhRecurring, id: 'recurring', description: 'Repeat work patterns' },
+        { label: 'Timeline', icon: PhGantt, id: 'timeline', description: 'Visual project timeline' },
+        { label: 'Whiteboard', icon: PhWhiteboard, id: 'whiteboard', description: 'Collaborative mind map' },
     ];
 
     // --- Merge dashboardSections into VIEW_OPTIONS ---
@@ -759,6 +765,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                 return <RecurringLogicView boardId={board.id} fallbackTasks={board.tasks} />;
             case 'warehouse_capacity_map':
                 return renderCustomView ? renderCustomView('warehouse_capacity_map') : null;
+            case 'timeline':
+                return <TimelineView key={`${board.id}-${activeView}`} roomId={board.id} boardName={board.name} tasks={tasks} onUpdateTasks={onUpdateTasks} />;
             default:
                 if (renderCustomView) {
                     const custom = renderCustomView(activeView);
@@ -922,7 +930,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                         )}
 
                         {/* Tabs Row */}
-                        <div className="flex items-center gap-0 pr-6 border-b border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center gap-0 pr-6 border-b border-gray-200 dark:border-gray-800 -ml-[24px] -mr-[20px] pl-[24px]">
                             <div className="flex items-center justify-start gap-[11.5px] overflow-x-auto no-scrollbar max-w-full">
                                 {/* Fixed "Overview" Tab */}
                                 {sanitizedAvailableViews.includes('overview' as any) && (() => {
@@ -1028,14 +1036,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Simple Tools</span>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                                                    {VIEW_OPTIONS.filter(opt => !['list', 'gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet'].includes(opt.id)).map((option) => (
+                                                    {VIEW_OPTIONS.filter(opt => !['list', 'gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'workload', 'whiteboard'].includes(opt.id)).map((option) => (
                                                         <button
                                                             key={option.id}
                                                             onClick={() => handleAddView(option)}
                                                             className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
                                                         >
                                                             <option.icon size={18} weight="regular" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                                            <span className="text-[13px] text-gray-700 dark:text-gray-200">{option.label}</span>
+                                                            <div className="text-left">
+                                                                <span className="block text-[13px] text-gray-700 dark:text-gray-200 font-medium leading-tight">{option.label}</span>
+                                                                <span className="block text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{option.description}</span>
+                                                            </div>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -1046,14 +1057,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Advanced Tools</span>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                                                        {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet'].includes(opt.id)).map((option) => (
+                                                        {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'workload', 'whiteboard'].includes(opt.id)).map((option) => (
                                                             <button
                                                                 key={option.id}
                                                                 onClick={() => handleAddView(option)}
                                                                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
                                                             >
                                                                 <option.icon size={18} weight="regular" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                                                <span className="text-[13px] text-gray-700 dark:text-gray-200">{option.label}</span>
+                                                                <div className="text-left">
+                                                                    <span className="block text-[13px] text-gray-700 dark:text-gray-200 font-medium leading-tight">{option.label}</span>
+                                                                    <span className="block text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{option.description}</span>
+                                                                </div>
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1093,20 +1107,27 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-hidden bg-transparent flex flex-col relative bg-white dark:bg-[#1a1d24] px-6">
-                {renderView()}
+            {(() => {
+                const type = getBaseViewType(activeView);
+                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar'].includes(type);
 
-                {/* Global Exit Full Screen Floating Button */}
-                {isFullScreen && (
-                    <button
-                        onClick={toggleFullScreen}
-                        className="absolute top-3 right-6 z-50 p-2 bg-white dark:bg-[#1a1d24] border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
-                        title="Exit Full Screen"
-                    >
-                        <Minimize2 size={18} />
-                    </button>
-                )}
-            </div>
+                return (
+                    <div className={`flex-1 overflow-hidden bg-transparent flex flex-col relative bg-white dark:bg-[#1a1d24] ${isFullWidth ? 'px-0' : 'px-6'}`}>
+                        {renderView()}
+
+                        {/* Global Exit Full Screen Floating Button */}
+                        {isFullScreen && (
+                            <button
+                                onClick={toggleFullScreen}
+                                className="absolute top-3 right-6 z-50 p-2 bg-white dark:bg-[#1a1d24] border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
+                                title="Exit Full Screen"
+                            >
+                                <Minimize2 size={18} />
+                            </button>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Context Menu Portal/Overlay */}
             {
@@ -1190,6 +1211,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                     </div>
                 )
             }
+
         </div >
     );
 };
