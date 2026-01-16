@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/authRoutes';
 import emailRoutes from './routes/emailRoutes';
 import inviteRoutes from './routes/inviteRoutes';
@@ -12,12 +11,12 @@ import vaultRoutes from './routes/vaultRoutes';
 import docRoutes from './routes/docRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
+import { prisma } from './lib/prisma';
 
 // Validate environment variables at startup
 validateEnv();
 
 const app = express();
-const prisma = new PrismaClient();
 const PORT = parseInt(getEnv('PORT', '3001'), 10);
 
 // Security middleware
@@ -39,7 +38,14 @@ app.use(limiter);
 const corsOptions: cors.CorsOptions = {
     origin: isProduction
         ? getEnv('CORS_ORIGIN', 'https://your-domain.com')
-        : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+        : (origin, callback) => {
+            // Allow all localhost origins and requests with no origin (like mobile apps or curl)
+            if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -260,9 +266,16 @@ app.get('/api/activities', requireAuth, async (req: any, res) => {
         const userId = req.auth.userId;
         const { workspaceId } = req.query;
 
-        const where: any = { userId };
+        let where: any = { userId };
         if (workspaceId) {
-            where.workspaceId = workspaceId;
+            // Include activities for this workspace OR activities without a workspace (legacy data)
+            where = {
+                userId,
+                OR: [
+                    { workspaceId: workspaceId as string },
+                    { workspaceId: null }
+                ]
+            };
         }
 
         const activities = await prisma.activity.findMany({

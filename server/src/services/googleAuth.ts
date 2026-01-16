@@ -1,8 +1,6 @@
 import { google } from 'googleapis';
-import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;

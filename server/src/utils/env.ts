@@ -34,6 +34,7 @@ const envConfig: EnvConfig = {
         'NODE_ENV': 'development',
         'PORT': '3001',
         'CORS_ORIGIN': 'http://localhost:5173',
+        'FRONTEND_URL': 'http://localhost:3000',
     }
 };
 

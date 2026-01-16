@@ -136,3 +136,52 @@ export function setDynamicStorageItem<T>(
   const key = `${prefix}${suffix}` as StorageKey;
   return setStorageItem(key, value);
 }
+
+/**
+ * Clean up all localStorage data associated with a specific board
+ * This should be called when a board is deleted to prevent orphaned data
+ */
+export function cleanupBoardStorage(boardId: string): void {
+  const prefixesToClean = [
+    'board-tasks-',
+    'board-statuses-',
+    'room-table-columns-v4-',
+    'room-table-groups-v1-',
+    'room-items-v3-',
+    'room-table-columns-',
+    'board-doc-',
+  ];
+
+  const keysToRemove: string[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+
+    for (const prefix of prefixesToClean) {
+      if (key.startsWith(prefix) && key.includes(boardId)) {
+        keysToRemove.push(key);
+        break;
+      }
+    }
+  }
+
+  keysToRemove.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+      console.log(`[Storage] Cleaned up: ${key}`);
+    } catch (error) {
+      console.error(`[Storage] Failed to remove "${key}":`, error);
+    }
+  });
+
+  console.log(`[Storage] Cleaned up ${keysToRemove.length} items for board ${boardId}`);
+}
+
+/**
+ * Clean up all localStorage data associated with boards in a workspace
+ * This should be called when a workspace is deleted
+ */
+export function cleanupWorkspaceBoardsStorage(boardIds: string[]): void {
+  boardIds.forEach(boardId => cleanupBoardStorage(boardId));
+}

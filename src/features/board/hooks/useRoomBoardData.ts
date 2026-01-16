@@ -119,7 +119,10 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                     return parsed;
                 }
             }
-        } catch (e) { }
+        } catch (e) {
+            // Invalid JSON in initialData prop, use defaults
+            console.warn('[useRoomBoardData] Failed to parse initialData:', e);
+        }
         return INITIAL_BOARD;
     });
 

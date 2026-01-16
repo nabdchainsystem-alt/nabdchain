@@ -88,8 +88,8 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
     const filteredBoards = boards.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-[#1e2329] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+            <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-[#1e2329] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-[#252a30]">
                     <h3 className="font-bold text-slate-800 dark:text-slate-100">
                         {mode === 'select' ? 'Add to Project' : 'Create New Project'}
@@ -321,7 +321,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
     };
 
     return (
-        <div className="flex flex-col md:flex-row h-full w-full bg-[#f9fafa] dark:bg-[#21262c] text-[#121716] dark:text-[#e2e8f0] font-sans overflow-hidden antialiased transition-colors duration-300 relative" style={{ zoom: '65%' }}>
+        <div className="flex flex-col md:flex-row h-full w-full bg-[#f9fafa] dark:bg-[#21262c] text-[#121716] dark:text-[#e2e8f0] font-sans overflow-hidden antialiased transition-colors duration-300 relative" style={{ zoom: '75%' }}>
 
             <BoardSelectionModal
                 isOpen={isModalOpen}
@@ -355,9 +355,9 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                 {currentTab === 'timeline' ? (
                     <div className="flex-1 overflow-y-auto px-6 pb-20 relative custom-scrollbar animate-in fade-in duration-300">
 
-                        {/* Current Time Indicator (Visual Mock) */}
+                        {/* Current Time Indicator */}
                         <div className="absolute w-[calc(100%-3rem)] left-6 top-[380px] flex items-center z-20 pointer-events-none group">
-                            <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 -ml-2">10:42</div>
+                            <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 -ml-2 mb-[1px]">10:42</div>
                             <div className="h-[2px] w-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]"></div>
                         </div>
 
@@ -378,42 +378,39 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                 </div>
                             ) : (
                                 todayTasks.map(({ task, boardName, boardId }) => (
-                                    <div key={task.id} className="flex group min-h-[120px]">
-                                        <div className="w-20 pr-4 text-right pt-2 text-xs font-semibold text-slate-400 font-mono">
-                                            {/* Mock time if we don't have it, otherwise just 'Today' or simple dot */}
-                                            <div className="flex flex-col items-end gap-1">
-                                                <span>{task.id.slice(-4)}</span> {/* Random ID bit as mock time or just use index if we had it */}
-                                            </div>
+                                    <div key={task.id} className="flex group min-h-[140px]">
+                                        <div className="w-24 pr-6 text-right pt-4 text-xs font-bold text-slate-400 font-mono flex flex-col items-end relative">
+                                            {/* Dot on timeline */}
+                                            <div className="absolute right-[-5px] top-5 w-2.5 h-2.5 rounded-full border-[2px] border-[#f9fafa] dark:border-[#21262c] bg-slate-300 dark:bg-slate-600 z-10 group-hover:bg-blue-500 group-hover:scale-125 transition-all"></div>
+                                            <span>{task.id.slice(-4)}</span>
                                         </div>
-                                        <div className="flex-1 border-t border-slate-100 dark:border-slate-800 relative pt-1 pb-4">
+                                        <div className="flex-1 border-l-2 border-slate-200 dark:border-slate-700/50 pl-8 pb-8 relative">
                                             <div
                                                 onClick={() => onNavigateToBoard('board', boardId)}
-                                                className={`h-full w-full bg-white dark:bg-[#2c333a] rounded-xl shadow-sm dark:shadow-none border-l-[6px] p-5 flex gap-4 transition-transform hover:-translate-y-0.5 duration-200 cursor-pointer relative overflow-hidden ${task.priority === 'High' ? 'border-red-500' : task.priority === 'Medium' ? 'border-orange-500' : 'border-blue-500'}`}
+                                                className={`h-full w-full bg-white dark:bg-[#2c333a] rounded-2xl shadow-sm hover:shadow-lg dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex gap-5 transition-all hover:-translate-y-1 duration-200 cursor-pointer relative overflow-hidden group/card ${task.priority === 'High' ? 'border-l-[4px] border-l-red-500' : task.priority === 'Medium' ? 'border-l-[4px] border-l-orange-500' : 'border-l-[4px] border-l-blue-500'}`}
                                             >
-                                                <div className={`absolute inset-0 bg-gradient-to-br from-transparent to-transparent opacity-60 pointer-events-none ${task.priority === 'High' ? 'from-red-50 dark:from-red-900/10' : 'from-blue-50 dark:from-blue-900/10'}`}></div>
+                                                <div className={`absolute inset-0 bg-gradient-to-br from-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity pointer-events-none ${task.priority === 'High' ? 'from-red-50/50 dark:from-red-900/5' : 'from-blue-50/50 dark:from-blue-900/5'}`}></div>
                                                 <div className="flex-1 relative z-10 flex flex-col">
-                                                    <div className="flex justify-between items-start">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold mb-2 inline-block uppercase tracking-wider ${task.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'}`}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold inline-block uppercase tracking-wider ${task.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'}`}>
                                                             {task.priority || 'Normal'}
                                                         </span>
-                                                        <GripVertical className="text-slate-300 text-[18px]" size={18} />
+                                                        <MoreHorizontal className="text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors" size={18} />
                                                     </div>
-                                                    <h3 className="text-slate-900 dark:text-white font-extrabold text-xl leading-tight mt-1">{task.name}</h3>
-                                                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm leading-relaxed max-w-lg truncate">{boardName} Board</p>
-
-                                                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/50">
+                                                    <h3 className="text-slate-800 dark:text-gray-100 font-bold text-xl leading-tight mb-1 group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors">{task.name}</h3>
+                                                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-lg truncate flex items-center gap-2">
+                                                        <Hash size={12} /> {boardName} Board
+                                                    </p>
+                                                    <div className="mt-auto pt-5 flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
-                                                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                                                <Clock size={18} className="text-slate-400" /> Today
-                                                            </span>
-                                                            <span className="text-slate-300">|</span>
-                                                            <span className="text-slate-400 text-sm flex items-center gap-1">
-                                                                <Hash size={14} /> {boardName}
-                                                            </span>
+                                                            <div className="flex -space-x-2">
+                                                                <div className="w-6 h-6 rounded-full bg-indigo-500 border-2 border-white dark:border-[#2c333a] flex items-center justify-center text-[8px] text-white font-bold">M</div>
+                                                            </div>
+                                                            <span className="text-slate-400 text-xs font-medium">Due Today</span>
                                                         </div>
-                                                        <div className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${task.status === 'Done' ? 'bg-green-100 text-green-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-blue-600 hover:text-white'}`}>
+                                                        <button className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${task.status === 'Done' ? 'bg-green-100 text-green-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-md hover:scale-110'}`}>
                                                             <CheckCircle2 size={18} />
-                                                        </div>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -422,12 +419,17 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                 ))
                             )}
 
-                            {/* 12:00 PM Break (Static for now as placeholder for structure) */}
-                            <div className="flex group min-h-[100px] mt-8">
-                                <div className="w-20 pr-4 text-right pt-2 text-xs font-semibold text-slate-400 font-mono">12:00 PM</div>
-                                <div className="flex-1 border-t border-slate-100 dark:border-slate-800 relative pt-1 pb-2">
-                                    <div className="h-full w-full rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-slate-400">
-                                        <Coffee size={18} />
+                            {/* 12:00 PM Break */}
+                            <div className="flex group min-h-[80px]">
+                                <div className="w-24 pr-6 text-right pt-2 text-xs font-bold text-slate-400 font-mono relative">
+                                    <div className="absolute right-[-4px] top-3 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 z-10"></div>
+                                    12:00
+                                </div>
+                                <div className="flex-1 border-l-2 border-slate-200 dark:border-slate-700/50 pl-8 pb-8 relative">
+                                    <div className="h-full w-full rounded-2xl bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-800/30 border border-dashed border-slate-200 dark:border-slate-700 flex items-center gap-3 px-6 text-slate-400 overflow-hidden">
+                                        <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                            <Coffee size={16} />
+                                        </div>
                                         <span className="font-medium text-sm">Lunch Break</span>
                                     </div>
                                 </div>

@@ -1,12 +1,11 @@
 import express, { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { getEnv, isProduction } from '../utils/env';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Input validation
 const createInviteSchema = z.object({

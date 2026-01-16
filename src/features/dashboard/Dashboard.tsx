@@ -6,16 +6,21 @@ import {
   CheckCircle, Flag, WarningCircle, CalendarBlank, Folder,
   PencilSimple, ListPlus, UserPlus, MagnifyingGlass, SquaresFour,
   UploadSimple, Clock, Trash, ChatCircle, PaperPlaneRight,
-  EnvelopeSimple, Archive, NotePencil, Bell, Funnel, SortAscending, ArrowsDownUp, User, X
+  EnvelopeSimple, Archive, NotePencil, Bell, Funnel, SortAscending, ArrowsDownUp, User, X,
+  Receipt, Package
 } from 'phosphor-react';
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
 import { CreateEventModal } from './components/CreateEventModal';
+import { NewEmailModal } from './components/NewEmailModal';
 import { SaveToVaultModal } from './components/SaveToVaultModal';
 import { GlobalSearchDrawer } from './components/GlobalSearchDrawer';
 import { boardService } from '../../services/boardService';
 import { useAppContext } from '../../contexts/AppContext';
 import { MOCK_MEMBERS } from '../teams/data';
 import { useAuth } from '../../auth-adapter';
+import { normalizePriority } from '../priorities/priorityUtils';
+import { useToast } from '../marketplace/components/Toast';
+import { appLogger, boardLogger } from '../../utils/logger';
 
 interface Activity {
   id: string;
@@ -38,20 +43,114 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated }) => {
   const { userDisplayName } = useAppContext();
   const { getToken, isSignedIn } = useAuth();
+  const { showToast } = useToast();
 
   const [quickNote, setQuickNote] = useState('');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [urgentTasksPage, setUrgentTasksPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'overdue' | 'person'>('all');
-  const [recentPage, setRecentPage] = useState(0);
+
+
 
   // Person Filter State
   const [isPersonSearchOpen, setIsPersonSearchOpen] = useState(false);
   const [personSearchQuery, setPersonSearchQuery] = useState('');
   const [selectedPersons, setSelectedPersons] = useState<string[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const ITEMS_PER_PAGE = 3;
+  const personSearchRef = React.useRef<HTMLDivElement>(null);
+
+  // Task refresh trigger - updates when localStorage changes
+  const [taskRefreshKey, setTaskRefreshKey] = useState(0);
+
+  // Listen for storage changes and clean up orphaned task data
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('board-tasks-')) {
+        setTaskRefreshKey(prev => prev + 1);
+      }
+    };
+
+    const handleTaskUpdate = () => {
+      setTaskRefreshKey(prev => prev + 1);
+    };
+
+    // Clean up orphaned task data from deleted boards
+    const cleanupOrphanedTasks = () => {
+      const boardIds = new Set(boards.map(b => b.id));
+      const keysToRemove: string[] = [];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        // Check board-tasks-{boardId} keys
+        if (key?.startsWith('board-tasks-')) {
+          const boardId = key.replace('board-tasks-', '');
+          if (!boardIds.has(boardId)) {
+            keysToRemove.push(key);
+          }
+        }
+        // Check room-table-groups-v1-{boardId}-* keys
+        if (key?.startsWith('room-table-groups-v1-')) {
+          const parts = key.replace('room-table-groups-v1-', '').split('-');
+          const boardId = parts[0];
+          if (boardId && !boardIds.has(boardId)) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+
+      // Remove orphaned keys
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    };
+
+    // Clean up orphaned data when boards change
+    cleanupOrphanedTasks();
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('tasks-updated', handleTaskUpdate);
+
+    // Refresh periodically to catch local changes
+    const interval = setInterval(() => {
+      setTaskRefreshKey(prev => prev + 1);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tasks-updated', handleTaskUpdate);
+      clearInterval(interval);
+    };
+  }, [boards]);
+
+  // Click outside to close person search
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isPersonSearchOpen && personSearchRef.current && !personSearchRef.current.contains(e.target as Node)) {
+        setIsPersonSearchOpen(false);
+        setPersonSearchQuery('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPersonSearchOpen]);
+
+  // Scroll Container Ref
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -340, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 340, behavior: 'smooth' });
+    }
+  };
 
   // Build people and teams list from actual team data
   const peopleAndTeams = useMemo(() => {
@@ -178,7 +277,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           });
         }
       } catch (e) {
-        console.error("Failed to fetch weather/location", e);
+        appLogger.error("Failed to fetch weather/location", e);
         // Fallback to defaults if failed
         setWeather({ temp: 24, condition: 'Sunny', city: 'New York', country: 'USA' });
       }
@@ -187,14 +286,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     fetchWeather();
   }, []);
 
-  // Fetch activities
+  // Fetch activities for the current workspace
   useEffect(() => {
     const fetchActivities = async () => {
-      if (!isSignedIn) return;
+      if (!isSignedIn || !activeWorkspaceId) return;
       try {
         const token = await getToken();
         if (token) {
           const url = new URL('http://localhost:3001/api/activities');
+          // Filter activities by workspace to only show relevant ones
+          url.searchParams.set('workspaceId', activeWorkspaceId);
 
           const response = await fetch(url.toString(), {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -205,7 +306,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           }
         }
       } catch (error) {
-        console.error("Failed to fetch activities", error);
+        appLogger.error("Failed to fetch activities", error);
       }
     };
     fetchActivities();
@@ -219,39 +320,130 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     return () => clearTimeout(timeoutId);
   }, [quickNote]);
 
+  // Load all tasks from localStorage for each board
+  // Tasks are stored in room-table-groups-v1-{boardId}-{viewId} format
+  const allBoardTasks = useMemo(() => {
+    const tasksMap: Record<string, Task[]> = {};
+
+    boards.forEach(board => {
+      const allTasksForBoard: Task[] = [];
+
+      // Search for all room-table-groups keys for this board
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(`room-table-groups-v1-${board.id}`)) {
+          try {
+            const groups = JSON.parse(localStorage.getItem(key) || '[]');
+            if (Array.isArray(groups)) {
+              groups.forEach((group: any) => {
+                if (group.rows && Array.isArray(group.rows)) {
+                  group.rows.forEach((row: any) => {
+                    // Convert row to task format
+                    // Handle both 'person' and 'people' field names (RoomTable uses 'people')
+                    const personData = row.person || row.people || '';
+                    allTasksForBoard.push({
+                      id: row.id,
+                      name: row.name || row.title || '',
+                      person: personData,
+                      status: row.status || '',
+                      date: row.date || row.dueDate || '',
+                      priority: row.priority || null,
+                      ...row
+                    });
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            boardLogger.error('Error parsing tasks for board', board.id, e);
+          }
+        }
+      }
+
+      // Also check board-tasks-{boardId} as fallback
+      if (allTasksForBoard.length === 0) {
+        const storedTasks = localStorage.getItem(`board-tasks-${board.id}`);
+        if (storedTasks) {
+          try {
+            const parsed = JSON.parse(storedTasks);
+            if (Array.isArray(parsed)) {
+              allTasksForBoard.push(...parsed);
+            }
+          } catch { }
+        }
+      }
+
+      // Final fallback to board.tasks
+      if (allTasksForBoard.length === 0 && board.tasks) {
+        allTasksForBoard.push(...board.tasks);
+      }
+
+      tasksMap[board.id] = allTasksForBoard;
+    });
+
+    return tasksMap;
+  }, [boards, taskRefreshKey]); // taskRefreshKey triggers re-read from localStorage
+
+  // Helper to extract person name from task (handles string, object, or array)
+  const getPersonName = (person: any): string => {
+    if (!person) return '';
+    if (typeof person === 'string') return person;
+    // Handle array of people (from 'people' column)
+    if (Array.isArray(person)) {
+      return person.map(p => {
+        if (typeof p === 'string') return p;
+        return p?.name || p?.label || '';
+      }).filter(Boolean).join(', ');
+    }
+    if (typeof person === 'object' && (person.name || person.label)) {
+      return person.name || person.label;
+    }
+    return '';
+  };
+
   const stats = useMemo(() => {
     let totalTasks = 0;
     let highPriority = 0;
-    let completed = 0; // Mocking this for now as we don't strictly track "completed" status across all boards easily without checking columns
-    // Assuming a convention where we might verify completions later, for now we will just count total and high priority
+    let completed = 0;
 
     boards.forEach(board => {
-      if (board.tasks && Array.isArray(board.tasks)) {
-        totalTasks += board.tasks.length;
-        board.tasks.forEach(t => {
-          if (t.priority === 'High') highPriority++;
-        });
-      }
+      const boardTasks = allBoardTasks[board.id] || [];
+      totalTasks += boardTasks.length;
+      boardTasks.forEach(t => {
+        const normalizedPriority = normalizePriority(t.priority);
+        if (normalizedPriority === 'High' || normalizedPriority === 'Urgent') highPriority++;
+        if (t.status === 'Done' || t.status === 'Completed') completed++;
+      });
     });
 
     return { totalTasks, highPriority, completed };
-  }, [boards]);
+  }, [boards, allBoardTasks]);
 
   const urgentTasks = useMemo(() => {
-    const allTasks: (Task & { boardName: string })[] = [];
+    const allTasks: (Task & { boardName: string; normalizedPriority: string | null })[] = [];
     boards.forEach(board => {
-      if (board.tasks && Array.isArray(board.tasks)) {
-        board.tasks.forEach(task => {
-          if (task.priority === 'High' || task.priority === 'Medium') {
-            allTasks.push({ ...task, boardName: board.name });
-          }
-        });
-      }
+      const boardTasks = allBoardTasks[board.id] || [];
+      boardTasks.forEach(task => {
+        const normalizedPriority = normalizePriority(task.priority);
+        // Include Urgent, High, and Medium priority tasks
+        if (normalizedPriority === 'Urgent' || normalizedPriority === 'High' || normalizedPriority === 'Medium') {
+          allTasks.push({ ...task, boardName: board.name, normalizedPriority });
+        }
+      });
     });
-    // Sort by due date (ascending) - handling empty dates by putting them last
+    // Sort by priority first (Urgent > High > Medium), then by date
+    // Tasks without dates (new tasks) appear first within each priority group
+    const priorityOrder: Record<string, number> = { 'Urgent': 3, 'High': 2, 'Medium': 1 };
     const sortedAll = allTasks.sort((a, b) => {
-      if (!a.date) return 1;
-      if (!b.date) return -1;
+      // First sort by priority (highest first)
+      const aPriority = priorityOrder[a.normalizedPriority || ''] || 0;
+      const bPriority = priorityOrder[b.normalizedPriority || ''] || 0;
+      if (aPriority !== bPriority) return bPriority - aPriority;
+
+      // Within same priority: tasks without dates first (newest), then by date ascending
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return -1; // New tasks (no date) appear first
+      if (!b.date) return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
 
@@ -259,7 +451,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     let filteredTasks = sortedAll;
 
     if (activeFilter === 'high') {
-      filteredTasks = filteredTasks.filter(t => t.priority === 'High');
+      filteredTasks = filteredTasks.filter(t => t.normalizedPriority === 'High' || t.normalizedPriority === 'Urgent');
     } else if (activeFilter === 'overdue') {
       const now = new Date();
       filteredTasks = filteredTasks.filter(t => t.date && new Date(t.date) < now && t.status !== 'Done' && t.status !== 'Completed');
@@ -273,31 +465,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           const teamMembers = MOCK_MEMBERS.filter(m => m.department === selected);
           if (teamMembers.length > 0) {
             // It's a team - add all member names
-            teamMembers.forEach(member => namesToMatch.push(member.name));
+            teamMembers.forEach(member => namesToMatch.push(member.name.toLowerCase()));
           } else {
             // It's an individual person
-            namesToMatch.push(selected);
+            namesToMatch.push(selected.toLowerCase());
           }
         });
 
-        filteredTasks = filteredTasks.filter(t =>
-          t.person && namesToMatch.some(name =>
-            t.person.toLowerCase().includes(name.toLowerCase())
-          )
-        );
-      } else if (userDisplayName) {
-        // Default to current user if no specific person selected but filter is active (fallback)
-        filteredTasks = filteredTasks.filter(t => t.person?.toLowerCase().includes(userDisplayName.toLowerCase()));
+        filteredTasks = filteredTasks.filter(t => {
+          // Check both 'person' and 'people' fields
+          const personName = getPersonName(t.person || (t as any).people).toLowerCase();
+          if (!personName) return false;
+          return namesToMatch.some(name => personName.includes(name));
+        });
       }
+      // If no persons selected, show all tasks (don't auto-filter)
     }
 
-    // Sort by due date (ascending) - handling empty dates by putting them last
+    // Sort by priority first (Urgent > High > Medium), then by date
+    // Tasks without dates (new tasks) appear first within each priority group
     return filteredTasks.sort((a, b) => {
-      if (!a.date) return 1;
-      if (!b.date) return -1;
+      const aPriority = priorityOrder[a.normalizedPriority || ''] || 0;
+      const bPriority = priorityOrder[b.normalizedPriority || ''] || 0;
+      if (aPriority !== bPriority) return bPriority - aPriority;
+
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return -1;
+      if (!b.date) return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     }).slice(0, 15); // increased limit to support pagination
-  }, [boards, activeFilter, userDisplayName, selectedPersons]);
+  }, [boards, allBoardTasks, activeFilter, userDisplayName, selectedPersons]);
 
   const paginatedUrgentTasks = urgentTasks.slice((urgentTasksPage - 1) * ITEMS_PER_PAGE, urgentTasksPage * ITEMS_PER_PAGE);
   const totalUrgentPages = Math.ceil(urgentTasks.length / ITEMS_PER_PAGE);
@@ -330,17 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     }
   };
 
-  const handleNextRecent = () => {
-    if ((recentPage + 1) * ITEMS_PER_PAGE < recentlyVisited.length) {
-      setRecentPage(prev => prev + 1);
-    }
-  };
 
-  const handlePrevRecent = () => {
-    if (recentPage > 0) {
-      setRecentPage(prev => prev - 1);
-    }
-  };
 
   // --- Helpers for Recently Visited ---
   const getCardTheme = (title: string, type: string) => {
@@ -438,17 +625,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         // Use the prop to update local state AND backend
         await onTaskCreated(targetBoardId, newTask);
 
-        if (location.type === 'new') {
-          // Already handled by onBoardCreated but let's navigate to it
-          onNavigate('board', targetBoardId);
-        } else {
-          onNavigate('board', targetBoardId);
-        }
+        // Show success message instead of navigating away
+        const boardName = location.type === 'new' ? location.newBoardName : boards.find((b: Board) => b.id === targetBoardId)?.name || 'board';
+        showToast(`Task "${taskData.name}" created in ${boardName}`, 'success');
       }
 
     } catch (e) {
-      console.error("Failed to create new task", e);
-      alert("Failed to create task. Please try again.");
+      boardLogger.error("Failed to create new task", e);
+      showToast("Failed to create task. Please try again.", 'error');
     }
   };
 
@@ -470,8 +654,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       await onTaskCreated(boardId, newTask);
       onNavigate('board', boardId); // Navigate to the board where event was added
     } catch (e) {
-      console.error("Failed to create event", e);
+      boardLogger.error("Failed to create event", e);
     }
+  };
+
+  const handleEmailSend = (emailData: any) => {
+    appLogger.info("Email Sent:", emailData);
+    // Here you would typically integrate with an email API or logic
+    setActivities(prev => [{
+      id: `act-${Date.now()}`,
+      type: 'EMAIL_SENT',
+      content: `Sent email to ${emailData.to}`,
+      metadata: emailData.subject,
+      createdAt: new Date().toISOString()
+    }, ...prev]);
   };
 
   return (
@@ -511,34 +707,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         {/* Recently Visited */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <ClockCounterClockwise size={24} weight="light" className="text-gray-400" />
-              Recently Visited
-            </h2>
-            {/* Pagination Controls */}
-            {recentlyVisited.length > ITEMS_PER_PAGE && (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <ClockCounterClockwise size={24} weight="light" className="text-gray-400" />
+                Recently Visited
+              </h2>
+              {/* Scroll Controls */}
+              <div className="flex items-center gap-1 ml-2">
                 <button
-                  onClick={handlePrevRecent}
-                  disabled={recentPage === 0}
-                  className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${recentPage === 0 ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
+                  onClick={scrollLeft}
+                  className="p-1 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
                 >
                   <CaretLeft size={18} weight="light" />
                 </button>
                 <button
-                  onClick={handleNextRecent}
-                  disabled={(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length}
-                  className={`p-1 rounded-full hover:bg-gray-200 transition-colors ${(recentPage + 1) * ITEMS_PER_PAGE >= recentlyVisited.length ? 'opacity-30 cursor-not-allowed' : 'text-gray-600'}`}
+                  onClick={scrollRight}
+                  className="p-1 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
                 >
                   <CaretRight size={18} weight="light" />
                 </button>
               </div>
-            )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Quick Actions */}
+              <div className="flex items-center gap-2">
+                {[
+                  { icon: Receipt, label: 'Payment Request' },
+                  { icon: EnvelopeSimple, label: 'New Email', onClick: () => setIsEmailModalOpen(true) },
+                  { icon: UserPlus, label: 'New Customer' },
+                  { icon: Package, label: 'New Product' },
+                ].map((action, idx) => (
+                  <button
+                    key={idx}
+                    className="group flex items-center gap-0 bg-white p-1 rounded-full border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md hover:pr-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden"
+                    onClick={() => action.onClick ? action.onClick() : appLogger.debug(`Triggered ${action.label}`)}
+                  >
+                    <div className="p-1.5 rounded-full bg-gray-50 text-gray-600 group-hover:bg-gray-100 group-hover:text-gray-900 transition-colors duration-500 shrink-0">
+                      <action.icon size={14} weight="regular" />
+                    </div>
+                    <span className="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-2 transition-all duration-700 ease-out whitespace-nowrap text-[11px] font-medium text-gray-600 group-hover:text-gray-900">
+                      {action.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Scrollable Container */}
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-6 overflow-x-auto snap-x scroll-smooth pb-4 -mx-1 px-1 no-scrollbar"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {recentlyVisited.length > 0 ? (
               recentlyVisited
-                .slice(recentPage * ITEMS_PER_PAGE, (recentPage + 1) * ITEMS_PER_PAGE)
                 .map(item => {
                   const imageUrl = getCardTheme(item.title, item.type);
                   const stats = getCardStats(item.boardId);
@@ -546,7 +770,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   return (
                     <div
                       key={item.id}
-                      className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col"
+                      className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col min-w-[300px] sm:min-w-[340px] snap-start"
                     >
                       {/* Cover Image */}
                       <div
@@ -653,9 +877,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   {/* Right Side: Filters */}
                   <div className="flex items-center justify-end min-w-[80px]">
                     {/* Filter Toolbar */}
-                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100 relative">
                       {/* Standard Filters */}
-                      <div className={`flex items-center transition-all duration-300 ease-out overflow-hidden ${isPersonSearchOpen ? 'w-0 opacity-0 p-0' : 'w-auto opacity-100'}`}>
+                      <div className="flex items-center">
                         <button
                           onClick={() => setActiveFilter('all')}
                           className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
@@ -679,34 +903,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         </button>
                       </div>
 
-                      {/* Person Search - Expandable from center */}
-                      <div className={`relative flex items-center transition-all duration-300 ease-out ${isPersonSearchOpen ? 'w-[220px]' : 'w-8'}`}>
+                      {/* Person Search - Fixed width container to prevent layout shift */}
+                      <div ref={personSearchRef} className="relative flex items-center w-8">
                         {isPersonSearchOpen ? (
                           <div
-                            className="flex items-center w-full bg-white rounded-md shadow-sm border border-blue-100 overflow-hidden origin-right"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center w-[260px] bg-white rounded-md shadow-lg border border-blue-100 overflow-hidden z-50"
                           >
                             <div className="pl-2 pr-1 text-indigo-500 shrink-0">
                               <User size={14} weight="fill" />
                             </div>
-                            <div className="flex-1 flex items-center overflow-hidden min-w-0">
-                              {selectedPersons.length > 0 && (
-                                <div className="flex items-center gap-1 px-1 shrink-0">
-                                  <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                                    {selectedPersons[0]}
-                                    {selectedPersons.length > 1 && ` +${selectedPersons.length - 1}`}
-                                  </span>
-                                </div>
-                              )}
+                            <div className="flex-1 flex items-center overflow-hidden min-w-0 flex-wrap gap-1 py-1">
+                              {/* Selected persons as removable badges */}
+                              {selectedPersons.map((person, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    setSelectedPersons(prev => prev.filter((_, i) => i !== idx));
+                                    if (selectedPersons.length === 1) {
+                                      setActiveFilter('all');
+                                    }
+                                  }}
+                                  className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-1 hover:bg-indigo-200 transition-colors"
+                                  title="Click to remove"
+                                >
+                                  {person.length > 10 ? person.substring(0, 10) + '...' : person}
+                                  <X size={10} weight="bold" />
+                                </button>
+                              ))}
                               <input
                                 autoFocus
                                 type="text"
-                                className="w-full text-xs border-none focus:ring-0 p-1.5 pl-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent min-w-[50px]"
-                                placeholder={selectedPersons.length === 0 ? "Search..." : ""}
+                                className="flex-1 text-xs border-none focus:ring-0 p-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent min-w-[60px]"
+                                placeholder={selectedPersons.length === 0 ? "Search people..." : "Add more..."}
                                 value={personSearchQuery}
-                                onChange={(e) => setPersonSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                  setPersonSearchQuery(e.target.value);
+                                  setHighlightedIndex(0);
+                                }}
                                 onKeyDown={(e) => {
+                                  const filteredItems = peopleAndTeams.filter(item =>
+                                    item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
+                                    !selectedPersons.includes(item.name)
+                                  );
+
                                   if (e.key === 'Escape') {
                                     setIsPersonSearchOpen(false);
+                                    setPersonSearchQuery('');
+                                  } else if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setHighlightedIndex(prev => Math.min(prev + 1, filteredItems.length - 1));
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                  } else if (e.key === 'Enter' && filteredItems.length > 0) {
+                                    e.preventDefault();
+                                    const selectedItem = filteredItems[highlightedIndex];
+                                    if (selectedItem) {
+                                      setSelectedPersons(prev => [...prev, selectedItem.name]);
+                                      setPersonSearchQuery('');
+                                      setActiveFilter('person');
+                                      setHighlightedIndex(0);
+                                    }
+                                  } else if (e.key === 'Backspace' && personSearchQuery === '' && selectedPersons.length > 0) {
+                                    // Remove last selected person when backspace on empty input
+                                    setSelectedPersons(prev => prev.slice(0, -1));
+                                    if (selectedPersons.length === 1) {
+                                      setActiveFilter('all');
+                                    }
                                   }
                                 }}
                               />
@@ -715,30 +978,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               onClick={() => {
                                 setIsPersonSearchOpen(false);
                                 setPersonSearchQuery('');
-                                if (activeFilter === 'person' && selectedPersons.length === 0) setActiveFilter('all');
+                                setSelectedPersons([]);
+                                setActiveFilter('all');
                               }}
                               className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-600 shrink-0"
+                              title="Clear all and close"
                             >
                               <X size={12} />
                             </button>
 
-                            {/* Dropdown */}
-                            {personSearchQuery && (
+                            {/* Dropdown - shows when typing or when focused with no selection */}
+                            {(personSearchQuery || selectedPersons.length === 0) && (
                               <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 max-h-48 overflow-y-auto">
                                 {peopleAndTeams
                                   .filter(item =>
                                     item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
                                     !selectedPersons.includes(item.name)
                                   )
-                                  .map(item => (
+                                  .map((item, idx) => (
                                     <button
                                       key={item.id}
                                       onClick={() => {
                                         setSelectedPersons(prev => [...prev, item.name]);
                                         setPersonSearchQuery('');
                                         setActiveFilter('person');
+                                        setHighlightedIndex(0);
                                       }}
-                                      className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2"
+                                      className={`w-full text-left px-3 py-2 text-xs text-gray-700 flex items-center gap-2 transition-colors ${
+                                        idx === highlightedIndex ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'
+                                      }`}
                                     >
                                       <div className={`w-5 h-5 rounded-full ${item.type === 'team' ? 'bg-indigo-500' : item.color} flex items-center justify-center text-[10px] font-bold text-white`}>
                                         {item.initials.charAt(0)}
@@ -753,8 +1021,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                   item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
                                   !selectedPersons.includes(item.name)
                                 ).length === 0 && (
-                                  <div className="px-3 py-2 text-xs text-gray-400 text-center">No matches</div>
-                                )}
+                                    <div className="px-3 py-2 text-xs text-gray-400 text-center">No matches</div>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -763,6 +1031,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             onClick={() => {
                               setIsPersonSearchOpen(true);
                               setActiveFilter('person');
+                              setHighlightedIndex(0);
                             }}
                             className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                             title="Filter by Person"
@@ -796,8 +1065,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           {/* Priority Badge Aligned to Right */}
                           <div className="flex-shrink-0 w-20 flex justify-center ml-4">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
-                                ${task.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
-                              {task.priority}
+                                ${task.normalizedPriority === 'Urgent' ? 'bg-red-100 text-red-800' :
+                                  task.normalizedPriority === 'High' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-blue-100 text-blue-800'}`}>
+                              {task.normalizedPriority || task.priority}
                             </span>
                           </div>
 
@@ -996,7 +1267,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
           </div>
         </div>
-      </div >
+      </div>
 
       <NewTaskModal
         isOpen={isNewTaskModalOpen}
@@ -1024,12 +1295,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         onSave={handleEventSave}
         activeWorkspaceId={activeWorkspaceId}
       />
+
+      <NewEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSend={handleEmailSend}
+      />
+
       <GlobalSearchDrawer
         isOpen={isGlobalSearchOpen}
         onClose={() => setIsGlobalSearchOpen(false)}
         boards={boards}
         onNavigate={onNavigate}
       />
-    </div>
+    </div >
   );
 };

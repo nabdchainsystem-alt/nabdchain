@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    House, Sparkle, Activity, SquaresFour, Tray, Users, Lock,
+    House, Sparkle, Activity, SquaresFour, Tray, Users, Lock, Flask,
     Package, CaretDown, ShoppingCart, Truck, UsersThree, Layout, Factory, Wrench, ShieldCheck,
     Buildings, Table, Megaphone, Money, Monitor, Globe, MagnifyingGlass, Plus, DotsThree, Trash,
     CaretRight, CaretLeft, Briefcase, Folder, FileText, GitMerge, PuzzlePiece, DownloadSimple, MagicWand,
@@ -21,6 +21,292 @@ const ICON_MAP: Record<string, any> = {
     Command, Hash, Image, Music: MusicNotes, Video: VideoCamera, PenTool: PenNib, Box: Cube, Package, Layers: Stack,
     Home: House, Grid: SquaresFour, Folder, Table, List, KanbanSquare: Kanban, CheckSquare
 };
+
+// Quick Navigation Items Configuration
+interface QuickNavItem {
+    id: string;
+    icon: React.ComponentType<any>;
+    label: string;
+    view: string;
+}
+
+const ALL_QUICK_NAV_ITEMS: QuickNavItem[] = [
+    { id: 'dashboard', icon: House, label: 'Home', view: 'dashboard' },
+    { id: 'my_work', icon: SquaresFour, label: 'My Work', view: 'my_work' },
+    { id: 'inbox', icon: Tray, label: 'Inbox', view: 'inbox' },
+    { id: 'teams', icon: Users, label: 'Teams', view: 'teams' },
+    { id: 'vault', icon: Lock, label: 'Vault', view: 'vault' },
+    { id: 'talk', icon: ChatCircleText, label: 'Talk', view: 'talk' },
+];
+
+const DEFAULT_QUICK_NAV = ['dashboard', 'my_work', 'inbox', 'vault'];
+
+// Quick Navigation Icons Component (shown beside sidebar when collapsed)
+const QuickNavIcons: React.FC<{
+    activeView: ViewState | string;
+    activeBoardId: string | null;
+    onNavigate: (view: ViewState | string, boardId?: string) => void;
+    onExpandSidebar: () => void;
+    boards: Board[];
+}> = ({ activeView, activeBoardId, onNavigate, onExpandSidebar, boards }) => {
+    const [quickNavItems, setQuickNavItems] = useState<string[]>(() => {
+        const saved = localStorage.getItem('sidebar-quick-nav-items');
+        return saved ? JSON.parse(saved) : DEFAULT_QUICK_NAV;
+    });
+    const [showSettings, setShowSettings] = useState(false);
+    const settingsRef = useRef<HTMLDivElement>(null);
+
+    // Listen for settings changes from external sources
+    useEffect(() => {
+        const handleSettingsChange = (e: CustomEvent<string[]>) => {
+            setQuickNavItems(e.detail);
+        };
+        window.addEventListener('quicknav-settings-changed', handleSettingsChange as EventListener);
+        return () => window.removeEventListener('quicknav-settings-changed', handleSettingsChange as EventListener);
+    }, []);
+
+    // Close settings when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+                setShowSettings(false);
+            }
+        };
+        if (showSettings) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showSettings]);
+
+    const handleNavClick = (e: React.MouseEvent, view: string, boardId?: string) => {
+        e.stopPropagation();
+        if (boardId) {
+            onNavigate('board', boardId);
+        } else {
+            onNavigate(view);
+        }
+    };
+
+    const toggleQuickNavItem = (itemId: string) => {
+        const newItems = quickNavItems.includes(itemId)
+            ? quickNavItems.filter(id => id !== itemId)
+            : [...quickNavItems, itemId];
+        setQuickNavItems(newItems);
+        localStorage.setItem('sidebar-quick-nav-items', JSON.stringify(newItems));
+    };
+
+    // Build visible items from pages + boards
+    const visiblePageItems = ALL_QUICK_NAV_ITEMS.filter(item => quickNavItems.includes(item.id));
+    const visibleBoardItems = boards.filter(board => quickNavItems.includes(`board-${board.id}`));
+
+    // Get board icon component
+    const getBoardIcon = (iconName?: string) => {
+        if (!iconName) return Layout;
+        return ICON_MAP[iconName] || Layout;
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-3 relative">
+            {/* Page navigation items */}
+            {visiblePageItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeView === item.view;
+                return (
+                    <div key={item.id} className="group flex flex-col items-center">
+                        <button
+                            onClick={(e) => handleNavClick(e, item.view)}
+                            className={`
+                                w-8 h-8 rounded-full flex items-center justify-center
+                                bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+                                shadow-sm hover:shadow-md
+                                transition-all duration-300 ease-out
+                                ${isActive ? 'ring-2 ring-blue-400/50 shadow-blue-100' : ''}
+                            `}
+                        >
+                            <Icon
+                                size={15}
+                                weight={isActive ? 'fill' : 'regular'}
+                                className={isActive
+                                    ? 'text-blue-500 dark:text-blue-400'
+                                    : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                                }
+                            />
+                        </button>
+                        <span className={`
+                            max-h-0 opacity-0 overflow-hidden
+                            group-hover:max-h-5 group-hover:opacity-100 group-hover:mt-1
+                            transition-all duration-300 ease-out
+                            text-[10px] font-medium text-center
+                            ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}
+                        `}>
+                            {item.label}
+                        </span>
+                    </div>
+                );
+            })}
+
+            {/* Board navigation items */}
+            {visibleBoardItems.map((board) => {
+                const BoardIcon = getBoardIcon(board.icon);
+                const isActive = activeView === 'board' && activeBoardId === board.id;
+                return (
+                    <div key={`board-${board.id}`} className="group flex flex-col items-center">
+                        <button
+                            onClick={(e) => handleNavClick(e, 'board', board.id)}
+                            className={`
+                                w-8 h-8 rounded-full flex items-center justify-center
+                                bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
+                                shadow-sm hover:shadow-md
+                                transition-all duration-300 ease-out
+                                ${isActive ? 'ring-2 ring-purple-400/50 shadow-purple-100' : ''}
+                            `}
+                        >
+                            <BoardIcon
+                                size={15}
+                                weight={isActive ? 'fill' : 'regular'}
+                                className={isActive
+                                    ? 'text-purple-500 dark:text-purple-400'
+                                    : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                                }
+                            />
+                        </button>
+                        <span className={`
+                            max-h-0 opacity-0 overflow-hidden
+                            group-hover:max-h-5 group-hover:opacity-100 group-hover:mt-1
+                            transition-all duration-300 ease-out
+                            text-[10px] font-medium text-center max-w-[60px] truncate
+                            ${isActive ? 'text-purple-600 dark:text-purple-300' : 'text-gray-500 dark:text-gray-400'}
+                        `}>
+                            {board.name}
+                        </span>
+                    </div>
+                );
+            })}
+
+            {/* Settings button */}
+            <div className="group flex flex-col items-center mt-1">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowSettings(!showSettings);
+                    }}
+                    title="Customize quick nav"
+                    className="w-7 h-7 rounded-full flex items-center justify-center
+                        bg-white/70 dark:bg-gray-800/70
+                        hover:bg-white dark:hover:bg-gray-800
+                        hover:shadow-sm
+                        transition-all duration-300 ease-out"
+                >
+                    <Gauge size={13} weight="regular" className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                </button>
+                <span className="max-h-0 opacity-0 overflow-hidden
+                    group-hover:max-h-5 group-hover:opacity-100 group-hover:mt-1
+                    transition-all duration-300 ease-out
+                    text-[9px] font-medium text-gray-400 dark:text-gray-500">
+                    Edit
+                </span>
+            </div>
+
+            {/* Settings Popup */}
+            {showSettings && (
+                <div
+                    ref={settingsRef}
+                    className="absolute left-full ml-2 top-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 z-50 min-w-[200px] max-h-[400px] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Pages Section */}
+                    <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider px-1">Pages</p>
+                    <div className="space-y-0.5 mb-3">
+                        {ALL_QUICK_NAV_ITEMS.map((item) => {
+                            const Icon = item.icon;
+                            const isEnabled = quickNavItems.includes(item.id);
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => toggleQuickNavItem(item.id)}
+                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150
+                                        ${isEnabled
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                        }`}
+                                >
+                                    <Icon size={14} weight={isEnabled ? 'fill' : 'regular'} />
+                                    <span className="flex-1 text-left truncate">{item.label}</span>
+                                    {isEnabled && <CheckSquare size={12} weight="fill" className="text-blue-500 shrink-0" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Boards Section */}
+                    {boards.length > 0 && (
+                        <>
+                            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider px-1 border-t border-gray-100 dark:border-gray-700 pt-2">Boards</p>
+                            <div className="space-y-0.5">
+                                {boards.map((board) => {
+                                    const BoardIcon = getBoardIcon(board.icon);
+                                    const isEnabled = quickNavItems.includes(`board-${board.id}`);
+                                    return (
+                                        <button
+                                            key={`board-${board.id}`}
+                                            onClick={() => toggleQuickNavItem(`board-${board.id}`)}
+                                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150
+                                                ${isEnabled
+                                                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                                }`}
+                                        >
+                                            <BoardIcon size={14} weight={isEnabled ? 'fill' : 'regular'} />
+                                            <span className="flex-1 text-left truncate">{board.name}</span>
+                                            {isEnabled && <CheckSquare size={12} weight="fill" className="text-purple-500 shrink-0" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* Expand button at bottom */}
+            <div className="group flex flex-col items-center mt-2">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onExpandSidebar();
+                    }}
+                    title="Expand sidebar"
+                    className="w-7 h-7 rounded-full flex items-center justify-center
+                        bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700
+                        text-gray-400 hover:text-gray-500 dark:hover:text-gray-300
+                        transition-all duration-200 hover:shadow-sm"
+                >
+                    <CaretRight size={13} weight="bold" />
+                </button>
+                <span className="max-h-0 opacity-0 overflow-hidden
+                    group-hover:max-h-5 group-hover:opacity-100 group-hover:mt-1
+                    transition-all duration-300 ease-out
+                    text-[9px] font-medium text-gray-400 dark:text-gray-500">
+                    Open
+                </span>
+            </div>
+        </div>
+    );
+};
+
+// Export function to get/set quick nav settings (for use in settings page)
+export const getQuickNavSettings = (): string[] => {
+    const saved = localStorage.getItem('sidebar-quick-nav-items');
+    return saved ? JSON.parse(saved) : DEFAULT_QUICK_NAV;
+};
+
+export const setQuickNavSettings = (items: string[]): void => {
+    localStorage.setItem('sidebar-quick-nav-items', JSON.stringify(items));
+    // Dispatch event to notify sidebar of changes
+    window.dispatchEvent(new CustomEvent('quicknav-settings-changed', { detail: items }));
+};
+
+export const getAllQuickNavOptions = () => ALL_QUICK_NAV_ITEMS;
 
 interface SidebarProps {
     onNavigate: (view: ViewState | string, boardId?: string) => void;
@@ -259,12 +545,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const textVisibility = isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[200px] opacity-100';
 
     return (
-        <div
-            className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-transparent rounded-r-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out will-change-[width]'}`}
-            style={{
-                width: `${displayedWidth}px`
-            }}
-        >
+        <>
+            {/* Main Sidebar Container */}
+            <div
+                className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-transparent rounded-r-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out will-change-[width]'}`}
+                style={{
+                    width: `${displayedWidth}px`
+                }}
+            >
             <div className="h-full min-h-0 flex flex-col">
                 {/* Content wrapper - hidden when collapsed */}
                 <div className={`h-full min-h-0 flex flex-col transition-opacity duration-300 ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
@@ -383,13 +671,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
                             </button>
                         )}
+                        <button
+                            onClick={() => onNavigate('test')}
+                            title="Test Tools"
+                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
+                        ${activeView === 'test'
+                                    ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                        `}
+                        >
+                            <Flask size={17} weight="light" className="flex-shrink-0" />
+                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Test Tools</span>
+                        </button>
                     </div>
 
 
                     <div className="border-t border-gray-100 dark:border-monday-dark-border my-2 mx-6"></div>
 
                     {/* 2. Scrollable Content */}
-                    <div className={`flex-1 min-h-0 overflow-y-auto py-2 custom-scrollbar pl-5 pr-3 transition-[padding] duration-300`}>
+                    <div className={`flex-1 min-h-0 overflow-y-auto py-2 no-scrollbar pl-5 pr-3 transition-[padding] duration-300`}>
 
 
                         {/* Departments Section */}
@@ -1497,6 +1797,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={t('Delete Workspace')}
                 message={t('Are you sure you want to delete this workspace? All boards within it will be deleted. This action cannot be undone.')}
             />
-        </div>
+
+            {/* Quick Navigation Icons - Floating absolutely positioned when collapsed */}
+            {isCollapsed && (
+                <div className="absolute top-1/2 -translate-y-1/2 left-full ml-3 z-40">
+                    <QuickNavIcons
+                        activeView={activeView}
+                        activeBoardId={activeBoardId}
+                        onNavigate={onNavigate}
+                        onExpandSidebar={onToggleCollapse}
+                        boards={boards}
+                    />
+                </div>
+            )}
+            </div>
+        </>
     );
 };

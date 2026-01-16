@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Sidebar } from "./components/layout/Sidebar";
 import { TopBar } from './components/layout/TopBar';
-import { Dashboard } from './features/dashboard/Dashboard';
-import { BoardView } from './features/board/BoardView';
-import { InboxView } from './features/inbox/InboxView';
-import { VaultView } from './features/vault/VaultView';
 import { NabdSmartBar } from './components/ui/NabdSmartBar';
-import FlowHubPage from './features/flowHub/FlowHubPage';
-import ProcessMapPage from './features/flowHub/ProcessMapPage';
-import { MyWorkPage } from './features/myWork/MyWorkPage';
 import { SignedIn, SignedOut, SignIn, useUser, useAuth } from './auth-adapter';
 import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
@@ -19,12 +12,26 @@ import { AppProvider } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { NavigationProvider } from './contexts/NavigationContext';
-import TeamsPage from './features/teams/TeamsPage';
 import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { ToastProvider } from './features/marketplace/components/Toast';
 import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
-const TalkPage = React.lazy(() => import('./features/talk/TalkPage'));
+import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage } from './utils/storage';
+import { appLogger, boardLogger } from './utils/logger';
+import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
+
+// Lazy load feature pages for better initial bundle size
+const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const BoardView = lazyWithRetry(() => import('./features/board/BoardView').then(m => ({ default: m.BoardView })));
+const InboxView = lazyWithRetry(() => import('./features/inbox/InboxView').then(m => ({ default: m.InboxView })));
+const VaultView = lazyWithRetry(() => import('./features/vault/VaultView').then(m => ({ default: m.VaultView })));
+const FlowHubPage = lazyWithRetry(() => import('./features/flowHub/FlowHubPage'));
+const ProcessMapPage = lazyWithRetry(() => import('./features/flowHub/ProcessMapPage'));
+const MyWorkPage = lazyWithRetry(() => import('./features/myWork/MyWorkPage').then(m => ({ default: m.MyWorkPage })));
+const TeamsPage = lazyWithRetry(() => import('./features/teams/TeamsPage'));
+const TalkPage = lazyWithRetry(() => import('./features/talk/TalkPage'));
+const TestPage = lazyWithRetry(() => import('./features/tools/TestPage').then(m => ({ default: m.TestPage })));
 
 const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
@@ -52,28 +59,28 @@ const AppContent: React.FC = () => {
       try {
         const token = await getToken();
         if (token) {
-          console.log('[App] Fetching workspaces...');
+          appLogger.info('[App] Fetching workspaces...');
           const response = await fetch('http://localhost:3001/api/workspaces', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (response.ok) {
             const data = await response.json();
-            console.log('[App] Workspaces fetched:', data);
+            appLogger.info('[App] Workspaces fetched:', data);
             setWorkspaces(data);
 
             // Auto-select workspace if current is invalid or missing
             const currentExists = data.find((w: Workspace) => w.id === activeWorkspaceId);
             if (data.length > 0 && !currentExists) {
-              console.log(`[App] Current workspace ${activeWorkspaceId} not found. Switching to ${data[0].id}`);
+              appLogger.info(`Current workspace ${activeWorkspaceId} not found. Switching to ${data[0].id}`);
               setActiveWorkspaceId(data[0].id);
             } else if (data.length > 0 && (!activeWorkspaceId || activeWorkspaceId === 'w1')) {
               // Keeps existing logic for empty/'w1' case just in case, though the above covers most mismatch cases
               setActiveWorkspaceId(data[0].id);
             } else if (data.length === 0) {
-              console.warn('[App] No workspaces found. Prompting creation or waiting.');
+              appLogger.warn('[App] No workspaces found. Prompting creation or waiting.');
             }
           } else {
-            console.error('[App] Failed to fetch workspaces. Status:', response.status);
+            appLogger.error('[App] Failed to fetch workspaces. Status:', response.status);
             // Fallback to local storage if API fails (already loaded in initial state, so just keep it)
           }
         } else {
@@ -84,7 +91,7 @@ const AppContent: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch workspaces", error);
+        appLogger.error("Failed to fetch workspaces", error);
       }
     };
     fetchWorkspaces();
@@ -198,7 +205,7 @@ const AppContent: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch boards", error);
+        appLogger.error("Failed to fetch boards", error);
       }
     };
     fetchBoards();
@@ -218,6 +225,12 @@ const AppContent: React.FC = () => {
   // isSidebarCollapsed state moved to UIContext
 
   const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
+
+  // Filter boards by active workspace - this ensures components only see relevant data
+  const workspaceBoards = React.useMemo(() => {
+    if (!activeWorkspaceId) return boards;
+    return boards.filter(b => b.workspaceId === activeWorkspaceId);
+  }, [boards, activeWorkspaceId]);
 
   const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('app-page-visibility');
@@ -288,7 +301,7 @@ const AppContent: React.FC = () => {
         });
       }
     } catch (e) {
-      console.error("Failed to log activity", e);
+      appLogger.error("Failed to log activity", e);
     }
   }, [getToken, activeWorkspaceId, activeBoardId]);
 
@@ -314,7 +327,7 @@ const AppContent: React.FC = () => {
         }
       }
     } catch (e) {
-      console.error("Failed to create board backend", e);
+      boardLogger.error("Failed to create board backend", e);
       // Fallback
       setBoards(prev => [...prev, newBoard]);
       setActiveBoardId(newBoard.id);
@@ -412,13 +425,13 @@ const AppContent: React.FC = () => {
             });
             return task;
           });
-          console.log("App: Saving tasks for board", { boardId: newBoardId, taskCount: initialTasks.length, firstTask: initialTasks[0]?.name });
+          appLogger.info("App: Saving tasks for board", { boardId: newBoardId, taskCount: initialTasks.length, firstTask: initialTasks[0]?.name });
           localStorage.setItem(`room-items-v3-${newBoardId}`, JSON.stringify(initialTasks));
           localStorage.setItem(`board-tasks-${newBoardId}`, JSON.stringify(initialTasks));
         }
 
       } catch (e) {
-        console.error('Failed to initialize template storage', e);
+        appLogger.error('Failed to initialize template storage', e);
       }
     }
 
@@ -544,7 +557,7 @@ const AppContent: React.FC = () => {
             setActiveBoardId(createdBoard.id);
             setActiveView('board');
           } catch (boardErr) {
-            console.error("Failed to auto-create default board", boardErr);
+            boardLogger.error("Failed to auto-create default board", boardErr);
             // Still add to local state as fallback
             setBoards(prev => [...prev, defaultBoard]);
             setActiveBoardId(defaultBoardId);
@@ -554,12 +567,12 @@ const AppContent: React.FC = () => {
             setUnsyncedBoardIds(prev => new Set(prev).add(defaultBoardId));
           }
         } else {
-          console.error("Failed to add workspace backend, keeping local");
+          appLogger.error("Failed to add workspace backend, keeping local");
           // Optionally revert or mark as unsynced
         }
       }
     } catch (error) {
-      console.error("Failed to add workspace", error);
+      appLogger.error("Failed to add workspace", error);
       // Keep optimistic update since we want offline support
     }
   }, [getToken]);
@@ -568,6 +581,10 @@ const AppContent: React.FC = () => {
 
   const handleDeleteWorkspace = React.useCallback(async (id: string) => {
     if (workspaces.length <= 1) return; // Prevent deleting last workspace
+
+    // Get boards to delete for localStorage cleanup
+    const boardsToDelete = boards.filter(b => b.workspaceId === id);
+    const boardIdsToDelete = boardsToDelete.map(b => b.id);
 
     // Optimistic Update
     const workspaceToDelete = workspaces.find(w => w.id === id);
@@ -580,6 +597,16 @@ const AppContent: React.FC = () => {
     });
     setBoards(prev => prev.filter(b => b.workspaceId !== id));
 
+    // Clean up localStorage for all boards in this workspace
+    cleanupWorkspaceBoardsStorage(boardIdsToDelete);
+
+    // Also mark these boards as deleted to prevent resurrection
+    setDeletedBoardIds(prev => {
+      const next = new Set(prev);
+      boardIdsToDelete.forEach(id => next.add(id));
+      return next;
+    });
+
     try {
       const token = await getToken();
       if (token) {
@@ -589,30 +616,33 @@ const AppContent: React.FC = () => {
         });
 
         if (!response.ok) {
-          console.error("Failed to delete workspace backend, reverting");
+          appLogger.error("Failed to delete workspace backend, reverting");
           // Revert optimistic update
           if (workspaceToDelete) {
             setWorkspaces(prev => [...prev, workspaceToDelete]);
-            // Revert active workspace if needed
-            if (activeWorkspaceId !== id && workspaceToDelete.id === id) {
-              // If we switched away, maybe we don't force switch back, but having it available is enough
-            }
           }
+        } else {
+          // Backend succeeded, clean up deletedBoardIds
+          setDeletedBoardIds(prev => {
+            const next = new Set(prev);
+            boardIdsToDelete.forEach(id => next.delete(id));
+            return next;
+          });
         }
       }
     } catch (error) {
-      console.error("Failed to delete workspace", error);
+      appLogger.error("Failed to delete workspace", error);
     }
-  }, [workspaces, activeWorkspaceId, getToken]);
+  }, [workspaces, boards, activeWorkspaceId, getToken]);
 
   const handleDeleteBoard = React.useCallback(async (boardId: string) => {
     const board = boards.find(b => b.id === boardId);
     if (!board) {
-      console.log('[Delete Board] Board not found in local state:', boardId);
+      boardLogger.info('[Delete Board] Board not found in local state:', boardId);
       return;
     }
 
-    console.log('[Delete Board] Attempting to delete:', { boardId, boardName: board.name });
+    boardLogger.info('[Delete Board] Attempting to delete:', { boardId, boardName: board.name });
 
     // Optimistic update - remove from local state IMMEDIATELY
     setBoards(prev => prev.filter(b => b.id !== boardId));
@@ -643,6 +673,9 @@ const AppContent: React.FC = () => {
       }
     }
 
+    // Clean up all localStorage data for this board
+    cleanupBoardStorage(boardId);
+
     if (activeBoardId === boardId) {
       setActiveBoardId(null);
       setActiveView('dashboard');
@@ -652,9 +685,9 @@ const AppContent: React.FC = () => {
     try {
       const token = await getToken();
       if (token) {
-        console.log('[Delete Board] Calling backend with token...');
+        boardLogger.info('[Delete Board] Calling backend with token...');
         await boardService.deleteBoard(token, boardId);
-        console.log('[Delete Board] Backend delete successful');
+        boardLogger.info('[Delete Board] Backend delete successful');
         // On success, we can remove from `deletedBoardIds` since server no longer has it
         setDeletedBoardIds(prev => {
           const next = new Set(prev);
@@ -662,10 +695,10 @@ const AppContent: React.FC = () => {
           return next;
         });
       } else {
-        console.error("[Delete Board] No auth token available - keeping local deletion");
+        boardLogger.error("[Delete Board] No auth token available - keeping local deletion");
       }
     } catch (e) {
-      console.error("[Delete Board] Backend call failed:", e);
+      boardLogger.error("[Delete Board] Backend call failed:", e);
     }
   }, [activeBoardId, getToken, boards]);
 
@@ -682,7 +715,7 @@ const AppContent: React.FC = () => {
       if (token) {
         await boardService.updateBoard(token, boardId, updates);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { boardLogger.error('Failed to update board', e); }
   }, [getToken]);
 
   // --- Department Pages (Lazy Loaded) ---
@@ -813,7 +846,7 @@ const AppContent: React.FC = () => {
           }
         }
       } catch (e) {
-        console.error("Failed to update tasks backend", e);
+        boardLogger.error("Failed to update tasks backend", e);
       }
     }
   }, [activeBoardId, getToken, boards, workspaces, logActivity]);
@@ -840,7 +873,7 @@ const AppContent: React.FC = () => {
         logActivity('TASK_CREATED', `Created task: "${task.name}" in ${contextString}`, { boardId, taskId: task.id }, board?.workspaceId, boardId);
       }
     } catch (e) {
-      console.error("Failed to create task backend", e);
+      boardLogger.error("Failed to create task backend", e);
     }
   }, [getToken, logActivity]);
 
@@ -859,7 +892,7 @@ const AppContent: React.FC = () => {
           onWorkspaceChange={setActiveWorkspaceId}
           onAddWorkspace={handleAddWorkspace}
           onDeleteWorkspace={handleDeleteWorkspace}
-          boards={boards}
+          boards={workspaceBoards}
           onDeleteBoard={handleDeleteBoard}
           onToggleFavorite={handleToggleFavorite}
           isCollapsed={isSidebarCollapsed}
@@ -872,36 +905,48 @@ const AppContent: React.FC = () => {
         <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
-              <Dashboard
-                onBoardCreated={handleBoardCreated}
-                recentlyVisited={recentlyVisited}
-                onNavigate={handleNavigate}
-                boards={boards}
-                activeWorkspaceId={activeWorkspaceId}
-                workspaces={workspaces}
-                onTaskCreated={handleCreateTaskOnBoard}
-              />
+              <FeatureErrorBoundary featureName="Dashboard">
+                <Dashboard
+                  onBoardCreated={handleBoardCreated}
+                  recentlyVisited={recentlyVisited}
+                  onNavigate={handleNavigate}
+                  boards={workspaceBoards}
+                  activeWorkspaceId={activeWorkspaceId}
+                  workspaces={workspaces}
+                  onTaskCreated={handleCreateTaskOnBoard}
+                />
+              </FeatureErrorBoundary>
             ) : activeView === 'board' && activeBoard ? (
-              <BoardView
-                key={activeBoard.id}
-                board={activeBoard}
-                onUpdateBoard={handleUpdateBoard}
-                onUpdateTasks={handleUpdateTasks}
-                onNavigate={handleNavigate}
-              />
+              <FeatureErrorBoundary featureName="Board">
+                <BoardView
+                  key={activeBoard.id}
+                  board={activeBoard}
+                  onUpdateBoard={handleUpdateBoard}
+                  onUpdateTasks={handleUpdateTasks}
+                  onNavigate={handleNavigate}
+                />
+              </FeatureErrorBoundary>
             ) : activeView === 'inbox' ? (
-              <InboxView logActivity={logActivity} />
+              <FeatureErrorBoundary featureName="Inbox">
+                <InboxView logActivity={logActivity} />
+              </FeatureErrorBoundary>
             ) : activeView === 'my_work' ? (
-              <MyWorkPage
-                boards={boards}
-                onNavigateToBoard={handleNavigate}
-                onUpdateTasks={handleCreateTaskOnBoard}
-                onAddBoard={handleBoardCreated}
-              />
+              <FeatureErrorBoundary featureName="My Work">
+                <MyWorkPage
+                  boards={workspaceBoards}
+                  onNavigateToBoard={handleNavigate}
+                  onUpdateTasks={handleCreateTaskOnBoard}
+                  onAddBoard={handleBoardCreated}
+                />
+              </FeatureErrorBoundary>
             ) : activeView === 'teams' ? (
-              <TeamsPage />
+              <FeatureErrorBoundary featureName="Teams">
+                <TeamsPage />
+              </FeatureErrorBoundary>
             ) : activeView === 'vault' ? (
-              <VaultView />
+              <FeatureErrorBoundary featureName="Vault">
+                <VaultView />
+              </FeatureErrorBoundary>
             ) : activeView === 'flow_hub' ? (
               <FlowHubPage />
             ) : activeView === 'process_map' ? (
@@ -964,6 +1009,8 @@ const AppContent: React.FC = () => {
               <SettingsPage visibility={pageVisibility} onVisibilityChange={setPageVisibility} />
             ) : activeView === 'talk' ? (
               <TalkPage />
+            ) : activeView === 'test' ? (
+              <TestPage />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
                 {activeView === 'board' && !activeBoard && "No board selected"}
@@ -973,7 +1020,7 @@ const AppContent: React.FC = () => {
         </main>
       </div>
       {/* <FocusWidget /> */}
-      <NabdSmartBar boards={boards} onCreateTask={handleCreateTaskOnBoard} onNavigate={handleNavigate} />
+      <NabdSmartBar boards={workspaceBoards} onCreateTask={handleCreateTaskOnBoard} onNavigate={handleNavigate} />
     </div>
   );
 };
@@ -1050,6 +1097,7 @@ const App: React.FC = () => {
         <LanguageProvider>
           <NavigationProvider>
             <FocusProvider>
+              <ToastProvider>
               {/* Invitation Route */}
               <Router>
                 <Routes>
@@ -1070,6 +1118,7 @@ const App: React.FC = () => {
                   <Route path="*" element={<AppRoutes />} />
                 </Routes>
               </Router>
+              </ToastProvider>
             </FocusProvider>
           </NavigationProvider>
         </LanguageProvider>

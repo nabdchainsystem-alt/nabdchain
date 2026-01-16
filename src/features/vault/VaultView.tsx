@@ -279,6 +279,7 @@ export const VaultView: React.FC = () => {
                 subtitle: data.url,
                 folderId: currentFolderId || undefined,
                 color: '#8B5CF6',
+                content: data.url,
                 metadata: { url: data.url }
             });
             await loadItems();

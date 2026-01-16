@@ -1,8 +1,19 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode, SetStateAction, Dispatch } from 'react';
 
-const UIContext = createContext<any>(null);
+interface UIContextType {
+    theme: string;
+    setTheme: (theme: string) => void;
+    isSidebarCollapsed: boolean;
+    setIsSidebarCollapsed: Dispatch<SetStateAction<boolean>>;
+}
 
-export const UIProvider = ({ children }: any) => {
+const UIContext = createContext<UIContextType | undefined>(undefined);
+
+interface UIProviderProps {
+    children: ReactNode;
+}
+
+export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     const [theme, setTheme] = useState('light');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
         const saved = localStorage.getItem('app-sidebar-collapsed');
@@ -13,11 +24,32 @@ export const UIProvider = ({ children }: any) => {
         localStorage.setItem('app-sidebar-collapsed', isSidebarCollapsed ? 'true' : 'false');
     }, [isSidebarCollapsed]);
 
+    const value: UIContextType = {
+        theme,
+        setTheme,
+        isSidebarCollapsed,
+        setIsSidebarCollapsed
+    };
+
     return (
-        <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, setIsSidebarCollapsed }}>
+        <UIContext.Provider value={value}>
             {children}
         </UIContext.Provider>
     );
 };
 
-export const useUI = () => useContext(UIContext) || { theme: 'light' };
+const noopSetter: Dispatch<SetStateAction<boolean>> = () => {};
+
+export const useUI = (): UIContextType => {
+    const context = useContext(UIContext);
+    if (!context) {
+        // Provide default values if used outside provider (shouldn't happen normally)
+        return {
+            theme: 'light',
+            setTheme: () => {},
+            isSidebarCollapsed: false,
+            setIsSidebarCollapsed: noopSetter
+        };
+    }
+    return context;
+};

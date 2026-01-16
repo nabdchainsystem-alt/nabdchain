@@ -406,7 +406,9 @@ export const SortableTaskRow: React.FC<SortableTaskRowProps> = ({
                                             try {
                                                 const val = task.textValues[col.id];
                                                 if (val && JSON.parse(val).targetPath) hasConfig = true;
-                                            } catch (e) { }
+                                            } catch {
+                                                // JSON parse failed - value is not a valid link config
+                                            }
                                             return hasConfig;
                                         })() ? 'bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100 text-gray-500 border border-gray-200'}`}
                                     >
@@ -418,7 +420,9 @@ export const SortableTaskRow: React.FC<SortableTaskRowProps> = ({
                                                     const c = JSON.parse(val);
                                                     if (c.targetName) return `Go to ${c.targetName}`;
                                                 }
-                                            } catch (e) { }
+                                            } catch {
+                                                // JSON parse failed - value is not a valid link config
+                                            }
                                             return 'Connect';
                                         })()}</span>
                                     </button>

@@ -1,9 +1,7 @@
 import * as msal from '@azure/msal-node';
-import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
 import 'isomorphic-fetch'; // Polyfill for Graph Client
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 const CLIENT_ID = process.env.OUTLOOK_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.OUTLOOK_CLIENT_SECRET || '';

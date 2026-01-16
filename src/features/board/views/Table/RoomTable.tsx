@@ -93,110 +93,40 @@ import { HeaderContextMenu } from './components/HeaderContextMenu';
 import { TablePagination } from './components/TablePagination';
 import { TableHeaderCell } from './components/TableHeaderCell';
 
-// --- Types ---
-// --- Constants for Status ---
-const STATUS_STYLES: Record<string, string> = {
-    'Done': 'bg-emerald-600 text-white',
-    'Working on it': 'bg-amber-500 text-white',
-    'In Progress': 'bg-blue-600 text-white',
-    'Stuck': 'bg-orange-500 text-white',
-    'To Do': 'bg-gray-100 text-gray-700',
-    'Rejected': 'bg-rose-600 text-white',
-};
+// Import from centralized types and hooks
+import {
+    Column,
+    Row,
+    TableGroup,
+    GroupColor,
+    FilterRule,
+    SortRule,
+    StatusOption,
+    GROUP_COLORS,
+    DEFAULT_COLUMNS,
+    STATUS_STYLES,
+    PRIORITY_STYLES,
+    GENERIC_COLORS,
+    DEFAULT_STATUSES,
+    getGroupColor,
+    isDoneStatus,
+    sortRowsWithDoneAtBottom,
+    formatDate,
+} from './types';
 
-// Generic color map for fallback
-const GENERIC_COLORS = [
-    'bg-[#A855F7] text-white', // Purple
-    'bg-[#EC4899] text-white', // Pink
-    'bg-[#F97316] text-white', // Orange
-    'bg-[#14B8A6] text-white', // Teal
-];
+import {
+    useTableFiltering,
+    useTableSelection,
+    useTablePagination,
+    useTableDragDrop,
+    getConditionsForType,
+} from './hooks';
 
-const PRIORITY_STYLES: Record<string, string> = {
-    'Urgent': 'bg-[#EF4444] text-white', // Red
-    'High': 'bg-[#F59E0B] text-white', // Orange
-    'Medium': 'bg-[#3B82F6] text-white', // Blue
-    'Low': 'bg-[#10B981] text-white', // Green
-};
+// Re-export types for consumers
+export type { Column, Row, TableGroup, GroupColor, FilterRule, SortRule };
 
-export interface Column {
-    id: string;
-    label: string;
-    type: string;
-    width: number;
-    minWidth: number;
-    resizable: boolean;
-    pinned?: boolean;
-    options?: { id: string; label: string; color: string }[]; // For status/priority/select
-    color?: string; // For checkbox color (or legacy text color fallback)
-    headerColor?: string; // Background color for the header
-    backgroundColor?: string; // Background color for the entire column (cells)
-}
-
-const DEFAULT_COLUMNS: Column[] = [
-    { id: 'select', label: '', type: 'select', width: 48, minWidth: 40, resizable: false, pinned: true },
-    { id: 'name', label: 'Name', type: 'text', width: 320, minWidth: 200, resizable: true, pinned: true },
-    { id: 'people', label: 'People', type: 'people', width: 120, minWidth: 100, resizable: true },
-    { id: 'status', label: 'Status', type: 'status', width: 140, minWidth: 100, resizable: true },
-    { id: 'priority', label: 'Priority', type: 'priority', width: 140, minWidth: 100, resizable: true },
-    { id: 'date', label: 'Date', type: 'date', width: 140, minWidth: 120, resizable: true },
-    { id: 'dueDate', label: 'Due Date', type: 'date', width: 140, minWidth: 120, resizable: true },
-];
-
-export interface Row {
-    id: string;
-    groupId?: string;
-    _styles?: Record<string, { color?: string }>;
-    [key: string]: any;
-}
-
-// --- TableGroup Interface for multiple table support ---
-export interface GroupColor {
-    bg: string;
-    text: string;
-}
-
-export interface TableGroup {
-    id: string;
-    name: string;
-    rows: Row[];
-    isCollapsed: boolean;
-    isPinned?: boolean; // New: Pin group to top
-    color: GroupColor; // Color accent for the group
-}
-
-// Color palette for table groups (similar to Monday.com)
-const GROUP_COLORS = [
-    { bg: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400' },
-    { bg: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400' },
-    { bg: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-    { bg: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-    { bg: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
-    { bg: 'bg-cyan-500', text: 'text-cyan-600 dark:text-cyan-400' },
-    { bg: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400' },
-    { bg: 'bg-pink-500', text: 'text-pink-600 dark:text-pink-400' },
-    { bg: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400' },
-    { bg: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400' },
-];
-
+// Local constants
 const DEFAULT_CHECKBOX_COLOR = '#2563eb'; // blue-600
-
-// Helper to get color object from index
-const getGroupColor = (index: number) => GROUP_COLORS[index % GROUP_COLORS.length];
-
-// Helper to check if a status represents "Done"
-const isDoneStatus = (status: any): boolean => {
-    if (!status || typeof status !== 'string') return false;
-    const normalized = status.trim().toLowerCase();
-    return normalized === 'done' || normalized === 'completed';
-};
-
-// Helper to sort rows with Done statuses to the bottom
-const sortRowsWithDoneAtBottom = (rows: Row[]): Row[] => {
-    const nonDone = rows.filter(r => !isDoneStatus(r.status));
-    const done = rows.filter(r => isDoneStatus(r.status));
-    return [...nonDone, ...done];
-};
 
 interface RoomTableProps {
     roomId: string;
@@ -225,66 +155,60 @@ interface RoomTableProps {
     tasksVersion?: string;
 }
 
-// --- Filter and Sort Types ---
-export interface FilterRule {
-    id: string;
-    column: string;
-    condition: string;
-    value: string;
-}
+// --- Helper Components ---
 
-export interface SortRule {
-    id: string;
-    column: string;
-    direction: 'asc' | 'desc';
-}
+// Person Avatar Item with Image Error Fallback
+const PersonAvatarItem = ({
+    person,
+    isActive,
+    onClick
+}: {
+    person: any,
+    isActive: boolean,
+    onClick: () => void
+}) => {
+    const [imageError, setImageError] = useState(false);
 
-// Condition options by column type
-const FILTER_CONDITIONS: Record<string, { value: string; label: string }[]> = {
-    text: [
-        { value: 'contains', label: 'Contains' },
-        { value: 'equals', label: 'Equals' },
-        { value: 'not_contains', label: 'Does not contain' },
-        { value: 'is_empty', label: 'Is empty' },
-        { value: 'is_not_empty', label: 'Is not empty' },
-    ],
-    date: [
-        { value: 'is', label: 'Is' },
-        { value: 'is_after', label: 'Is after' },
-        { value: 'is_before', label: 'Is before' },
-        { value: 'is_empty', label: 'Is empty' },
-    ],
-    status: [
-        { value: 'is', label: 'Is' },
-        { value: 'is_not', label: 'Is not' },
-        { value: 'is_empty', label: 'Is empty' },
-    ],
-    priority: [
-        { value: 'is', label: 'Is' },
-        { value: 'is_not', label: 'Is not' },
-        { value: 'is_empty', label: 'Is empty' },
-    ],
-    people: [
-        { value: 'is', label: 'Is' },
-        { value: 'is_not', label: 'Is not' },
-        { value: 'is_empty', label: 'Is empty' },
-    ],
+    // Aggressive name resolution
+    const displayName = person.name || person.label || person.title || (typeof person === 'string' ? person : 'Unknown');
+    const paramInitials = typeof person === 'string' ? person.charAt(0) : (person.name ? person.name.charAt(0) : '?');
+    const initial = paramInitials.toUpperCase();
+
+    // Generate consistent color
+    // Use a stable hash of the displayName to pick a color
+    const COLORS = ['bg-red-100 text-red-600', 'bg-orange-100 text-orange-600', 'bg-amber-100 text-amber-600', 'bg-green-100 text-green-600', 'bg-emerald-100 text-emerald-600', 'bg-teal-100 text-teal-600', 'bg-cyan-100 text-cyan-600', 'bg-blue-100 text-blue-600', 'bg-indigo-100 text-indigo-600', 'bg-violet-100 text-violet-600', 'bg-purple-100 text-purple-600', 'bg-fuchsia-100 text-fuchsia-600', 'bg-pink-100 text-pink-600', 'bg-rose-100 text-rose-600'];
+    const colorIndex = Math.abs(displayName.toString().split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)) % COLORS.length;
+    const avatarColorClass = COLORS[colorIndex];
+
+    return (
+        <button
+            onClick={onClick}
+            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors overflow-hidden relative ${isActive
+                ? 'border-blue-500 ring-2 ring-blue-200'
+                : 'border-white ring-1 ring-stone-200 dark:ring-stone-700 hover:ring-stone-300'
+                }`}
+            title={displayName}
+        >
+            {person.avatar && !imageError ? (
+                <img
+                    src={person.avatar}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
+                />
+            ) : (
+                <div className={`w-full h-full flex items-center justify-center ${avatarColorClass}`}>
+                    <span className="text-xs font-bold leading-none">
+                        {initial}
+                    </span>
+                </div>
+            )}
+        </button>
+    );
 };
-
-// Helper to get conditions for a column type
-const getConditionsForType = (type: string) => FILTER_CONDITIONS[type] || FILTER_CONDITIONS.text;
 
 // --- Helpers ---
-const formatDate = (date: string | null): string => {
-    if (!date) return '';
-    try {
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return date; // Return raw string if invalid instead of crashing
-        return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(d);
-    } catch (e) {
-        return date || '';
-    }
-};
+// formatDate is imported from ./types
 
 const formatPriorityLabel = (value: string | null): PriorityLevel | null => normalizePriority(value);
 const getPriorityColor = (priority: string | null) => getPriorityClasses(priority).text;
@@ -601,7 +525,8 @@ const SelectPicker: React.FC<{
     current: string;
     options: { id: string; label: string; color: string }[];
     triggerRect?: DOMRect;
-}> = ({ onSelect, onClose, current, options, triggerRect }) => {
+    onAdd?: (label: string) => void;
+}> = ({ onSelect, onClose, current, options, triggerRect, onAdd }) => {
     const [search, setSearch] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
     const [positionStyle, setPositionStyle] = useState<React.CSSProperties>(() => {
@@ -702,6 +627,14 @@ const SelectPicker: React.FC<{
                         <div className="py-2 text-center text-xs text-stone-400">
                             No options found
                         </div>
+                    )}
+                    {search.trim() && !options.some(o => o.label.toLowerCase() === search.trim().toLowerCase()) && onAdd && (
+                        <button
+                            onClick={() => { onAdd(search.trim()); onClose(); }}
+                            className="w-full py-1.5 px-3 rounded text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center justify-center gap-1 border border-dashed border-stone-300 dark:border-stone-700 mt-1"
+                        >
+                            <span>Create "{search.trim()}"</span>
+                        </button>
                     )}
                 </div>
             </div>
@@ -1700,7 +1633,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         // Apply person filter
         if (personFilter) {
             result = result.filter(row => {
-                const people = row.people || [];
+                const peopleRaw = row.people;
+                const people = Array.isArray(peopleRaw) ? peopleRaw : (peopleRaw ? [peopleRaw] : []);
                 return people.some((p: any) => (p?.name || p) === personFilter);
             });
         }
@@ -1818,7 +1752,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
         // Apply person filter
         if (personFilter) {
-            const people = row.people || [];
+            const peopleRaw = row.people;
+            const people = Array.isArray(peopleRaw) ? peopleRaw : (peopleRaw ? [peopleRaw] : []);
             const matchesPerson = people.some((p: any) => (p?.name || p) === personFilter);
             if (!matchesPerson) return false;
         }
@@ -2309,6 +2244,34 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }, 100); // Small delay to allow DOM to update
     };
 
+    const handleAddColumnOption = (colId: string, optionLabel: string) => {
+        setColumns(prevCols => {
+            return prevCols.map(col => {
+                if (col.id === colId) {
+                    const existingOptions = col.options || [];
+                    if (existingOptions.some(o => o.label.toLowerCase() === optionLabel.toLowerCase())) return col;
+
+                    const COLORS = ['bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500'];
+                    const nextColor = COLORS[existingOptions.length % COLORS.length];
+
+                    const newOption = {
+                        id: optionLabel, // Simple ID for now
+                        label: optionLabel,
+                        color: nextColor
+                    };
+
+                    return { ...col, options: [...existingOptions, newOption] };
+                }
+                return col;
+            });
+        });
+
+        // Also update the row that triggered this to select the new option
+        if (activeCell?.rowId && activeCell?.colId === colId) {
+            handleUpdateRow(activeCell.rowId, { [colId]: optionLabel }, activeCell.rowId === CREATION_ROW_ID ? 'group-1' : undefined); // Group ID handling might need check but usually undefined works for standard rows if we find them
+        }
+    };
+
     // Drag & Drop Handlers (Rows)
     const handleDragStart = (event: DragStartEvent) => {
         setActiveDragId(event.active.id as string);
@@ -2420,14 +2383,22 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     };
 
     const handleSort = (colId: string) => {
-        if (sortConfig?.columnId === colId) {
-            setSortConfig({
-                columnId: colId,
-                direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'
+        // New Sort Logic (Toolbar)
+        if (sortRules && sortRules.find(r => r.column === colId)) {
+            setSortRules(prev => {
+                const existing = prev.find(r => r.column === colId);
+                if (existing) {
+                    return existing.direction === 'asc'
+                        ? [{ id: 'sort-' + Date.now(), column: colId, direction: 'desc' }]
+                        : []; // Toggle Off
+                }
+                return [{ id: 'sort-' + Date.now(), column: colId, direction: 'asc' }];
             });
-        } else {
-            setSortConfig({ columnId: colId, direction: 'asc' });
+            return;
         }
+
+        // Fallback / legacy support update
+        setSortRules([{ id: 'sort-' + Date.now(), column: colId, direction: 'asc' }]);
     };
 
     const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2844,6 +2815,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             onSelect={(s) => handleUpdateRow(row.id, { [col.id]: s }, row.groupId)}
                             onClose={() => setActiveCell(null)}
                             triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                            onAdd={(label) => handleAddColumnOption(col.id, label)}
                         />
                     )}
                 </div>
@@ -3643,41 +3615,69 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <div
                                 data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isPersonFilterOpen || personFilter ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
-                                onClick={() => setIsPersonFilterOpen(!isPersonFilterOpen)}
+                                onClick={() => {
+                                    if (!isPersonFilterOpen) {
+                                        setIsFilterPanelOpen(false);
+                                        setIsSortPanelOpen(false);
+                                        setIsHideColumnsOpen(false);
+                                        setIsSearchOpen(false);
+                                    }
+                                    setIsPersonFilterOpen(!isPersonFilterOpen);
+                                }}
                             >
                                 <UserCircle size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Person</span>
                             </div>
                             {isPersonFilterOpen && (
                                 <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
-                                            Filter this board by person
-                                            <span className="w-4 h-4 rounded-full border border-stone-300 text-[10px] flex items-center justify-center text-stone-400">?</span>
+                                    <div className="mb-3">
+                                        <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+                                            Filter by person
                                         </span>
-                                        <button className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 border border-stone-200 dark:border-stone-600 px-2 py-1 rounded">
-                                            Save as new view
-                                        </button>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {/* Get unique people from rows */}
-                                        {Array.from(new Set(rows.flatMap(r => r.people || []))).map((person: any) => (
-                                            <button
-                                                key={person?.id || person}
-                                                onClick={() => {
-                                                    setPersonFilter(personFilter === (person?.name || person) ? null : (person?.name || person));
-                                                }}
-                                                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${personFilter === (person?.name || person)
-                                                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                                                    : 'border-stone-200 dark:border-stone-600 hover:border-stone-300 text-stone-600 dark:text-stone-300'
-                                                    }`}
-                                            >
-                                                <UserCircle size={24} weight="regular" />
-                                            </button>
-                                        ))}
-                                        {rows.every(r => !r.people || r.people.length === 0) && (
-                                            <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center">
-                                                <UserCircle size={24} weight="regular" className="text-stone-400" />
+                                        {/* Get unique people from rows */}
+                                        {(() => {
+                                            // Extract all people objects
+                                            const allPeople = rows.flatMap(r => {
+                                                const p = r.people;
+                                                if (Array.isArray(p)) return p;
+                                                if (p) return [p];
+                                                return [];
+                                            });
+
+                                            // Deduplicate by ID or Name
+                                            const uniquePeopleMap = new Map();
+                                            allPeople.forEach((p: any) => {
+                                                const id = p.id || p.name || (typeof p === 'string' ? p : null);
+                                                if (id && !uniquePeopleMap.has(id)) {
+                                                    uniquePeopleMap.set(id, p);
+                                                }
+                                            });
+
+                                            const uniquePeople = Array.from(uniquePeopleMap.values());
+
+                                            return uniquePeople.map((person: any) => {
+                                                const isActive = personFilter === (person.name || person);
+
+                                                return (
+                                                    <PersonAvatarItem
+                                                        key={person.id || person.name || person}
+                                                        person={person}
+                                                        isActive={isActive}
+                                                        onClick={() => {
+                                                            setPersonFilter(isActive ? null : (person.name || person));
+                                                            setIsPersonFilterOpen(false);
+                                                        }}
+                                                    />
+                                                );
+                                            });
+                                        })()}
+
+                                        {rows.every(r => !r.people) && (
+                                            <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center" title="No assigned users found">
+                                                <UserCircle size={24} weight="regular" className="text-stone-300" />
                                             </div>
                                         )}
                                     </div>
@@ -3690,7 +3690,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <div
                                 data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isFilterPanelOpen || filters.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
-                                onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                                onClick={() => {
+                                    if (!isFilterPanelOpen) {
+                                        setIsPersonFilterOpen(false);
+                                        setIsSortPanelOpen(false);
+                                        setIsHideColumnsOpen(false);
+                                        setIsSearchOpen(false);
+                                    }
+                                    setIsFilterPanelOpen(!isFilterPanelOpen);
+                                }}
                             >
                                 <Funnel size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Filter</span>
@@ -3795,7 +3803,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <div
                                 data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isSortPanelOpen || sortRules.length > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
-                                onClick={() => setIsSortPanelOpen(!isSortPanelOpen)}
+                                onClick={() => {
+                                    if (!isSortPanelOpen) {
+                                        setIsPersonFilterOpen(false);
+                                        setIsFilterPanelOpen(false);
+                                        setIsHideColumnsOpen(false);
+                                        setIsSearchOpen(false);
+                                    }
+                                    setIsSortPanelOpen(!isSortPanelOpen);
+                                }}
                             >
                                 <ArrowsDownUp size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Sort</span>
@@ -3874,7 +3890,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <div
                                 data-toolbar-button
                                 className={`flex items-center gap-1.5 cursor-pointer transition-colors group ${isHideColumnsOpen || hiddenColumns.size > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-md' : 'hover:text-blue-500'}`}
-                                onClick={() => setIsHideColumnsOpen(!isHideColumnsOpen)}
+                                onClick={() => {
+                                    if (!isHideColumnsOpen) {
+                                        setIsPersonFilterOpen(false);
+                                        setIsFilterPanelOpen(false);
+                                        setIsSortPanelOpen(false);
+                                        setIsSearchOpen(false);
+                                    }
+                                    setIsHideColumnsOpen(!isHideColumnsOpen);
+                                }}
                             >
                                 <EyeSlash size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Hide</span>
@@ -4231,6 +4255,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                             setRenamingColId={setRenamingColId}
                                                                             handleRenameColumn={handleRenameColumn}
                                                                             handleSort={handleSort}
+                                                                            sortDirection={sortRules?.find(r => r.column === col.id)?.direction || null}
                                                                             handleDeleteColumn={handleDeleteColumn}
                                                                             handleSelectAll={handleSelectAll}
                                                                             setActiveHeaderMenu={setActiveHeaderMenu}
@@ -4531,6 +4556,22 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             currentHeaderColor={columns.find(c => c.id === activeHeaderMenu.colId)?.headerColor}
                             currentColumnColor={columns.find(c => c.id === activeHeaderMenu.colId)?.backgroundColor}
                             position={activeHeaderMenu.position}
+                            onSortAsc={() => {
+                                setSortRules([{
+                                    id: 'sort-' + Date.now(),
+                                    column: activeHeaderMenu.colId,
+                                    direction: 'asc'
+                                }]);
+                                setActiveHeaderMenu(null);
+                            }}
+                            onSortDesc={() => {
+                                setSortRules([{
+                                    id: 'sort-' + Date.now(),
+                                    column: activeHeaderMenu.colId,
+                                    direction: 'desc'
+                                }]);
+                                setActiveHeaderMenu(null);
+                            }}
                         />
                     )
                 }

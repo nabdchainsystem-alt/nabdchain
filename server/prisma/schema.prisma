@@ -53,6 +53,8 @@ model Activity {
   @@index([workspaceId])
   @@index([boardId])
   @@index([createdAt])
+  @@index([userId, createdAt]) // Composite index for user activity feed queries
+  @@index([workspaceId, createdAt]) // Composite index for workspace activity queries
 }
 
 model Workspace {
@@ -76,7 +78,7 @@ model Invitation {
   token     String   @unique
   status    String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   expiresAt DateTime
 }
@@ -221,12 +223,13 @@ model Board {
   updatedAt      DateTime @updatedAt
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace  Workspace? @relation(fields: [workspaceId], references: [id])
+  workspace  Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   cards      Card[]
   activities Activity[]
 
   @@index([userId])
   @@index([workspaceId])
+  @@index([workspaceId, createdAt]) // Composite index for workspace board listing
 }
 
 model Card {
@@ -312,6 +315,7 @@ model EmailAccount {
 
   @@unique([email, provider])
   @@index([userId])
+  @@index([userId, provider]) // Composite index for fetching user accounts by provider
 }
 
 // Vault System

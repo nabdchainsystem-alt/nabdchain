@@ -12,22 +12,27 @@ export interface AuthRequest extends Request {
 }
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const ALLOW_DEV_TOKENS = process.env.ALLOW_DEV_TOKENS === 'true';
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    // Development-only mock tokens - NEVER works in production
-    if (isDevelopment && authHeader) {
+    // Development-only mock tokens - requires BOTH isDevelopment AND ALLOW_DEV_TOKENS
+    // This double-gate prevents accidental token bypass in misconfigured environments
+    if (isDevelopment && ALLOW_DEV_TOKENS && authHeader) {
         if (authHeader.includes('master-token')) {
-            (req as any).auth = { userId: 'user_master_local_admin', sessionId: 'mock-session-master' };
+            console.warn('[AuthMiddleware] WARNING: Development master-token used');
+            (req as AuthRequest).auth = { userId: 'user_master_local_admin', sessionId: 'mock-session-master' };
             return next();
         }
         if (authHeader.includes('dev-token')) {
-            (req as any).auth = { userId: 'user_developer_admin', sessionId: 'mock-session-dev' };
+            console.warn('[AuthMiddleware] WARNING: Development dev-token used');
+            (req as AuthRequest).auth = { userId: 'user_developer_admin', sessionId: 'mock-session-dev' };
             return next();
         }
         if (authHeader.includes('google-token')) {
-            (req as any).auth = { userId: 'user_google_simulated', sessionId: 'mock-session-google' };
+            console.warn('[AuthMiddleware] WARNING: Development google-token used');
+            (req as AuthRequest).auth = { userId: 'user_google_simulated', sessionId: 'mock-session-google' };
             return next();
         }
     }

@@ -1,5 +1,4 @@
 import express, { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { decrypt } from '../utils/encryption';
 import { google } from 'googleapis';
 import { googleOAuth2Client } from '../services/googleAuth';
@@ -7,9 +6,9 @@ import 'isomorphic-fetch';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Input validation schemas
 const sendEmailSchema = z.object({

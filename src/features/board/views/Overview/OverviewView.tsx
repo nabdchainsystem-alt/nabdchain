@@ -236,7 +236,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ boardId, tasks = [] 
         try {
             const saved = localStorage.getItem(storageKey);
             if (saved) return JSON.parse(saved);
-        } catch (e) { }
+        } catch (e) {
+            // Invalid JSON in localStorage, use defaults
+            console.warn('[OverviewView] Failed to parse saved widgets from localStorage:', e);
+        }
 
         // Default workspace
         return [

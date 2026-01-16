@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   PencilSimple as PenSquare, Sparkle as Sparkles, Tray as Inbox, Archive, FileText, PaperPlaneTilt as Send, Trash as Trash2,
   ClockCounterClockwise as History, Prohibit as Ban, Folder, CaretRight as ChevronRight, CaretDown as ChevronDown, Trash,
@@ -15,6 +15,7 @@ import { emailService } from '../../services/emailService';
 import { ConfirmModal } from '../board/components/ConfirmModal';
 import { useAuth } from '../../auth-adapter';
 import ProductivitySidebar from '../../components/common/ProductivitySidebar';
+import { sanitizeHTML } from '../../utils/sanitize';
 
 interface MailItem {
   id: string;
@@ -101,6 +102,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
     onConfirm: () => { },
   });
 
+  // Memoize selected mail - must be before early returns to follow hooks rules
+  const selectedMail = useMemo(() => mails.find(m => m.id === selectedMailId), [mails, selectedMailId]);
+
   useEffect(() => {
     checkConnection();
   }, []);
@@ -112,7 +116,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
     }
   }, [hasAccount, activeFolder]);
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -127,11 +131,11 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       console.error("Failed to check connection", e);
       setHasAccount(false);
     } finally {
-      if (!hasAccount) setLoading(false); // only stop loading if no account, otherwise fetchEmails handles it
+      if (!hasAccount) setLoading(false);
     }
-  };
+  }, [getToken, hasAccount]);
 
-  const fetchFolders = async () => {
+  const fetchFolders = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -140,9 +144,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
     } catch (e) {
       console.error("Failed to fetch folders", e);
     }
-  };
+  }, [getToken]);
 
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     setLoading(true);
     try {
       const token = await getToken();
@@ -158,18 +162,18 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, activeFolder]);
 
-  const handleSync = async () => {
+  const handleSync = useCallback(async () => {
     setLoading(true);
     await checkConnection();
     await fetchEmails();
     setLoading(false);
-  };
+  }, [checkConnection, fetchEmails]);
 
   const [replyData, setReplyData] = useState<{ to: string, subject: string, body: string } | undefined>(undefined);
 
-  const handleDelete = async (id: string, provider: string) => {
+  const handleDelete = useCallback(async (id: string, provider: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Move to Trash?',
@@ -192,9 +196,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         }
       }
     });
-  };
+  }, [getToken, logActivity, mails]);
 
-  const handleArchive = async (id: string, provider: string) => {
+  const handleArchive = useCallback(async (id: string, provider: string) => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -208,9 +212,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       console.error(e);
       alert("Failed to archive");
     }
-  };
+  }, [getToken, logActivity, mails]);
 
-  const handleMarkRead = async (id: string, provider: string, isRead: boolean) => {
+  const handleMarkRead = useCallback(async (id: string, provider: string, isRead: boolean) => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -226,20 +230,20 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
     } catch (e) {
       console.error("Failed to mark read/unread", e);
     }
-  };
+  }, [getToken]);
 
-  const handleStar = (id: string) => {
+  const handleStar = useCallback((id: string) => {
     // Optimistic update
     console.log("Star clicked", id);
     // setMails(prev => prev.map(m => m.id === id ? { ...m, isStarred: !m.isStarred } : m));
-  };
+  }, []);
 
-  const handleSpam = (id: string) => {
+  const handleSpam = useCallback((id: string) => {
     console.log("Spam clicked", id);
     alert("Marked as spam (simulation)");
-  };
+  }, []);
 
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     if (!selectedMail) return;
 
     try {
@@ -258,16 +262,15 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       }
 
       if (!boardData || !boardData.groups || boardData.groups.length === 0) {
-        // Fallback: Create new board data if missing? Or just alert.
         alert("Could not find Main Board to add task.");
         return;
       }
 
       // Add task to first group
       const newTask = {
-        id: uuidv4(), // Need uuid import or simple random
+        id: uuidv4(),
         name: selectedMail.subject,
-        status: 'New', // Enum value string
+        status: 'New',
         priority: 'Normal',
         personId: null,
         dueDate: '',
@@ -287,17 +290,17 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       console.error("Failed to create task", e);
       alert("Failed to create task");
     }
-  };
+  }, [selectedMail, logActivity]);
 
-  const handleSnooze = () => {
+  const handleSnooze = useCallback(() => {
     alert("Snoozed for 1 hour (Simulation)");
-  };
+  }, []);
 
-  const handleAIAnalysis = () => {
+  const handleAIAnalysis = useCallback(() => {
     alert("AI Analysis: \n- Sentiment: Positive\n- Action Items: Review contract\n- Priority: High");
-  };
+  }, []);
 
-  const handleReply = (mail: MailItem) => {
+  const handleReply = useCallback((mail: MailItem) => {
     let quote = `\n\n\nOn ${new Date(mail.time).toLocaleString()}, <${mail.sender}> wrote:\n> ${mail.preview}`;
     const emailMatch = mail.sender.match(/<(.+)>/);
     const to = emailMatch ? emailMatch[1] : mail.sender;
@@ -308,9 +311,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       body: quote
     });
     setRightPanelMode('compose');
-  };
+  }, []);
 
-  const handleDisconnect = (id: string) => {
+  const handleDisconnect = useCallback((id: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Disconnect Account?',
@@ -326,7 +329,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         } catch (e) { alert('Failed to disconnect'); }
       }
     });
-  };
+  }, [getToken, checkConnection]);
 
   if (loading && !hasAccount) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -335,8 +338,6 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   if (!hasAccount) {
     return <ConnectAccount />;
   }
-
-  const selectedMail = mails.find(m => m.id === selectedMailId);
 
   return (
     <div className="flex h-full w-full bg-white dark:bg-monday-dark-bg overflow-hidden font-sans text-gray-800 dark:text-monday-dark-text relative">
@@ -594,7 +595,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
                   <div className="prose max-w-none text-[#323338] dark:text-monday-dark-text">
                     {selectedMail.body ? (
-                      <div dangerouslySetInnerHTML={{ __html: selectedMail.body }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedMail.body || '') }} />
                     ) : (
                       <p className="text-base leading-7 font-normal text-gray-800 dark:text-gray-200">
                         {selectedMail.preview} ...

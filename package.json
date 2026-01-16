@@ -15,6 +15,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@google/generative-ai": "^0.24.1",
+    "dompurify": "^3.3.1",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.5",
     "framer-motion": "^12.23.26",
@@ -28,6 +29,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^22.14.0",
     "@types/xlsx": "^0.0.36",
     "@vitejs/plugin-react": "^5.0.0",

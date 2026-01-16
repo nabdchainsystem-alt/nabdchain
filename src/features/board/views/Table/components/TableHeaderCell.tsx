@@ -11,7 +11,6 @@ interface TableHeaderCellProps {
     group: any;
     rows: any[];
     renamingColId: string | null;
-    setRenamingColId: (id: string | null) => void;
     handleRenameColumn: (colId: string, newName: string) => void;
     handleSort: (colId: string) => void;
     handleDeleteColumn: (colId: string) => void;
@@ -21,6 +20,7 @@ interface TableHeaderCellProps {
     activeColumnDragId: string | null;
     style?: React.CSSProperties;
     showRightShadow?: boolean;
+    sortDirection?: 'asc' | 'desc' | null;
 }
 
 export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
@@ -40,6 +40,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
     activeColumnDragId,
     style,
     showRightShadow,
+    sortDirection,
 }) => {
     const uniqueId = `${group.id}__${col.id}`;
     // const isSticky = !!col.pinned; <- passed via style now
@@ -149,7 +150,11 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                     <span className="truncate flex-1 text-center select-none" onDoubleClick={(e) => {
                         e.stopPropagation();
                         if (col.id !== 'select') setRenamingColId(col.id);
-                    }}>{col.label}</span>
+                    }}>
+                        {col.label}
+                        {sortDirection === 'asc' && <span className="ml-1 text-blue-500">↑</span>}
+                        {sortDirection === 'desc' && <span className="ml-1 text-blue-500">↓</span>}
+                    </span>
                     {!['name', 'select'].includes(col.id) && (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}

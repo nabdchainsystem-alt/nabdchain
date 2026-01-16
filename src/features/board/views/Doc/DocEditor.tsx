@@ -21,6 +21,7 @@ import {
     ArrowSquareUp as SquareArrowUp,
     X,
 } from 'phosphor-react';
+import { sanitizeDocHTML } from '../../../../utils/sanitize';
 
 interface DocEditorProps {
     defaultTitle?: string;
@@ -124,7 +125,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
     // Apply loaded content when ref becomes available
     React.useEffect(() => {
         if (isLoaded && hasStartedWriting && contentRef.current && loadedContentRef.current !== null) {
-            contentRef.current.innerHTML = loadedContentRef.current;
+            contentRef.current.innerHTML = sanitizeDocHTML(loadedContentRef.current || '');
             loadedContentRef.current = null; // Mark as applied
         }
     }, [isLoaded, hasStartedWriting]);

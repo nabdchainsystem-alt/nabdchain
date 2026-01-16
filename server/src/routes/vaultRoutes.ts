@@ -1,17 +1,16 @@
 import { Router, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Schema for creating/updating vault items
 const vaultItemSchema = z.object({
     title: z.string().min(1).max(255),
     type: z.enum(['folder', 'file', 'image', 'note', 'weblink', 'document']),
     subtitle: z.string().max(500).optional(),
-    content: z.string().max(100000).optional(), // 100KB limit for content
+    content: z.string().max(10000000).optional(), // 10MB limit for content
     metadata: z.string().max(10000).optional(),
     isFavorite: z.boolean().optional(),
     folderId: z.string().uuid().optional().nullable(),

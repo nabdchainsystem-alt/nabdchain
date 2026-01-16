@@ -1,11 +1,14 @@
 import express from 'express';
 import { getGoogleAuthURL, saveGoogleToken, googleOAuth2Client } from '../services/googleAuth';
 import { getOutlookAuthURL, handleOutlookCallback } from '../services/outlookAuth';
-import { PrismaClient } from '@prisma/client';
 import { google } from 'googleapis';
+import { prisma } from '../lib/prisma';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+import { getEnv } from '../utils/env';
+
+const FRONTEND_URL = getEnv('FRONTEND_URL', 'http://localhost:3000');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Google Auth
 router.get('/google', (req: any, res) => {
@@ -23,7 +26,7 @@ router.get('/google/callback', async (req, res) => {
     if (!state) {
         // Fallback or error? For now, if no state, we can't link to user securely.
         console.error("Google Auth Callback missing state");
-        return res.redirect('http://localhost:3000/inbox?status=error&message=missing_state');
+        return res.redirect(`${FRONTEND_URL}/inbox?status=error&message=missing_state`);
     }
 
     try {
@@ -39,10 +42,10 @@ router.get('/google/callback', async (req, res) => {
             await saveGoogleToken(userInfo.data.email, tokens, userId);
         }
 
-        res.redirect('http://localhost:3000/inbox?status=success&provider=google');
+        res.redirect(`${FRONTEND_URL}/inbox?status=success&provider=google`);
     } catch (error) {
         console.error('Google Auth Error:', error);
-        res.redirect('http://localhost:3000/inbox?status=error');
+        res.redirect(`${FRONTEND_URL}/inbox?status=error`);
     }
 });
 
@@ -66,7 +69,7 @@ router.get('/outlook/callback', async (req, res) => {
 
     if (!state) {
         console.error("Outlook Auth Callback missing state");
-        return res.redirect('http://localhost:3000/inbox?status=error&message=missing_state');
+        return res.redirect(`${FRONTEND_URL}/inbox?status=error&message=missing_state`);
     }
 
     try {
@@ -74,17 +77,19 @@ router.get('/outlook/callback', async (req, res) => {
         const userId = decodedState.userId;
 
         await handleOutlookCallback(code as string, userId);
-        res.redirect('http://localhost:3000/inbox?status=success&provider=outlook');
+        res.redirect(`${FRONTEND_URL}/inbox?status=success&provider=outlook`);
     } catch (error) {
         console.error('Outlook Auth Error:', error);
-        res.redirect('http://localhost:3000/inbox?status=error');
+        res.redirect(`${FRONTEND_URL}/inbox?status=error`);
     }
 });
 
-// List accounts
-router.get('/accounts', async (req, res) => {
+// List accounts - filtered by authenticated user
+router.get('/accounts', requireAuth, async (req, res) => {
     try {
+        const userId = (req as AuthRequest).auth.userId;
         const accounts = await prisma.emailAccount.findMany({
+            where: { userId },
             select: { id: true, provider: true, email: true }
         });
         res.json(accounts);
@@ -93,10 +98,21 @@ router.get('/accounts', async (req, res) => {
     }
 });
 
-// Disconnect account
-router.delete('/accounts/:id', async (req, res) => {
+// Disconnect account - verify ownership before delete
+router.delete('/accounts/:id', requireAuth, async (req, res) => {
     try {
-        const { id } = req.params;
+        const userId = (req as AuthRequest).auth.userId;
+        const id = req.params.id as string;
+
+        // Verify the account belongs to the authenticated user
+        const account = await prisma.emailAccount.findFirst({
+            where: { id, userId }
+        });
+
+        if (!account) {
+            return res.status(404).json({ error: "Account not found" });
+        }
+
         await prisma.emailAccount.delete({
             where: { id }
         });
