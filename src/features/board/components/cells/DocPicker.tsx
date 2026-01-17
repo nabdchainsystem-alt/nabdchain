@@ -4,6 +4,7 @@ import { MagnifyingGlass as Search, Folder, FileText, CaretRight as ChevronRight
 import { roomService } from '../../../../services/roomService';
 import { boardService } from '../../../../services/boardService';
 import { v4 as uuidv4 } from 'uuid';
+import { boardLogger } from '../../../../utils/logger';
 
 interface DocPickerProps {
     onSelect: (doc: { id: string, name: string, type: 'workspace' | 'board' | 'doc' }) => void;
@@ -82,11 +83,11 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
                                 }
                             }
                         } catch (e) {
-                            console.warn('Failed to parse board data for key', key, e);
+                            boardLogger.warn('Failed to parse board data for key', key, e);
                         }
                     });
                 } catch (e) {
-                    console.warn('Failed to scan local storage', e);
+                    boardLogger.warn('Failed to scan local storage', e);
                 }
 
                 // Map boards to workspaces
@@ -124,7 +125,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
                 }
 
             } catch (error) {
-                console.error('Failed to load docs:', error);
+                boardLogger.error('Failed to load docs:', error);
                 setWorkspaces([]);
             } finally {
                 setLoading(false);
@@ -203,7 +204,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
                     createdBoard = res;
                 }
             } catch (err) {
-                console.warn("Backend creation failed, falling back to local", err);
+                boardLogger.warn("Backend creation failed, falling back to local", err);
             }
 
             if (!createdBoard) {
@@ -226,7 +227,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
             onClose();
 
         } catch (error) {
-            console.error('Failed to create doc:', error);
+            boardLogger.error('Failed to create doc:', error);
         } finally {
             setLoading(false);
             setIsCreating(false);

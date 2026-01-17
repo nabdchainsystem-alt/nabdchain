@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { boardLogger } from '../../../../utils/logger';
+import { useAppContext } from '../../../../contexts/AppContext';
 import { ChartBuilderModal } from '../../components/chart-builder/ChartBuilderModal';
 import { AIReportModal } from '../../components/AIReportModal';
 import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
@@ -91,6 +92,8 @@ import {
     GroupDragHandle,
     EditableName,
     PersonAvatarItem,
+    TableCell,
+    TableRowContent,
 } from './components';
 
 import {
@@ -167,6 +170,7 @@ interface RoomTableProps {
 
 // --- Main RoomTable Component ---
 const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, name: initialName, columns: externalColumns, onUpdateTasks, onDeleteTask, renderCustomActions, onRename, onNavigate, onAddGroup, onUpdateGroup, onDeleteGroup, enableImport, hideGroupHeader, showPagination, tasksVersion }) => {
+    const { t } = useAppContext();
     // Keys for persistence
     const storageKeyColumns = `room-table-columns-v7-${roomId}-${viewId}`;
     const storageKeyRows = `room-table-rows-v7-${roomId}-${viewId}`;
@@ -241,7 +245,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     });
                 }
             }
-        } catch { }
+        } catch (e) {
+            boardLogger.warn('Failed to load saved groups from localStorage', e);
+        }
 
         // If external source exists, sync with it
         if (externalTasks && externalTasks.length > 0) {
@@ -272,7 +278,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 if (saved) {
                     orderedIds = JSON.parse(saved).map((g: any) => g.id);
                 }
-            } catch { }
+            } catch (e) {
+                boardLogger.warn('Failed to parse saved groups order from localStorage', e);
+            }
 
             // Merge with found IDs
             const allIds = Array.from(new Set([...orderedIds, ...uniqueGroupIds]));
@@ -1590,6 +1598,48 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
     };
 
+    // Navigate to next cell when Enter is pressed
+    const navigateToNextCell = (currentRowId: string, currentColId: string, groupId?: string) => {
+        // If this is the creation row, commit it instead of navigating
+        if (currentRowId === CREATION_ROW_ID && groupId) {
+            handleCommitCreationRow(groupId);
+            return;
+        }
+
+        // Get editable columns (exclude 'select' column)
+        const editableColumns = visibleColumns.filter(col => col.id !== 'select');
+        const currentIndex = editableColumns.findIndex(col => col.id === currentColId);
+
+        if (currentIndex === -1) {
+            setActiveCell(null);
+            return;
+        }
+
+        // Calculate next column index (wrap to first if at end)
+        const nextIndex = (currentIndex + 1) % editableColumns.length;
+        const nextCol = editableColumns[nextIndex];
+
+        // Find the cell element for the next column
+        setTimeout(() => {
+            const cellSelector = `[data-row-id="${currentRowId}"][data-col-id="${nextCol.id}"]`;
+            const nextCellElement = document.querySelector(cellSelector) as HTMLElement;
+
+            if (nextCellElement) {
+                const rect = nextCellElement.getBoundingClientRect();
+                setActiveCell({ rowId: currentRowId, colId: nextCol.id, trigger: nextCellElement, rect });
+
+                // For text/number inputs, focus the input after a brief delay
+                setTimeout(() => {
+                    const input = nextCellElement.querySelector('input');
+                    if (input) input.focus();
+                }, 50);
+            } else {
+                // If no element found, just set active cell state
+                setActiveCell({ rowId: currentRowId, colId: nextCol.id });
+            }
+        }, 10);
+    };
+
     const handleAddColumn = (type: string, label: string, options?: any[]) => {
         const newCol: Column = {
             id: label.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString().slice(-4),
@@ -2023,588 +2073,26 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     };
 
     const renderCellContent = (col: Column, row: Row) => {
-        const value = row[col.id];
-
-        if (col.id === 'select') {
-            return (
-                <div className="flex items-center justify-center w-full h-full">
-                    <input
-                        type="checkbox"
-                        checked={!!value}
-                        onChange={(e) => handleUpdateRow(row.id, { [col.id]: e.target.checked }, row.groupId)}
-                        className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4 accent-blue-600"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
-            );
-        }
-
-        if (col.type === 'status') {
-            // Helper to find status color
-            const statusObj = customStatuses.find(s => s.title === value || s.id === value);
-            // Fallback for defaults if not found in custom list (rare if initialized correctly)
-            const color = statusObj?.color ||
-                (value === 'Done' ? 'emerald' :
-                    value === 'In Progress' ? 'blue' :
-                        value === 'Stuck' ? 'orange' :
-                            value === 'Rejected' ? 'rose' : 'gray');
-
-            // Map standard color names to Tailwind classes
-            const getColorClasses = (c: string) => {
-                const map: Record<string, string> = {
-                    gray: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
-                    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-                    green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-                    emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-                    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-                    red: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-                    rose: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-                    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-                    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-                    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
-                };
-                return map[c] || map['gray'];
-            };
-
-            const statusStyle = value ? getColorClasses(color) : 'bg-transparent text-stone-400';
-
-            return (
-                <div className="relative w-full h-full flex items-center justify-center p-1">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded-md shadow-sm border border-transparent' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
-                    >
-                        {value ? (
-                            <span className="text-xs font-semibold font-sans truncate">{value}</span>
-                        ) : (
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400 group-hover:text-stone-500`}>-</span>
-                        )}
-                    </button>
-
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <StatusPicker
-                            current={value}
-                            onSelect={(s) => handleUpdateRow(row.id, { [col.id]: s }, row.groupId)}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
-                            options={customStatuses}
-                            onAdd={handleAddCustomStatus}
-                            onDelete={handleDeleteCustomStatus}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'date') {
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
-                    >
-                        <span className={`text-sm font-sans truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
-                            {formatDate(value) || 'Set Date'}
-                        </span>
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <PortalPopup
-                            triggerRef={{ current: activeCell.trigger } as any}
-                            align={columns.findIndex(c => c.id === col.id) > (columns.length / 2) ? 'end' : 'start'}
-                            onClose={() => setActiveCell(null)}
-                        >
-                            <SharedDatePicker
-                                selectedDate={value}
-                                onSelectDate={(dueDate) => handleUpdateRow(row.id, { [col.id]: dueDate.toISOString() }, row.groupId)}
-                                onClear={() => handleUpdateRow(row.id, { [col.id]: null }, row.groupId)}
-                                onClose={() => setActiveCell(null)}
-                            />
-                        </PortalPopup>
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'number') {
-            const isEditing = activeCell?.rowId === row.id && activeCell?.colId === col.id;
-            if (isEditing) {
-                return (
-                    <div className="h-full w-full">
-                        <input
-                            type="number"
-                            autoFocus
-                            onBlur={() => setActiveCell(null)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') setActiveCell(null); }}
-                            value={value || ''}
-                            onChange={(e) => handleUpdateRow(row.id, { [col.id]: e.target.value }, row.groupId)}
-                            className="w-full h-full bg-stone-50 dark:bg-stone-800 border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400"
-                        />
-                    </div>
-                );
-            }
-
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
-                    >
-                        {value ? (
-                            <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">
-                                {Number(value).toLocaleString()}
-                            </span>
-                        ) : (
-                            <span className="text-xs text-stone-400">Add value</span>
-                        )}
-                    </button>
-                </div>
-            );
-        }
-
-        if (col.type === 'dropdown') {
-            const selectedOption = col.options?.find(o => o.label === value);
-            const bgColor = selectedOption?.color || 'bg-stone-500';
-
-            return (
-                <div className="relative w-full h-full p-1">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className={`w-full h-full rounded flex items-center justify-center px-2 hover:opacity-80 transition-opacity ${value ? bgColor : 'hover:bg-stone-100 dark:hover:bg-stone-800/50'}`}
-                    >
-                        {value ? (
-                            <span className="text-xs font-medium text-white truncate">{value}</span>
-                        ) : (
-                            <span className="text-xs text-stone-400">Select Option</span>
-                        )}
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <SelectPicker
-                            options={col.options || []}
-                            current={value}
-                            onSelect={(s) => handleUpdateRow(row.id, { [col.id]: s }, row.groupId)}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
-                            onAdd={(label) => handleAddColumnOption(col.id, label)}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'doc') {
-            return (
-                <div className="relative w-full h-full p-1">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full rounded flex items-center px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors group"
-                    >
-                        {value ? (
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <div className="p-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">
-                                    <FileText size={12} />
-                                </div>
-                                <span className="text-sm text-stone-700 dark:text-stone-300 truncate hover:underline hover:text-blue-600 dark:hover:text-blue-400">
-                                    {value.name}
-                                </span>
-                            </div>
-                        ) : (
-                            <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">Select Doc</span>
-                        )}
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <DocPicker
-                            current={value}
-                            currentBoardId={roomId}
-                            onSelect={(doc) => handleUpdateRow(row.id, { [col.id]: doc }, row.groupId)}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        // --- RENDER CELL CONTENT ---
-        // This is the actual renderCellContent function that is used.
-        // The previous one was incomplete and followed by the misplaced handleCellAction.
-
-        if (col.type === 'people') {
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group"
-                    >
-                        {value ? (
-                            <div className="flex items-center gap-2 truncate">
-                                {value.avatar && <img src={value.avatar} alt={value.name} className="w-5 h-5 rounded-full object-cover bg-stone-200" />}
-                                <span className="text-sm font-sans text-stone-700 dark:text-stone-300 truncate">{value.name}</span>
-                            </div>
-                        ) : (
-                            <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">Assign</span>
-                        )}
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <PeoplePicker
-                            current={value}
-                            onSelect={(person) => handleUpdateRow(row.id, { [col.id]: person }, row.groupId)}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'files') {
-            const hasFile = !!value; // Value could be file metadata or just truthy
-            const fileName = value?.title || (hasFile ? 'File attached' : null);
-
-            // Helper to get file icon based on type/extension
-            const getFileIcon = (filename: string, mimeType?: string) => {
-                const ext = filename?.split('.').pop()?.toLowerCase();
-                const mime = mimeType?.toLowerCase() || '';
-
-                if (ext === 'pdf' || mime.includes('pdf')) {
-                    return <FileText size={14} className="text-red-500 shrink-0" />;
-                } else if (['doc', 'docx'].includes(ext || '') || mime.includes('word')) {
-                    return <FileText size={14} className="text-blue-600 shrink-0" />;
-                } else if (['xls', 'xlsx', 'csv'].includes(ext || '') || mime.includes('spreadsheet') || mime.includes('excel')) {
-                    return <FileText size={14} className="text-emerald-600 shrink-0" />;
-                } else if (['ppt', 'pptx'].includes(ext || '') || mime.includes('presentation')) {
-                    return <FileText size={14} className="text-orange-500 shrink-0" />;
-                } else if (mime.includes('image') || ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext || '')) {
-                    return <FileText size={14} className="text-purple-500 shrink-0" />;
-                }
-                return <FileText size={14} className="text-indigo-500 shrink-0" />;
-            };
-
-            // Get short name (truncate long filenames)
-            const getShortName = (name: string) => {
-                if (!name) return 'File';
-                if (name.length <= 15) return name;
-                const ext = name.split('.').pop();
-                const baseName = name.slice(0, name.lastIndexOf('.'));
-                return baseName.slice(0, 10) + '...' + (ext ? '.' + ext : '');
-            };
-
-            return (
-                <div className="relative w-full h-full flex items-center">
-                    {hasFile ? (
-                        <div className="flex items-center gap-2 w-full px-3" onClick={(e) => e.stopPropagation()}>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCellAction('navigate', row.id, col.id);
-                                }}
-                                className="flex-1 flex items-center gap-2 min-w-0 p-1 hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded transition-colors text-start"
-                                title={`View in Vault: ${fileName}`}
-                            >
-                                {getFileIcon(fileName, value?.metadata?.mimeType)}
-                                <span className="text-xs truncate text-stone-600 dark:text-stone-300 hover:underline decoration-stone-300 dark:decoration-stone-700 underline-offset-2">
-                                    {getShortName(fileName)}
-                                </span>
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                // Trigger hidden file input - file selection first, then modal opens
-                                setActiveUploadCell({ rowId: row.id, colId: col.id });
-                                hiddenFileInputRef.current?.click();
-                            }}
-                            className="w-full h-full flex items-center px-3 text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors gap-1.5"
-                            title="Upload file"
-                        >
-                            <UploadCloud size={14} />
-                            <span className="text-[10px] uppercase font-semibold tracking-wide">Upload</span>
-                        </button>
-                    )}
-                </div>
-            )
-        }
-        if (col.type === 'timeline') {
-            // Value expected to be { start: string, end: string } or null
-            // Or maybe just a string? Previous requirements said Timeline is a date range.
-            // Value might be stored as object or JSON string? Let's assume object {start, end} for now or handles parsing
-            // Or if it's new, we define it.
-            // Standard: row[col.id] = { start: ISO, end: ISO } or null.
-            const val = row[col.id];
-            const startDate = val?.start ? new Date(val.start) : null;
-            const endDate = val?.end ? new Date(val.end) : null;
-
-            const label = startDate && endDate
-                ? `${startDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
-                : (startDate ? startDate.toLocaleDateString() : null);
-
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group"
-                    >
-                        <CalendarRange size={14} className={`mr-2 shrink-0 ${val ? 'text-stone-500' : 'text-stone-300 group-hover:text-stone-400'}`} />
-                        <span className={`text-sm font-sans truncate ${val ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
-                            {label || 'Set Timeline'}
-                        </span>
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <PortalPopup
-                            triggerRef={{ current: activeCell.trigger } as any}
-                            align={activeCell.trigger.getBoundingClientRect().left > window.innerWidth / 2 ? "end" : "start"}
-                            onClose={() => setActiveCell(null)}
-                        >
-                            <SharedDatePicker
-                                mode="range"
-                                startDate={startDate || undefined}
-                                endDate={endDate || undefined}
-                                onSelectRange={(start, end) => handleUpdateRow(row.id, {
-                                    [col.id]: { start: start?.toISOString(), end: end?.toISOString() }
-                                })}
-                                onClose={() => setActiveCell(null)}
-                            />
-                        </PortalPopup>
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'priority') {
-            const normalized = formatPriorityLabel(value);
-            // Use the PRIORITY_STYLES map for the gradient background
-            const bgClass = (normalized && PRIORITY_STYLES[normalized]) ? PRIORITY_STYLES[normalized] : 'hover:bg-stone-100 dark:hover:bg-stone-800/50';
-            const textClass = normalized ? 'text-white' : 'text-stone-400';
-
-            return (
-                <div className="relative w-full h-full flex items-center justify-center p-1">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${normalized ? bgClass + ' rounded shadow-sm' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
-                    >
-                        {normalized ? (
-                            <span className={`text-xs font-semibold font-sans truncate ${textClass}`}>{normalized}</span>
-                        ) : (
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} ${textClass} opacity-50`}>-</span>
-                        )}
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <PriorityPicker
-                            current={normalized}
-                            onSelect={(p) => handleUpdateRow(row.id, { [col.id]: p || null })}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.trigger.getBoundingClientRect()}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.id === 'name') {
-            return (
-                <div className="group/name relative h-full flex items-center px-3 overflow-hidden gap-1.5 w-full">
-                    {row.priority && <span className={`shrink-0 w-2 h-2 rounded-full mt-0.5 ${getPriorityDot(row.priority)}`} />}
-                    <input
-                        ref={row.id === CREATION_ROW_ID ? (el) => {
-                            if (row.groupId) creationRowInputRefs.current[row.groupId] = el;
-                        } : undefined}
-                        type="text"
-                        value={value || ''}
-                        onChange={(e) => handleTextChange(row.id, col.id, e.target.value, row.groupId)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && row.id === CREATION_ROW_ID) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleCommitCreationRow(row.groupId!);
-                            }
-                        }}
-                        placeholder={row.id === CREATION_ROW_ID ? "Start typing..." : ""}
-                        className={`flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-stone-800 dark:text-stone-200 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors py-1 ${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-sm'}`}
-                    />
-
-                    {/* Open Side Panel Button */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveRowDetail(row);
-                        }}
-                        className="absolute right-9 opacity-0 group-hover/name:opacity-100 translate-x-2 group-hover/name:translate-x-0 transition-all duration-200 p-1 text-stone-400 hover:text-blue-600 z-10 flex items-center justify-center"
-                        title="Open"
-                    >
-                        <Maximize2 size={15} />
-                    </button>
-
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveReminderTarget({ rowId: row.id, rect: e.currentTarget.getBoundingClientRect() });
-                        }}
-                        className={`absolute right-2 z-10 p-1 flex items-center justify-center transition-all duration-200 ${remindersByItem[row.id]?.length ? 'text-amber-600 opacity-100' : 'text-stone-400 opacity-0 group-hover/name:opacity-100 translate-x-2 group-hover/name:translate-x-0 hover:text-amber-600'}`}
-                        title={remindersByItem[row.id]?.length ? 'Manage reminders' : 'Add reminder'}
-                    >
-                        <div className="relative flex items-center">
-                            <Bell size={13.5} />
-                            {remindersByItem[row.id]?.length ? (
-                                <span className={`absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full ${remindersByItem[row.id].some(r => r.status === 'triggered') ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                            ) : null}
-                        </div>
-                    </button>
-                </div>
-            )
-        }
-
-        if (col.type === 'url') {
-            const urlData = value as { url: string; text?: string } | null;
-            const displayText = urlData?.text || urlData?.url;
-
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group/url"
-                    >
-                        {displayText ? (
-                            <div className="flex items-center gap-2 truncate text-blue-600 dark:text-blue-400">
-                                <Link2 size={14} className="shrink-0" />
-                                <a
-                                    href={urlData?.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="truncate hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {displayText}
-                                </a>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-stone-400">
-                                <Link2 size={14} />
-                                <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>URL</span>
-                            </div>
-                        )}
-                        <div className="absolute right-2 opacity-0 group-hover/url:opacity-100 transition-opacity">
-                            <div className="w-5 h-5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 flex items-center justify-center">
-                                <MoreHorizontal size={14} className="text-stone-400" />
-                            </div>
-                        </div>
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <UrlPicker
-                            current={urlData}
-                            onSelect={(val) => handleUpdateRow(row.id, { [col.id]: val })}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.trigger.getBoundingClientRect()}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'location') {
-            const locationData = value as { url: string; text?: string } | null;
-            const displayText = locationData?.text || locationData?.url;
-
-            return (
-                <div className="relative w-full h-full">
-                    <button
-                        onClick={(e) => toggleCell(e, row.id, col.id)}
-                        className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group/location"
-                    >
-                        {displayText ? (
-                            <div className="flex items-center gap-2 truncate text-blue-600 dark:text-blue-400">
-                                <MapPin size={14} className="shrink-0" />
-                                <a
-                                    href={locationData?.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="truncate hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {displayText}
-                                </a>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-stone-400">
-                                <MapPin size={14} />
-                                <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>Location</span>
-                            </div>
-                        )}
-                        <div className="absolute right-2 opacity-0 group-hover/location:opacity-100 transition-opacity">
-                            <div className="w-5 h-5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 flex items-center justify-center">
-                                <MoreHorizontal size={14} className="text-stone-400" />
-                            </div>
-                        </div>
-                    </button>
-                    {activeCell?.rowId === row.id && activeCell?.colId === col.id && activeCell.trigger && (
-                        <UrlPicker
-                            current={locationData}
-                            onSelect={(val) => handleUpdateRow(row.id, { [col.id]: val })}
-                            onClose={() => setActiveCell(null)}
-                            triggerRect={activeCell.trigger.getBoundingClientRect()}
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (col.type === 'checkbox') {
-            return (
-                <div
-                    className="w-full h-full flex items-center justify-center"
-                    onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Open color picker for THIS column
-                        // We reuse the same activeColorMenu state but need to ensure it updates this specific column
-                        // The activeColorMenu logic in the main return uses generic `activeColorMenu` state.
-                        // We need to pass which column is active.
-                        // Since `activeColorMenu` currently just stores rect, we might need to store `colId` too.
-                        // BUT, for now let's just use the `activeColorMenu` for the *select* column?
-                        // No, the user wants to color THIS checkbox column.
-                        // So I need to update the `activeColorMenu` state to include `colId`.
-                        // So I need to update the `activeColorMenu` state to include `colId`.
-                        setActiveColorMenu({ rect: e.currentTarget.getBoundingClientRect(), colId: col.id, rowId: row.id });
-                    }}
-                >
-                    <input
-                        type="checkbox"
-                        checked={!!value}
-                        onChange={(e) => handleUpdateRow(row.id, { [col.id]: e.target.checked })}
-                        style={{ accentColor: row._styles?.[col.id]?.color || col.color || DEFAULT_CHECKBOX_COLOR }}
-                        className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4"
-                    />
-                </div>
-            );
-        }
-
-        // Default Text Cell
-        const textColor = row._styles?.[col.id]?.color;
-        // Background color from column definition (unless cell overrides? No cell background override yet)
-        const backgroundColor = col.backgroundColor;
-
-        const cellStyle: React.CSSProperties = {};
-        if (textColor) cellStyle.color = textColor;
-        // if (backgroundColor) cellStyle.backgroundColor = backgroundColor; // Apply to wrapper instead
-
         return (
-            <div className="h-full w-full">
-                <input
-                    type="text"
-                    value={value || ''}
-                    onChange={(e) => handleTextChange(row.id, col.id, e.target.value)}
-                    onContextMenu={(e) => {
-                        e.preventDefault();
-                        setActiveTextMenu({
-                            rowId: row.id,
-                            colId: col.id,
-                            position: { x: e.clientX, y: e.clientY }
-                        });
-                    }}
-                    style={cellStyle}
-                    className="w-full h-full bg-transparent border-none outline-none px-3 text-sm text-center text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors"
-                />
-            </div>
-        )
+            <TableCell
+                col={col}
+                row={row}
+                columns={columns}
+                activeCell={activeCell}
+                customStatuses={customStatuses}
+                onUpdateRow={handleUpdateRow}
+                onTextChange={handleTextChange}
+                onToggleCell={toggleCell}
+                onSetActiveCell={setActiveCell}
+                onNavigateToNextCell={navigateToNextCell}
+                onAddCustomStatus={handleAddCustomStatus}
+                onDeleteCustomStatus={handleDeleteCustomStatus}
+                onAddColumnOption={handleAddColumnOption}
+                onSetActiveColorMenu={setActiveColorMenu}
+                onSetActiveTextMenu={setActiveTextMenu}
+                onFileUploadRequest={handleImportClick}
+            />
+        );
     };
 
     // --- Selection State ---
@@ -2623,78 +2111,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const renderRowContent = (row: Row, dragListeners?: any, isOverlay = false) => {
         return (
-            <>
-                {/* Columns */}
-                {visibleColumns.map((col, index) => {
-                    const isSticky = !!col.pinned && !isOverlay;
-
-                    // Calculate left position for sticky columns
-                    let leftPos = 0;
-                    if (isSticky) {
-                        for (let i = 0; i < index; i++) {
-                            if (visibleColumns[i].pinned) {
-                                leftPos += visibleColumns[i].width;
-                            }
-                        }
-                    }
-
-                    return (
-                        <div
-                            key={col.id}
-                            className={`h-full border-e border-stone-100 dark:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? `z-10 ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}` : ''} ${isSticky && !visibleColumns[index + 1]?.pinned && !isOverlay ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
-                            style={{
-                                width: col.width,
-                                ...(isSticky && {
-                                    left: leftPos,
-                                    position: 'sticky',
-                                    willChange: 'transform, left',
-                                }),
-                                backgroundColor: col.backgroundColor || undefined
-                            }}
-                            onContextMenu={(e) => {
-                                if (col.id === 'select') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setActiveColorMenu({ rect: e.currentTarget.getBoundingClientRect() });
-                                }
-                            }}
-                        >
-                            {col.id === 'select' ? (
-                                <div
-                                    {...dragListeners}
-                                    className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing touch-none px-2"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedRows.has(row.id)}
-                                        onChange={() => toggleRowSelection(row.id)}
-                                        style={{
-                                            accentColor: columns.find(c => c.id === 'select')?.color || DEFAULT_CHECKBOX_COLOR,
-                                            willChange: 'transform'
-                                        }}
-                                        className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4"
-                                        onPointerDown={(e) => e.stopPropagation()}
-                                    />
-                                </div>
-                            ) : (
-                                renderCellContent(col, row)
-                            )}
-                        </div>
-                    );
-                })}
-
-                {/* Fixed Actions Column (Delete) */}
-                <div className="w-8 h-full flex items-center justify-center text-stone-300 border-s border-stone-100/50 dark:border-stone-800">
-                    {!isOverlay && (
-                        <button
-                            onClick={() => handleDeleteRow(row.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                    )}
-                </div>
-            </>
+            <TableRowContent
+                row={row}
+                dragListeners={dragListeners}
+                isOverlay={isOverlay}
+                visibleColumns={visibleColumns}
+                checkedRows={checkedRows}
+                columns={columns}
+                onToggleRowSelection={toggleRowSelection}
+                onDeleteRow={handleDeleteRow}
+                onSelectColumnContextMenu={(rect) => setActiveColorMenu({ rect })}
+                renderCellContent={renderCellContent}
+            />
         );
     };
 
@@ -2733,7 +2161,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         <input
                                             ref={searchInputRef}
                                             type="text"
-                                            placeholder="Search this board"
+                                            placeholder={t('search_this_board')}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             onKeyDown={(e) => {
@@ -2829,7 +2257,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         })()}
 
                                         {rows.every(r => !r.people) && (
-                                            <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center" title="No assigned users found">
+                                            <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center" title={t('no_assigned_users')}>
                                                 <UserCircle size={24} weight="regular" className="text-stone-300" />
                                             </div>
                                         )}
@@ -3069,7 +2497,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                         <input
                                             type="text"
-                                            placeholder="Find columns to show/hide"
+                                            placeholder={t('find_columns')}
                                             value={columnSearchQuery}
                                             onChange={(e) => setColumnSearchQuery(e.target.value)}
                                             className="w-full h-9 pl-8 pr-3 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-200"

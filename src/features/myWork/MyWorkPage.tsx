@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useAppContext } from '../../contexts/AppContext';
 import {
     Layout,
     CalendarBlank as CalendarIcon,
@@ -43,11 +44,11 @@ interface MyWorkPageProps {
 }
 
 const PriorityMenu = ({ onSelect, onClose }: { onSelect: (p: any) => void, onClose: () => void }) => (
-    <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
+    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-32 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
         {['Low', 'Medium', 'High'].map(p => (
             <button
                 key={p}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
                 onClick={() => { onSelect(p); onClose(); }}
             >
                 <div className={`w-2 h-2 rounded-full ${p === 'High' ? 'bg-red-500' : p === 'Medium' ? 'bg-orange-500' : 'bg-blue-500'}`} />
@@ -58,11 +59,11 @@ const PriorityMenu = ({ onSelect, onClose }: { onSelect: (p: any) => void, onClo
 );
 
 const DateMenu = ({ onSelect, onClose }: { onSelect: (d: string) => void, onClose: () => void }) => (
-    <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
+    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-48 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
         {['Today', 'Tomorrow', 'Next Week'].map(d => (
             <button
                 key={d}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-200"
+                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-200"
                 onClick={() => { onSelect(d); onClose(); }}
             >
                 {d}
@@ -187,6 +188,7 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
 
 
 export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoard, onUpdateTasks, onAddBoard }) => {
+    const { t } = useAppContext();
     // Local State
     const [currentTab, setCurrentTab] = useState<Tab>('timeline');
     const [filter, setFilter] = useState<FilterType>('all');
@@ -545,7 +547,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                     {/* INBOX SECTION */}
                     <div>
                         <div className="flex items-center justify-between mb-3 px-1">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inbox</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('inbox')}</p>
                             <span className="text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">{inboxTasks.length}</span>
                         </div>
                         <div className="space-y-3">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface Discussion {
     id: string;
@@ -9,6 +10,7 @@ interface Discussion {
 }
 
 const TalkSidebar: React.FC = () => {
+    const { t } = useAppContext();
     const channels: Discussion[] = [];
 
     const dms: Discussion[] = [];
@@ -16,8 +18,8 @@ const TalkSidebar: React.FC = () => {
     return (
         <div className="w-64 border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark flex flex-col shrink-0">
             <div className="p-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold">Talk</h2>
-                <button className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-primary transition-colors" title="New Discussion">
+                <h2 className="text-lg font-bold">{t('talk')}</h2>
+                <button className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-primary transition-colors" title={t('new_discussion')}>
                     <span className="material-icons">add_comment</span>
                 </button>
             </div>
@@ -26,7 +28,7 @@ const TalkSidebar: React.FC = () => {
                 <div className="px-2 py-4">
                     <div className="mb-6">
                         <div className="px-2 flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wider">Channels</span>
+                            <span className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wider">{t('channels')}</span>
                         </div>
                         <div className="space-y-0.5">
                             {channels.map((channel) => (
@@ -53,7 +55,7 @@ const TalkSidebar: React.FC = () => {
 
                     <div>
                         <div className="px-2 flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wider">Direct Messages</span>
+                            <span className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wider">{t('direct_messages')}</span>
                         </div>
                         <div className="space-y-0.5">
                             {dms.map((dm) => (

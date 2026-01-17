@@ -37,6 +37,7 @@ import { PlusIcon } from '../ListBoard/ListBoardIcons';
 import { ColumnContextMenu } from '../../components/ColumnContextMenu';
 import { StatusCell } from '../ListBoard/components/cells/StatusCell';
 import { PriorityCell } from '../ListBoard/components/cells/PriorityCell';
+import { useAppContext } from '../../../../contexts/AppContext';
 import { PersonCell } from '../ListBoard/components/cells/PersonCell';
 import { LongTextCell } from '../ListBoard/components/cells/LongTextCell';
 import { DropdownCell } from '../ListBoard/components/cells/DropdownCell';
@@ -230,13 +231,13 @@ const PriorityPicker: React.FC<{ priority: Priority; onSelect: (p: Priority) => 
     ];
 
     return (
-        <div ref={containerRef} className="absolute right-0 top-full mt-1 z-[100] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+        <div ref={containerRef} className="absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 z-[100] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rtl:origin-top-left">
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100 mb-1">Task Priority</div>
             {options.map((opt) => (
                 <button
                     key={opt.value}
                     onClick={() => onSelect(opt.value)}
-                    className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm transition-colors"
+                    className="w-full text-start px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm transition-colors"
                 >
                     <opt.icon className={`w-4 h-4 ${opt.color} fill-current`} />
                     <span className="text-gray-700">{opt.label}</span>
@@ -248,6 +249,7 @@ const PriorityPicker: React.FC<{ priority: Priority; onSelect: (p: Priority) => 
 };
 
 const TagPicker: React.FC<{ tags: string[]; onUpdate: (tags: string[]) => void; onClose: () => void }> = ({ tags, onUpdate, onClose }) => {
+    const { t } = useAppContext();
     const [inputValue, setInputValue] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -277,12 +279,12 @@ const TagPicker: React.FC<{ tags: string[]; onUpdate: (tags: string[]) => void; 
     };
 
     return (
-        <div ref={containerRef} className="absolute right-0 top-full mt-1 z-[100] w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-2 origin-top-right">
+        <div ref={containerRef} className="absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 z-[100] w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-2 origin-top-right rtl:origin-top-left">
             <div className="px-3">
                 <input
                     autoFocus
                     type="text"
-                    placeholder="Search or Create tag..."
+                    placeholder={t('search_or_create_tag')}
                     className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-purple-500"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -307,6 +309,7 @@ const TagPicker: React.FC<{ tags: string[]; onUpdate: (tags: string[]) => void; 
 };
 
 const NewStatusInput: React.FC<{ onAdd: (t: string, c: string) => void; onCancel: () => void }> = ({ onAdd, onCancel }) => {
+    const { t } = useAppContext();
     const [title, setTitle] = useState('');
     const [selectedColor, setSelectedColor] = useState(STATUS_COLORS[0]);
     const [showColorPicker, setShowColorPicker] = useState(false);
@@ -333,10 +336,10 @@ const NewStatusInput: React.FC<{ onAdd: (t: string, c: string) => void; onCancel
                 )}
             </div>
             <div className="relative flex-1">
-                <input autoFocus type="text" className="w-full h-8 px-3 rounded-md border-2 border-purple-500 shadow-sm focus:outline-none text-sm" placeholder="Status name" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) onAdd(title, selectedColor); if (e.key === 'Escape') onCancel(); }} />
+                <input autoFocus type="text" className="w-full h-8 px-3 rounded-md border-2 border-purple-500 shadow-sm focus:outline-none text-sm" placeholder={t('status_name')} value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) onAdd(title, selectedColor); if (e.key === 'Escape') onCancel(); }} />
             </div>
-            <button onClick={onCancel} className="text-xs text-gray-500 hover:text-gray-700 px-2">Cancel</button>
-            <button onClick={() => title.trim() && onAdd(title, selectedColor)} disabled={!title.trim()} className="bg-purple-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-50">Save</button>
+            <button onClick={onCancel} className="text-xs text-gray-500 hover:text-gray-700 px-2">{t('cancel')}</button>
+            <button onClick={() => title.trim() && onAdd(title, selectedColor)} disabled={!title.trim()} className="bg-purple-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-50">{t('save')}</button>
         </div>
     );
 };
@@ -344,6 +347,7 @@ const NewStatusInput: React.FC<{ onAdd: (t: string, c: string) => void; onCancel
 const TaskInput: React.FC<{ parentId?: string; onSave: (title: string, subtasks?: string[]) => void; onCancel: () => void; isSubtask?: boolean; className?: string; statusColor?: string; }> = ({
     onSave, onCancel, className = '', statusColor = '#d1d5db'
 }) => {
+    const { t } = useAppContext();
     const [title, setTitle] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -365,7 +369,7 @@ const TaskInput: React.FC<{ parentId?: string; onSave: (title: string, subtasks?
             <div className="shrink-0 pl-1 flex items-center justify-center">
                 <div className="w-4 h-4 rounded-full border-[3px]" style={{ borderColor: statusColor }}></div>
             </div>
-            <input ref={inputRef} type="text" className="flex-1 outline-none text-sm text-gray-900 placeholder:text-gray-400 h-8 bg-transparent" placeholder="Task Name or type '/' for commands" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (title.trim()) { onSave(title); setTitle(''); } } if (e.key === 'Escape') onCancel(); }} />
+            <input ref={inputRef} type="text" className="flex-1 outline-none text-sm text-gray-900 placeholder:text-gray-400 h-8 bg-transparent" placeholder={t('task_name_or_commands')} value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (title.trim()) { onSave(title); setTitle(''); } } if (e.key === 'Escape') onCancel(); }} />
             <div className="flex items-center gap-2 shrink-0">
                 <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer">
                     <div className="w-2 h-2 rounded-full bg-gray-400"></div> Task
@@ -587,7 +591,7 @@ const TaskRow: React.FC<{ task: Task; level: number; statusColor?: string; onTog
                 {menuOpen && (
                     <>
                         <div className="fixed inset-0 z-[90]" onClick={() => setMenuOpen(false)}></div>
-                        <div className="absolute right-0 top-8 z-[100] w-64 bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col text-gray-700 animate-in fade-in zoom-in-95 duration-100 text-left">
+                        <div className="absolute right-0 rtl:right-auto rtl:left-0 top-8 z-[100] w-64 bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col text-gray-700 animate-in fade-in zoom-in-95 duration-100 text-start">
                             <div className="flex items-center p-2 border-b border-gray-100 gap-1">
                                 <button className="flex-1 flex items-center justify-center gap-1.5 h-8 hover:bg-gray-50 rounded text-xs font-medium border border-transparent hover:border-gray-200"><Link className="w-3.5 h-3.5" /> Copy link</button>
                                 <button className="flex-1 flex items-center justify-center gap-1.5 h-8 hover:bg-gray-50 rounded text-xs font-medium border border-transparent hover:border-gray-200"><Copy className="w-3.5 h-3.5" /> Copy ID</button>
@@ -722,7 +726,7 @@ const TaskDetailModal: React.FC<{ task: Task; onClose: () => void }> = ({ task, 
                     </div>
                     <div className="p-4 bg-white border-t border-gray-200">
                         <div className="border border-gray-200 rounded-xl shadow-sm bg-white focus-within:ring-2 focus-within:ring-purple-100 transition-shadow">
-                            <div className="px-3 py-2"><input type="text" placeholder="Write a comment..." className="w-full text-sm outline-none placeholder:text-gray-400" /></div>
+                            <div className="px-3 py-2"><input type="text" placeholder={t('write_comment')} className="w-full text-sm outline-none placeholder:text-gray-400" /></div>
                             <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-100 bg-gray-50/50 rounded-b-xl">
                                 <div className="flex items-center gap-0.5">
                                     <button className="p-1.5 text-gray-400 hover:bg-gray-200 rounded"><Plus className="w-4 h-4" /></button>
@@ -769,6 +773,7 @@ interface ListsProps {
 }
 
 export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks, onUpdateTasks }: ListsProps) {
+    const { t } = useAppContext();
     // Shared Storage Keys
     const isSharedView = !viewId || viewId === 'list-main' || viewId === 'list';
     const storageKeyStatuses = `board-statuses-${roomId}`;
@@ -1248,7 +1253,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                         setActiveColumnMenu(activeColumnMenu?.id === status.id ? null : { id: status.id, rect: rect });
                                                     }}
-                                                    title="Add Column"
+                                                    title={t('add_column')}
                                                 >
                                                     <PlusIcon className="w-4 h-4" />
                                                 </div>

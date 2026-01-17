@@ -1,6 +1,8 @@
 import { Room, CreateRoomData, Row, CreateRowData, UpdateRowData, Column } from './types';
+import { API_BASE_URL } from '../config/api';
+import { boardLogger } from '../utils/logger';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = API_BASE_URL;
 
 export const roomService = {
     // Rooms
@@ -10,7 +12,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to fetch rooms');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching rooms:', error);
+            boardLogger.error('Error fetching rooms:', error);
             return [];
         }
     },
@@ -21,7 +23,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to fetch room');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching room:', error);
+            boardLogger.error('Error fetching room:', error);
             return null;
         }
     },
@@ -36,7 +38,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to create room');
             return await response.json();
         } catch (error) {
-            console.error('Error creating room:', error);
+            boardLogger.error('Error creating room:', error);
             throw error;
         }
     },
@@ -48,7 +50,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to fetch rows');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching rows:', error);
+            boardLogger.error('Error fetching rows:', error);
             return [];
         }
     },
@@ -63,7 +65,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to create row');
             return await response.json();
         } catch (error) {
-            console.error('Error creating row:', error);
+            boardLogger.error('Error creating row:', error);
             throw error;
         }
     },
@@ -78,7 +80,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to update row');
             return await response.json();
         } catch (error) {
-            console.error('Error updating row:', error);
+            boardLogger.error('Error updating row:', error);
             throw error;
         }
     },
@@ -91,7 +93,7 @@ export const roomService = {
             if (!response.ok) throw new Error('Failed to delete row');
             return true;
         } catch (error) {
-            console.error('Error deleting row:', error);
+            boardLogger.error('Error deleting row:', error);
             throw error;
         }
     },
@@ -104,7 +106,7 @@ export const roomService = {
             const result = await response.json();
             return result.length > 0 ? result[0].columns : [];
         } catch (error) {
-            console.error('Error fetching columns:', error);
+            boardLogger.error('Error fetching columns:', error);
             return [];
         }
     },
@@ -135,7 +137,7 @@ export const roomService = {
                 return await response.json();
             }
         } catch (error) {
-            console.error('Error updating columns:', error);
+            boardLogger.error('Error updating columns:', error);
             throw error;
         }
     }

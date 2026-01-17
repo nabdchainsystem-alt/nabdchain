@@ -69,6 +69,7 @@ import { GanttView } from './views/GanttChart/GanttView';
 import { GTDDashboard } from '../../features/gtd/GTDDashboard';
 import { OverviewView } from './views/Overview/OverviewView';
 import { ProcurementOverview } from './views/Procurement/ProcurementOverview';
+import SalesInsights from '../mini_company/operations/SalesInsights';
 import CornellNotesPage from '../tools/cornell/CornellNotesPage';
 import WhiteboardView from '../tools/WhiteboardView';
 import DashboardsView from '../tools/DashboardsView';
@@ -81,72 +82,8 @@ import { TimelineView } from './views/Timeline/TimelineView';
 
 
 import { useUI } from '../../contexts/UIContext';
-
-
-// --- Sortable Tab Component ---
-interface SortableTabProps {
-    viewId: string;
-    isActive: boolean;
-    label: string;
-    icon: React.ElementType;
-    isPinned?: boolean;
-    onClick: () => void;
-    onContextMenu: (e: React.MouseEvent) => void;
-}
-
-const SortableTab: React.FC<SortableTabProps> = ({ viewId, isActive, label, icon: Icon, isPinned, onClick, onContextMenu }) => {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging
-    } = useSortable({ id: viewId });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.3 : 1,
-        zIndex: isDragging ? 999 : 'auto',
-    };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...attributes}
-            {...listeners}
-            onClick={onClick}
-            onContextMenu={onContextMenu}
-            className={`flex items-center justify-start text-left gap-2 py-1.5 border-b-2 text-[13.6px] font-medium transition-colors whitespace-nowrap select-none ${isActive
-                ? 'border-slate-900 text-slate-900 dark:text-slate-100'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-        >
-            <div className="relative">
-                <Icon size={16} />
-                {isPinned && (
-                    <div className="absolute -top-1.5 -right-1.5 bg-white dark:bg-[#1a1d24] rounded-full p-0.5 shadow-sm">
-                        <Pin size={8} className="text-blue-500 fill-current" />
-                    </div>
-                )}
-            </div>
-            <span>{label}</span>
-            {/* {isActive && viewId !== 'overview' && (
-                <div className="ml-1 p-0.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-400 hover:text-blue-600 transition-colors"
-                    // onMouseDown to prevent drag start on the menu button
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onContextMenu(e);
-                    }}>
-                    <MoreHorizontal size={14} />
-                </div>
-            )} */}
-        </div>
-    );
-};
+import { useAppContext } from '../../contexts/AppContext';
+import { SortableTab } from './components/SortableTab';
 
 interface BoardViewProps {
     board: Board;
@@ -191,20 +128,32 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     const sanitizedAvailableViews = useMemo(() => {
         let views = board.availableViews || [];
 
+        // For sales board, normalize sales view IDs (remove timestamps) and dedupe
+        if (board.id === 'dept-sales') {
+            const salesViewIds = ['sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions'];
+            const seen = new Set<string>();
+            views = views.map(v => {
+                // Normalize sales views with timestamps back to base ID
+                const match = salesViewIds.find(id => v === id || (v as string).startsWith(`${id}-`));
+                return match || v;
+            }).filter(v => {
+                if (seen.has(v as string)) return false;
+                seen.add(v as string);
+                return true;
+            }) as BoardViewType[];
+        }
+
         // Ensure 'overview' is always present and at the start
         const viewsWithoutOverview = views.filter(v => (v as any) !== 'overview' && (v as any) !== 'listboard' && (v as any) !== 'list_board');
         let finalViews = ['overview', ...viewsWithoutOverview] as BoardViewType[];
 
-        // Enforce 'data' view for department layouts if missing
-        if (isDepartmentLayout && !finalViews.includes('data')) {
-            finalViews = [...finalViews, 'data'];
+        // Enforce 'datatable' view for department layouts if missing
+        if (isDepartmentLayout && !finalViews.includes('datatable')) {
+            finalViews = [...finalViews, 'datatable'];
         }
 
-        // Enforce 'wiki' view for Sales department if missing
-
-
         return finalViews;
-    }, [board.availableViews, isDepartmentLayout]);
+    }, [board.availableViews, isDepartmentLayout, board.id]);
 
     const normalizeViewId = (viewId?: string | null): BoardViewType | null => {
         // Cast to any to avoid "no overlap" error for legacy values
@@ -276,6 +225,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     // ... existing state ...
     const [showInfoMenu, setShowInfoMenu] = useState(false);
     const { setIsSidebarCollapsed } = useUI();
+    const { t } = useAppContext();
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     const toggleFullScreen = () => {
@@ -293,6 +243,65 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     };
     const [showAIMenu, setShowAIMenu] = useState(false);
     const aiButtonRef = useRef<HTMLButtonElement>(null);
+
+    // Swipe gesture handling for fullscreen navigation
+    const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!isFullScreen) return;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (!isFullScreen || touchStartX.current === null || touchStartY.current === null) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchEndX - touchStartX.current;
+        const deltaY = touchEndY - touchStartY.current;
+
+        // Only trigger if horizontal swipe is dominant and significant
+        if (Math.abs(deltaX) > 80 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+            const currentIndex = sanitizedAvailableViews.indexOf(activeView);
+
+            if (deltaX < 0 && currentIndex < sanitizedAvailableViews.length - 1) {
+                // Swipe left -> next view
+                setActiveView(sanitizedAvailableViews[currentIndex + 1]);
+            } else if (deltaX > 0 && currentIndex > 0) {
+                // Swipe right -> previous view
+                setActiveView(sanitizedAvailableViews[currentIndex - 1]);
+            }
+        }
+
+        touchStartX.current = null;
+        touchStartY.current = null;
+    };
+
+    // Keyboard navigation for fullscreen mode
+    useEffect(() => {
+        if (!isFullScreen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const currentIndex = sanitizedAvailableViews.indexOf(activeView);
+
+            if (e.key === 'ArrowRight' && currentIndex < sanitizedAvailableViews.length - 1) {
+                e.preventDefault();
+                setActiveView(sanitizedAvailableViews[currentIndex + 1]);
+            } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                e.preventDefault();
+                setActiveView(sanitizedAvailableViews[currentIndex - 1]);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                toggleFullScreen();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullScreen, activeView, sanitizedAvailableViews]);
 
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; viewId: BoardViewType } | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -317,6 +326,41 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             setViewNames(saved ? JSON.parse(saved) : {});
         } catch {
             setViewNames({});
+        }
+    }, [board.id]);
+
+    // Clean up custom viewNames for sales dashboard views - these should always use the default labels
+    useEffect(() => {
+        if (board.id === 'dept-sales') {
+            const salesViewIds = ['sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions'];
+            const currentNames = { ...viewNames };
+            let hasChanges = false;
+
+            // Remove custom names for sales views
+            Object.keys(currentNames).forEach(key => {
+                if (salesViewIds.some(id => key === id || key.startsWith(`${id}-`))) {
+                    delete currentNames[key];
+                    hasChanges = true;
+                }
+            });
+
+            if (hasChanges) {
+                setViewNames(currentNames);
+                localStorage.setItem(viewNamesStorageKey, JSON.stringify(currentNames));
+            }
+
+            // Also clean up the board's availableViews to remove duplicates with timestamps
+            if (onUpdateBoard && board.availableViews) {
+                const cleanedViews = board.availableViews.map(v => {
+                    const match = salesViewIds.find(id => v === id || (v as string).startsWith(`${id}-`));
+                    return (match || v) as BoardViewType;
+                });
+                const uniqueViews = [...new Set(cleanedViews)];
+                if (uniqueViews.length !== board.availableViews.length ||
+                    !uniqueViews.every((v, i) => v === board.availableViews![i])) {
+                    onUpdateBoard(board.id, { availableViews: uniqueViews });
+                }
+            }
         }
     }, [board.id]);
 
@@ -600,26 +644,25 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
     };
 
     const VIEW_OPTIONS = [
-        { label: isDepartmentLayout ? 'Insights' : 'Overview', icon: PhOverview, id: 'overview', description: 'Board overview' },
-        { label: 'Table', icon: PhTable, id: 'table', description: 'Manage project workflows' },
-        { label: 'Data', icon: PhTable, id: 'data', description: 'Raw data view' },
-        { label: 'Data Table', icon: PhTable, id: 'datatable', description: 'High performance data grid' },
-        { label: 'Kanban', icon: PhKanban, id: 'kanban', description: 'Visualize your work' },
-        { label: 'List', icon: PhList, id: 'list', description: 'Simple list view' },
-        { label: 'Calendar', icon: PhCalendar, id: 'calendar', description: 'Schedule tasks' },
-        { label: 'Doc', icon: PhFileText, id: 'doc', description: 'Collaborate on docs' },
-        { label: 'Gantt', icon: PhGantt, id: 'gantt', description: 'Visual timeline' },
+        { label: isDepartmentLayout ? t('insights') : t('overview'), icon: PhOverview, id: 'overview', description: t('board_overview_desc') },
+        { label: t('table'), icon: PhTable, id: 'table', description: t('manage_workflows_desc') },
+        { label: t('data_table'), icon: PhTable, id: 'datatable', description: t('high_perf_grid_desc') },
+        { label: t('kanban'), icon: PhKanban, id: 'kanban', description: t('visualize_work_desc') },
+        { label: t('list'), icon: PhList, id: 'list', description: t('simple_list_desc') },
+        { label: t('calendar'), icon: PhCalendar, id: 'calendar', description: t('schedule_tasks_desc') },
+        { label: t('doc'), icon: PhFileText, id: 'doc', description: t('collaborate_docs_desc') },
+        { label: t('gantt'), icon: PhGantt, id: 'gantt', description: t('visual_timeline_desc') },
 
-        ...(isWarehouseBoard ? [{ label: 'Capacity Map', icon: PhWarehouse, id: 'warehouse_capacity_map', description: 'Visual warehouse capacity map' }] : []),
-        { label: 'Workload View', icon: PhWorkload, id: 'workload', description: 'Balance assignments' },
-        { label: 'Smart Sheet', icon: PhSpreadsheet, id: 'spreadsheet', description: 'Spreadsheet workspace' },
-        { label: 'GTD System', icon: PhCheckSquare, id: 'gtd', description: 'Getting Things Done' },
-        { label: 'Cornell Notes', icon: PhNotepad, id: 'cornell', description: 'Effective note-taking' },
-        { label: 'Automation Rules', icon: PhAutomation, id: 'automation_rules', description: 'Simple trigger → action' },
-        { label: 'Goals & OKRs', icon: PhTarget, id: 'goals_okrs', description: 'Align work to outcomes' },
-        { label: 'Recurring Logic', icon: PhRecurring, id: 'recurring', description: 'Repeat work patterns' },
-        { label: 'Timeline', icon: PhGantt, id: 'timeline', description: 'Visual project timeline' },
-        { label: 'Whiteboard', icon: PhWhiteboard, id: 'whiteboard', description: 'Collaborative mind map' },
+        ...(isWarehouseBoard ? [{ label: t('capacity_map'), icon: PhWarehouse, id: 'warehouse_capacity_map', description: t('capacity_map') }] : []),
+        { label: t('workload'), icon: PhWorkload, id: 'workload', description: t('balance_assignments_desc') },
+        { label: t('smart_sheet'), icon: PhSpreadsheet, id: 'spreadsheet', description: t('spreadsheet_workspace_desc') },
+        { label: t('gtd_system'), icon: PhCheckSquare, id: 'gtd', description: t('gtd_desc') },
+        { label: t('cornell_notes'), icon: PhNotepad, id: 'cornell', description: t('cornell_desc') },
+        { label: t('automation_rules'), icon: PhAutomation, id: 'automation_rules', description: t('automation_desc') },
+        { label: t('goals_okrs'), icon: PhTarget, id: 'goals_okrs', description: t('goals_desc') },
+        { label: t('recurring'), icon: PhRecurring, id: 'recurring', description: t('recurring_desc') },
+        { label: t('timeline'), icon: PhGantt, id: 'timeline', description: t('timeline_desc') },
+        { label: t('whiteboard'), icon: PhWhiteboard, id: 'whiteboard', description: t('whiteboard_desc') },
     ];
 
     // --- Merge dashboardSections into VIEW_OPTIONS ---
@@ -691,13 +734,69 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
         switch (baseViewType) {
             case 'overview':
-                return board.id === 'procurement-main' ? (
-                    <div className="w-full h-full overflow-hidden">
-                        <ProcurementOverview />
-                    </div>
-                ) : (
-                    <OverviewView boardId={board.id} tasks={tasks} />
-                );
+                if (board.id === 'procurement-main') {
+                    return (
+                        <div className="w-full h-full overflow-hidden">
+                            <ProcurementOverview />
+                        </div>
+                    );
+                }
+                if (board.id === 'dept-sales') {
+                    // Sales uses blank SalesInsights as general overview
+                    return (
+                        <div className="w-full h-full overflow-hidden">
+                            <SalesInsights />
+                        </div>
+                    );
+                }
+                return <OverviewView boardId={board.id} tasks={tasks} />;
+
+            // Sales Dashboard Views - handled via renderCustomView
+            case 'sales_insights':
+            case 'sales_performance':
+            case 'sales_analysis':
+            case 'sales_forecast':
+            case 'sales_funnel':
+            case 'sales_segmentation':
+            case 'sales_promotions':
+                if (renderCustomView) {
+                    const custom = renderCustomView(baseViewType);
+                    if (custom) {
+                        const currentIdx = sanitizedAvailableViews.indexOf(activeView);
+                        const hasPrev = currentIdx > 0;
+                        const hasNext = currentIdx < sanitizedAvailableViews.length - 1;
+
+                        return (
+                            <div className="w-full h-full overflow-y-auto relative">
+                                {custom}
+                                {/* Navigation arrows overlay */}
+                                <div className="fixed top-[88px] right-8 z-40 flex items-center gap-2">
+                                    <button
+                                        onClick={() => hasPrev && setActiveView(sanitizedAvailableViews[currentIdx - 1])}
+                                        disabled={!hasPrev}
+                                        className={`p-2 rounded-lg border shadow-sm transition-all ${hasPrev
+                                            ? 'bg-white dark:bg-[#2b2e36] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md'
+                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                                        title="Previous dashboard"
+                                    >
+                                        <ArrowLeftToLine size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => hasNext && setActiveView(sanitizedAvailableViews[currentIdx + 1])}
+                                        disabled={!hasNext}
+                                        className={`p-2 rounded-lg border shadow-sm transition-all ${hasNext
+                                            ? 'bg-white dark:bg-[#2b2e36] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md'
+                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
+                                        title="Next dashboard"
+                                    >
+                                        <ArrowLeftToLine size={16} className="rotate-180" />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }
+                }
+                return null;
             case 'kanban':
                 return (
                     <KanbanBoard
@@ -727,8 +826,6 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                     />
                 );
             case 'datatable':
-                return <DataTable key={`${board.id}-${activeView}`} roomId={board.id} />;
-            case 'data': // Map 'data' view to DataTable
                 return <DataTable key={`${board.id}-${activeView}`} roomId={board.id} />;
             case 'doc':
                 return <DocView key={`${board.id}-${activeView}`} roomId={board.id} />;
@@ -873,14 +970,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                         <div className="w-80 bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-xl border border-blue-500/20 dark:border-blue-400/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-5 animate-in fade-in zoom-in-95 duration-200 mt-2">
                                             <div className="space-y-5">
                                                 <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Board Settings</span>
+                                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('board_settings')}</span>
                                                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                                 </div>
                                                 <div className="space-y-4">
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1.5">
                                                             <Pencil size={12} className="text-blue-500" />
-                                                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Name</label>
+                                                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">{t('name')}</label>
                                                         </div>
                                                         <input
                                                             type="text"
@@ -894,13 +991,13 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                 }
                                                             }}
                                                             className="w-full px-3 py-2 text-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
-                                                            placeholder="Board Name"
+                                                            placeholder={t('board_name_placeholder')}
                                                         />
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1.5">
                                                             <PhFileText size={12} className="text-blue-500" />
-                                                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Description</label>
+                                                            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">{t('description')}</label>
                                                         </div>
                                                         <textarea
                                                             value={editDescription}
@@ -913,7 +1010,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                 }
                                                             }}
                                                             className="w-full px-3 py-2 text-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[100px] transition-all"
-                                                            placeholder="Add a detailed description..."
+                                                            placeholder={t('add_description')}
                                                         />
                                                     </div>
                                                 </div>
@@ -928,7 +1025,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                 <button
                                     onClick={toggleFullScreen}
                                     className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
-                                    title="Enter Full Screen"
+                                    title={t('enter_fullscreen')}
                                 >
                                     <Maximize2 size={18} />
                                 </button>
@@ -1042,22 +1139,22 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                         >
                                             <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl w-[450px] py-3 animate-in fade-in zoom-in-95 duration-150">
                                                 <div className="px-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-                                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Add View</h3>
+                                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('add_view')}</h3>
                                                 </div>
                                                 <div className="max-h-[450px] overflow-y-auto">
                                                     {/* Simple Tools */}
                                                     <div className="px-4 pt-3 pb-1">
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Simple Tools</span>
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('simple_tools')}</span>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                                                         {VIEW_OPTIONS.filter(opt => !['list', 'gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'workload', 'whiteboard'].includes(opt.id)).map((option) => (
                                                             <button
                                                                 key={option.id}
                                                                 onClick={() => handleAddView(option)}
-                                                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
+                                                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-start transition-colors"
                                                             >
                                                                 <option.icon size={18} weight="regular" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                                                <div className="text-left">
+                                                                <div className="text-start">
                                                                     <span className="block text-[13px] text-gray-700 dark:text-gray-200 font-medium leading-tight">{option.label}</span>
                                                                     <span className="block text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{option.description}</span>
                                                                 </div>
@@ -1068,17 +1165,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                     {/* Advanced Tools */}
                                                     <div className="border-t border-gray-100 dark:border-gray-800">
                                                         <div className="px-4 pt-3 pb-1">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Advanced Tools</span>
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('advanced_tools')}</span>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                                                             {VIEW_OPTIONS.filter(opt => ['gtd', 'cornell', 'automation_rules', 'goals_okrs', 'recurring', 'spreadsheet', 'workload', 'whiteboard'].includes(opt.id)).map((option) => (
                                                                 <button
                                                                     key={option.id}
                                                                     onClick={() => handleAddView(option)}
-                                                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
+                                                                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-start transition-colors"
                                                                 >
                                                                     <option.icon size={18} weight="regular" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                                                    <div className="text-left">
+                                                                    <div className="text-start">
                                                                         <span className="block text-[13px] text-gray-700 dark:text-gray-200 font-medium leading-tight">{option.label}</span>
                                                                         <span className="block text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{option.description}</span>
                                                                     </div>
@@ -1100,7 +1197,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                                                         <button
                                                                             key={option.id}
                                                                             onClick={() => handleAddView(option)}
-                                                                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
+                                                                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-start transition-colors"
                                                                         >
                                                                             <Icon size={18} weight="regular" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                                                                             <span className="text-[13px] text-gray-700 dark:text-gray-200">{option.label}</span>
@@ -1124,18 +1221,42 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             {/* Main Content Area */}
             {(() => {
                 const type = getBaseViewType(activeView);
-                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar'].includes(type);
+                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions'].includes(type);
+                const currentViewIndex = sanitizedAvailableViews.indexOf(activeView);
+                const currentViewOption = effectiveViewOptions.find(v => v.id === getBaseViewType(activeView));
 
                 return (
-                    <div className={`flex-1 overflow-hidden bg-transparent flex flex-col relative bg-white dark:bg-[#1a1d24] ${isFullWidth ? 'px-0' : 'px-6'}`}>
+                    <div
+                        ref={contentRef}
+                        className={`flex-1 overflow-hidden flex flex-col relative bg-white dark:bg-[#1a1d24] ${isFullWidth ? 'px-0' : 'px-6'}`}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         {renderView()}
+
+                        {/* Fullscreen Navigation Indicator */}
+                        {isFullScreen && (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-sm border border-stone-200 dark:border-stone-700 rounded-full shadow-sm opacity-60 hover:opacity-100 transition-opacity">
+                                <span className="text-xs font-medium text-stone-600 dark:text-stone-300">
+                                    {viewNames[activeView] || currentViewOption?.label || activeView}
+                                </span>
+                                <div className="flex gap-1">
+                                    {sanitizedAvailableViews.map((_, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentViewIndex ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Global Exit Full Screen Floating Button */}
                         {isFullScreen && (
                             <button
                                 onClick={toggleFullScreen}
                                 className="absolute top-3 right-6 z-50 p-2 bg-white dark:bg-[#1a1d24] border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
-                                title="Exit Full Screen"
+                                title={t('exit_fullscreen')}
                             >
                                 <Minimize2 size={18} />
                             </button>
@@ -1158,7 +1279,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                             style={{ top: contextMenu.y, left: contextMenu.x }}
                         >
                             <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tab Options</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('tab_options')}</span>
                             </div>
                             <div
                                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors"
@@ -1166,7 +1287,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                             >
                                 <Pin size={16} />
                                 <span className="text-[13px] font-medium">
-                                    {(board.pinnedViews || []).includes(contextMenu.viewId) ? 'Unpin view' : 'Pin view'}
+                                    {(board.pinnedViews || []).includes(contextMenu.viewId) ? t('unpin_view') : t('pin_view')}
                                 </span>
                             </div>
                             <div className="my-1 border-t border-gray-100/50 dark:border-gray-800/50 mx-2"></div>
@@ -1176,22 +1297,22 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                 onClick={handleRenameView}
                             >
                                 <Pencil size={16} />
-                                <span className="text-[13px] font-medium">Rename view</span>
+                                <span className="text-[13px] font-medium">{t('rename_view')}</span>
                             </div>
                             <div
                                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors"
                                 onClick={handleDuplicateView}
                             >
                                 <Copy size={16} />
-                                <span className="text-[13px] font-medium">Duplicate view</span>
+                                <span className="text-[13px] font-medium">{t('duplicate_view')}</span>
                             </div>
                             <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors" onClick={() => { navigator.clipboard.writeText(window.location.href); setContextMenu(null); }}>
                                 <Share2 size={16} />
-                                <span className="text-[13px] font-medium">Share view</span>
+                                <span className="text-[13px] font-medium">{t('share_view')}</span>
                             </div>
                             <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer text-gray-700 dark:text-gray-200 transition-colors" onClick={() => setContextMenu(null)}>
                                 <Unlock size={16} />
-                                <span className="text-[13px] font-medium">Unlock view</span>
+                                <span className="text-[13px] font-medium">{t('unlock_view')}</span>
                             </div>
 
                             <div className="my-1 border-t border-gray-100/50 dark:border-gray-800/50 mx-2"></div>
@@ -1201,13 +1322,13 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                     className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-400"
                                     onClick={() => handleMoveView('left')}
                                 >
-                                    <ArrowLeftToLine size={14} /> Move Left
+                                    <ArrowLeftToLine size={14} /> {t('move_left')}
                                 </button>
                                 <button
                                     className="flex-1 flex items-center justify-center gap-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-400"
                                     onClick={() => handleMoveView('right')}
                                 >
-                                    Move Right <ArrowLeftToLine size={14} className="rotate-180" />
+                                    {t('move_right')} <ArrowLeftToLine size={14} className="rotate-180" />
                                 </button>
                             </div>
 
@@ -1219,7 +1340,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                     onClick={handleDeleteView}
                                 >
                                     <Trash2 size={16} />
-                                    <span className="text-[13px]">Delete view</span>
+                                    <span className="text-[13px]">{t('delete_view')}</span>
                                 </div>
                             )}
                         </div>

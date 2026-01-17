@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser, useClerk } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
+import { COUNTRIES } from '../../config/currency';
 import {
     FloppyDisk, Warning, Layout, Check, Shield,
     House, Sparkle, Activity, SquaresFour, Tray, Users, Lock,
@@ -11,45 +12,45 @@ import {
 
 export const ALL_PAGES = {
     // Top Level
-    'home': { label: 'Home', section: 'Main', icon: House },
-    'flow_hub': { label: 'Flow Hub', section: 'Main', icon: Sparkle },
-    'process_map': { label: 'Process Map', section: 'Main', icon: Activity },
-    'my_work': { label: 'My Work', section: 'Main', icon: SquaresFour },
-    'inbox': { label: 'Inbox', section: 'Main', icon: Tray },
-    'teams': { label: 'Teams', section: 'Main', icon: Users },
-    'vault': { label: 'Vault', section: 'Main', icon: Lock },
+    'home': { label: 'home', section: 'main', icon: House },
+    'flow_hub': { label: 'flow_hub', section: 'main', icon: Sparkle },
+    'process_map': { label: 'process_map', section: 'main', icon: Activity },
+    'my_work': { label: 'my_work', section: 'main', icon: SquaresFour },
+    'inbox': { label: 'inbox', section: 'main', icon: Tray },
+    'teams': { label: 'teams', section: 'main', icon: Users },
+    'vault': { label: 'vault', section: 'main', icon: Lock },
 
     // Marketplace
-    'local_marketplace': { label: 'Local Marketplace', section: 'Marketplace', icon: ShoppingCart },
-    'foreign_marketplace': { label: 'Foreign Marketplace', section: 'Marketplace', icon: Globe },
+    'local_marketplace': { label: 'local_marketplace', section: 'marketplace', icon: ShoppingCart },
+    'foreign_marketplace': { label: 'foreign_marketplace', section: 'marketplace', icon: Globe },
 
     // Supply Chain
-    'supply_chain': { label: 'Supply Chain (Group)', section: 'Departments', icon: Package },
-    'procurement': { label: 'Procurement', section: 'Supply Chain', icon: ShoppingCart },
-    'warehouse': { label: 'Warehouse', section: 'Supply Chain', icon: House },
-    'shipping': { label: 'Shipping', section: 'Supply Chain', icon: Truck },
-    'fleet': { label: 'Fleet', section: 'Supply Chain', icon: Truck },
-    'vendors': { label: 'Vendors', section: 'Supply Chain', icon: UsersThree },
-    'planning': { label: 'Planning', section: 'Supply Chain', icon: Layout },
+    'supply_chain': { label: 'supply_chain_group', section: 'departments', icon: Package },
+    'procurement': { label: 'procurement', section: 'supply_chain', icon: ShoppingCart },
+    'warehouse': { label: 'warehouse', section: 'supply_chain', icon: House },
+    'shipping': { label: 'shipping', section: 'supply_chain', icon: Truck },
+    'fleet': { label: 'fleet', section: 'supply_chain', icon: Truck },
+    'vendors': { label: 'vendors', section: 'supply_chain', icon: UsersThree },
+    'planning': { label: 'planning', section: 'supply_chain', icon: Layout },
 
     // Operations
-    'operations': { label: 'Operations (Group)', section: 'Departments', icon: Factory },
-    'maintenance': { label: 'Maintenance', section: 'Operations', icon: Wrench },
-    'production': { label: 'Production', section: 'Operations', icon: Factory },
-    'quality': { label: 'Quality', section: 'Operations', icon: ShieldCheck },
+    'operations': { label: 'operations_group', section: 'departments', icon: Factory },
+    'maintenance': { label: 'maintenance', section: 'operations', icon: Wrench },
+    'production': { label: 'production', section: 'operations', icon: Factory },
+    'quality': { label: 'quality', section: 'operations', icon: ShieldCheck },
 
     // Business
-    'business': { label: 'Business (Group)', section: 'Departments', icon: Buildings },
-    'sales_listing': { label: 'Sales Listings', section: 'Business', icon: Table },
-    'sales_factory': { label: 'Sales Factory', section: 'Business', icon: Factory },
-    'sales': { label: 'Sales', section: 'Business', icon: Megaphone },
-    'finance': { label: 'Finance', section: 'Business', icon: Money },
+    'business': { label: 'business_group', section: 'departments', icon: Buildings },
+    'sales_listing': { label: 'sales_listings', section: 'business', icon: Table },
+    'sales_factory': { label: 'sales_factory', section: 'business', icon: Factory },
+    'sales': { label: 'sales', section: 'business', icon: Megaphone },
+    'finance': { label: 'finance', section: 'business', icon: Money },
 
     // Business Support
-    'business_support': { label: 'Business Support (Group)', section: 'Departments', icon: Users },
-    'it_support': { label: 'IT Support', section: 'Business Support', icon: Monitor },
-    'hr': { label: 'HR', section: 'Business Support', icon: UsersThree },
-    'marketing': { label: 'Marketing', section: 'Business Support', icon: Megaphone },
+    'business_support': { label: 'business_support_group', section: 'departments', icon: Users },
+    'it_support': { label: 'it_support', section: 'business_support', icon: Monitor },
+    'hr': { label: 'hr', section: 'business_support', icon: UsersThree },
+    'marketing': { label: 'marketing', section: 'business_support', icon: Megaphone },
 };
 
 export const INITIAL_VISIBILITY = Object.keys(ALL_PAGES).reduce((acc, key) => {
@@ -67,7 +68,7 @@ type SettingsTab = 'general' | 'views' | 'notifications';
 export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibilityChange }) => {
     const { user } = useUser();
     const { signOut } = useClerk();
-    const { theme, toggleTheme, language, toggleLanguage, t, userDisplayName, updateUserDisplayName } = useAppContext();
+    const { theme, toggleTheme, language, toggleLanguage, t, userDisplayName, updateUserDisplayName, country, updateCountry } = useAppContext();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [isEditingName, setIsEditingName] = useState(false);
@@ -157,7 +158,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                     <User className="text-blue-500" size={20} />
-                    Profile Information
+                    {t('profile_information')}
                 </h3>
                 <div className="flex items-start gap-6">
                     <div className="flex flex-col items-center gap-3">
@@ -182,7 +183,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             onClick={triggerFileInput}
                             className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
                         >
-                            Change Photo
+                            {t('change_photo')}
                         </button>
                         <input
                             type="file"
@@ -197,7 +198,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         {/* Name Field */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('display_name')}</label>
                                 <div className="flex items-center gap-2">
                                     <div className="relative flex-1">
                                         <input
@@ -224,14 +225,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                             className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm flex items-center gap-2"
                                         >
                                             <Check size={16} />
-                                            Save
+                                            {t('save')}
                                         </button>
                                     )}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('email_address')}</label>
                                 <input
                                     type="text"
                                     value={user?.primaryEmailAddress?.emailAddress || ''}
@@ -241,35 +242,35 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Job Title</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('job_title')}</label>
                                 <input
                                     type="text"
                                     value={jobTitle}
                                     onChange={(e) => setJobTitle(e.target.value)}
-                                    placeholder="e.g. Senior Product Designer"
+                                    placeholder={t('placeholder_job_title')}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all dark:bg-monday-dark-bg dark:border-gray-700"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('department')}</label>
                                 <input
                                     type="text"
                                     value={department}
                                     onChange={(e) => setDepartment(e.target.value)}
-                                    placeholder="e.g. Product"
+                                    placeholder={t('placeholder_department')}
                                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all dark:bg-monday-dark-bg dark:border-gray-700"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('bio')}</label>
                             <textarea
                                 rows={3}
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
-                                placeholder="Tell us a little about yourself..."
+                                placeholder={t('placeholder_bio')}
                                 className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none dark:bg-monday-dark-bg dark:border-gray-700"
                             />
                         </div>
@@ -280,7 +281,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
                             >
                                 <FloppyDisk size={18} />
-                                Save Profile
+                                {t('save_profile')}
                             </button>
                         </div>
                     </div>
@@ -290,7 +291,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                     <Sparkle className="text-yellow-500" size={20} />
-                    Preferences
+                    {t('preferences')}
                 </h3>
                 <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover rounded-xl transition-colors">
@@ -299,15 +300,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 {theme === 'light' ? <Sun size={18} className="text-orange-500" /> : <Moon size={18} className="text-blue-400" />}
                             </div>
                             <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Appearance</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark mode</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{t('appearance')}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{t('switch_theme_desc')}</p>
                             </div>
                         </div>
                         <button
                             onClick={toggleTheme}
                             className="px-4 py-2 bg-gray-100 dark:bg-monday-dark-hover text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         >
-                            {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+                            {theme === 'light' ? t('light_mode') : t('dark_mode')}
                         </button>
                     </div>
 
@@ -317,16 +318,39 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 <Globe size={18} className="text-green-500" />
                             </div>
                             <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Language</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Change system language</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{t('language')}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{t('change_language_desc')}</p>
                             </div>
                         </div>
                         <button
                             onClick={toggleLanguage}
                             className="px-4 py-2 bg-gray-100 dark:bg-monday-dark-hover text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         >
-                            {language === 'en' ? 'English' : 'Arabic'}
+                            {language === 'en' ? t('english') : t('arabic')}
                         </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover rounded-xl transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 dark:bg-monday-dark-bg rounded-lg">
+                                <Globe size={18} className="text-purple-500" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-gray-900 dark:text-white">Region & Currency</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Select your country to update currency ({country.currency.symbol})</p>
+                            </div>
+                        </div>
+                        <select
+                            value={country.code}
+                            onChange={(e) => updateCountry(e.target.value)}
+                            className="px-4 py-2 bg-gray-100 dark:bg-monday-dark-hover text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border-none outline-none cursor-pointer"
+                        >
+                            {Object.values(COUNTRIES).map((c) => (
+                                <option key={c.code} value={c.code}>
+                                    {c.name} ({c.currency.code})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
@@ -337,7 +361,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     className="flex items-center gap-2 px-6 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors font-medium border border-transparent hover:border-red-100"
                 >
                     <SignOut size={16} />
-                    Sign Out
+                    {t('sign_out')}
                 </button>
             </div>
         </div>
@@ -347,8 +371,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
         <div className="animate-fadeIn space-y-6">
             <div className="flex items-center justify-between mb-4 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
                 <div>
-                    <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Visibility Control</h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">Toggle which pages are visible in your sidebar navigation.</p>
+                    <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">{t('visibility_control')}</h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">{t('toggle_pages_desc')}</p>
                 </div>
                 <button
                     onClick={handleSaveViews}
@@ -359,7 +383,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         }`}
                 >
                     <FloppyDisk size={16} />
-                    Save Changes
+                    {t('save_changes')}
                 </button>
             </div>
 
@@ -367,8 +391,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 {sections.map(section => (
                     <div key={section} className="bg-white dark:bg-monday-dark-surface rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
                         <div className="px-5 py-4 bg-gray-50/80 dark:bg-monday-dark-hover/30 border-b border-gray-100 dark:border-monday-dark-border flex items-center justify-between backdrop-blur-sm">
-                            <span className="font-bold text-gray-800 dark:text-monday-dark-text">{section}</span>
-                            {section === 'Departments' && <Layout size={18} className="text-gray-400" />}
+                            <span className="font-bold text-gray-800 dark:text-monday-dark-text">{t(section)}</span>
+                            {section === 'departments' && <Layout size={18} className="text-gray-400" />}
                         </div>
                         <div className="p-2 space-y-1">
                             {Object.entries(ALL_PAGES)
@@ -387,7 +411,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                                     <Icon size={18} />
                                                 </div>
                                                 <span className={`text-sm font-medium transition-colors ${isVisible ? 'text-gray-700 dark:text-monday-dark-text' : 'text-gray-400 line-through decoration-gray-300'}`}>
-                                                    {config.label}
+                                                    {t(config.label)}
                                                 </span>
                                             </div>
 
@@ -419,15 +443,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-600 dark:text-purple-400">
                     <Bell size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Notification Settings</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('notification_settings')}</h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                    Manage how and when you receive updates from NABD.
+                    {t('manage_notifications_desc')}
                 </p>
 
-                <div className="max-w-md mx-auto space-y-4 text-left">
-                    {['Email Digest', 'Real-time Alerts', 'Mobile Push', 'Slack Integration'].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl">
-                            <span className="font-medium text-gray-700 dark:text-gray-300">{item}</span>
+                <div className="max-w-md mx-auto space-y-4 text-start">
+                    {[
+                        { key: 'email_digest', label: t('email_digest') },
+                        { key: 'realtime_alerts', label: t('realtime_alerts') },
+                        { key: 'mobile_push', label: t('mobile_push') },
+                        { key: 'slack_integration', label: t('slack_integration') }
+                    ].map((item, i) => (
+                        <div key={item.key} className="flex items-center justify-between p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
                             <div className="w-10 h-6 bg-gray-200 dark:bg-gray-700 rounded-full cursor-not-allowed opacity-60 relative">
                                 <div className="w-4 h-4 bg-white rounded-full absolute top-1 left-1"></div>
                             </div>
@@ -436,7 +465,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 </div>
 
                 <div className="mt-8 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm inline-block rounded-lg font-medium">
-                    Coming Soon 🚀
+                    {t('coming_soon')} 🚀
                 </div>
             </div>
         </div>
@@ -449,7 +478,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 <div className="p-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Wrench size={24} className="text-gray-400" />
-                        Settings
+                        {t('settings')}
                     </h2>
                 </div>
 
@@ -462,7 +491,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             }`}
                     >
                         <User size={18} />
-                        General
+                        {t('general')}
                     </button>
 
                     <button
@@ -473,7 +502,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             }`}
                     >
                         <Eye size={18} />
-                        Views & Visibility
+                        {t('views_visibility')}
                     </button>
 
                     <button
@@ -484,7 +513,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             }`}
                     >
                         <Bell size={18} />
-                        Notifications
+                        {t('notifications')}
                     </button>
                 </nav>
             </div>
@@ -494,14 +523,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 <div className="max-w-4xl mx-auto p-8">
                     <div className="mb-6">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            {activeTab === 'general' && 'General Settings'}
-                            {activeTab === 'views' && 'Page Visibility'}
-                            {activeTab === 'notifications' && 'Notifications'}
+                            {activeTab === 'general' && t('general_settings')}
+                            {activeTab === 'views' && t('page_visibility')}
+                            {activeTab === 'notifications' && t('notifications')}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400">
-                            {activeTab === 'general' && 'Manage your profile and workspace preferences.'}
-                            {activeTab === 'views' && 'Customize your sidebar by showing or hiding pages.'}
-                            {activeTab === 'notifications' && 'Control your communication preferences.'}
+                            {activeTab === 'general' && t('manage_profile_desc')}
+                            {activeTab === 'views' && t('customize_sidebar_desc')}
+                            {activeTab === 'notifications' && t('control_notifications_desc')}
                         </p>
                     </div>
 

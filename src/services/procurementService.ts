@@ -9,8 +9,10 @@ import {
     CreateOrderData,
     UpdateOrderData
 } from './types';
+import { API_BASE_URL } from '../config/api';
+import { appLogger } from '../utils/logger';
 
-const API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:3001';
+const API_URL = API_BASE_URL;
 
 type CollectionKey = 'procurementRequests' | 'rfqs' | 'orders';
 
@@ -59,7 +61,7 @@ export const procurementService = {
             writeLocal(LOCAL_KEYS.procurementRequests, data);
             return data;
         } catch (error) {
-            console.error('Error fetching requests:', error);
+            appLogger.error('Error fetching requests:', error);
             return readLocal<ProcurementRequest>(LOCAL_KEYS.procurementRequests);
         }
     },
@@ -78,7 +80,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.procurementRequests, created);
             return created;
         } catch (error) {
-            console.error('Error creating request:', error);
+            appLogger.error('Error creating request:', error);
             const fallback = { ...request, id: `local-${Date.now()}`, status: 'Draft' as const };
             return upsertLocal(LOCAL_KEYS.procurementRequests, fallback);
         }
@@ -98,7 +100,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.procurementRequests, updated);
             return updated;
         } catch (error) {
-            console.error('Error updating request:', error);
+            appLogger.error('Error updating request:', error);
             const existing = readLocal<ProcurementRequest>(LOCAL_KEYS.procurementRequests).find(r => r.id === id);
             const merged = { ...existing, ...updates, id } as ProcurementRequest;
             return upsertLocal(LOCAL_KEYS.procurementRequests, merged);
@@ -113,7 +115,7 @@ export const procurementService = {
             if (!response.ok) throw new Error('Failed to delete request');
             return true;
         } catch (error) {
-            console.error('Error deleting request:', error);
+            appLogger.error('Error deleting request:', error);
             removeLocal(LOCAL_KEYS.procurementRequests, id);
             return true;
         }
@@ -127,7 +129,7 @@ export const procurementService = {
             writeLocal(LOCAL_KEYS.rfqs, data);
             return data;
         } catch (error) {
-            console.error('Error fetching RFQs:', error);
+            appLogger.error('Error fetching RFQs:', error);
             return readLocal<RFQ>(LOCAL_KEYS.rfqs);
         }
     },
@@ -146,7 +148,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.rfqs, created);
             return created;
         } catch (error) {
-            console.error('Error creating RFQ:', error);
+            appLogger.error('Error creating RFQ:', error);
             const fallback = { ...rfq, id: `local-${Date.now()}`, status: 'Draft' as const };
             return upsertLocal(LOCAL_KEYS.rfqs, fallback);
         }
@@ -166,7 +168,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.rfqs, updated);
             return updated;
         } catch (error) {
-            console.error('Error updating RFQ:', error);
+            appLogger.error('Error updating RFQ:', error);
             const existing = readLocal<RFQ>(LOCAL_KEYS.rfqs).find(r => r.id === id);
             const merged = { ...existing, ...updates, id } as RFQ;
             return upsertLocal(LOCAL_KEYS.rfqs, merged);
@@ -181,7 +183,7 @@ export const procurementService = {
             if (!response.ok) throw new Error('Failed to delete RFQ');
             return true;
         } catch (error) {
-            console.error('Error deleting RFQ:', error);
+            appLogger.error('Error deleting RFQ:', error);
             removeLocal(LOCAL_KEYS.rfqs, id);
             return true;
         }
@@ -195,7 +197,7 @@ export const procurementService = {
             writeLocal(LOCAL_KEYS.orders, data);
             return data;
         } catch (error) {
-            console.error('Error fetching orders:', error);
+            appLogger.error('Error fetching orders:', error);
             return readLocal<Order>(LOCAL_KEYS.orders);
         }
     },
@@ -214,7 +216,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.orders, created);
             return created;
         } catch (error) {
-            console.error('Error creating order:', error);
+            appLogger.error('Error creating order:', error);
             const fallback = { ...order, id: `local-${Date.now()}`, status: 'Pending' as const };
             return upsertLocal(LOCAL_KEYS.orders, fallback);
         }
@@ -234,7 +236,7 @@ export const procurementService = {
             upsertLocal(LOCAL_KEYS.orders, updated);
             return updated;
         } catch (error) {
-            console.error('Error updating order:', error);
+            appLogger.error('Error updating order:', error);
             const existing = readLocal<Order>(LOCAL_KEYS.orders).find(o => o.id === id);
             const merged = { ...existing, ...updates, id } as Order;
             return upsertLocal(LOCAL_KEYS.orders, merged);
@@ -249,7 +251,7 @@ export const procurementService = {
             if (!response.ok) throw new Error('Failed to delete order');
             return true;
         } catch (error) {
-            console.error('Error deleting order:', error);
+            appLogger.error('Error deleting order:', error);
             removeLocal(LOCAL_KEYS.orders, id);
             return true;
         }

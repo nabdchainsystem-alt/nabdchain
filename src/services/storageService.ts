@@ -1,4 +1,7 @@
-const API_URL = 'http://localhost:3001';
+import { API_BASE_URL } from '../config/api';
+import { storageLogger } from '../utils/logger';
+
+const API_URL = API_BASE_URL;
 
 // Universal storage service that syncs ALL localStorage to backend
 export const storageService = {
@@ -14,7 +17,7 @@ export const storageService = {
                 }
             }
         } catch (error) {
-            console.error(`Failed to get ${key} from backend:`, error);
+            storageLogger.error(`Failed to get ${key} from backend:`, error);
         }
 
         // Fallback to localStorage
@@ -48,7 +51,7 @@ export const storageService = {
                 });
             }
         } catch (error) {
-            console.error(`Failed to sync ${key} to backend:`, error);
+            storageLogger.error(`Failed to sync ${key} to backend:`, error);
             // Silent fail - localStorage still works
         }
     },
@@ -67,7 +70,7 @@ export const storageService = {
                 });
             }
         } catch (error) {
-            console.error(`Failed to remove ${key} from backend:`, error);
+            storageLogger.error(`Failed to remove ${key} from backend:`, error);
         }
     }
 };

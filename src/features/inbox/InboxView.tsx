@@ -16,6 +16,8 @@ import { ConfirmModal } from '../board/components/ConfirmModal';
 import { useAuth } from '../../auth-adapter';
 import ProductivitySidebar from '../../components/common/ProductivitySidebar';
 import { sanitizeHTML } from '../../utils/sanitize';
+import { NavItem, FolderItem, ToolbarAction, PlusIcon } from './components';
+import { appLogger } from '../../utils/logger';
 
 interface MailItem {
   id: string;
@@ -137,7 +139,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         setHasAccount(false);
       }
     } catch (e) {
-      console.error("Failed to check connection", e);
+      appLogger.error("Failed to check connection", e);
       setHasAccount(false);
     } finally {
       if (!hasAccount) setLoading(false);
@@ -151,7 +153,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       const data = await emailService.getFolders(token);
       setFolders(data);
     } catch (e) {
-      console.error("Failed to fetch folders", e);
+      appLogger.error("Failed to fetch folders", e);
     }
   }, [getToken]);
 
@@ -167,7 +169,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
       if (data.length > 0) setSelectedMailId(data[0].id);
       else setSelectedMailId(null);
     } catch (error) {
-      console.error("Failed to fetch emails", error);
+      appLogger.error("Failed to fetch emails", error);
     } finally {
       setLoading(false);
     }
@@ -185,9 +187,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   const handleDelete = useCallback(async (id: string, provider: string) => {
     setConfirmModal({
       isOpen: true,
-      title: 'Move to Trash?',
-      message: 'This email will be moved to your trash folder.',
-      confirmText: 'Move to Trash',
+      title: t('move_to_trash'),
+      message: t('move_to_trash_confirm'),
+      confirmText: t('move_to_trash'),
       type: 'danger',
       onConfirm: async () => {
         try {
@@ -200,7 +202,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
             logActivity('EMAIL_DELETED', `Moved email to trash: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
           }
         } catch (e) {
-          console.error(e);
+          appLogger.error("Failed to delete email", e);
           alert("Failed to delete");
         }
       }
@@ -218,7 +220,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         logActivity('EMAIL_ARCHIVED', `Archived email: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
       }
     } catch (e) {
-      console.error(e);
+      appLogger.error("Failed to archive email", e);
       alert("Failed to archive");
     }
   }, [getToken, logActivity, mails]);
@@ -234,21 +236,21 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         await emailService.markRead(token, id, provider);
       } else {
         // TODO: Implement mark unread in service/backend
-        console.log("Mark unread not fully implemented yet");
+        appLogger.info("Mark unread not fully implemented yet");
       }
     } catch (e) {
-      console.error("Failed to mark read/unread", e);
+      appLogger.error("Failed to mark read/unread", e);
     }
   }, [getToken]);
 
   const handleStar = useCallback((id: string) => {
     // Optimistic update
-    console.log("Star clicked", id);
+    appLogger.info("Star clicked", id);
     // setMails(prev => prev.map(m => m.id === id ? { ...m, isStarred: !m.isStarred } : m));
   }, []);
 
   const handleSpam = useCallback((id: string) => {
-    console.log("Spam clicked", id);
+    appLogger.info("Spam clicked", id);
     alert("Marked as spam (simulation)");
   }, []);
 
@@ -296,7 +298,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
       alert("Task created in Main Board!");
     } catch (e) {
-      console.error("Failed to create task", e);
+      appLogger.error("Failed to create task", e);
       alert("Failed to create task");
     }
   }, [selectedMail, logActivity]);
@@ -325,9 +327,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   const handleDisconnect = useCallback((id: string) => {
     setConfirmModal({
       isOpen: true,
-      title: 'Disconnect Account?',
-      message: 'Are you sure you want to disconnect this email account? You will stop receiving updates.',
-      confirmText: 'Disconnect',
+      title: t('disconnect_account'),
+      message: t('disconnect_confirm'),
+      confirmText: t('disconnect'),
       type: 'danger',
       onConfirm: async () => {
         try {
@@ -341,7 +343,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   }, [getToken, checkConnection]);
 
   if (loading && !hasAccount) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return <div className="flex items-center justify-center h-full">{t('loading')}</div>;
   }
 
   if (!hasAccount) {
@@ -356,7 +358,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
         <div className="w-64 bg-gray-50 dark:bg-monday-dark-surface border-r border-gray-200 dark:border-monday-dark-border flex flex-col flex-shrink-0 p-4">
           <div className="mb-6">
             <div className="mb-4 px-2">
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Inbox</h1>
+              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('inbox')}</h1>
             </div>
             <div className="space-y-2">
               <button
@@ -371,7 +373,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
           {/* Connected Accounts List */}
           <div className="px-3 pb-2 space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Connected</div>
+            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('connected')}</div>
             {accounts.map(acc => (
               <div key={acc.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover group">
                 <span className="truncate max-w-[140px]" title={acc.email}>{acc.email}</span>
@@ -392,20 +394,20 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
             {/* Main Links */}
             <NavItem
               icon={<Inbox size={18} />}
-              label="Inbox"
+              label={t('inbox')}
               isActive={activeFolder === 'INBOX' || !activeFolder}
               onClick={() => setActiveFolder('INBOX')}
               count={unreadCount || undefined}
             />
             <NavItem
               icon={<Send size={18} />}
-              label="Sent"
+              label={t('sent')}
               isActive={activeFolder === 'SENT'}
               onClick={() => setActiveFolder('SENT')}
             />
             <NavItem
               icon={<Trash2 size={18} />}
-              label="Trash"
+              label={t('trash')}
               isActive={activeFolder === 'TRASH' || activeFolder === 'deleteditems'}
               onClick={() => setActiveFolder('TRASH')}
             />
@@ -468,7 +470,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
             <ToolbarAction
               icon={<CheckSquare size={16} />}
-              label="Task"
+              label={t('task')}
               onClick={handleCreateTask}
               disabled={!selectedMail}
             />
@@ -480,7 +482,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
             />
             <ToolbarAction
               icon={<Sparkles size={16} />}
-              label="AI"
+              label={t('ai')}
               onClick={handleAIAnalysis}
               disabled={!selectedMail}
             />
@@ -529,7 +531,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
                     onClick={() => setActiveTab('activity')}
                     className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${activeTab === 'activity' ? 'bg-white dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                   >
-                    Activity
+                    {t('activity')}
                   </button>
                 </div>
               </div>
@@ -538,9 +540,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
                 {activeTab === 'activity' ? (
                   <ProductivitySidebar contentOnly={true} />
                 ) : loading ? (
-                  <div className="p-4 text-center text-gray-400 text-sm">Syncing emails...</div>
+                  <div className="p-4 text-center text-gray-400 text-sm">{t('syncing_emails')}</div>
                 ) : mails.length === 0 ? (
-                  <div className="p-4 text-center text-gray-400 text-sm">No emails found</div>
+                  <div className="p-4 text-center text-gray-400 text-sm">{t('no_emails_found')}</div>
                 ) : (
                   mails.map(mail => (
                     <div
@@ -648,7 +650,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
             ) : (
               <div className="flex-1 flex flex-col relative min-w-0 bg-white dark:bg-monday-dark-bg">
                 <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-                  Select an item to read
+                  {t('select_item_to_read')}
                 </div>
                 <div
                   className={`
@@ -680,60 +682,4 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
   );
 };
 
-// Helper Components
-const NavItem = ({ icon, label, isActive, count, onClick }: { icon: React.ReactNode, label: string, isActive?: boolean, count?: number, onClick?: () => void }) => (
-  <div
-    onClick={onClick}
-    className={`
-      flex items-center justify-between px-3 py-2 rounded-md cursor-pointer group transition-colors text-sm font-medium
-      ${isActive
-        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-monday-dark-hover'
-      }
-    `}
-  >
-    <div className="flex items-center gap-3">
-      <span className={isActive ? 'text-inherit' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'}>{icon}</span>
-      <span>{label}</span>
-      {count && (
-        <span className={`text-[10px] font-semibold ${isActive ? 'text-monday-blue' : 'text-gray-500 dark:text-gray-400'}`}>{count}</span>
-      )}
-    </div>
-  </div>
-);
-
-const FolderItem = ({ label, hasChildren, indent, onClick, isActive }: { label: string, hasChildren?: boolean, indent?: boolean, onClick?: () => void, isActive?: boolean, key?: string | number }) => (
-  <div
-    onClick={onClick}
-    className={`
-      flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors text-sm
-      ${indent ? 'ps-8' : ''}
-      ${isActive
-        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10 font-medium'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-monday-dark-hover'
-      }
-    `}
-  >
-    {hasChildren && <ChevronDown size={14} className="text-gray-400" />}
-    {!hasChildren && <div className="w-3"></div>}
-    <span>{label}</span>
-  </div>
-);
-
-const ToolbarAction = ({ icon, label, onClick, disabled }: { icon: React.ReactNode, label: string, onClick?: () => void, disabled?: boolean }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`flex flex-col items-center justify-center px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 min-w-[50px] flex-shrink-0 transition-colors gap-0.5 group h-full ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
-  >
-    <div className="group-hover:scale-105 transition-transform">{icon}</div>
-    <span className="text-[9px] font-medium whitespace-nowrap opacity-80 group-hover:opacity-100">{label}</span>
-  </button>
-);
-
-const PlusIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer hover:text-gray-600 dark:hover:text-gray-300">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
+// Helper Components are now imported from ./components

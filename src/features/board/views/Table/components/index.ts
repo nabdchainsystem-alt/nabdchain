@@ -2,6 +2,8 @@
 export { TableToolbar } from './TableToolbar';
 export { TablePagination } from './TablePagination';
 export { TableHeaderCell } from './TableHeaderCell';
+export { TableCell } from './TableCell';
+export { TableRowContent } from './TableRowContent';
 export { SortableHeader } from './SortableHeader';
 
 // Context menus

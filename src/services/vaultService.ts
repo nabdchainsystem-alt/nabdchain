@@ -1,5 +1,26 @@
+import { storageLogger } from '../utils/logger';
 
 const API_URL = '/api/vault';
+
+export interface VaultMetadata {
+    // Folder metadata
+    description?: string;
+    tags?: string[];
+    managedBy?: string;
+    accessLevel?: 'private' | 'team' | 'public';
+    retentionPolicy?: 'none' | '1-year' | '5-years' | 'forever';
+    notes?: string;
+    sharedWith?: string[];
+    // Link metadata
+    url?: string;
+    username?: string;
+    password?: string;
+    // File metadata
+    size?: string;
+    mimeType?: string;
+    dimensions?: string;
+    uploadedBy?: string;
+}
 
 export interface VaultItem {
     id: string;
@@ -8,13 +29,18 @@ export interface VaultItem {
     type: 'folder' | 'file' | 'image' | 'note' | 'weblink' | 'document';
     subtitle?: string;
     content?: string;
-    metadata?: any;
+    metadata?: VaultMetadata;
     isFavorite: boolean;
     folderId?: string; // null in DB but string/undefined in frontend usually
     color?: string;
     createdAt?: string;
     updatedAt?: string;
     previewUrl?: string; // Generated on frontend for now
+}
+
+// API response type (metadata may be string from DB)
+interface RawVaultItem extends Omit<VaultItem, 'metadata'> {
+    metadata?: string | VaultMetadata;
 }
 
 export const vaultService = {
@@ -30,17 +56,17 @@ export const vaultService = {
             const data = await response.json();
 
             if (!Array.isArray(data)) {
-                console.error("VaultService: Expected array but got", data);
+                storageLogger.error("VaultService: Expected array but got", data);
                 return [];
             }
 
             // Parse metadata if it's a string
-            return data.map((item: any) => ({
+            return data.map((item: RawVaultItem) => ({
                 ...item,
                 metadata: parseMetadata(item.metadata),
             }));
         } catch (error) {
-            console.error("VaultService getAll error:", error);
+            storageLogger.error("VaultService getAll error:", error);
             throw error;
         }
     },
@@ -68,7 +94,7 @@ export const vaultService = {
                 metadata: parseMetadata(item.metadata),
             };
         } catch (error) {
-            console.error("VaultService create error:", error);
+            storageLogger.error("VaultService create error:", error);
             throw error;
         }
     },
@@ -96,7 +122,7 @@ export const vaultService = {
                 metadata: parseMetadata(item.metadata),
             };
         } catch (error) {
-            console.error("VaultService update error:", error);
+            storageLogger.error("VaultService update error:", error);
             throw error;
         }
     },
@@ -112,19 +138,19 @@ export const vaultService = {
                 throw new Error(`Failed to delete vault item: ${response.status} ${errorText}`);
             }
         } catch (error) {
-            console.error("VaultService delete error:", error);
+            storageLogger.error("VaultService delete error:", error);
             throw error;
         }
     },
 };
 
-const parseMetadata = (metadata: any) => {
+const parseMetadata = (metadata: string | VaultMetadata | undefined): VaultMetadata | undefined => {
     if (!metadata) return undefined;
     if (typeof metadata === 'object') return metadata;
     try {
-        return JSON.parse(metadata);
+        return JSON.parse(metadata) as VaultMetadata;
     } catch (e) {
-        console.warn("Failed to parse metadata", e);
+        storageLogger.warn("Failed to parse metadata", e);
         return {};
     }
 };

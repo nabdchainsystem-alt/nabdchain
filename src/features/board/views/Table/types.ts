@@ -133,7 +133,9 @@ export const formatDate = (date: string | null): string => {
     try {
         const d = new Date(date);
         if (isNaN(d.getTime())) return date;
-        return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(d);
+        const datePart = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(d);
+        const timePart = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+        return `${datePart} - ${timePart}`;
     } catch {
         return date || '';
     }

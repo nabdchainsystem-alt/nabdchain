@@ -1,3 +1,4 @@
+import { API_URL } from '../config/api';
 
 export interface EmailAccount {
     id: string;
@@ -5,7 +6,7 @@ export interface EmailAccount {
     email: string;
 }
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = API_URL;
 
 export const emailService = {
     getAccounts: async (token: string): Promise<EmailAccount[]> => {

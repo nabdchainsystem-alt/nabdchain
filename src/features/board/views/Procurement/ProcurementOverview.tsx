@@ -28,13 +28,18 @@ import {
     FileText,
     CheckCircle,
     Warning as AlertTriangle,
-    Bell
+    Bell,
+    ArrowsOut,
+    ArrowsIn,
+    Info
 } from 'phosphor-react';
 import { NewRequestModal } from './NewRequestModal';
+import { ProcurementInfo } from './ProcurementInfo';
 import { procurementService } from '../../../../services/procurementService';
 import { ConfirmDialog } from '../../../../components/ui/ConfirmDialog';
 import { RFQSection } from './RFQSection';
 import { NewRFQModal } from './NewRFQModal';
+import { appLogger } from '../../../../utils/logger';
 
 // --- Empty / Initial State Data ---
 
@@ -156,8 +161,8 @@ const CHART_OPTION = {
                     type: 'linear',
                     x: 0, y: 0, x2: 0, y2: 1,
                     colorStops: [
-                        { offset: 0, color: '#3b82f6' },
-                        { offset: 1, color: '#2563eb' }
+                        { offset: 0, color: '#6366f1' },
+                        { offset: 1, color: '#4f46e5' }
                     ]
                 },
                 borderRadius: [4, 4, 0, 0]
@@ -303,7 +308,27 @@ export const ProcurementOverview: React.FC = () => {
     const [urgentRange, setUrgentRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
     const [calendarDate, setCalendarDate] = useState(new Date());
     const [calendarView, setCalendarView] = useState<CalendarViewMode>('monthly');
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
     const isScheduleView = calendarView === '5days' || calendarView === 'weekly';
+
+    React.useEffect(() => {
+        const handleFullScreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    }, []);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            containerRef.current?.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
     const [requestSearch, setRequestSearch] = useState('');
     const [requestStatusFilter, setRequestStatusFilter] = useState('All');
@@ -352,7 +377,7 @@ export const ProcurementOverview: React.FC = () => {
             const data = await procurementService.getAllRfqs();
             setRfqs(data.reverse()); // Show most recent first
         } catch (error) {
-            console.error("Failed to load RFQs", error);
+            appLogger.error("Failed to load RFQs", error);
         } finally {
             setLoadingRfqs(false);
         }
@@ -364,7 +389,7 @@ export const ProcurementOverview: React.FC = () => {
             const data = await procurementService.getAllOrders();
             setOrders(data.reverse());
         } catch (error) {
-            console.error("Failed to load orders", error);
+            appLogger.error("Failed to load orders", error);
         } finally {
             setLoadingOrders(false);
         }
@@ -375,7 +400,7 @@ export const ProcurementOverview: React.FC = () => {
             const data = await procurementService.getAllRequests();
             setTableData(data.reverse().map(withRequestDefaults)); // Most recent first
         } catch (error) {
-            console.error("Failed to load requests", error);
+            appLogger.error("Failed to load requests", error);
         }
     };
 
@@ -403,7 +428,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.createRequest(newTask);
         } catch (error) {
-            console.error("Local save failed", error);
+            appLogger.error("Local save failed", error);
         }
         setIsNewRequestOpen(false);
     };
@@ -416,7 +441,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateRequest(id, { approvalStatus });
         } catch (error) {
-            console.error("Failed to update approval status", error);
+            appLogger.error("Failed to update approval status", error);
         }
     };
 
@@ -437,7 +462,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateRequest(id, { isDeleted: true });
         } catch (error) {
-            console.error("Failed to mark request deleted", error);
+            appLogger.error("Failed to mark request deleted", error);
         }
         setDeleteConfirmId(null);
     };
@@ -463,10 +488,10 @@ export const ProcurementOverview: React.FC = () => {
             try {
                 await procurementService.updateRequest(rfq.requestId, { rfqSent: true });
             } catch (error) {
-                console.error("Failed to mark request as sent to RFQ", error);
+                appLogger.error("Failed to mark request as sent to RFQ", error);
             }
         } catch (error) {
-            console.error("Failed to create RFQ on server", error);
+            appLogger.error("Failed to create RFQ on server", error);
             // Fallback: keep optimistic but mark as errored if we had that state, 
             // for now just keep it so the user sees something happened.
         }
@@ -503,7 +528,7 @@ export const ProcurementOverview: React.FC = () => {
             setRfqs(prev => prev.map(r => r.id === rfq.id ? { ...r, status: 'Sent to PO', sentToOrder: true, orderId: createdOrder.id } : r));
             await procurementService.updateRfq(rfq.id, { status: 'Sent to PO', sentToOrder: true, orderId: createdOrder.id });
         } catch (error) {
-            console.error("Failed to send RFQ to order", error);
+            appLogger.error("Failed to send RFQ to order", error);
         }
     };
 
@@ -512,7 +537,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateRfq(id, { isDeleted: true });
         } catch (error) {
-            console.error("Failed to mark RFQ deleted", error);
+            appLogger.error("Failed to mark RFQ deleted", error);
         }
     };
 
@@ -521,7 +546,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateOrder(id, { isDeleted: true });
         } catch (error) {
-            console.error("Failed to mark order deleted", error);
+            appLogger.error("Failed to mark order deleted", error);
         }
     };
 
@@ -532,7 +557,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateOrder(id, { status: 'Received' });
         } catch (error) {
-            console.error("Failed to mark goods receipt", error);
+            appLogger.error("Failed to mark goods receipt", error);
         }
     };
 
@@ -543,7 +568,7 @@ export const ProcurementOverview: React.FC = () => {
         try {
             await procurementService.updateOrder(id, { approvals });
         } catch (error) {
-            console.error("Failed to update order approval", error);
+            appLogger.error("Failed to update order approval", error);
         }
     };
 
@@ -1029,8 +1054,8 @@ export const ProcurementOverview: React.FC = () => {
                         type: 'linear',
                         x: 0, y: 0, x2: 0, y2: 1,
                         colorStops: [
-                            { offset: 0, color: '#3b82f6' },
-                            { offset: 1, color: '#1d4ed8' }
+                            { offset: 0, color: '#6366f1' },
+                            { offset: 1, color: '#4f46e5' }
                         ]
                     }
                 }
@@ -1039,7 +1064,9 @@ export const ProcurementOverview: React.FC = () => {
     }, [orders]);
 
     return (
-        <div className="w-full h-full p-5 pb-20 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f1115] space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div ref={containerRef} className={`w-full h-full p-6 pb-20 overflow-y-auto bg-white dark:bg-[#1a1d24] relative font-sans space-y-6 ${isFullScreen ? 'fixed inset-0 z-[999]' : ''} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
+
+            <ProcurementInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             <NewRequestModal
                 isOpen={isNewRequestOpen}
@@ -1058,7 +1085,7 @@ export const ProcurementOverview: React.FC = () => {
                         <button
                             onClick={() => setKpiMode('total')}
                             className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${kpiMode === 'total'
-                                ? 'bg-blue-600 text-white shadow'
+                                ? 'bg-indigo-600 text-white shadow'
                                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                                 }`}
                         >
@@ -1084,6 +1111,22 @@ export const ProcurementOverview: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={toggleFullScreen}
+                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
+                    </button>
+                    <button
+                        onClick={() => setShowInfo(true)}
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                    >
+                        <Info size={18} className="text-indigo-500" />
+                        About Dashboard
+                    </button>
+                </div>
             </div>
 
             {kpiMode === 'calendar' ? (
@@ -1102,7 +1145,7 @@ export const ProcurementOverview: React.FC = () => {
                                             key={option.value}
                                             onClick={() => setCalendarView(option.value)}
                                             className={`px-2 py-0.5 text-[11px] font-semibold rounded-full transition-colors ${calendarView === option.value
-                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                ? 'bg-indigo-600 text-white shadow-sm'
                                                 : 'text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
                                                 }`}
                                         >
@@ -1265,8 +1308,8 @@ export const ProcurementOverview: React.FC = () => {
                                                 <div
                                                     key={key}
                                                     className={`h-full rounded-lg border bg-white dark:bg-[#161922] flex flex-col p-2 transition-colors ${isToday
-                                                        ? 'border-blue-400 shadow-sm'
-                                                        : 'border-gray-200 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-500/40'
+                                                        ? 'border-indigo-400 shadow-sm'
+                                                        : 'border-gray-200 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-500/40'
                                                         }`}
                                                 >
                                                     <div className="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200">
@@ -1446,7 +1489,7 @@ export const ProcurementOverview: React.FC = () => {
                                 value={requestSearch}
                                 onChange={(e) => setRequestSearch(e.target.value)}
                                 placeholder="Search requests..."
-                                className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-[#15171b] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none w-48"
+                                className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-[#15171b] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none w-48"
                             />
                         </div>
 
@@ -1494,7 +1537,7 @@ export const ProcurementOverview: React.FC = () => {
                                         </select>
                                     </div>
                                     <button
-                                        className="w-full text-xs font-semibold text-blue-600 dark:text-blue-400"
+                                        className="w-full text-xs font-semibold text-indigo-600 dark:text-indigo-400"
                                         onClick={() => {
                                             setRequestStatusFilter('All');
                                             setRequestPriorityFilter('All');
@@ -1518,7 +1561,7 @@ export const ProcurementOverview: React.FC = () => {
 
                         <button
                             onClick={() => setIsNewRequestOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-lg shadow-sm hover:shadow transition-all active:scale-95"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-lg shadow-sm hover:shadow transition-all active:scale-95"
                         >
                             <Plus size={14} />
                             New Request
@@ -1531,7 +1574,7 @@ export const ProcurementOverview: React.FC = () => {
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-800/40 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 whitespace-nowrap">
                                 <th className="px-4 py-3 w-10 text-center">
-                                    <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
+                                    <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
                                 </th>
                                 <th className="px-4 py-3 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 group select-none">
                                     <div className="flex items-center gap-1">Request ID <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" /></div>
@@ -1592,14 +1635,14 @@ export const ProcurementOverview: React.FC = () => {
                                                 <input
                                                     type="checkbox"
                                                     disabled={isDeleted}
-                                                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 disabled:opacity-40"
+                                                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 disabled:opacity-40"
                                                 />
                                             </td>
                                             <td className="px-4 py-3">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleViewRequestDetails(row)}
-                                                    className="font-semibold text-blue-700 dark:text-blue-400 hover:underline underline-offset-2 decoration-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 rounded"
+                                                    className="font-semibold text-indigo-700 dark:text-indigo-400 hover:underline underline-offset-2 decoration-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 rounded"
                                                 >
                                                     {row.id}
                                                 </button>
@@ -1614,7 +1657,7 @@ export const ProcurementOverview: React.FC = () => {
                                             <td className="px-4 py-3 text-gray-500">{row.warehouse}</td>
                                             <td className="px-4 py-3 text-gray-500">{row.relatedTo}</td>
                                             <td className="px-4 py-3">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[10px] font-medium uppercase tracking-wide">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[10px] font-medium uppercase tracking-wide">
                                                     {row.status}
                                                 </span>
                                             </td>
@@ -1666,7 +1709,7 @@ export const ProcurementOverview: React.FC = () => {
                                                         onClick={() => canSendToRFQ && handleOpenRFQModal(row)}
                                                         disabled={!canSendToRFQ}
                                                         className={`p-1.5 rounded transition-colors ${canSendToRFQ
-                                                            ? 'hover:bg-blue-50 text-gray-400 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'
+                                                            ? 'hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400'
                                                             : 'text-gray-300 cursor-not-allowed opacity-60'
                                                             }`}
                                                         title={rfqTitle}
@@ -1702,7 +1745,7 @@ export const ProcurementOverview: React.FC = () => {
                                 setRowsPerPage(Number(e.target.value));
                                 setCurrentPage(1);
                             }}
-                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         >
                             <option value={5}>5</option>
                             <option value={10}>10</option>
@@ -1840,14 +1883,14 @@ export const ProcurementOverview: React.FC = () => {
                             {/* Search & Filter */}
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                                    <Search size={14} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <Search size={14} className="text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                                 </div>
                                 <input
                                     type="text"
                                     value={ordersSearch}
                                     onChange={(e) => setOrdersSearch(e.target.value)}
                                     placeholder="Search orders..."
-                                    className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-[#15171b] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none w-48"
+                                    className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-[#15171b] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none w-48"
                                 />
                             </div>
 
@@ -1866,7 +1909,7 @@ export const ProcurementOverview: React.FC = () => {
                                             <select
                                                 value={ordersStatusFilter}
                                                 onChange={(e) => setOrdersStatusFilter(e.target.value)}
-                                                className="w-full text-xs px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                                className="w-full text-xs px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                                             >
                                                 <option value="All">All</option>
                                                 {ordersFilterOptions.statuses.map(status => (
@@ -1879,7 +1922,7 @@ export const ProcurementOverview: React.FC = () => {
                                             <select
                                                 value={ordersPriorityFilter}
                                                 onChange={(e) => setOrdersPriorityFilter(e.target.value)}
-                                                className="w-full text-xs px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                                className="w-full text-xs px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500/20 outline-none"
                                             >
                                                 <option value="All">All</option>
                                                 {ordersFilterOptions.priorities.map(priority => (
@@ -1888,7 +1931,7 @@ export const ProcurementOverview: React.FC = () => {
                                             </select>
                                         </div>
                                         <button
-                                            className="w-full text-xs font-semibold text-blue-600 dark:text-blue-400"
+                                            className="w-full text-xs font-semibold text-indigo-600 dark:text-indigo-400"
                                             onClick={() => {
                                                 setOrdersStatusFilter('All');
                                                 setOrdersPriorityFilter('All');
@@ -1903,7 +1946,7 @@ export const ProcurementOverview: React.FC = () => {
                         </div>
                     </div>
 
-                <div className="overflow-x-auto min-h-[240px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="overflow-x-auto min-h-[240px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-800/40 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 whitespace-nowrap">
@@ -1942,77 +1985,76 @@ export const ProcurementOverview: React.FC = () => {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span
-                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border ${
-                                                            order.priority === 'Urgent'
-                                                                ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30'
-                                                                : order.priority === 'High'
-                                                                    ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30'
-                                                                    : order.priority === 'Medium'
-                                                                        ? 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900/30'
-                                                                        : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30'
-                                                        }`}
+                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border ${order.priority === 'Urgent'
+                                                            ? 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30'
+                                                            : order.priority === 'High'
+                                                                ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30'
+                                                                : order.priority === 'Medium'
+                                                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900/30'
+                                                                    : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30'
+                                                            }`}
                                                     >
                                                         {order.priority || 'Normal'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[10px] font-medium uppercase tracking-wide">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[10px] font-medium uppercase tracking-wide">
                                                         {order.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                        <div className="flex items-center justify-center gap-2 w-full">
-                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${approvalTheme.badge}`}>
-                                                                {order.approvals || 'Pending'}
-                                                            </span>
-                                                            <div className="flex items-center gap-1">
-                                                                <button
-                                                                    onClick={() => handleOrderApprovalChange(order.id, 'Approved')}
-                                                                    disabled={isDeleted}
-                                                                    className="p-1.5 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                    title="Approve"
-                                                                >
-                                                                    <Check size={14} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleOrderApprovalChange(order.id, 'On Hold')}
-                                                                    disabled={isDeleted}
-                                                                    className="p-1.5 hover:bg-amber-50 text-gray-400 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                    title="Hold"
-                                                                >
-                                                                    <PauseCircle size={14} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleOrderApprovalChange(order.id, 'Rejected')}
-                                                                    disabled={isDeleted}
-                                                                    className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                    title="Reject"
-                                                                >
-                                                                    <X size={14} />
-                                                                </button>
-                                                            </div>
+                                                    <div className="flex items-center justify-center gap-2 w-full">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${approvalTheme.badge}`}>
+                                                            {order.approvals || 'Pending'}
+                                                        </span>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={() => handleOrderApprovalChange(order.id, 'Approved')}
+                                                                disabled={isDeleted}
+                                                                className="p-1.5 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                title="Approve"
+                                                            >
+                                                                <Check size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleOrderApprovalChange(order.id, 'On Hold')}
+                                                                disabled={isDeleted}
+                                                                className="p-1.5 hover:bg-amber-50 text-gray-400 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                title="Hold"
+                                                            >
+                                                                <PauseCircle size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleOrderApprovalChange(order.id, 'Rejected')}
+                                                                disabled={isDeleted}
+                                                                className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-400 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                title="Reject"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
                                                         </div>
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-2">
-                                                                <button
-                                                                    onClick={() => handleMarkGR(order.id)}
-                                                                    disabled={isDeleted}
-                                                                    className="p-1.5 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                    title="Goods Receipt"
-                                                                >
-                                                                    <CheckCircle size={14} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteOrder(order.id)}
-                                                                    disabled={isDeleted}
-                                                                    className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                    title="Delete"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
+                                                        <button
+                                                            onClick={() => handleMarkGR(order.id)}
+                                                            disabled={isDeleted}
+                                                            className="p-1.5 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            title="Goods Receipt"
+                                                        >
+                                                            <CheckCircle size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteOrder(order.id)}
+                                                            disabled={isDeleted}
+                                                            className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         );
                                     })
@@ -2028,7 +2070,7 @@ export const ProcurementOverview: React.FC = () => {
                             <select
                                 value={ordersRowsPerPage}
                                 onChange={(e) => setOrdersRowsPerPage(Number(e.target.value))}
-                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                             >
                                 <option value={5}>5</option>
                                 <option value={10}>10</option>

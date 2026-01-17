@@ -180,6 +180,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                     onClick={(e) => {
                         e.stopPropagation();
                         handleSelect(type);
+                        // Close menu for direct actions (not custom/dropdown setup)
+                        if (type.id !== 'custom' && type.id !== 'dropdown') {
+                            onClose();
+                        }
                     }}
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-stone-700 text-gray-400 group-hover:text-stone-600 dark:text-stone-500 dark:group-hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
@@ -212,7 +216,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleCreateCustom();
+                            if (e.key === 'Enter' && customName.trim()) {
+                                handleCreateCustom();
+                                onClose();
+                            }
                             if (e.key === 'Escape') setView('list');
                         }}
                         className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200 mb-4"
@@ -226,7 +233,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             Back
                         </button>
                         <button
-                            onClick={handleCreateCustom}
+                            onClick={() => {
+                                handleCreateCustom();
+                                onClose();
+                            }}
                             disabled={!customName.trim()}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -264,6 +274,13 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             placeholder="Enter name..."
                             value={dropdownName}
                             onChange={(e) => setDropdownName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && dropdownName.trim() && dropdownOptions.length > 0) {
+                                    handleCreateDropdown();
+                                    onClose();
+                                }
+                                if (e.key === 'Escape') setView('list');
+                            }}
                             className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
                         />
                     </div>
@@ -347,7 +364,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             Back
                         </button>
                         <button
-                            onClick={handleCreateDropdown}
+                            onClick={() => {
+                                handleCreateDropdown();
+                                onClose();
+                            }}
                             disabled={!dropdownName.trim() || dropdownOptions.length === 0}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >

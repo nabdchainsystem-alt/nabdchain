@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, EnvelopeSimple, PaperPlaneRight, User, TextAa } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface NewEmailModalProps {
     isOpen: boolean;
@@ -14,6 +15,8 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
     onClose,
     onSend
 }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     const [to, setTo] = useState('');
     const [subject, setSubject] = useState('');
     const [content, setContent] = useState('');
@@ -28,11 +31,11 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
 
     const handleSend = () => {
         if (!to.trim()) {
-            alert("Please enter a recipient.");
+            alert(t('please_enter_recipient'));
             return;
         }
         if (!subject.trim()) {
-            alert("Please enter a subject.");
+            alert(t('please_enter_subject'));
             return;
         }
 
@@ -59,10 +62,10 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                     onClick={onClose}
                 >
                     <motion.div
-                        className="bg-white w-full max-w-[480px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100"
-                        initial={{ x: '100%' }}
+                        className="bg-white w-full max-w-[480px] h-full shadow-2xl overflow-hidden flex flex-col border-s border-gray-100"
+                        initial={{ x: isRTL ? '-100%' : '100%' }}
                         animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        exit={{ x: isRTL ? '-100%' : '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -78,9 +81,9 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                         <EnvelopeSimple size={24} weight="duotone" className="text-blue-600" />
-                                        New Email
+                                        {t('new_email')}
                                     </h2>
-                                    <p className="text-xs text-gray-500 mt-1">Compose a new message</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('compose_new_message')}</p>
                                 </div>
                                 <button
                                     type="button"
@@ -98,13 +101,13 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
                                         <User size={16} className="text-gray-400" />
-                                        To
+                                        {t('to')}
                                     </label>
                                     <input
                                         autoFocus
                                         type="email"
                                         className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 placeholder-gray-400"
-                                        placeholder="recipient@example.com"
+                                        placeholder={t('recipient_placeholder')}
                                         value={to}
                                         onChange={e => setTo(e.target.value)}
                                     />
@@ -114,12 +117,12 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
                                         <TextAa size={16} className="text-gray-400" />
-                                        Subject
+                                        {t('subject')}
                                     </label>
                                     <input
                                         type="text"
                                         className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm font-medium"
-                                        placeholder="Enter subject..."
+                                        placeholder={t('enter_subject')}
                                         value={subject}
                                         onChange={e => setSubject(e.target.value)}
                                     />
@@ -128,11 +131,11 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                                 {/* Content */}
                                 <div className="flex-1 flex flex-col h-full min-h-[300px]">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                        Message
+                                        {t('message')}
                                     </label>
                                     <textarea
                                         className="w-full h-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm resize-none"
-                                        placeholder="Write your message here..."
+                                        placeholder={t('write_message')}
                                         value={content}
                                         onChange={e => setContent(e.target.value)}
                                     />
@@ -147,13 +150,13 @@ export const NewEmailModal: React.FC<NewEmailModalProps> = ({
                                     onClick={onClose}
                                     className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-xl transition-colors"
                                 >
-                                    Discard
+                                    {t('discard')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5"
                                 >
-                                    <span>Send Email</span>
+                                    <span>{t('send_email')}</span>
                                     <PaperPlaneRight size={16} weight="bold" />
                                 </button>
                             </div>

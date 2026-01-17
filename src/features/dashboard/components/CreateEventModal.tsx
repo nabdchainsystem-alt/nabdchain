@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Board, Workspace, Task } from '../../../types';
 import { X, CalendarBlank, User, TextAlignLeft, Tag } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface CreateEventModalProps {
     isOpen: boolean;
@@ -21,6 +22,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     onSave,
     activeWorkspaceId
 }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     const [title, setTitle] = useState('');
     const [date, setDate] = useState('');
     const [description, setDescription] = useState('');
@@ -98,10 +101,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     onClick={onClose}
                 >
                     <motion.div
-                        className="bg-white w-full max-w-[360px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100"
-                        initial={{ x: '100%' }}
+                        className="bg-white w-full max-w-[360px] h-full shadow-2xl overflow-hidden flex flex-col border-s border-gray-100"
+                        initial={{ x: isRTL ? '-100%' : '100%' }}
                         animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        exit={{ x: isRTL ? '-100%' : '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -117,9 +120,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                         <CalendarBlank size={24} weight="duotone" className="text-blue-600" />
-                                        Create Event
+                                        {t('create_event')}
                                     </h2>
-                                    <p className="text-xs text-gray-500 mt-1">Schedule a new event for your project</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('schedule_event_desc')}</p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -134,10 +137,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                                 {/* Project Selection */}
                                 <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 space-y-2">
-                                    <label className="block text-xs font-bold text-blue-800 uppercase tracking-wide">Project Context</label>
+                                    <label className="block text-xs font-bold text-blue-800 uppercase tracking-wide">{t('project_context')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <label className="block text-xs text-gray-500 mb-1">Workspace</label>
+                                            <label className="block text-xs text-gray-500 mb-1">{t('workspace')}</label>
                                             <select
                                                 className="w-full text-sm bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500"
                                                 value={selectedWorkspaceId}
@@ -149,7 +152,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-500 mb-1">Board</label>
+                                            <label className="block text-xs text-gray-500 mb-1">{t('board')}</label>
                                             <select
                                                 className="w-full text-sm bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-500"
                                                 value={selectedBoardId}
@@ -160,7 +163,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                                     <option key={b.id} value={b.id}>{b.name}</option>
                                                 ))}
                                                 {boards.filter(b => b.workspaceId === selectedWorkspaceId).length === 0 && (
-                                                    <option value="">No boards</option>
+                                                    <option value="">{t('no_boards_found')}</option>
                                                 )}
                                             </select>
                                         </div>
@@ -169,12 +172,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
                                 {/* Title */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title</label>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">{t('event_title')}</label>
                                     <input
                                         autoFocus
                                         type="text"
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400"
-                                        placeholder="e.g. Project Kickoff Meeting"
+                                        placeholder={t('placeholder_event_title')}
                                         value={title}
                                         onChange={e => setTitle(e.target.value)}
                                     />
@@ -185,7 +188,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
                                             <CalendarBlank size={16} className="text-gray-400" />
-                                            Date
+                                            {t('due_date')}
                                         </label>
                                         <input
                                             type="date"
@@ -198,16 +201,16 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
                                             <Tag size={16} className="text-gray-400" />
-                                            Priority
+                                            {t('priority')}
                                         </label>
                                         <select
                                             className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
                                             value={priority}
                                             onChange={e => setPriority(e.target.value)}
                                         >
-                                            <option value="High">High Priority</option>
-                                            <option value="Medium">Medium Priority</option>
-                                            <option value="Low">Low Priority</option>
+                                            <option value="High">{t('high')}</option>
+                                            <option value="Medium">{t('medium')}</option>
+                                            <option value="Low">{t('low')}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -216,11 +219,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
                                         <TextAlignLeft size={16} className="text-gray-400" />
-                                        Description
+                                        {t('description')}
                                     </label>
                                     <textarea
                                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm min-h-[80px] resize-y"
-                                        placeholder="Add details about this event..."
+                                        placeholder={t('placeholder_event_desc')}
                                         value={description}
                                         onChange={e => setDescription(e.target.value)}
                                     />
@@ -230,12 +233,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
                                         <User size={16} className="text-gray-400" />
-                                        Attendees
+                                        {t('attendees')}
                                     </label>
                                     <input
                                         type="text"
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-sm"
-                                        placeholder="Add people..."
+                                        placeholder={t('add_people')}
                                         value={attendees}
                                         onChange={e => setAttendees(e.target.value)}
                                     />
@@ -250,13 +253,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                                     onClick={onClose}
                                     className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-xl transition-colors"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5"
                                 >
-                                    Create Event
+                                    {t('create_event')}
                                 </button>
                             </div>
                         </form>

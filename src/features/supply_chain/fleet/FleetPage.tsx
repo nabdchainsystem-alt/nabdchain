@@ -3,6 +3,7 @@ import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { FleetDashboard } from './FleetDashboard';
 import fleetMaster from './fleet_semantic_master.json';
+import { useAppContext } from '../../../contexts/AppContext';
 const INITIAL_BOARD: Board = {
     id: 'fleet-main-v2',
     name: 'Fleet',
@@ -22,6 +23,7 @@ const INITIAL_BOARD: Board = {
 import { boardService } from '../../../services/boardService';
 
 export const FleetPage: React.FC = () => {
+    const { t } = useAppContext();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -70,7 +72,7 @@ export const FleetPage: React.FC = () => {
 
     const dashboardSections = [
         {
-            title: 'Fleet Dashboards',
+            title: t('fleet_dashboards'),
             options: fleetMaster.dashboards.map(d => ({
                 label: d.name.en,
                 id: d.id,

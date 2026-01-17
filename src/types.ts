@@ -48,10 +48,14 @@ export interface Task extends TaskBase {
 export interface BoardColumn {
   id: string;
   title: string;
-  type: 'text' | 'person' | 'status' | 'date' | 'number' | 'priority';
+  type: 'text' | 'person' | 'status' | 'date' | 'number' | 'priority' | 'currency';
 }
 
-export type BoardViewType = 'kanban' | 'table' | 'datatable' | 'data' | 'list' | 'doc' | 'calendar' | 'taskboard' | 'gantt' | 'chart' | 'file_gallery' | 'form' | 'pivot_table' | 'overview' | 'sc_warehouse' | 'sc_shipping' | 'sc_fleet' | 'sc_vendors' | 'sc_planning' | 'warehouse_capacity_map' | 'gtd' | 'cornell' | 'dashboards' | 'whiteboard' | 'automation_rules' | 'goals_okrs' | 'workload' | 'recurring' | 'spreadsheet';
+export type BoardViewType =
+  | 'kanban' | 'table' | 'datatable' | 'list' | 'doc' | 'calendar' | 'gantt'
+  | 'pivot_table' | 'overview' | 'warehouse_capacity_map' | 'gtd' | 'cornell'
+  | 'dashboards' | 'whiteboard' | 'automation_rules' | 'goals_okrs' | 'workload'
+  | 'recurring' | 'spreadsheet' | 'timeline';
 
 export interface Board {
   id: string;

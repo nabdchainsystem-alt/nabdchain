@@ -57,7 +57,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
                 NABD
               </span>
               <span className="font-normal text-gray-500 dark:text-monday-dark-text-secondary text-xs leading-none hidden md:block">
-                Chain System
+                {t('chain_system')}
               </span>
             </div>
           </div>
@@ -85,13 +85,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
                 {formatTime(timeLeft)}
               </span>
               <div className="flex items-center gap-1">
-                <button onClick={toggleFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-colors" title={isActive ? "Pause" : "Resume"}>
+                <button onClick={toggleFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-colors" title={isActive ? t('pause') : t('resume')}>
                   {isActive ? <Pause size={14} weight="fill" fill="currentColor" /> : <Play size={14} weight="fill" fill="currentColor" />}
                 </button>
-                <button onClick={resetFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-500 dark:text-blue-400 transition-colors" title="Reset">
+                <button onClick={resetFocus} className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-500 dark:text-blue-400 transition-colors" title={t('reset')}>
                   <ArrowCounterClockwise size={14} weight="light" />
                 </button>
-                <button onClick={cancelFocus} className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-colors" title="Cancel Session">
+                <button onClick={cancelFocus} className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-colors" title={t('cancel_session')}>
                   <X size={14} weight="light" />
                 </button>
               </div>
@@ -119,7 +119,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
           {/* Sleep Mode Toggle */}
           <button
             onClick={() => setIsSleepMode(true)}
-            title="Sleep Mode"
+            title={t('sleep_mode')}
             className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
           >
             <EyeClosed size={21} weight="light" />
@@ -152,7 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
             </div>
 
             {isProfileOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl border border-gray-100 dark:border-monday-dark-border py-2 z-50 animate-fadeIn">
+              <div className="absolute top-full right-0 rtl:right-auto rtl:left-0 mt-2 w-56 bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl border border-gray-100 dark:border-monday-dark-border py-2 z-50 animate-fadeIn">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-monday-dark-border">
                   <p className="text-sm font-semibold text-gray-800 dark:text-monday-dark-text truncate">{user?.fullName || user?.firstName}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.primaryEmailAddress?.emailAddress}</p>
@@ -163,20 +163,20 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
                       onNavigate('settings');
                       setIsProfileOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-monday-dark-hover flex items-center gap-2 transition-colors"
+                    className="w-full text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-monday-dark-hover flex items-center gap-2 transition-colors"
                   >
                     <Gear size={14} weight="light" />
-                    Settings
+                    {t('settings')}
                   </button>
                   <button
                     onClick={() => {
                       signOut();
                       setIsProfileOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
+                    className="w-full text-start px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
                   >
                     <SignOut size={14} weight="light" />
-                    Sign out
+                    {t('sign_out')}
                   </button>
                 </div>
               </div>

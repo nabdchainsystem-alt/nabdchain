@@ -616,13 +616,13 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                             <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors">
                                 Templates <ChevronDown size={12} />
                             </button>
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg shadow-xl z-20 hidden group-hover:block animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 w-48 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg shadow-xl z-20 hidden group-hover:block animate-in fade-in zoom-in-95 duration-100">
                                 <div className="py-1">
                                     {TEMPLATES.map(t => (
                                         <button
                                             key={t.id}
                                             onClick={() => requestApplyTemplate(t.id)}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-monday-dark-hover hover:text-blue-600"
+                                            className="w-full text-start px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-monday-dark-hover hover:text-blue-600"
                                         >
                                             {t.label}
                                         </button>

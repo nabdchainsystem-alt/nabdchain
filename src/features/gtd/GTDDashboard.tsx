@@ -204,11 +204,11 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
               onClick={() => setActivePhase('capture')}
               className="absolute left-8 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-white uppercase tracking-widest transition-colors"
             >
-              <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">{t('back')}</span>
             </button>
           )}
           <div className="flex items-center gap-2 cursor-help">
-            <h1 className="text-xl font-serif italic tracking-wide">Getting Things Done</h1>
+            <h1 className="text-xl font-serif italic tracking-wide">{t('getting_things_done')}</h1>
             <Info size={14} className="text-gray-400" />
           </div>
         </div>
@@ -229,7 +229,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                 exit={{ opacity: 0, y: -20 }}
                 className="w-full max-w-5xl flex flex-col items-center"
               >
-                <h2 className="text-2xl font-black tracking-widest uppercase mb-6">Capture</h2>
+                <h2 className="text-2xl font-black tracking-widest uppercase mb-6">{t('capture')}</h2>
 
                 {/* Minimalist Input */}
                 <form onSubmit={handleCapture} className="relative w-full max-w-2xl mb-16 group">
@@ -244,26 +244,26 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                         setInputText(val);
                       }
                     }}
-                    placeholder="Write it down..."
+                    placeholder={t('write_it_down')}
                     className="w-full bg-transparent border-b-2 border-gray-200 dark:border-white/10 py-3 text-center text-lg font-serif italic placeholder-gray-200 dark:placeholder-gray-700 focus:outline-none focus:border-black dark:focus:border-white transition-colors duration-300"
                     autoFocus
                   />
                   <button
                     type="submit"
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-widest uppercase text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-black dark:hover:text-white"
+                    className="absolute right-0 rtl:right-auto rtl:left-0 top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-widest uppercase text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-black dark:hover:text-white"
                   >
-                    Enter
+                    {t('enter')}
                   </button>
                 </form>
 
                 {/* 3-Column Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full pb-8">
                   {/* YESTERDAY */}
-                  <GTDInboxColumn title="Yesterday" subtitle="Review" count={yesterdayItems.length} delay={0.1}>
+                  <GTDInboxColumn title={t('yesterday')} subtitle={t('review')} count={yesterdayItems.length} delay={0.1}>
                     {yesterdayItems.length > 0 && (
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
                         {yesterdayItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80">
+                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80">
                             <div className="text-base font-serif italic text-gray-800 dark:text-gray-200">{item.title}</div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wider">{formatTime(item.createdAt)}</div>
                           </div>
@@ -273,11 +273,11 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                   </GTDInboxColumn>
 
                   {/* TODAY */}
-                  <GTDInboxColumn title="Today" subtitle="Inbox" count={todayItems.length} delay={0.2}>
+                  <GTDInboxColumn title={t('today')} subtitle={t('inbox')} count={todayItems.length} delay={0.2}>
                     {todayItems.length > 0 && (
                       <div className="w-full space-y-6 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-6 py-2">
                         {todayItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80 transition-opacity">
+                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80 transition-opacity">
                             <div className="text-base font-serif italic text-[#1A1A1A] dark:text-white mb-0.5">{item.title}</div>
                             <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">{formatTime(item.createdAt)}</div>
                           </div>
@@ -287,11 +287,11 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                   </GTDInboxColumn>
 
                   {/* PENDING */}
-                  <GTDInboxColumn title="Pending" subtitle="Backlog" count={pendingItems.length} delay={0.3}>
+                  <GTDInboxColumn title={t('pending')} subtitle={t('backlog')} count={pendingItems.length} delay={0.3}>
                     {pendingItems.length > 0 && (
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
                         {pendingItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-left group cursor-pointer hover:opacity-80">
+                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80">
                             <div className="text-base font-serif italic text-gray-500">{item.title}</div>
                             <div className="text-[10px] text-gray-600 uppercase tracking-wider">{new Date(item.createdAt).toLocaleDateString()}</div>
                           </div>

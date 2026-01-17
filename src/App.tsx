@@ -20,6 +20,7 @@ import { boardService } from './services/boardService';
 import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage } from './utils/storage';
 import { appLogger, boardLogger } from './utils/logger';
 import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
+import { API_URL } from './config/api';
 
 // Lazy load feature pages for better initial bundle size
 const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -60,7 +61,7 @@ const AppContent: React.FC = () => {
         const token = await getToken();
         if (token) {
           appLogger.info('[App] Fetching workspaces...');
-          const response = await fetch('http://localhost:3001/api/workspaces', {
+          const response = await fetch(`${API_URL}/workspaces`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (response.ok) {
@@ -258,9 +259,12 @@ const AppContent: React.FC = () => {
     localStorage.setItem('app-workspaces', JSON.stringify(workspaces));
   }, [workspaces]);
 
-  // Boards persistence RESTORED (fallback for offline/refresh)
+  // Boards persistence RESTORED (fallback for offline/refresh) - debounced to reduce JSON.stringify calls
   useEffect(() => {
-    localStorage.setItem('app-boards', JSON.stringify(boards));
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('app-boards', JSON.stringify(boards));
+    }, 300);
+    return () => clearTimeout(timeoutId);
   }, [boards]);
 
   useEffect(() => {
@@ -285,7 +289,7 @@ const AppContent: React.FC = () => {
     try {
       const token = await getToken();
       if (token) {
-        await fetch('http://localhost:3001/api/activities', {
+        await fetch(`${API_URL}/activities`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -514,7 +518,7 @@ const AppContent: React.FC = () => {
     try {
       const token = await getToken();
       if (token) {
-        const response = await fetch('http://localhost:3001/api/workspaces', {
+        const response = await fetch(`${API_URL}/workspaces`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -610,7 +614,7 @@ const AppContent: React.FC = () => {
     try {
       const token = await getToken();
       if (token) {
-        const response = await fetch(`http://localhost:3001/api/workspaces/${id}`, {
+        const response = await fetch(`${API_URL}/workspaces/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -730,9 +734,9 @@ const AppContent: React.FC = () => {
   const ProductionPage = lazyWithRetry(() => import('./features/operations/production/ProductionPage'));
   const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
 
-  const SalesListingPage = lazyWithRetry(() => import('./features/business/sales/SalesListingPage'));
-  const SalesFactoryPage = lazyWithRetry(() => import('./features/business/sales/SalesFactoryPage'));
+  const BusinessSalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
   const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
+
 
   // Mini Company - Overview
   const DashboardsPage = lazyWithRetry(() => import('./features/mini_company/overview/DashboardsPage'));
@@ -970,9 +974,9 @@ const AppContent: React.FC = () => {
             ) : activeView === 'quality' ? (
               <QualityPage />
             ) : activeView === 'sales_factory' ? (
-              <SalesFactoryPage onNavigate={handleNavigate} />
+              <FinancePage onNavigate={handleNavigate} />
             ) : activeView === 'sales_listing' ? (
-              <SalesListingPage onNavigate={handleNavigate} />
+              <BusinessSalesPage onNavigate={handleNavigate} />
             ) : activeView === 'sales' ? (
               <SalesPage />
             ) : activeView === 'finance' ? (
@@ -1098,26 +1102,26 @@ const App: React.FC = () => {
           <NavigationProvider>
             <FocusProvider>
               <ToastProvider>
-              {/* Invitation Route */}
-              <Router>
-                <Routes>
-                  <Route
-                    path="/invite/accept"
-                    element={
-                      <>
-                        <SignedIn>
-                          <AcceptInvitePage />
-                        </SignedIn>
-                        <SignedOut>
-                          <RedirectToSignIn />
-                        </SignedOut>
-                      </>
-                    }
-                  />
-                  {/* Dashboard & Main App Routes */}
-                  <Route path="*" element={<AppRoutes />} />
-                </Routes>
-              </Router>
+                {/* Invitation Route */}
+                <Router>
+                  <Routes>
+                    <Route
+                      path="/invite/accept"
+                      element={
+                        <>
+                          <SignedIn>
+                            <AcceptInvitePage />
+                          </SignedIn>
+                          <SignedOut>
+                            <RedirectToSignIn />
+                          </SignedOut>
+                        </>
+                      }
+                    />
+                    {/* Dashboard & Main App Routes */}
+                    <Route path="*" element={<AppRoutes />} />
+                  </Routes>
+                </Router>
               </ToastProvider>
             </FocusProvider>
           </NavigationProvider>

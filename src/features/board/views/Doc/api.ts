@@ -1,6 +1,7 @@
 import { Doc } from './types';
+import { API_URL } from '../../../../config/api';
 
-const BASE_URL = 'http://localhost:3001/api/docs';
+const BASE_URL = `${API_URL}/docs`;
 
 const headers = (token: string) => ({
     'Content-Type': 'application/json',

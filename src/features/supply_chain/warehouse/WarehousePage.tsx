@@ -4,6 +4,7 @@ import { Board } from '../../../types';
 import { WarehouseDashboard } from './WarehouseDashboard';
 import { WarehouseCapacityMap } from './WarehouseCapacityMap';
 import warehouseMaster from './warehouse_semantic_master.json';
+import { useAppContext } from '../../../contexts/AppContext';
 const INITIAL_BOARD: Board = {
     id: 'warehouse-main-v2',
     name: 'Warehouse',
@@ -23,6 +24,7 @@ const INITIAL_BOARD: Board = {
 import { boardService } from '../../../services/boardService';
 
 export const WarehousePage: React.FC = () => {
+    const { t } = useAppContext();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -94,7 +96,7 @@ export const WarehousePage: React.FC = () => {
 
     const dashboardSections = [
         {
-            title: 'Warehouse Dashboards',
+            title: t('warehouse_dashboards'),
             options: warehouseMaster.dashboards.map(d => ({
                 label: d.name_en,
                 id: d.id,
@@ -102,12 +104,12 @@ export const WarehousePage: React.FC = () => {
             }))
         },
         {
-            title: 'Advanced Tools',
+            title: t('advanced_tools'),
             options: [
                 {
-                    label: 'Capacity Map',
+                    label: t('capacity_map'),
                     id: 'warehouse_capacity_map',
-                    description: 'Visual warehouse space map'
+                    description: t('visual_warehouse_space_map')
                 }
             ]
         }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useAppContext } from '../../contexts/AppContext';
 
 const gridStyle = {
     backgroundSize: '40px 40px',
@@ -180,6 +181,7 @@ const StatusBadge: React.FC<{ status: ProcessStatus }> = ({ status }) => {
 };
 
 export const ProcessMapPage: React.FC = () => {
+    const { t } = useAppContext();
     const pathRef = useRef<SVGPathElement | null>(null);
     const [pathLength, setPathLength] = useState(1);
     const [progress, setProgress] = useState(0);
@@ -277,19 +279,19 @@ export const ProcessMapPage: React.FC = () => {
                         <nav className="hidden md:flex items-center bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-100 dark:border-slate-700/50">
                             <a className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-primary transition-all duration-200 ease-out h-9" href="#">
                                 <span className="material-symbols-outlined text-[20px] fill-current">dashboard</span>
-                                <span className="text-xs font-bold uppercase tracking-wide">Overview</span>
+                                <span className="text-xs font-bold uppercase tracking-wide">{t('overview')}</span>
                             </a>
                             <a className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors group h-9" href="#">
                                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
-                                <span className="text-xs font-medium uppercase tracking-wide">Procurement</span>
+                                <span className="text-xs font-medium uppercase tracking-wide">{t('procurement')}</span>
                             </a>
                             <a className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors group h-9" href="#">
                                 <span className="material-symbols-outlined text-[20px]">factory</span>
-                                <span className="text-xs font-medium uppercase tracking-wide">Production</span>
+                                <span className="text-xs font-medium uppercase tracking-wide">{t('production')}</span>
                             </a>
                             <a className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors group h-9" href="#">
                                 <span className="material-symbols-outlined text-[20px]">local_shipping</span>
-                                <span className="text-xs font-medium uppercase tracking-wide">Logistics</span>
+                                <span className="text-xs font-medium uppercase tracking-wide">{t('logistics')}</span>
                             </a>
                         </nav>
                         <div className="flex items-center gap-4">

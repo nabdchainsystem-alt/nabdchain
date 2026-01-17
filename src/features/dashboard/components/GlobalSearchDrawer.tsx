@@ -6,6 +6,7 @@ import {
     X, MagnifyingGlass, Kanban, CheckCircle,
     CaretRight, SquareHalf, ArrowSquareOut, Funnel, CalendarBlank, WarningCircle
 } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface GlobalSearchDrawerProps {
     isOpen: boolean;
@@ -20,6 +21,8 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
     boards,
     onNavigate
 }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedType, setSelectedType] = useState<'all' | 'boards' | 'tasks'>('all');
     const [selectedPriority, setSelectedPriority] = useState<'any' | 'High' | 'Medium' | 'Low'>('any');
@@ -124,10 +127,10 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                     onClick={onClose}
                 >
                     <motion.div
-                        className="bg-white w-full max-w-[360px] h-full shadow-2xl overflow-hidden flex flex-col border-l border-gray-100"
-                        initial={{ x: '100%' }}
+                        className="bg-white w-full max-w-[360px] h-full shadow-2xl overflow-hidden flex flex-col border-s border-gray-100"
+                        initial={{ x: isRTL ? '-100%' : '100%' }}
                         animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        exit={{ x: isRTL ? '-100%' : '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -139,7 +142,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                     ref={inputRef}
                                     type="text"
                                     className="flex-1 text-lg font-medium text-gray-900 placeholder-gray-400 outline-none bg-transparent"
-                                    placeholder="Search..."
+                                    placeholder={t('search') + '...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => {
@@ -162,19 +165,19 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                         onClick={() => setSelectedType('all')}
                                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'all' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        All
+                                        {t('all')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedType('boards')}
                                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'boards' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        Boards
+                                        {t('boards')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedType('tasks')}
                                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'tasks' ? 'bg-white shadow-sm text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        Tasks
+                                        {t('tasks')}
                                     </button>
                                 </div>
 
@@ -185,14 +188,14 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                     <button
                                         onClick={() => setSelectedPriority(prev => prev === 'High' ? 'any' : 'High')}
                                         className={`p-1.5 rounded-md transition-all ${selectedPriority === 'High' ? 'bg-red-50 text-red-600 shadow-sm border border-red-100' : 'text-gray-400 hover:text-gray-600'}`}
-                                        title="High Priority Only"
+                                        title={t('high_priority_only')}
                                     >
                                         <WarningCircle size={14} weight={selectedPriority === 'High' ? 'fill' : 'regular'} />
                                     </button>
                                     <button
                                         onClick={() => setSelectedPriority(prev => prev === 'Medium' ? 'any' : 'Medium')}
                                         className={`p-1.5 rounded-md transition-all ${selectedPriority === 'Medium' ? 'bg-orange-50 text-orange-600 shadow-sm border border-orange-100' : 'text-gray-400 hover:text-gray-600'}`}
-                                        title="Medium Priority Only"
+                                        title={t('medium_priority_only')}
                                     >
                                         <WarningCircle size={14} weight={selectedPriority === 'Medium' ? 'fill' : 'regular'} />
                                     </button>
@@ -206,13 +209,13 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                         onClick={() => setSelectedTime(prev => prev === 'week' ? 'any' : 'week')}
                                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedTime === 'week' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        This Week
+                                        {t('this_week')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedTime(prev => prev === 'overdue' ? 'any' : 'overdue')}
                                         className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedTime === 'overdue' ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
-                                        Overdue
+                                        {t('overdue')}
                                     </button>
                                 </div>
                             </div>
@@ -224,7 +227,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                             {!searchQuery && selectedType === 'all' && selectedPriority === 'any' && selectedTime === 'any' && (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
                                     <MagnifyingGlass size={48} weight="thin" className="mb-3 text-gray-300" />
-                                    <p className="text-sm font-medium">Type to search</p>
+                                    <p className="text-sm font-medium">{t('search_everything')}</p>
                                 </div>
                             )}
 
@@ -232,7 +235,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                             {(searchQuery || selectedType !== 'all' || selectedPriority !== 'any' || selectedTime !== 'any') && results.boards.length === 0 && results.tasks.length === 0 && (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                     <Funnel size={32} weight="light" className="mb-2 opacity-50" />
-                                    <p className="text-sm">No results match your filters</p>
+                                    <p className="text-sm">{t('no_matches_found')}</p>
                                 </div>
                             )}
 
@@ -241,7 +244,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                 <div className="mb-6">
                                     <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Kanban size={14} />
-                                        Boards
+                                        {t('boards')}
                                     </h3>
                                     <div className="space-y-2">
                                         {results.boards.map(board => (
@@ -255,7 +258,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors truncate">{board.name}</h4>
-                                                    <p className="text-[10px] text-gray-500">{board.tasks?.length || 0} tasks</p>
+                                                    <p className="text-[10px] text-gray-500">{board.tasks?.length || 0} {t('tasks')}</p>
                                                 </div>
                                                 <ArrowSquareOut size={16} className="text-gray-300 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
                                             </button>
@@ -269,7 +272,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                 <div>
                                     <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <CheckCircle size={14} />
-                                        Tasks
+                                        {t('tasks')}
                                     </h3>
                                     <div className="space-y-2">
                                         {results.tasks.map(task => (
@@ -287,7 +290,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                                     <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
                                                         <span className="font-medium text-gray-600 truncate">{task.boardName}</span>
                                                         <span className="text-gray-300">•</span>
-                                                        <span>{task.status || 'No Status'}</span>
+                                                        <span>{task.status || t('no_status')}</span>
                                                     </p>
                                                 </div>
 
@@ -306,8 +309,8 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
 
                         {/* Footer */}
                         <div className="p-3 bg-gray-50 border-t border-gray-100 text-center text-[10px] text-gray-400 flex items-center justify-between shrink-0">
-                            <span><kbd className="px-1 py-0.5 bg-white border border-gray-200 rounded text-gray-500 font-sans">ESC</kbd> to close</span>
-                            <span>{results.tasks.length + results.boards.length} matches</span>
+                            <span><kbd className="px-1 py-0.5 bg-white border border-gray-200 rounded text-gray-500 font-sans">ESC</kbd> {t('close')}</span>
+                            <span>{results.tasks.length + results.boards.length} {t('results')}</span>
                         </div>
                     </motion.div>
                 </motion.div>

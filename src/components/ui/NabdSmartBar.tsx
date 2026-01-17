@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles, ArrowRight, LayoutGrid, Search, StickyNote, ListTodo, Check, Pin, X, ChevronRight } from 'lucide-react';
 import { Board } from '../../types';
+import { formatTimeAgo } from '../../utils/formatters';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface NabdSmartBarProps {
   boards: Board[];
@@ -33,11 +35,11 @@ interface FlattenedBoard {
   depth: number;
 }
 
-const COMMANDS = [
-  { id: 'task' as CommandType, label: 'New Task', keyword: 'newtask', icon: ListTodo, hint: 'Create a task in a board', color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
-  { id: 'note' as CommandType, label: 'Quick Note', keyword: 'note', icon: StickyNote, hint: 'Save a quick note', color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
-  { id: 'search' as CommandType, label: 'Search', keyword: 'search', icon: Search, hint: 'Search tasks & boards', color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400' },
-  { id: 'notes' as CommandType, label: 'View Notes', keyword: 'notes', icon: StickyNote, hint: 'See your saved notes', color: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
+const getCommands = (t: (key: string) => string) => [
+  { id: 'task' as CommandType, label: t('new_task'), keyword: 'newtask', icon: ListTodo, hint: t('create_task_in_board'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
+  { id: 'note' as CommandType, label: t('quick_note'), keyword: 'note', icon: StickyNote, hint: t('save_a_quick_note'), color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
+  { id: 'search' as CommandType, label: t('search'), keyword: 'search', icon: Search, hint: t('search_tasks_boards'), color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400' },
+  { id: 'notes' as CommandType, label: t('view_notes'), keyword: 'notes', icon: StickyNote, hint: t('see_saved_notes'), color: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
 ];
 
 const TAG_COLORS: Record<string, string> = {
@@ -62,6 +64,8 @@ const saveNotes = (notes: QuickNote[]) => {
 };
 
 export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask, onNavigate }) => {
+  const { t } = useAppContext();
+  const COMMANDS = useMemo(() => getCommands(t), [t]);
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [activeCommand, setActiveCommand] = useState<CommandType>(null);
@@ -134,18 +138,18 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
 
     boards.forEach(board => {
       if (board.name.toLowerCase().includes(query)) {
-        results.push({ id: board.id, type: 'board', title: board.name, subtitle: `${board.tasks?.length || 0} tasks` });
+        results.push({ id: board.id, type: 'board', title: board.name, subtitle: `${board.tasks?.length || 0} ${t('tasks')}` });
       }
       (board.tasks || []).forEach(task => {
         if (task.name?.toLowerCase().includes(query) || task.description?.toLowerCase().includes(query)) {
-          results.push({ id: task.id, type: 'task', title: task.name, subtitle: task.status || 'No status', boardId: board.id, boardName: board.name });
+          results.push({ id: task.id, type: 'task', title: task.name, subtitle: task.status || t('no_status'), boardId: board.id, boardName: board.name });
         }
       });
     });
 
     notes.forEach(note => {
       if (note.content.toLowerCase().includes(query)) {
-        results.push({ id: note.id, type: 'note', title: note.content.slice(0, 50) + (note.content.length > 50 ? '...' : ''), subtitle: note.tags.map(t => `#${t}`).join(' ') || 'No tags' });
+        results.push({ id: note.id, type: 'note', title: note.content.slice(0, 50) + (note.content.length > 50 ? '...' : ''), subtitle: note.tags.map(tag => `#${tag}`).join(' ') || t('no_tags') });
       }
     });
 
@@ -354,7 +358,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
         createdAt: new Date().toISOString()
       };
       onCreateTask(selectedBoard.id, newTask);
-      setSuccessMessage(`Added to ${selectedBoard.name}`);
+      setSuccessMessage(`${t('added_to')} ${selectedBoard.name}`);
       setTimeout(() => setSuccessMessage(null), 2000);
       setInputValue('');
       // Keep command and board for rapid entry
@@ -369,7 +373,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
         createdAt: new Date().toISOString()
       };
       setNotes(prev => [newNote, ...prev]);
-      setSuccessMessage('Note saved');
+      setSuccessMessage(t('note_saved'));
       setTimeout(() => setSuccessMessage(null), 2000);
       setInputValue('');
     }
@@ -380,23 +384,14 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
   const togglePinNote = (noteId: string) => setNotes(prev => prev.map(n => n.id === noteId ? { ...n, pinned: !n.pinned } : n));
   const deleteNote = (noteId: string) => setNotes(prev => prev.filter(n => n.id !== noteId));
 
-  const formatTimeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m`;
-    if (mins < 1440) return `${Math.floor(mins / 60)}h`;
-    return `${Math.floor(mins / 1440)}d`;
-  };
-
   const getCommandInfo = (cmd: CommandType) => COMMANDS.find(c => c.id === cmd);
 
   const getPlaceholder = () => {
-    if (showBoardPicker) return 'Type to search boards...';
-    if (activeCommand === 'task') return selectedBoard ? 'Type your task and press Enter...' : 'Type @newtask/ to select a board';
-    if (activeCommand === 'note') return 'Type your note... use #tags';
-    if (activeCommand === 'search') return 'Search everything...';
-    return 'Type @ for commands...';
+    if (showBoardPicker) return t('type_search_boards');
+    if (activeCommand === 'task') return selectedBoard ? t('type_task_enter') : t('type_newtask_select_board');
+    if (activeCommand === 'note') return t('type_note_tags');
+    if (activeCommand === 'search') return t('search_everything');
+    return t('type_at_commands');
   };
 
   return (
@@ -472,7 +467,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                 onClick={handleSubmit}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-medium rounded-full hover:opacity-80 transition-opacity shrink-0"
               >
-                {activeCommand === 'note' ? 'Save' : 'Add'}
+                {activeCommand === 'note' ? t('save') : t('add')}
                 <ArrowRight size={12} />
               </button>
             )}
@@ -508,11 +503,11 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
           {isOpen && showBoardPicker && (
             <div className="absolute bottom-full left-4 mb-2 w-80 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
               <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Select Board</span>
+                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
               </div>
               <div className="py-1 max-h-72 overflow-y-auto">
                 {filteredBoards.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">No boards found</div>
+                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_boards_found')}</div>
                 ) : (
                   filteredBoards.map((fb, index) => (
                     <button
@@ -533,7 +528,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                         ) : (
                           <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
                         )}
-                        <span className="text-[10px] text-gray-400">{fb.board.tasks?.length || 0} tasks</span>
+                        <span className="text-[10px] text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
                       </div>
                     </button>
                   ))
@@ -546,12 +541,12 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
           {isOpen && activeCommand === 'notes' && (
             <div className="absolute bottom-full left-4 mb-2 w-72 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
               <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <span className="text-[10px] font-medium text-gray-400 uppercase">Recent Notes</span>
-                {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">View All</button>}
+                <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
+                {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
               </div>
               <div className="py-1 max-h-64 overflow-y-auto">
                 {recentNotes.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">No notes yet</div>
+                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_notes_yet')}</div>
                 ) : (
                   recentNotes.map((note, index) => (
                     <div key={note.id} className={`px-3 py-2 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
@@ -581,11 +576,11 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
           {isOpen && activeCommand === 'search' && inputValue.trim() && (
             <div className="absolute bottom-full left-4 mb-2 w-80 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
               <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-[10px] font-medium text-gray-400">{searchResults.length} results</span>
+                <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
               </div>
               <div className="py-1 max-h-64 overflow-y-auto">
                 {searchResults.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">No matches found</div>
+                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_matches_found')}</div>
                 ) : (
                   searchResults.map((result, index) => (
                     <button
@@ -602,7 +597,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{result.boardName ? `in ${result.boardName}` : result.subtitle}</p>
+                        <p className="text-[10px] text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
                       </div>
                     </button>
                   ))
@@ -615,7 +610,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="group p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
-          aria-label="Open Smart Bar"
+          aria-label={t('open_smart_bar')}
         >
           <Sparkles size={22} strokeWidth={1.5} className={`transition-all duration-300 ${isOpen ? 'rotate-45 scale-90' : 'rotate-0 scale-100'} group-hover:scale-110`} />
         </button>

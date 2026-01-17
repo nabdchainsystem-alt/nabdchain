@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { vaultService, VaultItem } from '../../../services/vaultService';
 import { useAuth } from '../../../auth-adapter';
+import { storageLogger } from '../../../utils/logger';
 
 interface SaveToVaultModalProps {
     isOpen: boolean;
@@ -41,7 +42,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
             const folderItems = items.filter(item => item.type === 'folder');
             setFolders(folderItems);
         } catch (error) {
-            console.error('Failed to load folders:', error);
+            storageLogger.error('Failed to load folders:', error);
         }
     };
 
@@ -97,14 +98,14 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                     window.dispatchEvent(new Event('vault-updated'));
                     window.dispatchEvent(new Event('dashboard-updated'));
                 } catch (innerError) {
-                    console.error('Failed to save file content:', innerError);
+                    storageLogger.error('Failed to save file content:', innerError);
                     alert('Failed to save file. Please check your connection.');
                     setIsSaving(false);
                 }
             };
 
             reader.onerror = () => {
-                console.error('File reading failed');
+                storageLogger.error('File reading failed');
                 alert('Failed to read the file.');
                 setIsSaving(false);
             };
@@ -112,7 +113,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
             reader.readAsDataURL(file);
 
         } catch (error) {
-            console.error('Failed to initiate save:', error);
+            storageLogger.error('Failed to initiate save:', error);
             alert('Failed to initiate save.');
             setIsSaving(false);
         }

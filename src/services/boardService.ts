@@ -1,6 +1,6 @@
 import { Board, CreateBoardData, UpdateBoardData, Card, CreateCardData, UpdateCardData } from './types';
-
-const API_URL = 'http://localhost:3001/api';
+import { API_URL } from '../config/api';
+import { boardLogger } from '../utils/logger';
 
 export const boardService = {
     // Boards
@@ -15,7 +15,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to fetch boards');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching boards:', error);
+            boardLogger.error('Error fetching boards:', error);
             return [];
         }
     },
@@ -28,7 +28,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to fetch board');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching board:', error);
+            boardLogger.error('Error fetching board:', error);
             return null;
         }
     },
@@ -46,7 +46,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to create board');
             return await response.json();
         } catch (error) {
-            console.error('Error creating board:', error);
+            boardLogger.error('Error creating board:', error);
             throw error;
         }
     },
@@ -64,7 +64,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to update board');
             return await response.json();
         } catch (error) {
-            console.error('Error updating board:', error);
+            boardLogger.error('Error updating board:', error);
             throw error;
         }
     },
@@ -78,7 +78,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to delete board');
             return true;
         } catch (error) {
-            console.error('Error deleting board:', error);
+            boardLogger.error('Error deleting board:', error);
             throw error;
         }
     },
@@ -90,7 +90,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to fetch cards');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching cards:', error);
+            boardLogger.error('Error fetching cards:', error);
             return [];
         }
     },
@@ -101,7 +101,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to fetch cards');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching cards:', error);
+            boardLogger.error('Error fetching cards:', error);
             return [];
         }
     },
@@ -116,7 +116,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to create card');
             return await response.json();
         } catch (error) {
-            console.error('Error creating card:', error);
+            boardLogger.error('Error creating card:', error);
             throw error;
         }
     },
@@ -131,7 +131,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to update card');
             return await response.json();
         } catch (error) {
-            console.error('Error updating card:', error);
+            boardLogger.error('Error updating card:', error);
             throw error;
         }
     },
@@ -144,7 +144,7 @@ export const boardService = {
             if (!response.ok) throw new Error('Failed to delete card');
             return true;
         } catch (error) {
-            console.error('Error deleting card:', error);
+            boardLogger.error('Error deleting card:', error);
             throw error;
         }
     }

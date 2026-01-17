@@ -3,6 +3,7 @@ import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { VendorsDashboard } from './VendorsDashboard';
 import vendorsMaster from './vendors_semantic_master.json';
+import { useAppContext } from '../../../contexts/AppContext';
 const INITIAL_BOARD: Board = {
     id: 'vendors-main-v2',
     name: 'Vendors',
@@ -23,6 +24,7 @@ const INITIAL_BOARD: Board = {
 import { boardService } from '../../../services/boardService';
 
 export const VendorsPage: React.FC = () => {
+    const { t } = useAppContext();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -71,7 +73,7 @@ export const VendorsPage: React.FC = () => {
 
     const dashboardSections = [
         {
-            title: 'Vendor Dashboards',
+            title: t('vendor_dashboards'),
             options: vendorsMaster.dashboards.map(d => ({
                 label: d.name_en,
                 id: d.id,

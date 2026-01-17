@@ -21,6 +21,9 @@ import { useAuth } from '../../auth-adapter';
 import { normalizePriority } from '../priorities/priorityUtils';
 import { useToast } from '../marketplace/components/Toast';
 import { appLogger, boardLogger } from '../../utils/logger';
+import { formatTimeAgo, getPersonName, formatDate } from '../../utils/formatters';
+import { getActivityStyles, getCardTheme } from '../../utils/dashboardHelpers';
+import { API_URL } from '../../config/api';
 
 interface Activity {
   id: string;
@@ -41,7 +44,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated }) => {
-  const { userDisplayName } = useAppContext();
+  const { userDisplayName, t, language } = useAppContext();
   const { getToken, isSignedIn } = useAuth();
   const { showToast } = useToast();
 
@@ -78,29 +81,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       setTaskRefreshKey(prev => prev + 1);
     };
 
-    // Clean up orphaned task data from deleted boards
+    // Clean up orphaned task data from deleted boards (optimized with Object.keys)
     const cleanupOrphanedTasks = () => {
       const boardIds = new Set(boards.map(b => b.id));
-      const keysToRemove: string[] = [];
+      const allKeys = Object.keys(localStorage);
 
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
+      const keysToRemove = allKeys.filter(key => {
         // Check board-tasks-{boardId} keys
-        if (key?.startsWith('board-tasks-')) {
+        if (key.startsWith('board-tasks-')) {
           const boardId = key.replace('board-tasks-', '');
-          if (!boardIds.has(boardId)) {
-            keysToRemove.push(key);
-          }
+          return !boardIds.has(boardId);
         }
         // Check room-table-groups-v1-{boardId}-* keys
-        if (key?.startsWith('room-table-groups-v1-')) {
+        if (key.startsWith('room-table-groups-v1-')) {
           const parts = key.replace('room-table-groups-v1-', '').split('-');
           const boardId = parts[0];
-          if (boardId && !boardIds.has(boardId)) {
-            keysToRemove.push(key);
-          }
+          return boardId && !boardIds.has(boardId);
         }
-      }
+        return false;
+      });
 
       // Remove orphaned keys
       keysToRemove.forEach(key => localStorage.removeItem(key));
@@ -112,10 +111,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('tasks-updated', handleTaskUpdate);
 
-    // Refresh periodically to catch local changes
+    // Refresh periodically to catch local changes (30 seconds - rely on events for immediate updates)
     const interval = setInterval(() => {
       setTaskRefreshKey(prev => prev + 1);
-    }, 2000);
+    }, 30000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -178,6 +177,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     return [...people, ...teams];
   }, []);
 
+  // Memoized filtered people list for search dropdown (prevents re-filtering on every render)
+  const filteredPeopleAndTeams = useMemo(() => {
+    return peopleAndTeams.filter(item =>
+      item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
+      !selectedPersons.includes(item.name)
+    );
+  }, [peopleAndTeams, personSearchQuery, selectedPersons]);
+
   // Upload Logic
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
@@ -213,11 +220,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       const now = new Date();
       setCurrentTime(now);
 
-      // Update greeting
+      // Update greeting - use key for translation
       const hour = now.getHours();
-      if (hour < 12) setGreeting('Good morning');
-      else if (hour < 18) setGreeting('Good afternoon');
-      else setGreeting('Good evening');
+      if (hour < 12) setGreeting('good_morning');
+      else if (hour < 18) setGreeting('good_afternoon');
+      else setGreeting('good_evening');
     };
 
     // Initial update
@@ -293,7 +300,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       try {
         const token = await getToken();
         if (token) {
-          const url = new URL('http://localhost:3001/api/activities');
+          const url = new URL(`${API_URL}/activities`);
           // Filter activities by workspace to only show relevant ones
           url.searchParams.set('workspaceId', activeWorkspaceId);
 
@@ -325,51 +332,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const allBoardTasks = useMemo(() => {
     const tasksMap: Record<string, Task[]> = {};
 
+    // Get all localStorage keys ONCE (O(1) instead of O(n*m))
+    const allKeys = Object.keys(localStorage);
+    const roomTableKeys = allKeys.filter(key => key.startsWith('room-table-groups-v1-'));
+    const boardTaskKeys = allKeys.filter(key => key.startsWith('board-tasks-'));
+
     boards.forEach(board => {
       const allTasksForBoard: Task[] = [];
+      const boardPrefix = `room-table-groups-v1-${board.id}`;
 
-      // Search for all room-table-groups keys for this board
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(`room-table-groups-v1-${board.id}`)) {
-          try {
-            const groups = JSON.parse(localStorage.getItem(key) || '[]');
-            if (Array.isArray(groups)) {
-              groups.forEach((group: any) => {
-                if (group.rows && Array.isArray(group.rows)) {
-                  group.rows.forEach((row: any) => {
-                    // Convert row to task format
-                    // Handle both 'person' and 'people' field names (RoomTable uses 'people')
-                    const personData = row.person || row.people || '';
-                    allTasksForBoard.push({
-                      id: row.id,
-                      name: row.name || row.title || '',
-                      person: personData,
-                      status: row.status || '',
-                      date: row.date || row.dueDate || '',
-                      priority: row.priority || null,
-                      ...row
-                    });
+      // Filter keys for this specific board
+      const keysForBoard = roomTableKeys.filter(key => key.startsWith(boardPrefix));
+
+      keysForBoard.forEach(key => {
+        try {
+          const groups = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(groups)) {
+            groups.forEach((group: any) => {
+              if (group.rows && Array.isArray(group.rows)) {
+                group.rows.forEach((row: any) => {
+                  // Convert row to task format
+                  // Handle both 'person' and 'people' field names (RoomTable uses 'people')
+                  const personData = row.person || row.people || '';
+                  allTasksForBoard.push({
+                    id: row.id,
+                    name: row.name || row.title || '',
+                    person: personData,
+                    status: row.status || '',
+                    date: row.date || row.dueDate || '',
+                    priority: row.priority || null,
+                    ...row
                   });
-                }
-              });
-            }
-          } catch (e) {
-            boardLogger.error('Error parsing tasks for board', board.id, e);
+                });
+              }
+            });
           }
+        } catch (e) {
+          boardLogger.error('Error parsing tasks for board', board.id, e);
         }
-      }
+      });
 
       // Also check board-tasks-{boardId} as fallback
       if (allTasksForBoard.length === 0) {
-        const storedTasks = localStorage.getItem(`board-tasks-${board.id}`);
-        if (storedTasks) {
+        const boardTaskKey = `board-tasks-${board.id}`;
+        if (boardTaskKeys.includes(boardTaskKey)) {
           try {
-            const parsed = JSON.parse(storedTasks);
+            const parsed = JSON.parse(localStorage.getItem(boardTaskKey) || '[]');
             if (Array.isArray(parsed)) {
               allTasksForBoard.push(...parsed);
             }
-          } catch { }
+          } catch (e) {
+            appLogger.warn('Failed to parse tasks from localStorage', e);
+          }
         }
       }
 
@@ -383,23 +397,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
     return tasksMap;
   }, [boards, taskRefreshKey]); // taskRefreshKey triggers re-read from localStorage
-
-  // Helper to extract person name from task (handles string, object, or array)
-  const getPersonName = (person: any): string => {
-    if (!person) return '';
-    if (typeof person === 'string') return person;
-    // Handle array of people (from 'people' column)
-    if (Array.isArray(person)) {
-      return person.map(p => {
-        if (typeof p === 'string') return p;
-        return p?.name || p?.label || '';
-      }).filter(Boolean).join(', ');
-    }
-    if (typeof person === 'object' && (person.name || person.label)) {
-      return person.name || person.label;
-    }
-    return '';
-  };
 
   const stats = useMemo(() => {
     let totalTasks = 0;
@@ -420,14 +417,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   }, [boards, allBoardTasks]);
 
   const urgentTasks = useMemo(() => {
-    const allTasks: (Task & { boardName: string; normalizedPriority: string | null })[] = [];
+    const allTasks: (Task & { boardId: string; boardName: string; normalizedPriority: string | null })[] = [];
     boards.forEach(board => {
       const boardTasks = allBoardTasks[board.id] || [];
       boardTasks.forEach(task => {
         const normalizedPriority = normalizePriority(task.priority);
         // Include Urgent, High, and Medium priority tasks
         if (normalizedPriority === 'Urgent' || normalizedPriority === 'High' || normalizedPriority === 'Medium') {
-          allTasks.push({ ...task, boardName: board.name, normalizedPriority });
+          allTasks.push({ ...task, boardId: board.id, boardName: board.name, normalizedPriority });
         }
       });
     });
@@ -499,74 +496,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const paginatedUrgentTasks = urgentTasks.slice((urgentTasksPage - 1) * ITEMS_PER_PAGE, urgentTasksPage * ITEMS_PER_PAGE);
   const totalUrgentPages = Math.ceil(urgentTasks.length / ITEMS_PER_PAGE);
 
-  const formatTimeAgo = (timestamp: number) => {
-    const diff = Math.max(0, Date.now() - timestamp);
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
-
-  const getActivityStyles = (type: string) => {
-    switch (type) {
-      case 'BOARD_CREATED': return { bg: 'bg-green-100', icon: SquaresFour, color: 'text-green-600' };
-      case 'BOARD_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
-      case 'TASK_CREATED': return { bg: 'bg-blue-100', icon: ListPlus, color: 'text-blue-600' };
-      case 'TASK_UPDATED': return { bg: 'bg-amber-100', icon: PencilSimple, color: 'text-amber-600' };
-      case 'TASK_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
-      case 'GROUP_CREATED': return { bg: 'bg-green-100', icon: UserPlus, color: 'text-green-600' };
-      case 'GROUP_DELETED': return { bg: 'bg-red-100', icon: Trash, color: 'text-red-600' };
-      case 'THREAD_CREATED': return { bg: 'bg-teal-100', icon: ChatCircle, color: 'text-teal-600' };
-      case 'MESSAGE_SENT': return { bg: 'bg-indigo-100', icon: PaperPlaneRight, color: 'text-indigo-600' };
-      case 'EMAIL_SENT': return { bg: 'bg-sky-100', icon: EnvelopeSimple, color: 'text-sky-600' };
-      case 'EMAIL_DELETED': return { bg: 'bg-gray-100', icon: Trash, color: 'text-gray-600' };
-      case 'EMAIL_ARCHIVED': return { bg: 'bg-orange-100', icon: Archive, color: 'text-orange-600' };
-      default: return { bg: 'bg-gray-100', icon: Bell, color: 'text-gray-600' };
-    }
-  };
-
-
-
-  // --- Helpers for Recently Visited ---
-  const getCardTheme = (title: string, type: string) => {
-    const lowerTitle = title.toLowerCase();
-
-    // Local assets for premium look
-    const specificImages = {
-      marketing: '/assets/covers/marketing.png',
-      production: '/assets/covers/production.png',
-      finance: '/assets/covers/finance.png',
-      generic: '/assets/covers/generic.png'
-    };
-
-    // Pool of abstract images for variety
-    const abstractPool = [
-      '/assets/covers/generic.png',
-      '/assets/covers/abstract_blue.png',
-      '/assets/covers/abstract_orange.png',
-      '/assets/covers/abstract_purple.png',
-      '/assets/covers/abstract_green.png'
-    ];
-
-    // Check for specific keywords first
-    if (lowerTitle.includes('market')) return specificImages.marketing;
-    if (lowerTitle.includes('design') || lowerTitle.includes('creative')) return specificImages.marketing;
-    if (lowerTitle.includes('product')) return specificImages.production;
-    if (lowerTitle.includes('ops') || lowerTitle.includes('maint')) return specificImages.production;
-    if (lowerTitle.includes('sale') || lowerTitle.includes('crm')) return specificImages.finance;
-    if (lowerTitle.includes('finance') || lowerTitle.includes('money')) return specificImages.finance;
-
-    // If no specific keyword, deterministic hash to pick an abstract image
-    let hash = 0;
-    for (let i = 0; i < title.length; i++) {
-      hash = title.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % abstractPool.length;
-
-    return abstractPool[index];
-  };
   const getCardStats = (boardId?: string) => {
     if (!boardId) return null;
     const board = boards.find(b => b.id === boardId);
@@ -676,8 +605,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{greeting}, {userDisplayName}!</h1>
-            <p className="text-gray-500 mt-1">Here's your daily overview.</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t(greeting)}, {userDisplayName}!</h1>
+            <p className="text-gray-500 mt-1">{t('daily_overview')}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -710,7 +639,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <ClockCounterClockwise size={24} weight="light" className="text-gray-400" />
-                Recently Visited
+                {t('recently_visited')}
               </h2>
               {/* Scroll Controls */}
               <div className="flex items-center gap-1 ml-2">
@@ -733,20 +662,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               {/* Quick Actions */}
               <div className="flex items-center gap-2">
                 {[
-                  { icon: Receipt, label: 'Payment Request' },
-                  { icon: EnvelopeSimple, label: 'New Email', onClick: () => setIsEmailModalOpen(true) },
-                  { icon: UserPlus, label: 'New Customer' },
-                  { icon: Package, label: 'New Product' },
+                  { icon: Receipt, label: t('payment_request') },
+                  { icon: EnvelopeSimple, label: t('new_email'), onClick: () => setIsEmailModalOpen(true) },
+                  { icon: UserPlus, label: t('new_customer') },
+                  { icon: Package, label: t('new_product') },
                 ].map((action, idx) => (
                   <button
                     key={idx}
-                    className="group flex items-center gap-0 bg-white p-1 rounded-full border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md hover:pr-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden"
+                    className="group flex items-center gap-0 bg-white p-1 rounded-full border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md hover:pr-4 rtl:hover:pr-1 rtl:hover:pl-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden"
                     onClick={() => action.onClick ? action.onClick() : appLogger.debug(`Triggered ${action.label}`)}
                   >
                     <div className="p-1.5 rounded-full bg-gray-50 text-gray-600 group-hover:bg-gray-100 group-hover:text-gray-900 transition-colors duration-500 shrink-0">
                       <action.icon size={14} weight="regular" />
                     </div>
-                    <span className="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-2 transition-all duration-700 ease-out whitespace-nowrap text-[11px] font-medium text-gray-600 group-hover:text-gray-900">
+                    <span className="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-2 rtl:group-hover:ml-0 rtl:group-hover:mr-2 transition-all duration-700 ease-out whitespace-nowrap text-[11px] font-medium text-gray-600 group-hover:text-gray-900">
                       {action.label}
                     </span>
                   </button>
@@ -808,7 +737,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         <div>
                           <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-blue-600 transition-colors">{item.title}</h3>
                           <p className="text-xs text-gray-500 mb-2 truncate">
-                            {item.boardId ? 'Project Board' : 'Application Module'}
+                            {item.boardId ? t('project_board') : t('application_module')}
                           </p>
                         </div>
 
@@ -826,7 +755,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Open</span>
+                            <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">{t('open')}</span>
                           )}
                           <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp)}</span>
                         </div>
@@ -837,8 +766,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             ) : (
               <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
                 <ClockCounterClockwise size={40} weight="light" className="text-gray-300 mb-3" />
-                <p className="text-sm font-medium">No recent history</p>
-                <p className="text-xs mt-1 opacity-70">Pages you visit will appear here</p>
+                <p className="text-sm font-medium">{t('no_recent_history')}</p>
+                <p className="text-xs mt-1 opacity-70">{t('pages_appear_here')}</p>
               </div>
             )}
           </div>
@@ -859,7 +788,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   <div className="flex items-center gap-6">
                     <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                       <WarningCircle size={24} weight="light" className="text-red-500" />
-                      Urgent Tasks
+                      {t('urgent_tasks')}
                     </h2>
 
                     <div className="h-6 w-px bg-gray-200"></div>
@@ -869,7 +798,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         onClick={() => onNavigate('my_work')}
                         className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline mr-1"
                       >
-                        Show All
+                        {t('show_all')}
                       </button>
                     </div>
                   </div>
@@ -883,21 +812,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         <button
                           onClick={() => setActiveFilter('all')}
                           className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                          title="All Tasks"
+                          title={t('all_tasks')}
                         >
                           <SquaresFour size={16} weight={activeFilter === 'all' ? 'fill' : 'regular'} />
                         </button>
                         <button
                           onClick={() => setActiveFilter('high')}
                           className={`p-1.5 rounded-md transition-all ${activeFilter === 'high' ? 'bg-white shadow-sm text-red-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                          title="High Priority"
+                          title={t('high_priority')}
                         >
                           <WarningCircle size={16} weight={activeFilter === 'high' ? 'fill' : 'regular'} />
                         </button>
                         <button
                           onClick={() => setActiveFilter('overdue')}
                           className={`p-1.5 rounded-md transition-all ${activeFilter === 'overdue' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                          title="Overdue"
+                          title={t('overdue')}
                         >
                           <CalendarBlank size={16} weight={activeFilter === 'overdue' ? 'fill' : 'regular'} />
                         </button>
@@ -907,7 +836,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       <div ref={personSearchRef} className="relative flex items-center w-8">
                         {isPersonSearchOpen ? (
                           <div
-                            className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center w-[260px] bg-white rounded-md shadow-lg border border-blue-100 overflow-hidden z-50"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center w-[260px] bg-white rounded-md shadow-lg border border-blue-100 z-50"
                           >
                             <div className="pl-2 pr-1 text-indigo-500 shrink-0">
                               <User size={14} weight="fill" />
@@ -934,7 +863,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                 autoFocus
                                 type="text"
                                 className="flex-1 text-xs border-none focus:ring-0 p-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent min-w-[60px]"
-                                placeholder={selectedPersons.length === 0 ? "Search people..." : "Add more..."}
+                                placeholder={selectedPersons.length === 0 ? t('search_people') : t('add_more')}
                                 value={personSearchQuery}
                                 onChange={(e) => {
                                   setPersonSearchQuery(e.target.value);
@@ -982,7 +911,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                 setActiveFilter('all');
                               }}
                               className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-600 shrink-0"
-                              title="Clear all and close"
+                              title={t('clear_and_close')}
                             >
                               <X size={12} />
                             </button>
@@ -990,12 +919,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             {/* Dropdown - shows when typing or when focused with no selection */}
                             {(personSearchQuery || selectedPersons.length === 0) && (
                               <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 max-h-48 overflow-y-auto">
-                                {peopleAndTeams
-                                  .filter(item =>
-                                    item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
-                                    !selectedPersons.includes(item.name)
-                                  )
-                                  .map((item, idx) => (
+                                {filteredPeopleAndTeams.map((item, idx) => (
                                     <button
                                       key={item.id}
                                       onClick={() => {
@@ -1013,15 +937,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                       </div>
                                       <span className="flex-1">{item.name}</span>
                                       {item.type === 'team' && (
-                                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded">Team</span>
+                                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded">{t('team')}</span>
                                       )}
                                     </button>
                                   ))}
-                                {peopleAndTeams.filter(item =>
-                                  item.name.toLowerCase().includes(personSearchQuery.toLowerCase()) &&
-                                  !selectedPersons.includes(item.name)
-                                ).length === 0 && (
-                                    <div className="px-3 py-2 text-xs text-gray-400 text-center">No matches</div>
+                                {filteredPeopleAndTeams.length === 0 && (
+                                    <div className="px-3 py-2 text-xs text-gray-400 text-center">{t('no_matches')}</div>
                                   )}
                               </div>
                             )}
@@ -1034,7 +955,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               setHighlightedIndex(0);
                             }}
                             className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                            title="Filter by Person"
+                            title={t('filter_by_person')}
                           >
                             <User size={16} weight={activeFilter === 'person' ? 'fill' : 'regular'} />
                           </button>
@@ -1048,17 +969,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <>
                       {paginatedUrgentTasks.map(task => (
                         <div key={task.id} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors group">
-                          <div className="flex items-center h-5">
-                            <input className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" type="checkbox" />
-                          </div>
-                          <div className="ml-4 flex-1 min-w-0">
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
                             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                               <CalendarBlank size={12} weight="light" />
-                              {task.date || 'No Date'}
+                              {task.date ? formatDate(task.date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('no_date')}
                               <span className="mx-1">•</span>
                               <Folder size={12} weight="light" />
                               {task.boardName}
+                              {getPersonName(task.person || (task as any).people) && (
+                                <>
+                                  <span className="mx-1">•</span>
+                                  <User size={12} weight="light" />
+                                  <span className="truncate max-w-[100px]">{getPersonName(task.person || (task as any).people)}</span>
+                                </>
+                              )}
                             </p>
                           </div>
 
@@ -1073,7 +998,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           </div>
 
                           <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors">
+                            <button
+                              onClick={() => onNavigate('board', task.boardId)}
+                              className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
+                              title={t('open_in_board')}
+                            >
                               <PencilSimple size={18} weight="light" />
                             </button>
                           </div>
@@ -1083,7 +1012,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
                       <CheckCircle size={32} weight="light" className="text-gray-300 mb-1" />
-                      <p className="text-sm text-gray-500">No urgent tasks due. You're all caught up!</p>
+                      <p className="text-sm text-gray-500">{t('no_urgent_tasks')}</p>
                     </div>
                   )}
                 </div>
@@ -1118,7 +1047,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <Lightning size={24} weight="light" className="text-amber-500" />
-                    Quick Actions
+                    {t('quick_actions')}
                   </h2>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1127,35 +1056,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
                     <ListPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">New Task</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('new_task')}</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
                     <UserPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">Invite Member</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('invite_member')}</span>
                   </button>
                   <button
                     onClick={() => setIsGlobalSearchOpen(true)}
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
                     <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">Search All</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('search_all')}</span>
                   </button>
                   <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
                     <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">New Board</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('new_board')}</span>
                   </button>
                   <button
                     onClick={() => setIsEventModalOpen(true)}
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
                     <CalendarBlank size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">Events</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('events')}</span>
                   </button>
                   <button
                     onClick={handleUploadClick}
                     className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
                     <UploadSimple size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs font-medium whitespace-nowrap">Upload</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{t('upload')}</span>
                   </button>
                   <input
                     type="file"
@@ -1177,7 +1106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <Clock size={24} weight="light" className="text-blue-500" />
-                    Recent Activity
+                    {t('recent_activity')}
                   </h2>
                 </div>
                 <div className="flow-root flex-1 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
@@ -1217,7 +1146,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-gray-400">
                         <Clock size={32} weight="light" className="text-gray-300 mb-1" />
-                        <p className="text-sm">No recent activity found.</p>
+                        <p className="text-sm">{t('no_recent_activity')}</p>
                       </div>
                     )}
                   </ul>
@@ -1230,13 +1159,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <NotePencil size={24} weight="light" className="text-yellow-500" />
-                  Quick Notes
+                  {t('quick_notes')}
                 </h2>
-                <span className="text-xs text-gray-400">Auto-saved</span>
+                <span className="text-xs text-gray-400">{t('auto_saved')}</span>
               </div>
               <textarea
                 className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
-                placeholder="Jot down something..."
+                placeholder={t('jot_down')}
                 value={quickNote}
                 onChange={(e) => setQuickNote(e.target.value)}
               />
@@ -1247,18 +1176,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <Bell size={24} weight="light" className="text-purple-500" />
-                  Reminders
+                  {t('reminders')}
                 </h2>
-                <button className="text-blue-600 hover:text-blue-700 text-xs font-medium">Clear</button>
+                <button className="text-blue-600 hover:text-blue-700 text-xs font-medium">{t('clear')}</button>
               </div>
               <div className="space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                  <span className="text-sm text-gray-600 group-hover:text-gray-900">Email update to client</span>
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900">{t('email_update_to_client')}</span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                  <span className="text-sm text-gray-600 group-hover:text-gray-900">Check in with Design</span>
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900">{t('check_in_with_design')}</span>
                 </label>
               </div>
             </section>

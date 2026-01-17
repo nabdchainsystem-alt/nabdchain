@@ -1,10 +1,16 @@
 /**
  * Central type definitions index
  * Re-exports all types for convenient importing
+ *
+ * Usage:
+ *   import { Board, Task, CreateBoardData } from '@/types';
  */
 
-// Re-export from main types file
+// Core domain types
 export * from '../types';
 
-// Additional shared types can be added here
+// Service DTOs and interfaces
+export * from '../services/types';
+
+// Utility types
 export type { StorageKey } from '../utils/storage';

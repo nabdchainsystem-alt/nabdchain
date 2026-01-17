@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { appLogger } from '../utils/logger';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -65,7 +66,7 @@ export async function generateResponse(prompt: string): Promise<string> {
         });
         return result.response.text() || "I processed that, but have no words.";
     } catch (error) {
-        console.error("Gemini API Error:", error);
+        appLogger.error("Gemini API Error:", error);
         return "I encountered a disturbance in the data stream.";
     }
 }
@@ -77,7 +78,7 @@ export async function generateResponse(prompt: string): Promise<string> {
  */
 export async function generateSubtasks(taskTitle: string): Promise<string[]> {
     if (!genAI) {
-        console.warn("Gemini API not configured, returning mock subtasks to avoid crash.");
+        appLogger.warn("Gemini API not configured, returning mock subtasks to avoid crash.");
         return [];
     }
 
@@ -92,7 +93,7 @@ export async function generateSubtasks(taskTitle: string): Promise<string[]> {
 
         return JSON.parse(cleanText);
     } catch (error) {
-        console.error("Failed to generate subtasks:", error);
+        appLogger.error("Failed to generate subtasks:", error);
         return ["Failed to generate subtasks. Check API limits."];
     }
 }

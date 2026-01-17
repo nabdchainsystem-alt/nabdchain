@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Activity, Warning as AlertTriangle, ChartBar as BarChart3, SquaresFour as LayoutDashboard, ChartPie as PieChart, TrendUp as TrendingUp } from 'phosphor-react';
 import { loadBoardTasks, isDoneStatus, parseDate, SimplifiedTask } from './toolUtils';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface DashboardsViewProps {
     boardId: string;
@@ -22,6 +23,7 @@ const WidgetCard = ({ title, value, subtitle, icon: Icon, color }: { title: stri
 );
 
 const DashboardsView: React.FC<DashboardsViewProps> = ({ boardId, boardName = 'Board', fallbackTasks = [] }) => {
+    const { t } = useAppContext();
     const [range, setRange] = useState<'week' | 'month' | 'quarter'>('week');
     const tasks = useMemo<SimplifiedTask[]>(() => loadBoardTasks(boardId, fallbackTasks), [boardId, fallbackTasks]);
 
@@ -72,7 +74,7 @@ const DashboardsView: React.FC<DashboardsViewProps> = ({ boardId, boardName = 'B
                 <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
                     <LayoutDashboard size={18} className="text-blue-500" />
                     <div className="flex flex-col leading-tight">
-                        <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Dashboards</span>
+                        <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold">{t('dashboards')}</span>
                         <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{boardName}</span>
                     </div>
                 </div>

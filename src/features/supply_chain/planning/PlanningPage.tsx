@@ -3,6 +3,7 @@ import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { PlanningDashboard } from './PlanningDashboard';
 import planningMaster from './planning_semantic_master.json';
+import { useAppContext } from '../../../contexts/AppContext';
 const INITIAL_BOARD: Board = {
     id: 'planning-main-v2',
     name: 'Planning',
@@ -22,6 +23,7 @@ const INITIAL_BOARD: Board = {
 import { boardService } from '../../../services/boardService';
 
 export const PlanningPage: React.FC = () => {
+    const { t } = useAppContext();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -70,7 +72,7 @@ export const PlanningPage: React.FC = () => {
 
     const dashboardSections = [
         {
-            title: 'Planning Dashboards',
+            title: t('planning_dashboards'),
             options: planningMaster.dashboards.map(d => ({
                 label: d.name_en,
                 id: d.id,

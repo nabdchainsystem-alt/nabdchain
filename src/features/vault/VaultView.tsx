@@ -11,8 +11,10 @@ import { CreateLinkModal } from './components/CreateLinkModal';
 import { RenameItemModal } from './components/RenameItemModal';
 import { vaultService } from '../../services/vaultService';
 import { useAuth } from '../../auth-adapter';
+import { useAppContext } from '../../contexts/AppContext';
 
 export const VaultView: React.FC = () => {
+    const { t } = useAppContext();
     const { getToken, isSignedIn, isLoaded, userId } = useAuth();
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -415,7 +417,7 @@ export const VaultView: React.FC = () => {
                                 className={`hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer ${!currentFolderId ? 'font-semibold text-gray-900 dark:text-gray-100' : ''}`}
                                 onClick={() => handleBreadcrumbClick(null)}
                             >
-                                Vault
+                                {t('vault')}
                             </span>
                             {breadcrumbs.map((folder, index) => (
                                 <React.Fragment key={folder.id}>
@@ -462,29 +464,29 @@ export const VaultView: React.FC = () => {
                             {isSortMenuOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)}></div>
-                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2">
+                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-56 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2">
 
-                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sort By</div>
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('sort_by')}</div>
                                         {(['name', 'date', 'type', 'size'] as const).map(option => (
                                             <button
                                                 key={option}
                                                 onClick={() => { setSortBy(option); setIsSortMenuOpen(false); }}
                                                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                             >
-                                                <span className="capitalize">{option}</span>
+                                                <span className="capitalize">{t(option)}</span>
                                                 {sortBy === option && <Check size={14} className="text-monday-blue" />}
                                             </button>
                                         ))}
 
                                         <div className="h-px bg-gray-100 dark:bg-gray-700 my-2"></div>
 
-                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Direction</div>
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('direction')}</div>
                                         <button
                                             onClick={() => { setSortDirection('asc'); setIsSortMenuOpen(false); }}
                                             className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <ArrowUp size={14} /> Ascending
+                                                <ArrowUp size={14} /> {t('ascending')}
                                             </div>
                                             {sortDirection === 'asc' && <Check size={14} className="text-monday-blue" />}
                                         </button>
@@ -493,21 +495,21 @@ export const VaultView: React.FC = () => {
                                             className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <ArrowDown size={14} /> Descending
+                                                <ArrowDown size={14} /> {t('descending')}
                                             </div>
                                             {sortDirection === 'desc' && <Check size={14} className="text-monday-blue" />}
                                         </button>
 
                                         <div className="h-px bg-gray-100 dark:bg-gray-700 my-2"></div>
 
-                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Group By</div>
+                                        <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('group_by')}</div>
                                         {(['none', 'type', 'date'] as const).map(option => (
                                             <button
                                                 key={option}
                                                 onClick={() => { setGroupBy(option); setIsSortMenuOpen(false); }}
                                                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                             >
-                                                <span className="capitalize">{option === 'none' ? 'No Grouping' : option}</span>
+                                                <span className="capitalize">{option === 'none' ? t('no_grouping') : t(option)}</span>
                                                 {groupBy === option && <Check size={14} className="text-monday-blue" />}
                                             </button>
                                         ))}
@@ -518,13 +520,13 @@ export const VaultView: React.FC = () => {
 
                         {/* Search */}
                         <div className="relative">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search size={16} className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder={t('search') + '...'}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 w-64"
+                                className="ps-9 pe-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 w-64"
                             />
                         </div>
 
@@ -535,42 +537,42 @@ export const VaultView: React.FC = () => {
                                 className="flex items-center gap-2 px-4 py-2 bg-monday-blue hover:bg-blue-600 text-white rounded-md text-sm font-medium transition-colors shadow-sm"
                             >
                                 <Plus size={16} />
-                                <span className="hidden sm:inline">New</span>
+                                <span className="hidden sm:inline">{t('new')}</span>
                             </button>
 
                             {/* Dropdown Menu */}
                             {isMenuOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
-                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden py-1">
                                         <button
                                             onClick={() => { setIsCreateFolderModalOpen(true); setIsMenuOpen(false); }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-start text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                         >
                                             <Folder size={16} className="text-gray-400" />
-                                            {isInsideFolder ? 'New Subfolder' : 'New Folder'}
+                                            {isInsideFolder ? t('new_subfolder') : t('new_folder')}
                                         </button>
                                         <button
                                             onClick={() => { handleCreateNote(); setIsMenuOpen(false); }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-start text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                         >
                                             <FileText size={16} className="text-gray-400" />
-                                            New Note
+                                            {t('new_note')}
                                         </button>
                                         <button
                                             onClick={() => { setIsCreateLinkModalOpen(true); setIsMenuOpen(false); }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-start text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                         >
                                             <Globe size={16} className="text-gray-400" />
-                                            Web Link
+                                            {t('web_link')}
                                         </button>
                                         <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
                                         <button
                                             onClick={() => { handleUploadClick(); }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-start text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                         >
                                             <Upload size={16} className="text-gray-400" />
-                                            Upload File
+                                            {t('upload_file')}
                                         </button>
                                     </div>
                                 </>
@@ -587,10 +589,10 @@ export const VaultView: React.FC = () => {
                         </div>
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center h-full text-red-500">
-                            <p className="text-lg font-semibold">Something went wrong</p>
+                            <p className="text-lg font-semibold">{t('something_went_wrong')}</p>
                             <p className="text-sm opacity-80">{error}</p>
                             <button onClick={() => loadItems()} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                                Retry
+                                {t('retry')}
                             </button>
                         </div>
                     ) : isEmpty ? (

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Plus } from 'phosphor-react';
 import { MOCK_CATEGORIES } from '../types';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface VaultSidebarProps {
     activeCategory: string;
@@ -10,13 +11,14 @@ interface VaultSidebarProps {
 }
 
 export const VaultSidebar: React.FC<VaultSidebarProps> = ({ activeCategory, onSelectCategory, className = '' }) => {
+    const { t } = useAppContext();
     return (
         <div className={`w-64 bg-gray-50 dark:bg-monday-dark-surface border-r border-gray-200 dark:border-monday-dark-border flex flex-col p-4 ${className}`}>
             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 px-2 mb-4">Vault</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 px-2 mb-4">{t('vault')}</h2>
                 <button className="w-full bg-monday-blue hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow-sm flex items-center justify-center gap-2 transition-colors">
                     <Plus size={18} />
-                    <span>New Item</span>
+                    <span>{t('new_item')}</span>
                 </button>
             </div>
 
@@ -45,9 +47,9 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({ activeCategory, onSe
 
             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-monday-dark-border">
                 <div className="px-3">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Folders</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('folders')}</h3>
                     {/* Placeholder for folders */}
-                    <div className="text-sm text-gray-400 italic px-2">No folders yet</div>
+                    <div className="text-sm text-gray-400 italic px-2">{t('no_folders_yet')}</div>
                 </div>
             </div>
         </div>

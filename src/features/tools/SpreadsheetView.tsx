@@ -32,6 +32,7 @@ import {
     X
 } from 'phosphor-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { appLogger } from '../../utils/logger';
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
 
@@ -245,7 +246,7 @@ const SmartSheetView: React.FC<{ boardId: string }> = ({ boardId }) => {
             const text = response.response.text();
             setAiInsight(text || 'No insights available.');
         } catch (error) {
-            console.error('Smart Sheet AI failed', error);
+            appLogger.error('Smart Sheet AI failed', error);
             setAiInsight('Unable to connect to AI. Please check your API key or try again later.');
         } finally {
             setIsAnalyzing(false);
@@ -327,8 +328,8 @@ const SmartSheetView: React.FC<{ boardId: string }> = ({ boardId }) => {
 
                 <div className="flex items-center gap-1 px-4 py-1.5 border-b bg-[#f8f9fa] overflow-x-auto no-scrollbar flex-shrink-0">
                     <div className="flex gap-0.5 pr-2 border-r border-slate-300">
-                        <ToolbarButton icon={<Undo2 size={18} />} onClick={() => console.log('Undo')} />
-                        <ToolbarButton icon={<Redo2 size={18} />} onClick={() => console.log('Redo')} />
+                        <ToolbarButton icon={<Undo2 size={18} />} onClick={() => appLogger.info('Undo')} />
+                        <ToolbarButton icon={<Redo2 size={18} />} onClick={() => appLogger.info('Redo')} />
                         <ToolbarButton icon={<Printer size={18} />} />
                         <ToolbarButton icon={<Paintbrush size={18} />} />
                     </div>
@@ -372,9 +373,9 @@ const SmartSheetView: React.FC<{ boardId: string }> = ({ boardId }) => {
                         />
                         <ToolbarButton
                             icon={<Type size={18} className="text-blue-600" />}
-                            onClick={() => console.log('Text Color Picker')}
+                            onClick={() => appLogger.info('Text Color Picker')}
                         />
-                        <ToolbarButton icon={<Highlighter size={18} />} onClick={() => console.log('Highlight Picker')} />
+                        <ToolbarButton icon={<Highlighter size={18} />} onClick={() => appLogger.info('Highlight Picker')} />
                     </div>
 
                     <div className="flex gap-0.5 px-2">

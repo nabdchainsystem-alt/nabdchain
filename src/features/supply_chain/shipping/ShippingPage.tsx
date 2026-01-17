@@ -3,6 +3,7 @@ import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { ShippingDashboard } from './ShippingDashboard';
 import shippingMaster from './shipping_semantic_master.json';
+import { useAppContext } from '../../../contexts/AppContext';
 const INITIAL_BOARD: Board = {
     id: 'shipping-main-v2',
     name: 'Shipping',
@@ -22,6 +23,7 @@ const INITIAL_BOARD: Board = {
 import { boardService } from '../../../services/boardService';
 
 export const ShippingPage: React.FC = () => {
+    const { t } = useAppContext();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -70,7 +72,7 @@ export const ShippingPage: React.FC = () => {
 
     const dashboardSections = [
         {
-            title: 'Shipping Dashboards',
+            title: t('shipping_dashboards'),
             options: shippingMaster.dashboards.map(d => ({
                 label: d.name.en,
                 id: d.id,
