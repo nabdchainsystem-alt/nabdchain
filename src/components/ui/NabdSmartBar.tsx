@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Sparkles, ArrowRight, LayoutGrid, Search, StickyNote, ListTodo, Check, Pin, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, LayoutGrid, Search, StickyNote, ListTodo, Check, Pin, X, ChevronRight } from 'lucide-react';
+import { MagicWand } from 'phosphor-react';
 import { Board } from '../../types';
 import { formatTimeAgo } from '../../utils/formatters';
 import { useAppContext } from '../../contexts/AppContext';
@@ -82,7 +83,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
   // Flatten boards including sub-boards with parent path
   const flattenedBoards = useMemo((): FlattenedBoard[] => {
     const result: FlattenedBoard[] = [];
-    const boardMap = new Map(boards.map(b => [b.id, b]));
+    const boardMap = new Map<string, Board>(boards.map(b => [b.id, b]));
 
     const getPath = (board: Board, depth: number = 0): string => {
       if (board.parentId && boardMap.has(board.parentId)) {
@@ -182,9 +183,9 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
 
   // Determine current list
   const currentList = showCommandMenu ? COMMANDS :
-                      showBoardPicker ? filteredBoards :
-                      activeCommand === 'search' ? searchResults :
-                      activeCommand === 'notes' ? recentNotes : [];
+    showBoardPicker ? filteredBoards :
+      activeCommand === 'search' ? searchResults :
+        activeCommand === 'notes' ? recentNotes : [];
 
   // Check if can submit
   const canSubmit = useMemo(() => {
@@ -405,215 +406,206 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
         </div>
       )}
 
-      <div ref={containerRef} className="fixed bottom-8 right-8 z-[9999] flex items-center">
-        <div
-          className={`
-            relative flex items-center h-12
-            bg-white dark:bg-[#1a1a1a]
-            border border-gray-200 dark:border-gray-800
-            rounded-full overflow-visible
-            transition-all duration-300 ease-out
-            ${isOpen ? 'w-[calc(100vw-340px)] max-w-[1200px] mr-3 shadow-xl' : 'w-0 mr-0 opacity-0'}
-          `}
-        >
-          <div className="flex items-center w-full h-full px-5 gap-2">
-            {/* Active Command Chip */}
-            {activeCommand && !showBoardPicker && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getCommandInfo(activeCommand)?.color}`}>
-                {React.createElement(getCommandInfo(activeCommand)?.icon || ListTodo, { size: 12 })}
-                <span>{getCommandInfo(activeCommand)?.label}</span>
-                <button onClick={removeCommand} className="ml-0.5 hover:opacity-70">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-
-            {/* Selected Board Chip */}
-            {selectedBoard && !showBoardPicker && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
-                <LayoutGrid size={12} />
-                <span className="max-w-[200px] truncate">{selectedBoardPath || selectedBoard.name}</span>
-                <button onClick={removeBoard} className="ml-0.5 hover:opacity-70">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-
-            {/* Tags Preview */}
-            {extractedTags.length > 0 && activeCommand === 'note' && (
-              <div className="flex items-center gap-1 shrink-0">
-                {extractedTags.slice(0, 2).map(tag => (
-                  <span key={tag} className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Input */}
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={getPlaceholder()}
-              className="flex-1 h-full bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 min-w-0 pl-1"
-            />
-
-            {/* Submit Button */}
-            {canSubmit && (
-              <button
-                onClick={handleSubmit}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-medium rounded-full hover:opacity-80 transition-opacity shrink-0"
-              >
-                {activeCommand === 'note' ? t('save') : t('add')}
-                <ArrowRight size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Command Menu Dropdown */}
-          {isOpen && showCommandMenu && (
-            <div className="absolute bottom-full left-4 mb-2 w-64 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
-              <div className="py-1">
-                {COMMANDS.map((cmd, index) => (
-                  <button
-                    key={cmd.id}
-                    onClick={() => selectCommand(cmd)}
-                    className={`w-full px-3 py-2 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                  >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${cmd.color}`}>
-                      <cmd.icon size={14} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {cmd.label}
-                        <span className="ml-1.5 text-gray-400 font-normal">@{cmd.keyword}</span>
-                      </p>
-                      <p className="text-[10px] text-gray-500">{cmd.hint}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Board Picker Dropdown */}
-          {isOpen && showBoardPicker && (
-            <div className="absolute bottom-full left-4 mb-2 w-80 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
-              <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
-              </div>
-              <div className="py-1 max-h-72 overflow-y-auto">
-                {filteredBoards.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_boards_found')}</div>
-                ) : (
-                  filteredBoards.map((fb, index) => (
-                    <button
-                      key={fb.board.id}
-                      onClick={() => selectBoard(fb)}
-                      className={`w-full px-3 py-2.5 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-                        <LayoutGrid size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {fb.depth > 0 ? (
-                          <div className="flex items-center gap-1 text-sm">
-                            <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
-                            <ChevronRight size={12} className="text-gray-300 shrink-0" />
-                            <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
-                        )}
-                        <span className="text-[10px] text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Notes Dropdown */}
-          {isOpen && activeCommand === 'notes' && (
-            <div className="absolute bottom-full left-4 mb-2 w-72 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
-                {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
-              </div>
-              <div className="py-1 max-h-64 overflow-y-auto">
-                {recentNotes.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_notes_yet')}</div>
-                ) : (
-                  recentNotes.map((note, index) => (
-                    <div key={note.id} className={`px-3 py-2 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
-                      <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[10px] text-gray-400">{formatTimeAgo(note.createdAt)}</span>
-                            {note.tags.slice(0, 2).map(tag => (
-                              <span key={tag} className={`px-1 py-0.5 rounded text-[9px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          <button onClick={() => togglePinNote(note.id)} className={`p-1 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-500'}`}><Pin size={10} /></button>
-                          <button onClick={() => deleteNote(note.id)} className="p-1 rounded text-gray-300 hover:text-red-500"><X size={10} /></button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Search Results Dropdown */}
-          {isOpen && activeCommand === 'search' && inputValue.trim() && (
-            <div className="absolute bottom-full left-4 mb-2 w-80 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
-              </div>
-              <div className="py-1 max-h-64 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-gray-400 text-xs">{t('no_matches_found')}</div>
-                ) : (
-                  searchResults.map((result, index) => (
-                    <button
-                      key={result.id}
-                      onClick={() => handleSearchResultClick(result)}
-                      className={`w-full px-3 py-2 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                    >
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                        result.type === 'board' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20' :
-                        result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
-                        'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
-                      }`}>
-                        {result.type === 'board' ? <LayoutGrid size={14} /> : result.type === 'task' ? <ListTodo size={14} /> : <StickyNote size={14} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
+      <div ref={containerRef} className="relative flex items-center">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="group p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
+          className="group p-1.5 text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"
           aria-label={t('open_smart_bar')}
         >
-          <Sparkles size={22} strokeWidth={1.5} className={`transition-all duration-300 ${isOpen ? 'rotate-45 scale-90' : 'rotate-0 scale-100'} group-hover:scale-110`} />
+          <MagicWand size={21} weight="light" className={`transition-all duration-300 ${isOpen ? 'text-blue-600 dark:text-blue-400' : ''}`} />
         </button>
+
+
+        {isOpen && (
+          <div className="absolute top-full right-0 mt-2 z-[9999] w-[500px] bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+            <div className="flex items-center h-12 px-4 border-b border-gray-100 dark:border-gray-800 gap-2">
+              {/* Active Command Chip */}
+              {activeCommand && !showBoardPicker && (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getCommandInfo(activeCommand)?.color}`}>
+                  {React.createElement(getCommandInfo(activeCommand)?.icon || ListTodo, { size: 12 })}
+                  <span>{getCommandInfo(activeCommand)?.label}</span>
+                  <button onClick={removeCommand} className="ml-0.5 hover:opacity-70">
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              {/* Selected Board Chip */}
+              {selectedBoard && !showBoardPicker && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
+                  <LayoutGrid size={12} />
+                  <span className="max-w-[200px] truncate">{selectedBoardPath || selectedBoard.name}</span>
+                  <button onClick={removeBoard} className="ml-0.5 hover:opacity-70">
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              {/* Tags Preview */}
+              {extractedTags.length > 0 && activeCommand === 'note' && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {extractedTags.slice(0, 2).map(tag => (
+                    <span key={tag} className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Input */}
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={getPlaceholder()}
+                className="flex-1 h-full bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 min-w-0"
+                autoFocus
+              />
+
+              {/* Submit Button */}
+              {canSubmit && (
+                <button
+                  onClick={handleSubmit}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-medium rounded-full hover:opacity-80 transition-opacity shrink-0"
+                >
+                  {activeCommand === 'note' ? t('save') : t('add')}
+                  <ArrowRight size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown Content Area - Only show if there's something to show */}
+            {(showCommandMenu || showBoardPicker || (activeCommand === 'notes') || (activeCommand === 'search' && inputValue.trim())) && (
+              <div className="py-2 max-h-[400px] overflow-y-auto">
+                {/* Command Menu */}
+                {showCommandMenu && (
+                  <div>
+                    {COMMANDS.map((cmd, index) => (
+                      <button
+                        key={cmd.id}
+                        onClick={() => selectCommand(cmd)}
+                        className={`w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cmd.color}`}>
+                          <cmd.icon size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {cmd.label}
+                            <span className="ml-1.5 text-gray-400 font-normal">@{cmd.keyword}</span>
+                          </p>
+                          <p className="text-xs text-gray-500">{cmd.hint}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Board Picker */}
+                {showBoardPicker && (
+                  <div>
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
+                    </div>
+                    {filteredBoards.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_boards_found')}</div>
+                    ) : (
+                      filteredBoards.map((fb, index) => (
+                        <button
+                          key={fb.board.id}
+                          onClick={() => selectBoard(fb)}
+                          className={`w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+                            <LayoutGrid size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {fb.depth > 0 ? (
+                              <div className="flex items-center gap-1 text-sm">
+                                <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
+                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
+                            )}
+                            <span className="text-xs text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Notes List */}
+                {activeCommand === 'notes' && (
+                  <div>
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
+                      {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
+                    </div>
+                    {recentNotes.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_notes_yet')}</div>
+                    ) : (
+                      recentNotes.map((note, index) => (
+                        <div key={note.id} className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 last:border-0 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[10px] text-gray-400">{formatTimeAgo(note.createdAt)}</span>
+                                {note.tags.map(tag => (
+                                  <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><Pin size={14} /></button>
+                              <button onClick={() => deleteNote(note.id)} className="p-1.5 rounded text-gray-300 hover:text-red-500"><X size={14} /></button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Search Results */}
+                {activeCommand === 'search' && inputValue.trim() && (
+                  <div>
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                      <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
+                    </div>
+                    {searchResults.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_matches_found')}</div>
+                    ) : (
+                      searchResults.map((result, index) => (
+                        <button
+                          key={result.id}
+                          onClick={() => handleSearchResultClick(result)}
+                          className={`w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.type === 'board' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20' :
+                            result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
+                              'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
+                            }`}>
+                            {result.type === 'board' ? <LayoutGrid size={16} /> : result.type === 'task' ? <ListTodo size={16} /> : <StickyNote size={16} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
+                            <p className="text-xs text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

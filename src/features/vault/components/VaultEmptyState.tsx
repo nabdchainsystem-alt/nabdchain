@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Shield, Key, CreditCard, Note as StickyNote, Plus, DownloadSimple as Import, MagnifyingGlass as Search, ArrowRight, Folder } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface VaultEmptyStateProps {
     type: 'empty-vault' | 'active-search' | 'empty-category' | 'empty-folder';
@@ -17,6 +18,7 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
     onClearSearch,
     onCreateItem
 }) => {
+    const { t } = useAppContext();
 
     // 1. Search Result Empty State
     if (type === 'active-search') {
@@ -26,17 +28,17 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                     <Search className="text-gray-400" size={32} />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    No matching items found
+                    {t('no_matching_items')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-                    We couldn't find anything matching "{searchQuery}". Try a different keyword or check for typos.
+                    {t('no_matching_desc').replace('{query}', searchQuery || '')}
                 </p>
                 {onClearSearch && (
                     <button
                         onClick={onClearSearch}
                         className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md font-medium transition-colors"
                     >
-                        Clear search
+                        {t('clear_search')}
                     </button>
                 )}
             </div>
@@ -51,12 +53,12 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                     {category === 'favorites' ? <div className="text-4xl">⭐</div> : <div className="text-4xl">📭</div>}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                    {category === 'favorites' ? 'No favorites yet' : `No ${category}s yet`}
+                    {category === 'favorites' ? t('no_favorites_yet') : t('no_category_yet').replace('{category}', t(category || '') || category || '')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8">
                     {category === 'favorites'
-                        ? "Mark important items as favorites to access them quickly from here."
-                        : `This folder is empty. Start by creating a new ${category}.`}
+                        ? t('favorites_empty_desc')
+                        : t('empty_folder_desc').replace('{category}', t(category || '') || category || '')}
                 </p>
                 {onCreateItem && (
                     <button
@@ -64,7 +66,7 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                         className="flex items-center gap-2 px-5 py-2.5 bg-monday-blue hover:bg-blue-600 text-white rounded-md font-medium shadow-sm transition-all hover:shadow-md"
                     >
                         <Plus size={18} />
-                        <span>Create {category === 'favorites' ? 'Item' : 'new ' + category}</span>
+                        <span>{category === 'favorites' ? 'Item' : t('create_category_item').replace('{category}', t(category || '') || category || '')}</span>
                     </button>
                 )}
             </div>
@@ -81,10 +83,10 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                     <Folder className="text-blue-500" size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                    This folder is empty
+                    {t('this_folder_is_empty')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8">
-                    Add new items specifically to this folder.
+                    {t('add_new_items_folder')}
                 </p>
                 {onCreateItem && (
                     <div className="flex gap-4">
@@ -93,14 +95,14 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                             className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md font-medium transition-all"
                         >
                             <Plus size={18} />
-                            <span>New Subfolder</span>
+                            <span>{t('new_subfolder')}</span>
                         </button>
                         <button
                             onClick={() => onCreateItem('note')}
                             className="flex items-center gap-2 px-5 py-2.5 bg-monday-blue hover:bg-blue-600 text-white rounded-md font-medium transition-all shadow-md"
                         >
                             <StickyNote size={18} />
-                            <span>New Note</span>
+                            <span>{t('new_note')}</span>
                         </button>
                     </div>
                 )}
@@ -119,10 +121,10 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                         <Shield className="w-12 h-12 text-monday-blue" strokeWidth={1.5} />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
-                        Secure your digital life
+                        {t('secure_digital_life')}
                     </h2>
                     <p className="text-lg text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-                        Your vault is empty. Store passwords, secure notes, and sensitive documents with bank-grade encryption.
+                        {t('vault_empty_desc')}
                     </p>
                 </div>
 
@@ -130,22 +132,22 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                 <div className="flex flex-wrap justify-center gap-4 mb-10">
                     <QuickAction
                         icon={<Key className="text-red-500" />}
-                        title="Add Login"
-                        desc="Save passwords & credentials"
+                        title={t('add_login')}
+                        desc={t('save_passwords_desc')}
                         bg="bg-red-50 dark:bg-red-900/10"
                         onClick={() => onCreateItem && onCreateItem('login')}
                     />
                     <QuickAction
                         icon={<Folder className="text-blue-500" />}
-                        title="New Folder"
-                        desc="Create a secure folder"
+                        title={t('new_folder')}
+                        desc={t('create_secure_folder')}
                         bg="bg-blue-50 dark:bg-blue-900/10"
                         onClick={() => onCreateItem && onCreateItem('folder')}
                     />
                     <QuickAction
                         icon={<StickyNote className="text-yellow-500" />}
-                        title="Secure Note"
-                        desc="Encrypted text notes"
+                        title={t('secure_note')}
+                        desc={t('encrypted_text_notes')}
                         bg="bg-yellow-50 dark:bg-yellow-900/10"
                         onClick={() => onCreateItem && onCreateItem('note')}
                     />
@@ -158,14 +160,14 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
                         <div className="p-2 bg-gray-100 dark:bg-monday-dark-hover rounded-md group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
                             <Import size={18} />
                         </div>
-                        <span>Import from 1Password / Chrome</span>
+                        <span>{t('import_from_1password')}</span>
                     </button>
 
                     <div className="h-4 w-px bg-gray-300 dark:bg-gray-700 hidden sm:block"></div>
 
                     <div className="text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2">
                         <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs font-mono">N</span>
-                        to create new item
+                        {t('to_create_new_item')}
                     </div>
                 </div>
             </div>

@@ -30,7 +30,7 @@ export const RenameItemModal: React.FC<RenameItemModalProps> = ({ isOpen, onClos
 
     return createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         Rename {type.charAt(0).toUpperCase() + type.slice(1)}

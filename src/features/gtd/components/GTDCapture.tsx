@@ -27,7 +27,7 @@ export const GTDCapture: React.FC<GTDCaptureProps> = ({ onCapture }) => {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="What's on your mind? Capture it now..."
-                    className="w-full h-16 pl-6 pr-32 bg-white dark:bg-[#1E1E1E] rounded-2xl shadow-lg border border-transparent focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all text-lg placeholder-gray-400 text-gray-800 dark:text-gray-100 outline-none"
+                    className="w-full h-16 pl-6 pr-32 bg-white dark:bg-monday-dark-elevated rounded-2xl shadow-lg border border-transparent focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all text-lg placeholder-gray-400 text-gray-800 dark:text-gray-100 outline-none"
                     autoFocus
                 />
                 <button

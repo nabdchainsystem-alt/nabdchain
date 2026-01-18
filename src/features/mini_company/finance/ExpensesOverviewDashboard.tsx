@@ -11,15 +11,16 @@ import { useAppContext } from '../../../contexts/AppContext';
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '1', label: 'Total Expenses', subtitle: 'YTD', value: '$145,230', change: '+12%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [120, 125, 130, 135, 140, 145], color: 'blue' },
-    { id: '2', label: 'Monthly Expenses', subtitle: 'Current Month', value: '$12,450', change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'indigo' },
-    { id: '3', label: 'Expense Growth %', subtitle: 'MoM', value: '4.2%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 3.5, 3.8, 4.0, 4.1, 4.2], color: 'cyan' },
-    { id: '4', label: 'Expense Categories', subtitle: 'Active', value: '12', change: '0', trend: 'neutral', icon: <ChartBar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'violet' },
+    { id: '2', label: 'Monthly Expenses', subtitle: 'Current Month', value: '$12,450', change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'blue' },
+    { id: '3', label: 'Expense Growth %', subtitle: 'MoM', value: '4.2%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 3.5, 3.8, 4.0, 4.1, 4.2], color: 'blue' },
+    { id: '4', label: 'Expense Categories', subtitle: 'Active', value: '12', change: '0', trend: 'neutral', icon: <ChartBar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Fixed vs Variable', subtitle: 'Ratio', value: '60/40', change: '0', trend: 'neutral', icon: <Receipt size={18} />, sparklineData: [60, 60, 60, 60, 60, 60], color: 'emerald' },
-    { id: '6', label: 'Avg Expense / Day', subtitle: 'Based on 30 days', value: '$415', change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'amber' },
-    { id: '7', label: 'High-Cost Alerts', subtitle: 'Above Threshold', value: '3', change: '+1', trend: 'up', icon: <Warning size={18} />, sparklineData: [1, 1, 2, 2, 2, 3], color: 'rose' },
+    { id: '5', label: 'Fixed vs Variable', subtitle: 'Ratio', value: '60/40', change: '0', trend: 'neutral', icon: <Receipt size={18} />, sparklineData: [60, 60, 60, 60, 60, 60], color: 'blue' },
+    { id: '6', label: 'Avg Expense / Day', subtitle: 'Based on 30 days', value: '$415', change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'blue' },
+    { id: '7', label: 'High-Cost Alerts', subtitle: 'Above Threshold', value: '3', change: '+1', trend: 'up', icon: <Warning size={18} />, sparklineData: [1, 1, 2, 2, 2, 3], color: 'blue' },
+    { id: '8', label: 'Budget Variance', subtitle: 'vs Plan', value: '-2.3%', change: '+0.5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [-4, -3.5, -3, -2.8, -2.5, -2.3], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -138,7 +139,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <ExpensesOverviewInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -153,14 +154,14 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
                         About Dashboard
@@ -190,12 +191,12 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Expenses by Category" />
                     ) : (
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expenses by Category</h3>
                                 <p className="text-xs text-gray-400">Top cost centers</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={EXPENSES_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -216,12 +217,12 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                     {isLoading ? (
                         <PieChartSkeleton title="Cost Distribution" />
                     ) : (
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Distribution</h3>
                                 <p className="text-xs text-gray-400">Share of wallet</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -247,7 +248,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={5} />
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Transactions</h3>
                         </div>
@@ -288,7 +289,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 {isLoading ? (
                     <PieChartSkeleton size={240} title="Spend Concentration" />
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                         <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}

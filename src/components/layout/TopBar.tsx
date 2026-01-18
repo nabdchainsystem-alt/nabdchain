@@ -7,11 +7,16 @@ import { useFocus } from '../../contexts/FocusContext';
 import { useState, useRef, useEffect } from 'react';
 import { SleepOverlay } from '../features/SleepOverlay';
 
+import { NabdSmartBar } from '../ui/NabdSmartBar';
+import { Board } from '../../types';
+
 interface TopBarProps {
   onNavigate: (view: string) => void;
+  boards?: Board[];
+  onCreateTask?: (boardId: string, task: any) => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreateTask = () => { } }) => {
   const { theme, toggleTheme, language, toggleLanguage, t } = useAppContext();
   // const { user, logout } = useAuth();
   const { user } = useUser();
@@ -131,7 +136,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate }) => {
             <Bell size={21} weight="light" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-monday-dark-surface"></span>
           </button>
-          <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><DownloadSimple size={21} weight="light" /></button>
+
+          {/* NABD AI Assistant */}
+          <div className="relative">
+            <NabdSmartBar boards={boards} onCreateTask={onCreateTask} onNavigate={onNavigate} />
+          </div>
+
+          <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>
           <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover hidden sm:block"><Question size={21} weight="light" /></button>
           <button className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"><SquaresFour size={21} weight="light" /></button>
 

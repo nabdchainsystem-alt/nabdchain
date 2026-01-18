@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Spend', subtitle: 'YTD Actuals', value: '$4.2M', change: '+12%', trend: 'up', icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'indigo' },
+    { id: '1', label: 'Total Spend', subtitle: 'YTD Actuals', value: '$4.2M', change: '+12%', trend: 'up', icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
     { id: '2', label: 'Avg Spend / Supplier', subtitle: 'Vendor Concentration', value: '$48k', change: '+5%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [42, 43, 45, 46, 47, 48], color: 'blue' },
-    { id: '3', label: 'Cost Variance %', subtitle: 'Actual vs Contract', value: '2.4%', change: '-0.5%', trend: 'down', icon: <Percent size={18} />, sparklineData: [3.0, 2.9, 2.8, 2.6, 2.5, 2.4], color: 'amber' },
-    { id: '4', label: 'Savings Achieved', subtitle: 'Cost Avoidance', value: '$120k', change: '+20%', trend: 'up', icon: <Coins size={18} />, sparklineData: [80, 90, 95, 100, 110, 120], color: 'emerald' },
+    { id: '3', label: 'Cost Variance %', subtitle: 'Actual vs Contract', value: '2.4%', change: '-0.5%', trend: 'down', icon: <Percent size={18} />, sparklineData: [3.0, 2.9, 2.8, 2.6, 2.5, 2.4], color: 'blue' },
+    { id: '4', label: 'Savings Achieved', subtitle: 'Cost Avoidance', value: '$120k', change: '+20%', trend: 'up', icon: <Coins size={18} />, sparklineData: [80, 90, 95, 100, 110, 120], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Tail Spend', subtitle: '% of Total', value: '15%', change: '-2%', trend: 'down', icon: <ChartLineUp size={18} />, sparklineData: [18, 17, 17, 16, 15, 15], color: 'cyan' },
-    { id: '6', label: 'Open PO Value', subtitle: 'Committed Cost', value: '$850k', change: 'Stable', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [850, 850, 850, 850, 850, 850], color: 'purple' },
-    { id: '7', label: 'Sourcing Savings', subtitle: 'Projected', value: '$50k', change: '+5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 46, 48, 50], color: 'teal' },
+    { id: '5', label: 'Tail Spend', subtitle: '% of Total', value: '15%', change: '-2%', trend: 'down', icon: <ChartLineUp size={18} />, sparklineData: [18, 17, 17, 16, 15, 15], color: 'blue' },
+    { id: '6', label: 'Open PO Value', subtitle: 'Committed Cost', value: '$850k', change: 'Stable', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [850, 850, 850, 850, 850, 850], color: 'blue' },
+    { id: '7', label: 'Sourcing Savings', subtitle: 'Projected', value: '$50k', change: '+5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 46, 48, 50], color: 'blue' },
+    { id: '8', label: 'Budget Utilization', subtitle: '% of Allocated', value: '78%', change: '+3%', trend: 'up', icon: <Percent size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -144,11 +145,11 @@ export const SupplierCostDashboard: React.FC = () => {
                 stack: 'Total',
                 label: { show: true, position: 'top' },
                 data: [
-                    { value: 4000, itemStyle: { color: '#6366f1' } }, // Base
-                    { value: 300, itemStyle: { color: '#ef4444' } },  // + Hike (Red)
-                    { value: 150, itemStyle: { color: '#ef4444' } },  // + Rush (Red)
-                    { value: 100, itemStyle: { color: '#10b981' } },  // - Rebate (Green) | Note: ECharts waterfall typically positive values used for bar height
-                    { value: 150, itemStyle: { color: '#10b981' } },  // - Savings (Green)
+                    { value: 4000, itemStyle: { color: '#3b82f6' } }, // Base
+                    { value: 300, itemStyle: { color: '#93c5fd' } },  // + Hike (Light Blue)
+                    { value: 150, itemStyle: { color: '#93c5fd' } },  // + Rush (Light Blue)
+                    { value: 100, itemStyle: { color: '#bfdbfe' } },  // - Rebate (Lighter Blue)
+                    { value: 150, itemStyle: { color: '#bfdbfe' } },  // - Savings (Lighter Blue)
                     { value: 4200, itemStyle: { color: '#3b82f6' } }  // Final
                 ]
             }
@@ -156,7 +157,7 @@ export const SupplierCostDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <SupplierCostInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -171,14 +172,14 @@ export const SupplierCostDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-emerald-500" />
                         About Dashboard
@@ -193,7 +194,7 @@ export const SupplierCostDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -204,12 +205,12 @@ export const SupplierCostDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Monthly Spend Trend (Area) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Trend</h3>
                             <p className="text-xs text-gray-400">Monthly Run Rate</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={MONTHLY_SPEND_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -227,7 +228,7 @@ export const SupplierCostDashboard: React.FC = () => {
                     </div>
 
                     {/* ECharts: Spend Tree Map */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Concentration</h3>
                             <p className="text-xs text-gray-400">By Category</p>
@@ -243,13 +244,13 @@ export const SupplierCostDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'blue'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
                     ))}
                     {/* Variance Line Chart */}
-                    <div className="flex-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-4 hover:shadow-md transition-shadow">
+                    <div className="flex-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-4 hover:shadow-md transition-shadow">
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Cost Variance %</h4>
                         <div className="h-[120px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -267,7 +268,7 @@ export const SupplierCostDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Analysis</h3>
                     </div>
@@ -300,7 +301,7 @@ export const SupplierCostDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Waterfall (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <div className="mb-2">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Bridge</h3>
                         <p className="text-xs text-gray-400">Budget to Actual Walk</p>

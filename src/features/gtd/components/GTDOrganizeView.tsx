@@ -26,7 +26,7 @@ const ListCard: React.FC<{
     onDelete: (id: string) => void;
 }> = ({ title, icon: Icon, items, colorClass, onDelete }) => {
     return (
-        <div className="bg-white dark:bg-[#111] rounded-3xl p-4 border border-gray-100 dark:border-white/5 h-56 flex flex-col hover:shadow-lg transition-shadow duration-300">
+        <div className="bg-white dark:bg-monday-dark-bg rounded-3xl p-4 border border-gray-100 dark:border-white/5 h-56 flex flex-col hover:shadow-lg transition-shadow duration-300">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Icon className={`w-4 h-4 ${colorClass}`} />

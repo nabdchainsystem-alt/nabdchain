@@ -396,7 +396,7 @@ export const VaultView: React.FC = () => {
     const isInsideFolder = !!currentFolderId;
 
     return (
-        <div className="flex h-full bg-white dark:bg-[#1a1d24]">
+        <div className="flex h-full bg-white dark:bg-monday-dark-surface">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -438,13 +438,13 @@ export const VaultView: React.FC = () => {
                         <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-[#2b2d31] shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-monday-dark-elevated shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                                 <LayoutGrid size={16} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-[#2b2d31] shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-monday-dark-elevated shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                                 <ListIcon size={16} />
                             </button>
@@ -464,7 +464,7 @@ export const VaultView: React.FC = () => {
                             {isSortMenuOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)}></div>
-                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-56 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2">
+                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-56 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 py-2">
 
                                         <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('sort_by')}</div>
                                         {(['name', 'date', 'type', 'size'] as const).map(option => (
@@ -473,7 +473,7 @@ export const VaultView: React.FC = () => {
                                                 onClick={() => { setSortBy(option); setIsSortMenuOpen(false); }}
                                                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                             >
-                                                <span className="capitalize">{t(option)}</span>
+                                                <span className="capitalize">{t(option === 'type' ? 'sort_type' : option)}</span>
                                                 {sortBy === option && <Check size={14} className="text-monday-blue" />}
                                             </button>
                                         ))}
@@ -509,7 +509,7 @@ export const VaultView: React.FC = () => {
                                                 onClick={() => { setGroupBy(option); setIsSortMenuOpen(false); }}
                                                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                             >
-                                                <span className="capitalize">{option === 'none' ? t('no_grouping') : t(option)}</span>
+                                                <span className="capitalize">{option === 'none' ? t('no_grouping') : t(option === 'type' ? 'sort_type' : option)}</span>
                                                 {groupBy === option && <Check size={14} className="text-monday-blue" />}
                                             </button>
                                         ))}
@@ -544,7 +544,7 @@ export const VaultView: React.FC = () => {
                             {isMenuOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
-                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                    <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-48 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden py-1">
                                         <button
                                             onClick={() => { setIsCreateFolderModalOpen(true); setIsMenuOpen(false); }}
                                             className="w-full flex items-center gap-2 px-4 py-2 text-start text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -582,7 +582,7 @@ export const VaultView: React.FC = () => {
                 </div>
 
                 {/* Main View Area */}
-                <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-[#1a1d24]">
+                <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-monday-dark-surface">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -636,10 +636,14 @@ export const VaultView: React.FC = () => {
                                 let grouped: Record<string, VaultItem[]> = {};
 
                                 if (groupBy === 'none') {
-                                    grouped = { 'All Items': sortedItems };
+                                    grouped = { [t('all_items')]: sortedItems };
                                 } else if (groupBy === 'type') {
                                     sortedItems.forEach(item => {
-                                        const type = item.type.charAt(0).toUpperCase() + item.type.slice(1) + 's'; // e.g., Folders, Files
+                                        const type = item.type === 'image' ? t('images') :
+                                            item.type === 'note' ? t('notes_group') :
+                                                item.type === 'weblink' ? t('weblinks_group') :
+                                                    item.type === 'folder' ? t('folders_group') :
+                                                        t('files');
                                         if (!grouped[type]) grouped[type] = [];
                                         grouped[type].push(item);
                                     });
@@ -648,10 +652,10 @@ export const VaultView: React.FC = () => {
                                         // Simple date grouping
                                         const date = new Date(item.lastModified);
                                         const now = new Date();
-                                        let key = 'Older';
-                                        if (date.toDateString() === now.toDateString()) key = 'Today';
-                                        else if (date.toDateString() === new Date(now.setDate(now.getDate() - 1)).toDateString()) key = 'Yesterday';
-                                        else if (date > new Date(now.setDate(now.getDate() - 7))) key = 'Last 7 Days';
+                                        let key = t('older');
+                                        if (date.toDateString() === now.toDateString()) key = t('today');
+                                        else if (date.toDateString() === new Date(now.setDate(now.getDate() - 1)).toDateString()) key = t('yesterday');
+                                        else if (date > new Date(now.setDate(now.getDate() - 7))) key = t('last_7_days');
 
                                         if (!grouped[key]) grouped[key] = [];
                                         grouped[key].push(item);

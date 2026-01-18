@@ -267,7 +267,7 @@ export const ProcessMapPage: React.FC = () => {
 
     const renderListView = () => (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display h-full w-full overflow-hidden flex flex-row">
-            <main className="flex-1 relative bg-white dark:bg-[#0f131a] overflow-hidden flex flex-col">
+            <main className="flex-1 relative bg-white dark:bg-monday-dark-bg overflow-hidden flex flex-col">
                 <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" style={gridStyle} />
                 <div className="px-6 pt-6 pb-2 z-30">
                     <div className="w-full bg-surface-light dark:bg-surface-dark rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-800 p-2 pl-3 pr-3 flex items-center justify-between gap-4">
@@ -549,7 +549,7 @@ export const ProcessMapPage: React.FC = () => {
         <div className={`${isFullscreen ? 'fixed inset-0 z-50' : ''} bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display h-full w-full overflow-hidden flex flex-row relative`}>
             {/* Left sidebar currently disabled */}
 
-            <main className="flex-1 relative bg-white dark:bg-[#0f131a] overflow-hidden flex flex-col">
+            <main className="flex-1 relative bg-white dark:bg-monday-dark-bg overflow-hidden flex flex-col">
                 <div className="absolute inset-0 grid-bg opacity-50 pointer-events-none" style={gridStyle} />
                 <div className="relative z-20 px-8 pt-6 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">

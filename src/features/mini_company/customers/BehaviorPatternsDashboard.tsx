@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Avg Orders/Customer', subtitle: 'Per Year', value: '4.2', change: '+0.2', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [3.8, 3.9, 4, 4.1, 4.2, 4.2], color: 'indigo' },
+    { id: '1', label: 'Avg Orders/Customer', subtitle: 'Per Year', value: '4.2', change: '+0.2', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [3.8, 3.9, 4, 4.1, 4.2, 4.2], color: 'blue' },
     { id: '2', label: 'Purchase Frequency', subtitle: 'Days between Orders', value: '45d', change: '-2d', trend: 'up', icon: <Clock size={18} />, sparklineData: [48, 47, 46, 46, 45, 45], color: 'blue' },
-    { id: '3', label: 'Avg Basket Size', subtitle: 'Items per Order', value: '3.5', change: '+0.1', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [3.2, 3.3, 3.4, 3.4, 3.5, 3.5], color: 'emerald' },
-    { id: '4', label: 'Repeat Purchase Rate', subtitle: '% Returning', value: '65%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [60, 61, 62, 63, 64, 65], color: 'cyan' },
+    { id: '3', label: 'Avg Basket Size', subtitle: 'Items per Order', value: '3.5', change: '+0.1', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [3.2, 3.3, 3.4, 3.4, 3.5, 3.5], color: 'blue' },
+    { id: '4', label: 'Repeat Purchase Rate', subtitle: '% Returning', value: '65%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [60, 61, 62, 63, 64, 65], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Seasonal Index', subtitle: 'Buying Intensity', value: '1.2x', change: '+0.1', trend: 'up', icon: <Activity size={18} />, sparklineData: [1, 1, 1.1, 1.1, 1.2, 1.2], color: 'amber' },
-    { id: '6', label: 'Behavior Volatility', subtitle: 'Pattern Variance', value: 'Low', change: '', trend: 'neutral', icon: <ChartLineUp size={18} />, sparklineData: [2, 2, 2, 2, 2, 2], color: 'slate' },
-    { id: '7', label: 'Pattern Alerts', subtitle: 'Anomalies', value: '3', change: '+1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [1, 2, 2, 2, 3, 3], color: 'red' },
+    { id: '5', label: 'Seasonal Index', subtitle: 'Buying Intensity', value: '1.2x', change: '+0.1', trend: 'up', icon: <Activity size={18} />, sparklineData: [1, 1, 1.1, 1.1, 1.2, 1.2], color: 'blue' },
+    { id: '6', label: 'Behavior Volatility', subtitle: 'Pattern Variance', value: 'Low', change: '', trend: 'neutral', icon: <ChartLineUp size={18} />, sparklineData: [2, 2, 2, 2, 2, 2], color: 'blue' },
+    { id: '7', label: 'Pattern Alerts', subtitle: 'Anomalies', value: '3', change: '+1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [1, 2, 2, 2, 3, 3], color: 'blue' },
+    { id: '8', label: 'Peak Purchase Hour', subtitle: 'Most Active Time', value: '2 PM', change: 'Stable', trend: 'neutral', icon: <Clock size={18} />, sparklineData: [14, 14, 14, 14, 14, 14], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -94,7 +95,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <BehaviorPatternsInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -109,14 +110,14 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-orange-500" />
                         About Dashboard
@@ -131,7 +132,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -142,12 +143,12 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Orders by Time (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Activity Heatmap</h3>
                             <p className="text-xs text-gray-400">Orders by Time of Day</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={ORDERS_BY_TIME} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -157,19 +158,19 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Orders" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={32} />
+                                    <Bar dataKey="Orders" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Purchase Mix (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Mix</h3>
                             <p className="text-xs text-gray-400">Preferential Split</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -180,7 +181,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -190,7 +191,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Behavior Log</h3>
                     </div>
@@ -214,8 +215,8 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                                         <td className="px-5 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{row.lastDate}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.trend === 'Surging' ? 'bg-green-100 text-green-700' :
-                                                    row.trend === 'Declining' ? 'bg-red-100 text-red-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                row.trend === 'Declining' ? 'bg-red-100 text-red-700' :
+                                                    'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {row.trend}
                                             </span>
@@ -228,7 +229,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Wave (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

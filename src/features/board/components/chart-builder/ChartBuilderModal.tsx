@@ -84,12 +84,12 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
             onClick={onClose}
         >
             <div
-                className="bg-white dark:bg-[#1f2129] w-full max-w-6xl h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 font-sans"
+                className="bg-white dark:bg-monday-dark-elevated w-full max-w-6xl h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 font-sans"
                 onClick={(e) => e.stopPropagation()}
             >
 
                 {/* Header (Monday-style: Clean, White, Simple Actions) */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-[#1f2129] z-20">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-monday-dark-elevated z-20">
                     <div>
                         <h2 className="text-xl font-bold text-[#323338] dark:text-gray-100 tracking-tight">Add Widget</h2>
                         <p className="text-[13px] text-[#676879] dark:text-gray-400">Transform your board data into insights</p>
@@ -103,10 +103,10 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
                 </div>
 
                 {/* Body - Split View */}
-                <div className="flex flex-1 overflow-hidden bg-[#f7f9fa] dark:bg-[#111111]">
+                <div className="flex flex-1 overflow-hidden bg-[#f7f9fa] dark:bg-monday-dark-bg">
 
                     {/* Left Pane: Configuration (The Settings Panel) */}
-                    <div className="w-[380px] flex-shrink-0 border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-[#1f2129] flex flex-col overflow-hidden">
+                    <div className="w-[380px] flex-shrink-0 border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-monday-dark-elevated flex flex-col overflow-hidden">
 
                         {/* Top: Title & Chart Type */}
                         <div className="p-5 border-b border-stone-100 dark:border-stone-800 space-y-4 shrink-0">
@@ -301,10 +301,10 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
                     </div>
 
                     {/* Right Pane: Preview Canvas */}
-                    <div className="flex-1 flex flex-col relative overflow-hidden bg-[#f7f9fa] dark:bg-[#111111]">
+                    <div className="flex-1 flex flex-col relative overflow-hidden bg-[#f7f9fa] dark:bg-monday-dark-bg">
                         {/* Interactive Canvas Area */}
                         <div className="flex-1 flex items-center justify-center p-12">
-                            <div className="w-full max-w-3xl aspect-[16/9] bg-white dark:bg-[#1f2129] rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300">
+                            <div className="w-full max-w-3xl aspect-[16/9] bg-white dark:bg-monday-dark-elevated rounded-lg shadow-sm border border-stone-200 dark:border-stone-800 flex flex-col transition-all duration-300">
                                 {/* Chart Header inside Card */}
                                 <div className="h-12 border-b border-stone-100 dark:border-stone-700 flex items-center justify-between px-6">
                                     <span className="font-semibold text-stone-700 dark:text-gray-200 text-sm truncate">{title || 'Untitled Chart'}</span>
@@ -346,7 +346,7 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="px-8 py-4 bg-white dark:bg-[#1f2129] border-t border-stone-200 dark:border-stone-700 flex justify-end gap-3 z-20">
+                <div className="px-8 py-4 bg-white dark:bg-monday-dark-elevated border-t border-stone-200 dark:border-stone-700 flex justify-end gap-3 z-20">
                     <button
                         onClick={onClose}
                         className="px-6 py-2 text-[14px] font-normal text-[#323338] hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"

@@ -18,16 +18,17 @@ const TargetIcon = ({ size }: { size: number }) => (
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Fixed Expenses', subtitle: 'Annualized', value: '$840,000', change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'slate' },
+    { id: '1', label: 'Fixed Expenses', subtitle: 'Annualized', value: '$840,000', change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'blue' },
     { id: '2', label: 'Variable Expenses', subtitle: 'Last 30 Days', value: '$45,230', change: '+5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [40, 42, 41, 44, 43, 45], color: 'blue' },
-    { id: '3', label: 'Flexibility Ratio', subtitle: 'Var / Total', value: '35%', change: '+1.5%', trend: 'up', icon: <ArrowDown size={18} />, sparklineData: [32, 33, 33, 34, 34, 35], color: 'emerald' },
-    { id: '4', label: 'Fixed Cost Growth', subtitle: 'YoY', value: '2.1%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [2.5, 2.4, 2.3, 2.2, 2.1, 2.1], color: 'amber' },
+    { id: '3', label: 'Flexibility Ratio', subtitle: 'Var / Total', value: '35%', change: '+1.5%', trend: 'up', icon: <ArrowDown size={18} />, sparklineData: [32, 33, 33, 34, 34, 35], color: 'blue' },
+    { id: '4', label: 'Fixed Cost Growth', subtitle: 'YoY', value: '2.1%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [2.5, 2.4, 2.3, 2.2, 2.1, 2.1], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Var Cost Volatility', subtitle: 'Std Dev', value: 'High', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [60, 75, 50, 80, 65, 70], color: 'rose' },
-    { id: '6', label: 'Break-Even Impact', subtitle: 'Revenue Needed', value: '$1.2M', change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'cyan' },
-    { id: '7', label: 'Cost Rigidity', subtitle: 'Fixed / Total', value: '65%', change: '-1.5%', trend: 'down', icon: <Lock size={18} />, sparklineData: [68, 67, 67, 66, 66, 65], color: 'violet' },
+    { id: '5', label: 'Var Cost Volatility', subtitle: 'Std Dev', value: 'High', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [60, 75, 50, 80, 65, 70], color: 'blue' },
+    { id: '6', label: 'Break-Even Impact', subtitle: 'Revenue Needed', value: '$1.2M', change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'blue' },
+    { id: '7', label: 'Cost Rigidity', subtitle: 'Fixed / Total', value: '65%', change: '-1.5%', trend: 'down', icon: <Lock size={18} />, sparklineData: [68, 67, 67, 66, 66, 65], color: 'blue' },
+    { id: '8', label: 'Optimization Score', subtitle: 'Cost Efficiency', value: '78/100', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -113,7 +114,7 @@ export const FixedVariableDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <FixedVariableInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -128,14 +129,14 @@ export const FixedVariableDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-slate-500" />
                         About Dashboard
@@ -150,7 +151,7 @@ export const FixedVariableDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -161,12 +162,12 @@ export const FixedVariableDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Fixed vs Variable Trend (Stacked Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Structure Trend</h3>
                             <p className="text-xs text-gray-400">Fixed (Slate) vs Variable (Blue)</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={FIXED_VAR_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -177,7 +178,7 @@ export const FixedVariableDashboard: React.FC = () => {
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
                                     <Legend iconType="circle" fontSize={10} />
-                                    <Bar dataKey="Fixed" stackId="a" fill="#64748b" radius={[0, 0, 0, 0]} barSize={24} />
+                                    <Bar dataKey="Fixed" stackId="a" fill="#dbeafe" radius={[0, 0, 0, 0]} barSize={24} />
                                     <Bar dataKey="Variable" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -185,12 +186,12 @@ export const FixedVariableDashboard: React.FC = () => {
                     </div>
 
                     {/* ECharts: Cost Structure (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Current Split</h3>
                             <p className="text-xs text-gray-400">Fixed vs Variable Ratio</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -201,7 +202,7 @@ export const FixedVariableDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -211,7 +212,7 @@ export const FixedVariableDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expense Classification</h3>
                     </div>
@@ -242,7 +243,7 @@ export const FixedVariableDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Matrix (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={matrixOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

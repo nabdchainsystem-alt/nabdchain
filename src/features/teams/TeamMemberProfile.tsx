@@ -7,7 +7,10 @@ interface TeamMemberProfileProps {
     onBack: () => void;
 }
 
+import { useAppContext } from '../../contexts/AppContext';
+
 export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, onBack }) => {
+    const { t } = useAppContext();
     const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'activity'>('overview');
 
     if (!member) return <div className="p-8 text-center">Member not found</div>;
@@ -20,12 +23,12 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                     onClick={onBack}
                     className="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                 >
-                    <ArrowLeft size={20} />
-                    <span className="font-medium">Back to Team</span>
+                    <ArrowLeft size={20} className="rtl:rotate-180" />
+                    <span className="font-medium">{t('back_to_team')}</span>
                 </button>
                 <div className="flex gap-2">
                     <button className="px-4 py-2 bg-monday-blue text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-sm text-sm">
-                        Message
+                        {t('message_btn')}
                     </button>
                     <button className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-lg transition-colors">
                         <DotsThree size={24} />
@@ -54,12 +57,12 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                                 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
                                             }`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'Active' ? 'bg-green-500' : member.status === 'Invited' ? 'bg-yellow-500' : 'bg-gray-400'}`}></div>
-                                            {member.status}
+                                            {t(member.status.toLowerCase())}
                                         </span>
                                         <span className="text-gray-400">•</span>
                                         <span className="text-gray-600 dark:text-gray-300 font-medium flex items-center gap-1">
                                             {member.role === TeamRole.ADMIN && <Star weight="fill" className="text-yellow-400" size={16} />}
-                                            {member.role}
+                                            {t(member.role.toLowerCase() === 'member' ? 'member_role' : member.role.toLowerCase())}
                                         </span>
                                     </div>
                                 </div>
@@ -72,7 +75,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                                     <Bank size={18} className="text-gray-400" />
-                                    {member.department} Department
+                                    {member.department} {t('department')}
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                                     <MapPin size={18} className="text-gray-400" />
@@ -80,7 +83,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                                     <Clock size={18} className="text-gray-400" />
-                                    Last active: {member.lastActive}
+                                    {t('last_active_prefix')} {member.lastActive}
                                 </div>
                             </div>
                         </div>
@@ -93,7 +96,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
                                     <CheckCircle size={20} weight="fill" />
                                 </div>
-                                <span className="font-medium text-gray-600 dark:text-gray-300">Tasks Completed</span>
+                                <span className="font-medium text-gray-600 dark:text-gray-300">{t('tasks_completed')}</span>
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white pl-11">124</h3>
                         </div>
@@ -102,7 +105,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
                                     <Clock size={20} weight="fill" />
                                 </div>
-                                <span className="font-medium text-gray-600 dark:text-gray-300">Avg. Response Time</span>
+                                <span className="font-medium text-gray-600 dark:text-gray-300">{t('avg_response_time')}</span>
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white pl-11">2.5h</h3>
                         </div>
@@ -111,7 +114,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
                                     <Star size={20} weight="fill" />
                                 </div>
-                                <span className="font-medium text-gray-600 dark:text-gray-300">Performance Score</span>
+                                <span className="font-medium text-gray-600 dark:text-gray-300">{t('performance_score')}</span>
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white pl-11">98%</h3>
                         </div>
@@ -129,7 +132,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                         : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                                         }`}
                                 >
-                                    {tab}
+                                    {tab === 'Overview' ? t('overview_tab') : tab === 'Performance' ? t('performance_tab') : t('activity_tab')}
                                     {activeTab === tab.toLowerCase() && (
                                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-monday-blue rounded-t-full" />
                                     )}
@@ -143,7 +146,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                         {activeTab === 'overview' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">About</h3>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('about_section')}</h3>
                                     <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                                         {member.role === TeamRole.ADMIN
                                             ? `${member.name} is an Administrator overseeing the ${member.department} department. Responsible for strategic planning and team coordination.`
@@ -152,19 +155,19 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 </div>
 
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Current Projects</h3>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('current_projects')}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {[1, 2].map((i) => (
                                             <div key={i} className="p-4 rounded-xl border border-gray-100 dark:border-monday-dark-border hover:shadow-sm transition-shadow">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-semibold text-gray-900 dark:text-white">Q3 Marketing Campaign</span>
-                                                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">On Track</span>
+                                                    <span className="font-semibold text-gray-900 dark:text-white">{t('q3_marketing_campaign')}</span>
+                                                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{t('on_track')}</span>
                                                 </div>
                                                 <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
                                                     <div className="bg-monday-blue h-1.5 rounded-full" style={{ width: '75%' }}></div>
                                                 </div>
                                                 <div className="flex justify-between text-xs text-gray-500">
-                                                    <span>Due in 5 days</span>
+                                                    <span>{t('due_in_days').replace('{days}', '5')}</span>
                                                     <span>75%</span>
                                                 </div>
                                             </div>
@@ -178,7 +181,7 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                                     <Star size={32} className="text-gray-300" />
                                 </div>
-                                <p>Performance metrics are coming soon.</p>
+                                <p>{t('performance_coming_soon')}</p>
                             </div>
                         )}
                         {activeTab === 'activity' && (
@@ -190,9 +193,9 @@ export const TeamMemberProfile: React.FC<TeamMemberProfileProps> = ({ member, on
                                         </div>
                                         <div>
                                             <p className="text-gray-900 dark:text-white text-sm">
-                                                <span className="font-semibold">Completed task</span> "Update Q3 Report"
+                                                <span className="font-semibold">{t('completed_task')}</span> "Update Q3 Report"
                                             </p>
-                                            <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
+                                            <p className="text-xs text-gray-500 mt-1">{t('hours_ago').replace('{count}', '2')}</p>
                                         </div>
                                     </div>
                                 ))}

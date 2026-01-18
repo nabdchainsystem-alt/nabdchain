@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Users, Diamond, Activity, Table, Kanban, ListDashes } from 'phosphor-react';
@@ -29,46 +29,45 @@ const INITIAL_BOARD: Board = {
         'journey_touchpoints',
         'satisfaction_feedback',
         'forecast_risk',
-        'table',
-        'kanban'
-    ]
+        'datatable'
+    ],
+    defaultView: 'overview'
 };
 
 export const CustomersPage = () => {
-    const [board, setBoard] = useState<Board>(INITIAL_BOARD);
-
-    // Load board from local storage on mount
-    useEffect(() => {
+    const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('mini_company_customers_board');
         if (saved) {
             const parsed = JSON.parse(saved);
-            const requiredViews = ['customer_overview', 'segmentation_value', 'behavior_patterns'];
-            const currentViews = parsed.availableViews || [];
-            if (requiredViews.some(v => !currentViews.includes(v))) {
-                const merged = {
-                    ...parsed,
-                    availableViews: Array.from(new Set([...currentViews, ...requiredViews]))
-                };
-                setBoard(merged);
-            } else {
-                setBoard(parsed);
-            }
+            // Ensure all initial views are present (merge new dashboards with saved preferences)
+            const savedViews = parsed.availableViews || [];
+            const initialViews = INITIAL_BOARD.availableViews || [];
+            // Add any new views from INITIAL_BOARD that aren't in saved data
+            const mergedViews = [...savedViews];
+            initialViews.forEach(view => {
+                if (!mergedViews.includes(view)) {
+                    mergedViews.push(view);
+                }
+            });
+            return { ...parsed, availableViews: mergedViews };
         }
-    }, []);
-
-    // Save board to local storage whenever it changes
-    useEffect(() => {
-        localStorage.setItem('mini_company_customers_board', JSON.stringify(board));
-    }, [board]);
+        return INITIAL_BOARD;
+    });
 
     const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
-        setBoard(prev => ({ ...prev, ...updates }));
+        setBoard(prev => {
+            const updated = { ...prev, ...updates };
+            localStorage.setItem('mini_company_customers_board', JSON.stringify(updated));
+            return updated;
+        });
     };
 
     const handleUpdateTasks = (tasks: any[]) => {
-        // In a real app, this would update tasks in the backend
-        // For now, we just update the local state if needed
-        console.log('Tasks updated:', tasks);
+        setBoard(prev => {
+            const updated = { ...prev, tasks };
+            localStorage.setItem('mini_company_customers_board', JSON.stringify(updated));
+            return updated;
+        });
     };
 
     const dashboardSections = [

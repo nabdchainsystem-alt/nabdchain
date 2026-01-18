@@ -10,16 +10,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Forecast Demand', subtitle: 'Next 30 Days', value: '12,500', change: '+8%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [11000, 11500, 11800, 12000, 12200, 12500], color: 'indigo' },
-    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Fit', value: '94%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'emerald' },
-    { id: '3', label: 'Risk Exposure', subtitle: '% Vulnerable', value: '12%', change: '-2%', trend: 'down', icon: <Warning size={18} />, sparklineData: [15, 14, 14, 13, 13, 12], color: 'red' },
-    { id: '4', label: 'Expected Stockouts', subtitle: 'Predicted', value: '8', change: '-1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [10, 9, 9, 9, 8, 8], color: 'amber' },
+    { id: '1', label: 'Forecast Demand', subtitle: 'Next 30 Days', value: '12,500', change: '+8%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [11000, 11500, 11800, 12000, 12200, 12500], color: 'blue' },
+    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Fit', value: '94%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'blue' },
+    { id: '3', label: 'Risk Exposure', subtitle: '% Vulnerable', value: '12%', change: '-2%', trend: 'down', icon: <Warning size={18} />, sparklineData: [15, 14, 14, 13, 13, 12], color: 'blue' },
+    { id: '4', label: 'Expected Stockouts', subtitle: 'Predicted', value: '8', change: '-1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [10, 9, 9, 9, 8, 8], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '5', label: 'Overstock Risk', subtitle: 'Potential Excess', value: '25', change: '+3', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'blue' },
-    { id: '6', label: 'Supply Volatility', subtitle: 'Supplier Var', value: 'Low', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [1, 2, 1, 3, 1, 2], color: 'cyan' },
-    { id: '7', label: 'Confidence Level', subtitle: 'Statistical', value: '90%', change: '0%', trend: 'neutral', icon: <CalendarCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'violet' },
+    { id: '6', label: 'Supply Volatility', subtitle: 'Supplier Var', value: 'Low', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [1, 2, 1, 3, 1, 2], color: 'blue' },
+    { id: '7', label: 'Confidence Level', subtitle: 'Statistical', value: '90%', change: '0%', trend: 'neutral', icon: <CalendarCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
+    { id: '8', label: 'Lead Time Avg', subtitle: 'Days to receive', value: '8.5d', change: '-0.5d', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [10, 9.5, 9.2, 9, 8.8, 8.5], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -35,6 +36,24 @@ const RISK_DISTRIBUTION = [
     { value: 25, name: 'Monitor' },
     { value: 12, name: 'At Risk' },
     { value: 3, name: 'Critical' }
+];
+
+// New chart data: Demand by Month
+const DEMAND_BY_MONTH = [
+    { name: 'Jan', value: 8500 },
+    { name: 'Feb', value: 9200 },
+    { name: 'Mar', value: 10500 },
+    { name: 'Apr', value: 11200 },
+    { name: 'May', value: 12000 },
+    { name: 'Jun', value: 12500 },
+];
+
+// New chart data: Accuracy by Category
+const ACCURACY_BY_CATEGORY = [
+    { value: 30, name: 'Apparel (96%)' },
+    { value: 28, name: 'Electronics (92%)' },
+    { value: 25, name: 'Home (94%)' },
+    { value: 17, name: 'Beauty (89%)' }
 ];
 
 // --- Mock Data: Table & Cone ---
@@ -73,7 +92,7 @@ export const InventoryForecastDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Risk Distribution
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -85,6 +104,21 @@ export const InventoryForecastDashboard: React.FC = () => {
             label: { show: false },
             data: RISK_DISTRIBUTION,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+        }]
+    };
+
+    // Pie Chart - Accuracy by Category
+    const accuracyPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: ACCURACY_BY_CATEGORY,
+            color: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd']
         }]
     };
 
@@ -163,7 +197,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'indigo'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -183,7 +217,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Projected Demand</h3>
                                 <p className="text-xs text-gray-400">By category</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={FORECAST_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -209,7 +243,46 @@ export const InventoryForecastDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Profile</h3>
                                 <p className="text-xs text-gray-400">Inventory health status</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Recharts: Demand by Month */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Demand by Month" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Demand by Month</h3>
+                                <p className="text-xs text-gray-400">Projected units</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={DEMAND_BY_MONTH} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ECharts: Accuracy by Category */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Accuracy by Category" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Accuracy by Category</h3>
+                                <p className="text-xs text-gray-400">Forecast precision</p>
+                            </div>
+                            <ReactECharts option={accuracyPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -221,7 +294,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'blue'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -279,7 +352,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                 {/* Companion Chart: Cone (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Forecast Uncertainty" />
+                        <ChartSkeleton height="h-[280px]" title="Forecast Uncertainty" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

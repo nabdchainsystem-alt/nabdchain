@@ -498,7 +498,7 @@ const AppContent: React.FC = () => {
 
     setRecentlyVisited(prev => {
       const filtered = prev.filter(item => item.id !== newItem.id);
-      return [newItem, ...filtered].slice(0, 3); // Keep top 3 for the design
+      return [newItem, ...filtered].slice(0, 10); // Keep top 10 for the design
     });
   };
 
@@ -929,12 +929,14 @@ const AppContent: React.FC = () => {
                   board={activeBoard}
                   onUpdateBoard={handleUpdateBoard}
                   onUpdateTasks={handleUpdateTasks}
+                  dashboardSections={activeBoard.dashboardSections}
                   onNavigate={handleNavigate}
+                  isDepartmentLayout={!!activeBoard.isDepartmentLayout} // Pass layout flag
                 />
               </FeatureErrorBoundary>
             ) : activeView === 'inbox' ? (
               <FeatureErrorBoundary featureName="Inbox">
-                <InboxView logActivity={logActivity} />
+                <InboxView />
               </FeatureErrorBoundary>
             ) : activeView === 'my_work' ? (
               <FeatureErrorBoundary featureName="My Work">
@@ -979,20 +981,16 @@ const AppContent: React.FC = () => {
               <FinancePage onNavigate={handleNavigate} />
             ) : activeView === 'sales_listing' ? (
               <BusinessSalesPage onNavigate={handleNavigate} />
-            ) : activeView === 'sales' ? (
-              <SalesPage />
-            ) : activeView === 'finance' ? (
-              <FinancePage />
             ) : activeView === 'dashboards' ? (
               <DashboardsPage />
+            ) : activeView === 'sales' ? (
+              <SalesPage />
             ) : activeView === 'purchases' ? (
               <PurchasesPage />
             ) : activeView === 'inventory' ? (
               <InventoryPage />
             ) : activeView === 'expenses' ? (
               <ExpensesPage />
-            ) : activeView === 'suppliers' ? (
-              <SuppliersPage />
             ) : activeView === 'customers' ? (
               <CustomersPage />
             ) : activeView === 'suppliers' ? (
@@ -1027,8 +1025,6 @@ const AppContent: React.FC = () => {
           </React.Suspense>
         </main>
       </div>
-      {/* <FocusWidget /> */}
-      <NabdSmartBar boards={workspaceBoards} onCreateTask={handleCreateTaskOnBoard} onNavigate={handleNavigate} />
     </div>
   );
 };

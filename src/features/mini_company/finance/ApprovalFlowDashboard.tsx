@@ -10,15 +10,16 @@ import { useAppContext } from '../../../contexts/AppContext';
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '1', label: 'Submitted', subtitle: 'This Month', value: '45', change: '+10', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [5, 8, 12, 15, 30, 45], color: 'blue' },
-    { id: '2', label: 'Approved', subtitle: 'Completed', value: '38', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [4, 7, 10, 14, 28, 38], color: 'emerald' },
-    { id: '3', label: 'Rejected', subtitle: 'Returned', value: '5', change: '+2', trend: 'down', icon: <XCircle size={18} />, sparklineData: [0, 1, 1, 2, 4, 5], color: 'red' },
-    { id: '4', label: 'Avg Approval Time', subtitle: 'Hours', value: '28h', change: '-4h', trend: 'up', icon: <Clock size={18} />, sparklineData: [32, 30, 29, 29, 28, 28], color: 'cyan' },
+    { id: '2', label: 'Approved', subtitle: 'Completed', value: '38', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [4, 7, 10, 14, 28, 38], color: 'blue' },
+    { id: '3', label: 'Rejected', subtitle: 'Returned', value: '5', change: '+2', trend: 'down', icon: <XCircle size={18} />, sparklineData: [0, 1, 1, 2, 4, 5], color: 'blue' },
+    { id: '4', label: 'Avg Approval Time', subtitle: 'Hours', value: '28h', change: '-4h', trend: 'up', icon: <Clock size={18} />, sparklineData: [32, 30, 29, 29, 28, 28], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Pending', subtitle: 'In Review', value: '2', change: '-1', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [5, 4, 6, 3, 3, 2], color: 'amber' },
-    { id: '6', label: 'Rejection Rate', subtitle: '% of Total', value: '11%', change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [10, 10, 12, 11, 10, 11], color: 'rose' },
-    { id: '7', label: 'Control Bottlenecks', subtitle: 'Slow Stages', value: '1', change: '0', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [1, 1, 1, 1, 1, 1], color: 'violet' },
+    { id: '5', label: 'Pending', subtitle: 'In Review', value: '2', change: '-1', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [5, 4, 6, 3, 3, 2], color: 'blue' },
+    { id: '6', label: 'Rejection Rate', subtitle: '% of Total', value: '11%', change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [10, 10, 12, 11, 10, 11], color: 'blue' },
+    { id: '7', label: 'Control Bottlenecks', subtitle: 'Slow Stages', value: '1', change: '0', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [1, 1, 1, 1, 1, 1], color: 'blue' },
+    { id: '8', label: 'Approval Efficiency', subtitle: 'Success Rate', value: '84%', change: '+3%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [78, 79, 81, 82, 83, 84], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -122,7 +123,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <ApprovalFlowInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -137,14 +138,14 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-green-500" />
                         About Dashboard
@@ -159,7 +160,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -170,12 +171,12 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Delay per Stage (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Delay per Stage</h3>
                             <p className="text-xs text-gray-400">In Days</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={DELAY_PER_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="horizontal">
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -185,19 +186,19 @@ export const ApprovalFlowDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Days" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
+                                    <Bar dataKey="Days" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Funnel */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Funnel</h3>
                             <p className="text-xs text-gray-400">Request Progression</p>
                         </div>
-                        <ReactECharts option={funnelOption} style={{ height: '180px' }} />
+                        <ReactECharts option={funnelOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -208,7 +209,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -218,7 +219,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Queue</h3>
                     </div>
@@ -242,8 +243,8 @@ export const ApprovalFlowDashboard: React.FC = () => {
                                         <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.days}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Delayed' ? 'bg-red-100 text-red-700' :
-                                                    row.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                                row.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                                                    'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {row.status}
                                             </span>
@@ -256,7 +257,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Sankey (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

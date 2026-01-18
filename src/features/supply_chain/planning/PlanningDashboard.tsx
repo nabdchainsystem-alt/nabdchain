@@ -30,7 +30,7 @@ export const PlanningDashboard: React.FC<PlanningDashboardProps> = ({ viewId, ti
     };
 
     return (
-        <div className="flex flex-col h-full bg-gray-50 dark:bg-[#09090b] p-6 overflow-y-auto">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-monday-dark-bg p-6 overflow-y-auto">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('demand_planning')}</h1>
             <p className="text-gray-500 text-sm mb-6">{t('forecasting_desc')}</p>
 
@@ -38,7 +38,7 @@ export const PlanningDashboard: React.FC<PlanningDashboardProps> = ({ viewId, ti
                 {kpis.map((kpi, idx) => <StatCard key={idx} {...kpi} />)}
             </div>
 
-            <div className="h-96 bg-white dark:bg-[#1a1d24] p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+            <div className="h-96 bg-white dark:bg-monday-dark-surface p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                 <DashboardChart title={t('forecast_vs_actual')} options={chartOptions} height="100%" />
             </div>
         </div>

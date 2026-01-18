@@ -11,16 +11,17 @@ import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '1', label: 'Purchase Frequency', subtitle: 'Orders / Month', value: '18.5', change: '+2.1', trend: 'up', icon: <Timer size={18} />, sparklineData: [15, 16, 16, 17, 18, 18, 18.5] },
-    { id: '2', label: 'Repeat Purchase Rate', subtitle: 'Recurring Items', value: '42%', change: '+5%', trend: 'up', icon: <ArrowsOut size={18} />, sparklineData: [35, 36, 38, 40, 41, 41, 42] },
-    { id: '3', label: 'Seasonal Index', subtitle: 'Peak Deviation', value: '1.2x', change: '0', trend: 'neutral', icon: <CalendarIcon size={18} />, sparklineData: [1, 1, 1.1, 1.2, 1.2, 1.1, 1.2] },
-    { id: '4', label: 'Category Concentration', subtitle: 'Top 3 Share', value: '68%', change: '-2%', trend: 'down', icon: <ChartPie size={18} />, sparklineData: [72, 71, 70, 70, 69, 68, 68] },
+    { id: '1', label: 'Purchase Frequency', subtitle: 'Orders / Month', value: '18.5', change: '+2.1', trend: 'up', icon: <Timer size={18} color="#3b82f6" />, sparklineData: [15, 16, 16, 17, 18, 18, 18.5] },
+    { id: '2', label: 'Repeat Purchase Rate', subtitle: 'Recurring Items', value: '42%', change: '+5%', trend: 'up', icon: <ArrowsOut size={18} color="#3b82f6" />, sparklineData: [35, 36, 38, 40, 41, 41, 42] },
+    { id: '3', label: 'Seasonal Index', subtitle: 'Peak Deviation', value: '1.2x', change: '0', trend: 'neutral', icon: <CalendarIcon size={18} color="#3b82f6" />, sparklineData: [1, 1, 1.1, 1.2, 1.2, 1.1, 1.2] },
+    { id: '4', label: 'Category Concentration', subtitle: 'Top 3 Share', value: '68%', change: '-2%', trend: 'down', icon: <ChartPie size={18} color="#3b82f6" />, sparklineData: [72, 71, 70, 70, 69, 68, 68] },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Avg Order Gap', subtitle: 'Days Between', value: '4.2d', change: '-0.3d', trend: 'up', icon: <Timer size={18} />, sparklineData: [5, 4.8, 4.6, 4.5, 4.3, 4.2, 4.2] },
-    { id: '6', label: 'Spike Detection', subtitle: 'Anomalies', value: '3', change: '+1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [1, 1, 2, 0, 1, 2, 3] },
-    { id: '7', label: 'Irregular Purchases', subtitle: 'Out of Pattern', value: '5.4%', change: '-1.1%', trend: 'up', icon: <Waves size={18} />, sparklineData: [7, 6.5, 6, 5.8, 5.5, 5.4, 5.4] },
+    { id: '5', label: 'Avg Order Gap', subtitle: 'Days Between', value: '4.2d', change: '-0.3d', trend: 'up', icon: <Timer size={18} color="#3b82f6" />, sparklineData: [5, 4.8, 4.6, 4.5, 4.3, 4.2, 4.2] },
+    { id: '6', label: 'Spike Detection', subtitle: 'Anomalies', value: '3', change: '+1', trend: 'down', icon: <Lightning size={18} color="#3b82f6" />, sparklineData: [1, 1, 2, 0, 1, 2, 3] },
+    { id: '7', label: 'Irregular Purchases', subtitle: 'Out of Pattern', value: '5.4%', change: '-1.1%', trend: 'up', icon: <Waves size={18} color="#3b82f6" />, sparklineData: [7, 6.5, 6, 5.8, 5.5, 5.4, 5.4] },
+    { id: '8', label: 'Peak Purchase Day', subtitle: 'Highest Activity', value: 'Tuesday', change: 'Consistent', trend: 'neutral', icon: <CalendarIcon size={18} color="#3b82f6" />, sparklineData: [8, 12, 15, 10, 9, 7, 5] },
 ];
 
 // --- Mock Data: Charts ---
@@ -38,6 +39,24 @@ const CATEGORY_MIX = [
     { name: 'Hardware', value: 25000 },
     { name: 'Services', value: 55000 },
     { name: 'Furniture', value: 12000 },
+];
+
+// New: Purchase Velocity by Month
+const PURCHASE_VELOCITY = [
+    { name: 'Jan', value: 42 },
+    { name: 'Feb', value: 38 },
+    { name: 'Mar', value: 55 },
+    { name: 'Apr', value: 48 },
+    { name: 'May', value: 62 },
+    { name: 'Jun', value: 58 },
+];
+
+// New: Order Source Distribution
+const ORDER_SOURCE_MIX = [
+    { name: 'Direct Purchase', value: 45 },
+    { name: 'Auto-Reorder', value: 25 },
+    { name: 'Requisition', value: 20 },
+    { name: 'Emergency', value: 10 },
 ];
 
 // --- Mock Data: Table & Heatmap ---
@@ -80,7 +99,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Category Mix
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -92,6 +111,22 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
             label: { show: false },
             emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
             data: CATEGORY_MIX.map(d => ({ ...d, itemStyle: { color: d.name === 'Services' ? '#3b82f6' : undefined } })) // Highlight Services
+        }]
+    };
+
+    // Pie Chart - Order Source Mix
+    const orderSourcePieOption: EChartsOption = {
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            data: ORDER_SOURCE_MIX,
+            color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
         }]
     };
 
@@ -125,6 +160,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
             <PurchaseBehaviorInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
+            <div className="hidden bg-blue-50 text-blue-600 dark:bg-blue-900/20"></div>
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <TrendUp size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
@@ -167,10 +203,10 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
 
                 {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Charts Area */}
+                {/* Charts Area - 2x2 Grid */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Recharts: Orders per Category */}
+                    {/* Row 1, Col 1: Recharts - Orders per Category */}
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Orders per Category" />
                     ) : (
@@ -179,7 +215,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Orders per Category</h3>
                                 <p className="text-xs text-gray-400">Volume breakdown</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={ORDERS_PER_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -189,14 +225,40 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
 
-                    {/* ECharts: Category Mix */}
+                    {/* Row 1, Col 2: Recharts - Purchase Velocity */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Purchase Velocity" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Purchase Velocity</h3>
+                                <p className="text-xs text-gray-400">Monthly order frequency</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={PURCHASE_VELOCITY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: ECharts - Category Mix (Spend) */}
                     {isLoading ? (
                         <PieChartSkeleton title="Category Mix (Spend)" />
                     ) : (
@@ -205,7 +267,20 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Mix (Spend)</h3>
                                 <p className="text-xs text-gray-400">Portfolio diversity</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: ECharts - Order Source Distribution */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Order Source Distribution" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Order Source Distribution</h3>
+                                <p className="text-xs text-gray-400">Purchase initiation types</p>
+                            </div>
+                            <ReactECharts option={orderSourcePieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -218,7 +293,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                                color="purple"
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -265,7 +340,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
 
                 {/* Companion Chart: Temporal Wave (2 cols) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[320px]" title="Temporal Purchase Wave" />
+                    <ChartSkeleton height="h-[280px]" title="Temporal Purchase Wave" />
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="mb-2">

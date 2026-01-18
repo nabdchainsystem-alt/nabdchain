@@ -118,7 +118,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.3 }}
-                            className="bg-white dark:bg-[#111] rounded-3xl p-8 text-center shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-white/5 relative overflow-hidden"
+                            className="bg-white dark:bg-monday-dark-bg rounded-3xl p-8 text-center shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-white/5 relative overflow-hidden"
                         >
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest uppercase text-gray-300">
                                 Item {currentIndex + 1} of {items.length}
@@ -146,7 +146,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="w-full max-w-xl bg-white dark:bg-[#111] rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
+                                className="w-full max-w-xl bg-white dark:bg-monday-dark-bg rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
                             >
                                 <h4 className="text-center font-serif italic text-base text-gray-500 mb-6">Is this actionable?</h4>
 
@@ -178,7 +178,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="w-full max-w-2xl bg-white dark:bg-[#111] rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
+                                className="w-full max-w-2xl bg-white dark:bg-monday-dark-bg rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
                             >
                                 <div className="flex items-center justify-between mb-6 px-2">
                                     <button onClick={() => setStep('decision')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
@@ -229,7 +229,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="w-full max-w-2xl bg-white dark:bg-[#111] rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
+                                className="w-full max-w-2xl bg-white dark:bg-monday-dark-bg rounded-3xl p-6 shadow-sm border border-gray-50 dark:border-white/5"
                             >
                                 <div className="flex items-center justify-between mb-6 px-2">
                                     <button onClick={() => setStep('decision')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
@@ -307,7 +307,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="w-full max-w-3xl max-h-[500px] bg-white dark:bg-[#111] rounded-3xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row relative"
+                                className="w-full max-w-3xl max-h-[500px] bg-white dark:bg-monday-dark-bg rounded-3xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row relative"
                             >
                                 {/* LEFT SIDEBAR - Quick Actions */}
                                 <div className="w-full md:w-48 bg-gray-50/50 dark:bg-black/20 border-r border-gray-100 dark:border-white/5 flex flex-col">

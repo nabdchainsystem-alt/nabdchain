@@ -100,10 +100,10 @@ export const NewRFQModal: React.FC<NewRFQModalProps> = ({ isOpen, onClose, onSub
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#1a1d24] w-full max-w-4xl min-w-[900px] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-monday-dark-surface w-full max-w-4xl min-w-[900px] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1d24]">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-monday-dark-surface">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Create New RFQ</h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Generating RFQ for Request {requestData?.id}</p>
@@ -114,7 +114,7 @@ export const NewRFQModal: React.FC<NewRFQModalProps> = ({ isOpen, onClose, onSub
                 </div>
 
                 {/* Body */}
-                <div className="p-8 space-y-6 bg-gray-50/50 dark:bg-[#15171b]">
+                <div className="p-8 space-y-6 bg-gray-50/50 dark:bg-monday-dark-bg">
 
                     {/* Read-only segment from Request */}
                     <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
@@ -258,7 +258,7 @@ export const NewRFQModal: React.FC<NewRFQModalProps> = ({ isOpen, onClose, onSub
                 </div>
 
                 {/* Footer */}
-                <div className="px-8 py-5 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1d24] flex items-center justify-end gap-3">
+                <div className="px-8 py-5 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-monday-dark-surface flex items-center justify-end gap-3">
                     <button
                         onClick={onClose}
                         className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all shadow-sm"

@@ -137,12 +137,20 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         setSortConfig({ key, direction });
     };
 
-    // KPI Config
-    const FORECAST_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+    // KPI Config - Top 4 KPIs
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
         { id: '1', label: 'Expected Revenue', subtitle: 'Next 90 Days projection', value: '0', rawValue: 320500, isCurrency: true, change: '+18.5%', trend: 'up', icon: <Target size={18} />, sparklineData: [40, 42, 45, 48, 52, 58, 65] },
         { id: '2', label: 'Forecast Accuracy', subtitle: 'Historical performance', value: '94.2%', change: '+1.4%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [92, 93, 91, 94, 94.5, 94.2, 94.2] },
-        { id: '3', label: 'Risk Level', subtitle: 'Operational risk status', value: 'Low', change: 'Stable', trend: 'neutral', icon: <Warning size={18} />, color: 'emerald', sparklineData: [0, 0, 0, 0, 0, 0, 0] },
+        { id: '3', label: 'Risk Level', subtitle: 'Operational risk status', value: 'Low', change: 'Stable', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
         { id: '4', label: 'Exp. Profit Margin', subtitle: 'Projected efficiency', value: '24.5%', change: '-0.5%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [26, 25.5, 25, 24.8, 24.5, 24.5, 24.5] },
+    ];
+
+    // Side 4 KPIs
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '5', label: 'Growth Rate', subtitle: 'YoY Projection', value: '+12.4%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 11, 11.5, 12, 12.4] },
+        { id: '6', label: 'Pipeline Value', subtitle: 'Potential Revenue', value: '0', rawValue: 185000, isCurrency: true, change: '+8%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [150, 160, 165, 170, 175, 180, 185] },
+        { id: '7', label: 'Confidence Score', subtitle: 'Model Reliability', value: '87%', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [80, 82, 83, 84, 85, 86, 87] },
+        { id: '8', label: 'Deviation Avg', subtitle: 'Forecast Error', value: '6.2%', change: '-1.5%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [9, 8.5, 8, 7.5, 7, 6.5, 6.2] },
     ];
 
     // ECharts Actual vs Forecast Option
@@ -253,7 +261,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-start gap-2">
-                    <Target size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
+                    <Target size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Forecast & Prediction</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Strategic planning and predictive risk assessment</p>
@@ -263,7 +271,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -271,118 +279,128 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION 1: KPI Cards --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {FORECAST_KPIS.map((kpi) => (
-                    <KPICard
-                        key={kpi.id}
-                        {...kpi}
-                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                        color={kpi.color || "indigo"}
-                        loading={isLoading}
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                {/* --- Row 1: Top 4 KPIs --- */}
+                {TOP_KPIS.map((kpi) => (
+                    <div key={kpi.id} className="col-span-1">
+                        <KPICard
+                            {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                            color="blue"
+                            loading={isLoading}
+                        />
+                    </div>
                 ))}
-            </div>
 
-            {/* --- SECTION 2: Middle Charts --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Actual vs Forecast (ECharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[300px]" title="Actual vs Forecasted Sales" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Actual vs Forecasted Sales</h3>
-                                <p className="text-xs text-gray-500 mt-1 italic">Comparison with trend extrapolation</p>
+                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+
+                {/* Charts Area - 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* Row 1, Col 1: Actual vs Forecast (ECharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Actual vs Forecasted Sales" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Actual vs Forecast</h3>
+                                <p className="text-xs text-gray-400">Trend comparison</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-indigo-500" />
-                                <span className="text-[10px] text-gray-500 font-semibold uppercase">Actual</span>
-                                <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                                <span className="text-[10px] text-gray-500 font-semibold uppercase">Forecast</span>
+                            <div className="h-[220px]">
+                                <ReactECharts option={lineOption} style={{ height: '100%' }} />
                             </div>
                         </div>
-                        <div className="h-[300px]">
-                            <ReactECharts option={lineOption} style={{ height: '100%' }} />
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Forecast per Product (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[300px]" title="Forecast per Product" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Forecast per Product</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Projected demand by category</p>
+                    {/* Row 1, Col 2: Forecast per Product (Recharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Forecast per Product" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast per Product</h3>
+                                <p className="text-xs text-gray-400">Projected demand</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={FORECAST_BY_PRODUCT_DATA} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="actual" name="Current" fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={12} />
+                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={FORECAST_BY_PRODUCT_DATA} margin={{ left: -10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                    <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                    <Bar dataKey="actual" name="Current" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
-                                    <Bar dataKey="forecast" name="Predicted" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Risk Distribution (ECharts) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="Potential Risk Distribution" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Potential Risk Distribution</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Vulnerability assessment by revenue share</p>
+                    {/* Row 2, Col 1: Risk Distribution (ECharts) */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Risk Distribution" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
+                                <p className="text-xs text-gray-400">Vulnerability assessment</p>
+                            </div>
+                            <ReactECharts option={riskPieOption} style={{ height: '200px' }} />
                         </div>
-                        <div className="h-[250px]">
-                            <ReactECharts option={riskPieOption} style={{ height: '100%' }} />
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Forecast per Region (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[250px]" title="Regional Forecast" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Forecast</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Expected performance per territory</p>
+                    {/* Row 2, Col 2: Regional Forecast (Recharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Regional Forecast" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Regional Forecast</h3>
+                                <p className="text-xs text-gray-400">Territory performance</p>
+                            </div>
+                            <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={FORECAST_BY_REGION_DATA} layout="vertical" margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis dataKey="name" type="category" width={60} fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={FORECAST_BY_REGION_DATA} layout="vertical" margin={{ left: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                    <Bar dataKey="forecast" name="Exp. Sales" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
-            </div>
+                    )}
 
-            {/* --- SECTION 3: Decision Table & Companion Chart --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                </div>
+
+                {/* Right Column: Side KPIs (1 col) */}
+                <div className="col-span-1 flex flex-col gap-6">
+                    {SIDE_KPIS.map((kpi) => (
+                        <div key={kpi.id} className="flex-1">
+                            <KPICard
+                                {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                color="blue"
+                                className="h-full"
+                                loading={isLoading}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Decision Table (1/2 Columns) */}
                 {isLoading ? (
@@ -407,7 +425,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                                         <th className="px-6 py-4">Target (Product/Region)</th>
                                         <th className="px-6 py-4 text-right">Last 30D Avg</th>
                                         <th className="px-6 py-4 text-right">Next 30D Forecast</th>
-                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-indigo-600" onClick={() => handleSort('deviation')}>Dev. %</th>
+                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('deviation')}>Dev. %</th>
                                         <th className="px-6 py-4">Status</th>
                                     </tr>
                                 </thead>
@@ -487,8 +505,9 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                     </div>
                 )}
 
-            </div>
+                </div>
 
+            </div>
         </div>
     );
 };

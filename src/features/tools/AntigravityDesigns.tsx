@@ -30,7 +30,7 @@ const ImprovedSparklineCard: React.FC<{
     const chartData = data.map((v, i) => ({ value: v, i }));
 
     return (
-        <div className="relative flex flex-col justify-between p-5 bg-white dark:bg-[#1C1C1E] border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all h-[140px] overflow-hidden group">
+        <div className="relative flex flex-col justify-between p-5 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all h-[140px] overflow-hidden group">
             <div className="z-10 relative">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ const ImprovedSparklineCard: React.FC<{
 };
 
 const CardContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`relative bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-gray-800 rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${className}`}>
+    <div className={`relative bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${className}`}>
         {children}
     </div>
 );
@@ -224,7 +224,7 @@ export const AntigravityDesigns: React.FC = () => {
                     </CardContainer>
 
                     {/* 6. Action Tile: Interactive */}
-                    <div className="group h-[160px] bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative cursor-pointer hover:border-black dark:hover:border-white transition-colors duration-200">
+                    <div className="group h-[160px] bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative cursor-pointer hover:border-black dark:hover:border-white transition-colors duration-200">
                         <div className="flex justify-between items-start mb-6">
                             <div className="p-2 bg-black text-white rounded-lg group-hover:bg-gray-800 transition-colors">
                                 <Wallet size={20} weight="fill" />

@@ -13,7 +13,7 @@ const INITIAL_BOARD: Board = {
         { id: 'updated', title: 'Last Updated', type: 'date' }
     ],
     tasks: [],
-    availableViews: ['overview', 'table', 'data'],
+    availableViews: ['datatable'],
     defaultView: 'overview'
 };
 

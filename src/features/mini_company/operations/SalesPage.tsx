@@ -63,14 +63,16 @@ const SalesPage: React.FC = () => {
         const saved = localStorage.getItem('dept-sales-data');
         if (saved) {
             const parsed = JSON.parse(saved);
-            // Ensure new dashboard views are available
-            const requiredViews = ['overview', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'datatable'];
-            const currentViews = parsed.availableViews || [];
-            const missingViews = requiredViews.filter(v => !currentViews.includes(v));
-            if (missingViews.length > 0) {
-                parsed.availableViews = [...currentViews, ...missingViews];
-            }
-            return parsed;
+            // Ensure all initial views are present (merge new dashboards with saved preferences)
+            const savedViews = parsed.availableViews || [];
+            const initialViews = INITIAL_BOARD.availableViews || [];
+            const mergedViews = [...savedViews];
+            initialViews.forEach(view => {
+                if (!mergedViews.includes(view)) {
+                    mergedViews.push(view);
+                }
+            });
+            return { ...parsed, availableViews: mergedViews };
         }
         return INITIAL_BOARD;
     });

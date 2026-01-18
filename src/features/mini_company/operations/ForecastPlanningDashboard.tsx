@@ -20,6 +20,7 @@ const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
     { id: '5', label: 'Supply Risk Ahead', subtitle: 'Potential Issues', value: 'Low', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 1, 1, 1, 0, 0, 0] },
     { id: '6', label: 'Planned Orders', subtitle: 'Drafted', value: '8', change: '+2', trend: 'up', icon: <ListChecks size={18} />, sparklineData: [5, 6, 6, 7, 7, 8, 8] },
     { id: '7', label: 'Budget Impact', subtitle: '% of Annual Limit', value: '15%', change: '+1%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [12, 13, 13, 14, 14, 14, 15] },
+    { id: '8', label: 'Variance Trend', subtitle: 'Forecast vs Actual', value: '-2.1%', change: '-0.5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [4, 3.5, 3.2, 2.8, 2.5, 2.3, 2.1] },
 ];
 
 // --- Mock Data: Charts ---
@@ -37,6 +38,24 @@ const FUTURE_ALLOCATION = [
     { value: 18, name: 'SaaS' },
     { value: 15, name: 'Office' },
     { value: 7, name: 'Furniture' }
+];
+
+// New: Monthly Spend Projection
+const SPEND_PROJECTION = [
+    { name: 'Jan', value: 38 },
+    { name: 'Feb', value: 40 },
+    { name: 'Mar', value: 42 },
+    { name: 'Apr', value: 44 },
+    { name: 'May', value: 45 },
+    { name: 'Jun', value: 47 },
+];
+
+// New: Budget Utilization by Quarter
+const BUDGET_UTILIZATION = [
+    { name: 'Q1 Actual', value: 35 },
+    { name: 'Q2 Forecast', value: 28 },
+    { name: 'Q3 Forecast', value: 22 },
+    { name: 'Q4 Forecast', value: 15 },
 ];
 
 // --- Mock Data: Table & Confidence Cone ---
@@ -75,7 +94,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Future Allocation
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -85,7 +104,24 @@ export const ForecastPlanningDashboard: React.FC = () => {
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
             data: FUTURE_ALLOCATION
+        }]
+    };
+
+    // Pie Chart - Budget Utilization
+    const budgetPieOption: EChartsOption = {
+        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            data: BUDGET_UTILIZATION,
+            color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
         }]
     };
 
@@ -173,7 +209,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color="indigo"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -181,10 +217,10 @@ export const ForecastPlanningDashboard: React.FC = () => {
 
                 {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Charts Area */}
+                {/* Charts Area - 2x2 Grid */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Recharts: Forecast per Category */}
+                    {/* Row 1, Col 1: Recharts - Forecast per Category */}
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Forecast per Category" />
                     ) : (
@@ -193,7 +229,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast per Category</h3>
                                 <p className="text-xs text-gray-400">Previous vs Projected</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={FORECAST_VS_LAST} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -205,14 +241,40 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                         />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                                         <Bar dataKey="last" name="Last Period" fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={12} />
-                                        <Bar dataKey="forecast" name="Forecast" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={12} />
+                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
 
-                    {/* ECharts: Future Allocation */}
+                    {/* Row 1, Col 2: Recharts - Spend Projection */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Spend Projection" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Projection</h3>
+                                <p className="text-xs text-gray-400">Monthly forecast (k$)</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={SPEND_PROJECTION} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: ECharts - Future Allocation */}
                     {isLoading ? (
                         <PieChartSkeleton title="Future Allocation" />
                     ) : (
@@ -221,7 +283,20 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Future Allocation</h3>
                                 <p className="text-xs text-gray-400">Budget distribution</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: ECharts - Budget Utilization */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Budget Utilization" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget Utilization</h3>
+                                <p className="text-xs text-gray-400">Quarterly spending progress</p>
+                            </div>
+                            <ReactECharts option={budgetPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -233,7 +308,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color="indigo"
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -283,7 +358,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 {/* Companion Chart: Confidence Cone (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Spend Projection" />
+                        <ChartSkeleton height="h-[280px]" title="Spend Projection" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

@@ -10,16 +10,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Warehouses Count', subtitle: 'Active Facilities', value: '4', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [4, 4, 4, 4, 4, 4], color: 'violet' },
+    { id: '1', label: 'Warehouses Count', subtitle: 'Active Facilities', value: '4', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [4, 4, 4, 4, 4, 4], color: 'blue' },
     { id: '2', label: 'Total Utilization', subtitle: 'Capacity Used', value: '78%', change: '+3%', trend: 'up', icon: <Cube size={18} />, sparklineData: [70, 72, 75, 76, 77, 78], color: 'blue' },
-    { id: '3', label: 'Picking Time Avg', subtitle: 'Per Order', value: '14m', change: '-2m', trend: 'up', icon: <Clock size={18} />, sparklineData: [18, 17, 16, 15, 15, 14], color: 'indigo' },
-    { id: '4', label: 'Fulfillment Speed', subtitle: 'Orders / Hour', value: '45', change: '+5', trend: 'up', icon: <Lightning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'emerald' },
+    { id: '3', label: 'Picking Time Avg', subtitle: 'Per Order', value: '14m', change: '-2m', trend: 'up', icon: <Clock size={18} />, sparklineData: [18, 17, 16, 15, 15, 14], color: 'blue' },
+    { id: '4', label: 'Fulfillment Speed', subtitle: 'Orders / Hour', value: '45', change: '+5', trend: 'up', icon: <Lightning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Storage Efficiency', subtitle: 'Cubic Usage', value: '88%', change: '+2%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [84, 85, 86, 87, 88, 88], color: 'cyan' },
-    { id: '6', label: 'Error Rate', subtitle: 'Pick/Pack', value: '0.8%', change: '-0.1%', trend: 'up', icon: <Warning size={18} />, sparklineData: [1.2, 1.1, 1.0, 0.9, 0.9, 0.8], color: 'amber' },
-    { id: '7', label: 'Capacity Alerts', subtitle: 'Near Full', value: '1', change: '0', trend: 'down', icon: <Warning size={18} />, sparklineData: [2, 2, 1, 1, 1, 1], color: 'rose' },
+    { id: '5', label: 'Storage Efficiency', subtitle: 'Cubic Usage', value: '88%', change: '+2%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [84, 85, 86, 87, 88, 88], color: 'blue' },
+    { id: '6', label: 'Error Rate', subtitle: 'Pick/Pack', value: '0.8%', change: '-0.1%', trend: 'up', icon: <Warning size={18} />, sparklineData: [1.2, 1.1, 1.0, 0.9, 0.9, 0.8], color: 'blue' },
+    { id: '7', label: 'Capacity Alerts', subtitle: 'Near Full', value: '1', change: '0', trend: 'down', icon: <Warning size={18} />, sparklineData: [2, 2, 1, 1, 1, 1], color: 'blue' },
+    { id: '8', label: 'On-Time Ship', subtitle: 'Fulfillment %', value: '96.5%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [93, 94, 94.5, 95, 95.8, 96.5], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -33,6 +34,24 @@ const WAREHOUSE_PERFORMANCE = [
 const CAPACITY_USAGE = [
     { value: 78, name: 'Used' },
     { value: 22, name: 'Free' }
+];
+
+// New chart data: Daily Throughput
+const DAILY_THROUGHPUT = [
+    { name: 'Mon', value: 420 },
+    { name: 'Tue', value: 485 },
+    { name: 'Wed', value: 510 },
+    { name: 'Thu', value: 475 },
+    { name: 'Fri', value: 550 },
+    { name: 'Sat', value: 320 },
+];
+
+// New chart data: Order Status
+const ORDER_STATUS = [
+    { value: 45, name: 'Completed' },
+    { value: 30, name: 'In Progress' },
+    { value: 15, name: 'Pending' },
+    { value: 10, name: 'On Hold' }
 ];
 
 // --- Mock Data: Table & Grid ---
@@ -69,7 +88,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Capacity Usage
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -81,6 +100,21 @@ export const WarehousePerformanceDashboard: React.FC = () => {
             label: { show: false },
             data: CAPACITY_USAGE,
             color: ['#8b5cf6', '#e5e7eb']
+        }]
+    };
+
+    // Pie Chart - Order Status
+    const orderStatusPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: ORDER_STATUS,
+            color: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444']
         }]
     };
 
@@ -142,7 +176,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'violet'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -162,7 +196,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Facility Throughput</h3>
                                 <p className="text-xs text-gray-400">Activity scores</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={WAREHOUSE_PERFORMANCE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -173,9 +207,9 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="picking" name="Picking" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={10} />
+                                        <Bar dataKey="picking" name="Picking" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={10} />
                                         <Bar dataKey="shipping" name="Shipping" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={10} />
-                                        <Bar dataKey="storage" name="Storage" fill="#10b981" radius={[4, 4, 0, 0]} barSize={10} />
+                                        <Bar dataKey="storage" name="Storage" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={10} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -191,7 +225,46 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Total Capacity</h3>
                                 <p className="text-xs text-gray-400">Space utilization</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Recharts: Daily Throughput */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Daily Throughput" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Daily Throughput</h3>
+                                <p className="text-xs text-gray-400">Orders processed per day</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={DAILY_THROUGHPUT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ECharts: Order Status */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Order Status" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Order Status</h3>
+                                <p className="text-xs text-gray-400">Fulfillment breakdown</p>
+                            </div>
+                            <ReactECharts option={orderStatusPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -203,7 +276,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -241,7 +314,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                                             <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.orders}</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.score.startsWith('A') ? 'bg-emerald-100 text-emerald-700' :
-                                                        'bg-amber-100 text-amber-700'
+                                                    'bg-amber-100 text-amber-700'
                                                     }`}>
                                                     {row.score}
                                                 </span>
@@ -256,7 +329,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
 
                 {/* Companion Chart: Grid (2 cols) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[340px]" title="Zone Efficiency" />
+                    <ChartSkeleton height="h-[280px]" title="Zone Efficiency" />
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                         <ReactECharts option={gridOption} style={{ height: '300px', width: '100%' }} />

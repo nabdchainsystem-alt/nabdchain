@@ -10,16 +10,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Below Reorder Point', subtitle: 'Action Required', value: '18', change: '+4', trend: 'down', icon: <Warning size={18} />, sparklineData: [14, 15, 15, 16, 17, 18], color: 'red' },
+    { id: '1', label: 'Below Reorder Point', subtitle: 'Action Required', value: '18', change: '+4', trend: 'down', icon: <Warning size={18} />, sparklineData: [14, 15, 15, 16, 17, 18], color: 'blue' },
     { id: '2', label: 'Reorder Qty Needed', subtitle: 'To Max Level', value: '2,450', rawValue: 2450, isCurrency: false, change: '+12%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [2000, 2100, 2200, 2300, 2400, 2450], color: 'blue' },
-    { id: '3', label: 'Avg Lead Time', subtitle: 'Supplier Speed', value: '12d', change: '+1d', trend: 'down', icon: <Clock size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'indigo' },
-    { id: '4', label: 'Days Stock Left', subtitle: 'Runway', value: '24d', change: '-2d', trend: 'down', icon: <Package size={18} />, sparklineData: [28, 27, 26, 25, 25, 24], color: 'amber' },
+    { id: '3', label: 'Avg Lead Time', subtitle: 'Supplier Speed', value: '12d', change: '+1d', trend: 'down', icon: <Clock size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
+    { id: '4', label: 'Days Stock Left', subtitle: 'Runway', value: '24d', change: '-2d', trend: 'down', icon: <Package size={18} />, sparklineData: [28, 27, 26, 25, 25, 24], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Emergency Reorders', subtitle: 'Expedited', value: '3', change: '-1', trend: 'up', icon: <Lightning size={18} />, sparklineData: [5, 4, 4, 3, 3, 3], color: 'orange' },
-    { id: '6', label: 'Overstock Items', subtitle: '> Max Limit', value: '45', change: '+5', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [40, 41, 42, 43, 44, 45], color: 'cyan' },
-    { id: '7', label: 'Planning Confidence', subtitle: 'Data Reliability', value: '92%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [90, 91, 91, 91, 92, 92], color: 'emerald' },
+    { id: '5', label: 'Emergency Reorders', subtitle: 'Expedited', value: '3', change: '-1', trend: 'up', icon: <Lightning size={18} />, sparklineData: [5, 4, 4, 3, 3, 3], color: 'blue' },
+    { id: '6', label: 'Overstock Items', subtitle: '> Max Limit', value: '45', change: '+5', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [40, 41, 42, 43, 44, 45], color: 'blue' },
+    { id: '7', label: 'Planning Confidence', subtitle: 'Data Reliability', value: '92%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [90, 91, 91, 91, 92, 92], color: 'blue' },
+    { id: '8', label: 'Stockout Risk', subtitle: 'Items at risk', value: '8', change: '-2', trend: 'up', icon: <Warning size={18} />, sparklineData: [12, 11, 10, 9, 9, 8], color: 'blue' },
 ];
 
 // Import Icon for use in Mock Data definition if needed, or just use component directly
@@ -39,6 +40,23 @@ const STOCK_COVERAGE_STATUS = [
     { value: 20, name: 'Overstock (>90d)' },
     { value: 15, name: 'Low (<30d)' },
     { value: 5, name: 'Critical (<7d)' }
+];
+
+// New chart data: Lead Time by Supplier
+const LEAD_TIME_BY_SUPPLIER = [
+    { name: 'Supplier A', value: 8 },
+    { name: 'Supplier B', value: 12 },
+    { name: 'Supplier C', value: 5 },
+    { name: 'Supplier D', value: 15 },
+    { name: 'Supplier E', value: 10 },
+];
+
+// New chart data: Urgency Level
+const URGENCY_LEVEL = [
+    { value: 35, name: 'Low' },
+    { value: 40, name: 'Medium' },
+    { value: 18, name: 'High' },
+    { value: 7, name: 'Critical' }
 ];
 
 // --- Mock Data: Table & Wave ---
@@ -75,7 +93,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Stock Coverage Status
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -87,6 +105,21 @@ export const ReorderPlanningDashboard: React.FC = () => {
             label: { show: false },
             data: STOCK_COVERAGE_STATUS,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+        }]
+    };
+
+    // Pie Chart - Urgency Level
+    const urgencyPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: URGENCY_LEVEL,
+            color: ['#22c55e', '#eab308', '#f97316', '#dc2626']
         }]
     };
 
@@ -155,7 +188,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -175,7 +208,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Reorder Amounts</h3>
                                 <p className="text-xs text-gray-400">Qty to order per SKU</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={REORDER_QTY_BY_SKU} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -201,7 +234,46 @@ export const ReorderPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Coverage Status</h3>
                                 <p className="text-xs text-gray-400">Inventory health</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Recharts: Lead Time by Supplier */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Lead Time by Supplier" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time by Supplier</h3>
+                                <p className="text-xs text-gray-400">Days to delivery</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={LEAD_TIME_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ECharts: Urgency Level */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Urgency Level" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Urgency Level</h3>
+                                <p className="text-xs text-gray-400">Reorder priority</p>
+                            </div>
+                            <ReactECharts option={urgencyPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -213,7 +285,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />

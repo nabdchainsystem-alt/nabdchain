@@ -59,7 +59,7 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, on
 
     return createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#1f2937] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">

@@ -2,7 +2,10 @@ import React from 'react';
 import ProductivitySidebar from '../../components/common/ProductivitySidebar';
 import TalkSidebar from './components/TalkSidebar';
 
+import { useAppContext } from '../../contexts/AppContext';
+
 const TalkPage: React.FC = () => {
+    const { t } = useAppContext();
     return (
         <div className="flex flex-col h-full bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark font-sans overflow-hidden">
             {/* Page Header */}
@@ -13,7 +16,7 @@ const TalkPage: React.FC = () => {
                         <span className="text-text-secondary-light dark:text-text-secondary-dark mr-2">#</span>
                         project-phoenix-launch
                     </h1>
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Active Sprint</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">{t('active_sprint')}</span>
                 </div>
                 <div className="flex items-center space-x-4">
                     <div className="flex -space-x-2 overflow-hidden">
@@ -50,8 +53,8 @@ const TalkPage: React.FC = () => {
                                 <span className="material-icons text-3xl">chat_bubble_outline</span>
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold">No messages yet</h3>
-                                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">Select a channel or start a new discussion to begin talking.</p>
+                                <h3 className="text-lg font-semibold">{t('no_messages_yet')}</h3>
+                                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">{t('start_new_discussion_desc')}</p>
                             </div>
                         </div>
                     </div>
@@ -79,7 +82,7 @@ const TalkPage: React.FC = () => {
                             </div>
                             <textarea
                                 className="w-full bg-transparent p-3 text-sm max-h-48 focus:ring-0 focus:outline-none border-0 resize-none text-text-primary-light dark:text-text-primary-dark placeholder-text-secondary-light dark:placeholder-text-secondary-dark"
-                                placeholder="Message #project-phoenix-launch"
+                                placeholder={`${t('message')} #project-phoenix-launch`}
                                 rows={3}
                             ></textarea>
                             <div className="flex items-center justify-between px-3 py-2">
@@ -95,14 +98,14 @@ const TalkPage: React.FC = () => {
                                     </button>
                                 </div>
                                 <button className="bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center">
-                                    Send
+                                    {t('send')}
                                     <span className="material-icons text-sm ml-1">send</span>
                                 </button>
                             </div>
                         </div>
                         <div className="text-center mt-2">
                             <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                                <span className="font-bold">Pro Tip:</span> Type <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs font-mono">/task</code> to create a new task directly from chat.
+                                <span className="font-bold">{t('pro_tip')}</span> {t('type')} <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs font-mono">/task</code> {t('to_create_task_chat')}
                             </p>
                         </div>
                     </div>

@@ -647,13 +647,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   onClick={scrollLeft}
                   className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors"
                 >
-                  <CaretLeft size={18} weight="light" />
+                  {language === 'ar' ? <CaretRight size={18} weight="light" /> : <CaretLeft size={18} weight="light" />}
                 </button>
                 <button
                   onClick={scrollRight}
                   className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors"
                 >
-                  <CaretRight size={18} weight="light" />
+                  {language === 'ar' ? <CaretLeft size={18} weight="light" /> : <CaretRight size={18} weight="light" />}
                 </button>
               </div>
             </div>
@@ -757,7 +757,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           ) : (
                             <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">{t('open')}</span>
                           )}
-                          <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp)}</span>
+                          <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp, language)}</span>
                         </div>
                       </div>
                     </div>
@@ -920,30 +920,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             {(personSearchQuery || selectedPersons.length === 0) && (
                               <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 dark:border-monday-dark-border py-1 z-50 max-h-48 overflow-y-auto">
                                 {filteredPeopleAndTeams.map((item, idx) => (
-                                    <button
-                                      key={item.id}
-                                      onClick={() => {
-                                        setSelectedPersons(prev => [...prev, item.name]);
-                                        setPersonSearchQuery('');
-                                        setActiveFilter('person');
-                                        setHighlightedIndex(0);
-                                      }}
-                                      className={`w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-monday-dark-text flex items-center gap-2 transition-colors ${
-                                        idx === highlightedIndex ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50 dark:hover:bg-monday-dark-elevated dark:bg-monday-dark-elevated'
+                                  <button
+                                    key={item.id}
+                                    onClick={() => {
+                                      setSelectedPersons(prev => [...prev, item.name]);
+                                      setPersonSearchQuery('');
+                                      setActiveFilter('person');
+                                      setHighlightedIndex(0);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-monday-dark-text flex items-center gap-2 transition-colors ${idx === highlightedIndex ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50 dark:hover:bg-monday-dark-elevated dark:bg-monday-dark-elevated'
                                       }`}
-                                    >
-                                      <div className={`w-5 h-5 rounded-full ${item.type === 'team' ? 'bg-indigo-500' : item.color} flex items-center justify-center text-[10px] font-bold text-white`}>
-                                        {item.initials.charAt(0)}
-                                      </div>
-                                      <span className="flex-1">{item.name}</span>
-                                      {item.type === 'team' && (
-                                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded">{t('team')}</span>
-                                      )}
-                                    </button>
-                                  ))}
+                                  >
+                                    <div className={`w-5 h-5 rounded-full ${item.type === 'team' ? 'bg-indigo-500' : item.color} flex items-center justify-center text-[10px] font-bold text-white`}>
+                                      {item.initials.charAt(0)}
+                                    </div>
+                                    <span className="flex-1">{item.name}</span>
+                                    {item.type === 'team' && (
+                                      <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded">{t('team')}</span>
+                                    )}
+                                  </button>
+                                ))}
                                 {filteredPeopleAndTeams.length === 0 && (
-                                    <div className="px-3 py-2 text-xs text-gray-400 dark:text-monday-dark-text-muted text-center">{t('no_matches')}</div>
-                                  )}
+                                  <div className="px-3 py-2 text-xs text-gray-400 dark:text-monday-dark-text-muted text-center">{t('no_matches')}</div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -991,9 +990,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           <div className="flex-shrink-0 w-20 flex justify-center ml-4">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider
                                 ${task.normalizedPriority === 'Urgent' ? 'bg-red-100 text-red-800' :
-                                  task.normalizedPriority === 'High' ? 'bg-orange-100 text-orange-800' :
+                                task.normalizedPriority === 'High' ? 'bg-orange-100 text-orange-800' :
                                   'bg-blue-100 text-blue-800'}`}>
-                              {task.normalizedPriority || task.priority}
+                              {t((task.normalizedPriority || task.priority || '').toLowerCase())}
                             </span>
                           </div>
 
@@ -1025,7 +1024,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         disabled={urgentTasksPage === 1}
                         className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                       >
-                        <CaretLeft size={14} weight="light" />
+                        {language === 'ar' ? <CaretRight size={14} weight="light" /> : <CaretLeft size={14} weight="light" />}
                       </button>
                       <span className="text-[10px] font-medium text-gray-500 dark:text-monday-dark-text-secondary px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
                       <button
@@ -1033,7 +1032,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         disabled={urgentTasksPage === totalUrgentPages}
                         className="p-1 rounded hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                       >
-                        <CaretRight size={14} weight="light" />
+                        {language === 'ar' ? <CaretLeft size={14} weight="light" /> : <CaretRight size={14} weight="light" />}
                       </button>
                     </div>
                   )}
@@ -1116,9 +1115,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         <li key={activity.id}>
                           <div className="relative pb-8">
                             {idx !== activities.length - 1 && (
-                              <span aria-hidden="true" className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                              <span aria-hidden="true" className={`absolute top-4 h-full w-0.5 bg-gray-200 ${language === 'ar' ? 'right-4 -mr-px' : 'left-4 -ml-px'}`}></span>
                             )}
-                            <div className="relative flex space-x-3">
+                            <div className="relative flex gap-3">
                               <div>
                                 {(() => {
                                   const styles = getActivityStyles(activity.type);
@@ -1129,14 +1128,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                   );
                                 })()}
                               </div>
-                              <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                              <div className="min-w-0 flex-1 pt-1.5 flex justify-between gap-4">
                                 <div>
                                   <p className="text-sm text-gray-500 dark:text-monday-dark-text-secondary">
                                     {activity.content}
                                   </p>
                                 </div>
                                 <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-monday-dark-text-secondary">
-                                  {formatTimeAgo(new Date(activity.createdAt).getTime())}
+                                  {formatTimeAgo(new Date(activity.createdAt).getTime(), language)}
                                 </div>
                               </div>
                             </div>

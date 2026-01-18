@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Departments Count', subtitle: 'Active', value: '8', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [8, 8, 8, 8, 8, 8], color: 'slate' },
+    { id: '1', label: 'Departments Count', subtitle: 'Active', value: '8', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [8, 8, 8, 8, 8, 8], color: 'blue' },
     { id: '2', label: 'Highest Spending', subtitle: 'Engineering', value: '$120k', change: '+5%', trend: 'up', icon: <UsersThree size={18} />, sparklineData: [110, 115, 112, 118, 120, 120], color: 'blue' },
-    { id: '3', label: 'Budget Variance', subtitle: 'Total Excess', value: '$12.5k', change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'red' },
-    { id: '4', label: 'Avg Dept Expense', subtitle: 'Per Month', value: '$45k', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'indigo' },
+    { id: '3', label: 'Budget Variance', subtitle: 'Total Excess', value: '$12.5k', change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'blue' },
+    { id: '4', label: 'Avg Dept Expense', subtitle: 'Per Month', value: '$45k', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Over-Budget Depts', subtitle: 'Red Flags', value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [1, 1, 0, 1, 1, 2], color: 'rose' },
-    { id: '6', label: 'Efficiency Score', subtitle: 'Org Wide', value: '85/100', change: '+2', trend: 'up', icon: <Trophy size={18} />, sparklineData: [80, 82, 83, 84, 84, 85], color: 'emerald' },
-    { id: '7', label: 'Accountability Index', subtitle: 'Compliance', value: '92%', change: '0%', trend: 'neutral', icon: <ChartPieSlice size={18} />, sparklineData: [90, 91, 92, 92, 92, 92], color: 'violet' },
+    { id: '5', label: 'Over-Budget Depts', subtitle: 'Red Flags', value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [1, 1, 0, 1, 1, 2], color: 'blue' },
+    { id: '6', label: 'Efficiency Score', subtitle: 'Org Wide', value: '85/100', change: '+2', trend: 'up', icon: <Trophy size={18} />, sparklineData: [80, 82, 83, 84, 84, 85], color: 'blue' },
+    { id: '7', label: 'Accountability Index', subtitle: 'Compliance', value: '92%', change: '0%', trend: 'neutral', icon: <ChartPieSlice size={18} />, sparklineData: [90, 91, 92, 92, 92, 92], color: 'blue' },
+    { id: '8', label: 'Cost per Employee', subtitle: 'Avg Monthly', value: '$2,850', change: '-2%', trend: 'down', icon: <UsersThree size={18} />, sparklineData: [3000, 2950, 2900, 2880, 2860, 2850], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -116,7 +117,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <DeptAccountabilityInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -131,14 +132,14 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-orange-500" />
                         About Dashboard
@@ -153,7 +154,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -164,12 +165,12 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Spend per Dept (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Department</h3>
                             <p className="text-xs text-gray-400">Total Spend</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={SPEND_PER_DEPT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -179,19 +180,19 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Amount" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={24} />
+                                    <Bar dataKey="Amount" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Dept Share (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Distribution</h3>
                             <p className="text-xs text-gray-400">Share by Department</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -202,7 +203,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -212,7 +213,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Department Performance</h3>
                     </div>
@@ -245,7 +246,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Network (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={graphOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

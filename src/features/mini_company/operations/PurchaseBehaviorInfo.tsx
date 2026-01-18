@@ -141,6 +141,7 @@ export const PurchaseBehaviorInfo: React.FC<PurchaseBehaviorInfoProps> = ({ isOp
                                     <DetailItem title="Avg Order Gap (Days)" desc="Average time interval between consecutive orders." />
                                     <DetailItem title="Spike Detection Count" desc="Number of days where spending exceeded 3x the daily average." />
                                     <DetailItem title="Irregular Purchase %" desc="Percentage of orders that fall outside standard buying patterns." />
+                                    <DetailItem title="Peak Purchase Day" desc="Day of the week with highest purchasing activity based on historical patterns." />
                                 </div>
                             </div>
 
@@ -149,10 +150,12 @@ export const PurchaseBehaviorInfo: React.FC<PurchaseBehaviorInfoProps> = ({ isOp
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Orders per Category" desc="Bar chart (Recharts) showing volume by category." />
-                                    <DetailItem title="Category Mix" desc="Pie chart (ECharts) illustrating portfolio diversity." />
-                                    <DetailItem title="Behavior Metrics Table" desc="Detailed breakdown of frequency and value by category." />
-                                    <DetailItem title="Temporal Purchase Wave" desc="Heatmap/Spiral chart (ECharts) visualizing order density over time." />
+                                    <DetailItem title="Orders per Category" desc="Bar chart (Recharts) showing volume breakdown by purchasing category." />
+                                    <DetailItem title="Purchase Velocity" desc="Bar chart (Recharts) showing monthly order frequency trends." />
+                                    <DetailItem title="Category Mix (Spend)" desc="Donut chart (ECharts) illustrating spend portfolio diversity." />
+                                    <DetailItem title="Order Source Distribution" desc="Donut chart (ECharts) showing purchase initiation types (Direct, Auto-Reorder, Requisition, Emergency)." />
+                                    <DetailItem title="Category Performance Table" desc="Detailed breakdown of order count, average value, and last purchase date by category." />
+                                    <DetailItem title="Temporal Purchase Wave" desc="Heatmap chart (ECharts) visualizing weekly order density patterns over time." />
                                 </div>
                             </div>
                         </div>

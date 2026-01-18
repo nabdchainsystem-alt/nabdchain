@@ -194,7 +194,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
   };
 
   return (
-    <div className="flex-1 bg-white dark:bg-[#050505] h-full overflow-hidden font-serif text-[#1A1A1A] dark:text-white transition-colors duration-300">
+    <div className="flex-1 bg-white dark:bg-monday-dark-bg h-full overflow-hidden font-serif text-[#1A1A1A] dark:text-white transition-colors duration-300">
       <div className="max-w-5xl mx-auto h-full flex flex-col items-center pt-6">
 
         {/* 1. Header */}

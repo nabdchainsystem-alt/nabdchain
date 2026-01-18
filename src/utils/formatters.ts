@@ -8,10 +8,27 @@
  * @param input - Unix timestamp (number) or ISO date string
  * @returns Formatted relative time string
  */
-export const formatTimeAgo = (input: number | string): string => {
+export const formatTimeAgo = (input: number | string, language: 'en' | 'ar' = 'en'): string => {
     const timestamp = typeof input === 'string' ? new Date(input).getTime() : input;
     const diff = Math.max(0, Date.now() - timestamp);
     const mins = Math.floor(diff / 60000);
+
+    if (language === 'ar') {
+        if (mins < 1) return 'الآن';
+        if (mins < 60) return `منذ ${mins} د`;
+
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `منذ ${hours} س`;
+
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `منذ ${days} ي`;
+
+        const weeks = Math.floor(days / 7);
+        if (days < 30) return `منذ ${weeks} أسابيع`;
+
+        const months = Math.floor(days / 30);
+        return `منذ ${months} أشهر`;
+    }
 
     if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;

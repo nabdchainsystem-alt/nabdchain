@@ -87,7 +87,7 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
     return (
         <div className="h-full w-full flex flex-col gap-4 py-4">
             <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-monday-dark-surface border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
                     <Repeat size={18} className="text-slate-700" />
                     <div className="flex flex-col leading-tight">
                         <span className="text-[11px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Recurring logic</span>
@@ -97,14 +97,14 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
             </div>
 
             {/* Builder */}
-            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+            <div className="bg-white dark:bg-monday-dark-surface border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                     <input
                         value={draft.itemName}
                         onChange={(e) => setDraft((d) => ({ ...d, itemName: e.target.value }))}
                         placeholder="Item name"
                         list={`recurring-tasks-${boardId}`}
-                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#111827] text-sm px-3 py-2 focus:outline-none md:col-span-2"
+                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-monday-dark-bg text-sm px-3 py-2 focus:outline-none md:col-span-2"
                     />
                     <datalist id={`recurring-tasks-${boardId}`}>
                         {tasks.slice(0, 15).map((task) => (
@@ -114,7 +114,7 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
                     <select
                         value={draft.frequency}
                         onChange={(e) => setDraft((d) => ({ ...d, frequency: e.target.value as Frequency }))}
-                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#111827] text-sm px-3 py-2 focus:outline-none"
+                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-monday-dark-bg text-sm px-3 py-2 focus:outline-none"
                     >
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
@@ -126,7 +126,7 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
                         value={draft.intervalDays ?? 7}
                         onChange={(e) => setDraft((d) => ({ ...d, intervalDays: Number(e.target.value) }))}
                         disabled={draft.frequency !== 'custom'}
-                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#111827] text-sm px-3 py-2 focus:outline-none disabled:bg-slate-100 disabled:dark:bg-[#0f172a]"
+                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-monday-dark-bg text-sm px-3 py-2 focus:outline-none disabled:bg-slate-100 disabled:dark:bg-monday-dark-surface"
                     />
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -143,7 +143,7 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
             {/* Rules list */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {rules.map((rule) => (
-                    <div key={rule.id} className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                    <div key={rule.id} className="bg-white dark:bg-monday-dark-surface border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold">{rule.frequency}</p>
@@ -186,7 +186,7 @@ const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> =
 
             {rules.length === 0 && <div className="text-sm text-slate-500">No recurring work yet. Add a rule to keep repeats consistent.</div>}
 
-            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+            <div className="bg-white dark:bg-monday-dark-surface border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                 <RotateCw size={18} className="text-slate-700" />
                 <span>Recurring rules stay lightweight. Weekly, monthly, or custom intervals with preserved history per occurrence.</span>
             </div>

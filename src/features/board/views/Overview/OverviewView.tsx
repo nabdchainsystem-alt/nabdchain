@@ -101,7 +101,7 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({
             style={style}
             className={`
                 group relative flex flex-col
-                bg-white dark:bg-[#25282e] border-gray-100 dark:border-gray-800 shadow-sm
+                bg-white dark:bg-monday-dark-elevated border-gray-100 dark:border-gray-800 shadow-sm
                 hover:shadow-md transition-all duration-200
                 ${isTable ? '-mx-6 w-[calc(100%+3rem)] rounded-none border-y' : 'rounded-xl border'}
             `}
@@ -191,7 +191,7 @@ const KPIContent = ({ widget }: { widget: Widget }) => {
 
 const ChartContent = ({ widget }: { widget: Widget }) => {
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50/50 dark:bg-[#1a1d24] rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-2">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50/50 dark:bg-monday-dark-surface rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-2">
             <div className="text-center">
                 <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 mb-2">
                     <PieChart size={16} />
@@ -215,7 +215,7 @@ const TableContent = ({ widget, boardId }: { widget: Widget, boardId: string }) 
     ];
 
     return (
-        <div className="w-full h-full overflow-hidden bg-white dark:bg-[#1a1d24] rounded-lg border border-gray-100 dark:border-gray-800">
+        <div className="w-full h-full overflow-hidden bg-white dark:bg-monday-dark-surface rounded-lg border border-gray-100 dark:border-gray-800">
             <RoomTable
                 roomId={boardId}
                 viewId={`datatable - ${widget.id} `}
@@ -346,7 +346,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ boardId, tasks = [] 
     ];
 
     return (
-        <div className="w-full h-full flex flex-col bg-gray-50/50 dark:bg-[#15171b] overflow-y-auto pb-20">
+        <div className="w-full h-full flex flex-col bg-gray-50/50 dark:bg-monday-dark-bg overflow-y-auto pb-20">
             {/* Canvas Area */}
             <DndContext
                 sensors={sensors}

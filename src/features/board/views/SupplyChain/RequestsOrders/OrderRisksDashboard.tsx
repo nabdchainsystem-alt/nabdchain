@@ -60,7 +60,7 @@ export const OrderRisksDashboard: React.FC = () => {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-gray-50 dark:bg-[#09090b] p-6 overflow-y-auto">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-monday-dark-bg p-6 overflow-y-auto">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Order Risks & Exceptions</h1>
             <p className="text-gray-500 text-sm mb-6">Problems needing immediate attention: blocked orders, holds, and critical delays.</p>
 

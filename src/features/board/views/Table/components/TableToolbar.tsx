@@ -161,7 +161,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     const filterableColumns = columns.filter(c => c.id !== 'select' && c.type !== 'select');
 
     return (
-        <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22] pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
+        <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
             <div className="flex items-center gap-3 text-stone-500 dark:text-stone-400 relative">
                 {/* Search - Expandable */}
                 <div className="relative flex items-center">

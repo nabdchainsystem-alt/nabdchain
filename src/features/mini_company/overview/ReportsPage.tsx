@@ -14,8 +14,8 @@ const INITIAL_BOARD: Board = {
         { id: 'frequency', title: 'Frequency', type: 'status' } // Daily, Weekly, Monthly
     ],
     tasks: [],
-    availableViews: ['table', 'overview', 'data'],
-    defaultView: 'table'
+    availableViews: ['datatable'],
+    defaultView: 'overview'
 };
 
 const ReportsPage: React.FC = () => {

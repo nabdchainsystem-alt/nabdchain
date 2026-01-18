@@ -200,7 +200,7 @@ const RequestDetailsModal: React.FC<{ request: any | null; onClose: () => void }
             onClick={onClose}
         >
             <div
-                className="bg-white dark:bg-[#1a1d24] w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+                className="bg-white dark:bg-monday-dark-surface w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
@@ -1064,7 +1064,7 @@ export const ProcurementOverview: React.FC = () => {
     }, [orders]);
 
     return (
-        <div ref={containerRef} className={`w-full h-full p-6 pb-20 overflow-y-auto bg-white dark:bg-[#1a1d24] relative font-sans space-y-6 ${isFullScreen ? 'fixed inset-0 z-[999]' : ''} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
+        <div ref={containerRef} className={`w-full h-full p-6 pb-20 overflow-y-auto bg-white dark:bg-monday-dark-surface relative font-sans space-y-6 ${isFullScreen ? 'fixed inset-0 z-[999]' : ''} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
 
             <ProcurementInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -1081,7 +1081,7 @@ export const ProcurementOverview: React.FC = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your procurement requisitions</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-full p-1 shadow-sm">
+                    <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-full p-1 shadow-sm">
                         <button
                             onClick={() => setKpiMode('total')}
                             className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${kpiMode === 'total'
@@ -1114,14 +1114,14 @@ export const ProcurementOverview: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
                     >
                         {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -1131,7 +1131,7 @@ export const ProcurementOverview: React.FC = () => {
 
             {kpiMode === 'calendar' ? (
                 <div className="grid grid-cols-4 gap-4">
-                    <div className="col-span-4 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm h-[520px] flex flex-col">
+                    <div className="col-span-4 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm h-[520px] flex flex-col">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-[11px] font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wide">Calendar</p>
@@ -1307,7 +1307,7 @@ export const ProcurementOverview: React.FC = () => {
                                             return (
                                                 <div
                                                     key={key}
-                                                    className={`h-full rounded-lg border bg-white dark:bg-[#161922] flex flex-col p-2 transition-colors ${isToday
+                                                    className={`h-full rounded-lg border bg-white dark:bg-monday-dark-surface flex flex-col p-2 transition-colors ${isToday
                                                         ? 'border-indigo-400 shadow-sm'
                                                         : 'border-gray-200 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-500/40'
                                                         }`}
@@ -1398,7 +1398,7 @@ export const ProcurementOverview: React.FC = () => {
                         {activeKpis.map((kpi, index) => (
                             <div
                                 key={index}
-                                className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                             >
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
@@ -1442,7 +1442,7 @@ export const ProcurementOverview: React.FC = () => {
                     </div>
 
                     {/* 2. Chart Section */}
-                    <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
+                    <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -1471,8 +1471,8 @@ export const ProcurementOverview: React.FC = () => {
             )}
 
             {/* 3. Requests Table */}
-            <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm flex-1 flex flex-col">
-                <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1a1d24] rounded-t-lg">
+            <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm flex-1 flex flex-col">
+                <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-monday-dark-surface rounded-t-lg">
                     <div>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Requests Table</h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage and process incoming requisitions</p>
@@ -1502,7 +1502,7 @@ export const ProcurementOverview: React.FC = () => {
                                 Filter
                             </button>
                             {requestFilterOpen && (
-                                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-3 z-20">
+                                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-3 z-20">
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</label>
                                         <select
@@ -1828,7 +1828,7 @@ export const ProcurementOverview: React.FC = () => {
                     {ordersKpis.map((kpi, idx) => (
                         <div
                             key={idx}
-                            className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                            className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
@@ -1851,7 +1851,7 @@ export const ProcurementOverview: React.FC = () => {
                 </div>
 
                 {/* Orders Chart */}
-                <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
+                <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Orders by Department</h3>
@@ -1872,8 +1872,8 @@ export const ProcurementOverview: React.FC = () => {
                 </div>
 
                 {/* Orders Table */}
-                <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm flex-1 flex flex-col">
-                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1a1d24] rounded-t-lg sticky top-0 z-10">
+                <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm flex-1 flex flex-col">
+                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-monday-dark-surface rounded-t-lg sticky top-0 z-10">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Orders Table</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track internal orders lifecycle</p>
@@ -1903,7 +1903,7 @@ export const ProcurementOverview: React.FC = () => {
                                     Filter
                                 </button>
                                 {ordersFilterOpen && (
-                                    <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-3 z-20">
+                                    <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-3 z-20">
                                         <div className="space-y-1">
                                             <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</label>
                                             <select

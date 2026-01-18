@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Avg Satisfaction', subtitle: 'CSAT Score (1-10)', value: '8.4', change: '+0.2', trend: 'up', icon: <Star size={18} />, sparklineData: [8.0, 8.1, 8.2, 8.3, 8.3, 8.4], color: 'yellow' },
-    { id: '2', label: 'NPS', subtitle: 'Net Promoter Score', value: '+42', change: '+5', trend: 'up', icon: <Smiley size={18} />, sparklineData: [35, 36, 38, 40, 41, 42], color: 'teal' },
+    { id: '1', label: 'Avg Satisfaction', subtitle: 'CSAT Score (1-10)', value: '8.4', change: '+0.2', trend: 'up', icon: <Star size={18} />, sparklineData: [8.0, 8.1, 8.2, 8.3, 8.3, 8.4], color: 'blue' },
+    { id: '2', label: 'NPS', subtitle: 'Net Promoter Score', value: '+42', change: '+5', trend: 'up', icon: <Smiley size={18} />, sparklineData: [35, 36, 38, 40, 41, 42], color: 'blue' },
     { id: '3', label: 'Feedback Count', subtitle: 'Total Reviews', value: '350', change: '+10%', trend: 'up', icon: <ChatCenteredText size={18} />, sparklineData: [300, 310, 320, 330, 340, 350], color: 'blue' },
-    { id: '4', label: 'Positive %', subtitle: '4-5 Star Ratings', value: '78%', change: '+2%', trend: 'up', icon: <ThumbsUp size={18} />, sparklineData: [75, 76, 76, 77, 77, 78], color: 'green' },
+    { id: '4', label: 'Positive %', subtitle: '4-5 Star Ratings', value: '78%', change: '+2%', trend: 'up', icon: <ThumbsUp size={18} />, sparklineData: [75, 76, 76, 77, 77, 78], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Negative %', subtitle: '1-2 Star Ratings', value: '8%', change: '-1%', trend: 'down', icon: <ThumbsDown size={18} />, sparklineData: [10, 9, 9, 8, 8, 8], color: 'red' },
-    { id: '6', label: 'Response Rate', subtitle: 'Survey Completion', value: '22%', change: '+3%', trend: 'up', icon: <Megaphone size={18} />, sparklineData: [18, 19, 20, 21, 21, 22], color: 'indigo' },
-    { id: '7', label: 'Sentiment Index', subtitle: 'AI Analysis', value: '72', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [65, 66, 68, 70, 71, 72], color: 'purple' },
+    { id: '5', label: 'Negative %', subtitle: '1-2 Star Ratings', value: '8%', change: '-1%', trend: 'down', icon: <ThumbsDown size={18} />, sparklineData: [10, 9, 9, 8, 8, 8], color: 'blue' },
+    { id: '6', label: 'Response Rate', subtitle: 'Survey Completion', value: '22%', change: '+3%', trend: 'up', icon: <Megaphone size={18} />, sparklineData: [18, 19, 20, 21, 21, 22], color: 'blue' },
+    { id: '7', label: 'Sentiment Index', subtitle: 'AI Analysis', value: '72', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [65, 66, 68, 70, 71, 72], color: 'blue' },
+    { id: '8', label: 'Avg Response Time', subtitle: 'Feedback Resolution', value: '4.2h', change: '-0.5h', trend: 'up', icon: <ChatCenteredText size={18} />, sparklineData: [5.5, 5.2, 4.9, 4.6, 4.4, 4.2], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -111,7 +112,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <SatisfactionFeedbackInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -126,14 +127,14 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-yellow-500 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-yellow-500" />
                         About Dashboard
@@ -148,7 +149,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'yellow'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -159,12 +160,12 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Feedback by Category (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Feedback Categories</h3>
                             <p className="text-xs text-gray-400">Volume by Topic</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={FEEDBACK_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -174,19 +175,19 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Count" fill="#eab308" radius={[4, 4, 0, 0]} barSize={28} />
+                                    <Bar dataKey="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Sentiment Split (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Sentiment Breakdown</h3>
                             <p className="text-xs text-gray-400">Overall Mood</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -197,7 +198,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -207,7 +208,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Feedback</h3>
                     </div>
@@ -231,9 +232,9 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                                         <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-mono">{row.date}</td>
                                         <td className="px-5 py-3 text-right">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Closed' ? 'bg-green-100 text-green-700' :
-                                                    row.status === 'Escalated' ? 'bg-red-100 text-red-700' :
-                                                        row.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-yellow-100 text-yellow-700'
+                                                row.status === 'Escalated' ? 'bg-red-100 text-red-700' :
+                                                    row.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {row.status}
                                             </span>
@@ -246,7 +247,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Radar (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

@@ -196,7 +196,7 @@ export const DailyRequestsControl: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-gray-50 dark:bg-[#09090b] p-6 overflow-y-auto">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-monday-dark-bg p-6 overflow-y-auto">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Daily Requests Control</h1>
             <p className="text-gray-500 text-sm mb-6">Always-on executive snapshot of requests, approvals, spend and alerts.</p>
 
@@ -211,7 +211,7 @@ export const DailyRequestsControl: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 h-96">
                 <div className="h-full"><DashboardChart title="Department Activity" options={departmentActivity} height="100%" /></div>
-                <div className="lg:col-span-2 h-full bg-white dark:bg-[#1a1d24] rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex flex-col">
+                <div className="lg:col-span-2 h-full bg-white dark:bg-monday-dark-surface rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Live Activity Log</h3>
 

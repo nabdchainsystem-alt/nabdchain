@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Touchpoints Count', subtitle: 'Total Interactions', value: '1,240', change: '+12%', trend: 'up', icon: <Path size={18} />, sparklineData: [1100, 1150, 1180, 1200, 1220, 1240], color: 'teal' },
-    { id: '2', label: 'Avg Journey Time', subtitle: 'Discovery to Conversion', value: '14 days', change: '-2 days', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [18, 17, 16, 16, 15, 14], color: 'indigo' },
-    { id: '3', label: 'Drop-Off Points', subtitle: 'Highest Friction', value: 'Checkout', change: 'Neutral', trend: 'neutral', icon: <XCircle size={18} />, sparklineData: [5, 5, 6, 6, 5, 5], color: 'red' },
-    { id: '4', label: 'Conversion Pts', subtitle: 'Successful Deals', value: '85', change: '+15%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [70, 72, 75, 78, 80, 85], color: 'emerald' },
+    { id: '1', label: 'Touchpoints Count', subtitle: 'Total Interactions', value: '1,240', change: '+12%', trend: 'up', icon: <Path size={18} />, sparklineData: [1100, 1150, 1180, 1200, 1220, 1240], color: 'blue' },
+    { id: '2', label: 'Avg Journey Time', subtitle: 'Discovery to Conversion', value: '14 days', change: '-2 days', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [18, 17, 16, 16, 15, 14], color: 'blue' },
+    { id: '3', label: 'Drop-Off Points', subtitle: 'Highest Friction', value: 'Checkout', change: 'Neutral', trend: 'neutral', icon: <XCircle size={18} />, sparklineData: [5, 5, 6, 6, 5, 5], color: 'blue' },
+    { id: '4', label: 'Conversion Pts', subtitle: 'Successful Deals', value: '85', change: '+15%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [70, 72, 75, 78, 80, 85], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '5', label: 'Engagement Score', subtitle: 'Interaction Depth', value: '7.8', change: '+0.3', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [7.2, 7.3, 7.5, 7.6, 7.7, 7.8], color: 'blue' },
-    { id: '6', label: 'Completion %', subtitle: 'End-to-End Success', value: '24%', change: '+1.5%', trend: 'up', icon: <Path size={18} />, sparklineData: [20, 21, 22, 22, 23, 24], color: 'violet' },
-    { id: '7', label: 'Friction Index', subtitle: 'Efficiency Metrics', value: '32', change: '-5', trend: 'up', icon: <Warning size={18} />, sparklineData: [40, 38, 36, 35, 33, 32], color: 'orange' },
+    { id: '6', label: 'Completion %', subtitle: 'End-to-End Success', value: '24%', change: '+1.5%', trend: 'up', icon: <Path size={18} />, sparklineData: [20, 21, 22, 22, 23, 24], color: 'blue' },
+    { id: '7', label: 'Friction Index', subtitle: 'Efficiency Metrics', value: '32', change: '-5', trend: 'up', icon: <Warning size={18} />, sparklineData: [40, 38, 36, 35, 33, 32], color: 'blue' },
+    { id: '8', label: 'Omnichannel Score', subtitle: 'Cross-Channel Activity', value: '68%', change: '+4%', trend: 'up', icon: <MapTrifold size={18} />, sparklineData: [60, 62, 64, 65, 66, 68], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -128,7 +129,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <JourneyTouchpointsInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -143,14 +144,14 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-teal-500" />
                         About Dashboard
@@ -165,7 +166,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -176,12 +177,12 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Touchpoints per Stage (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Touchpoints by Stage</h3>
                             <p className="text-xs text-gray-400">Interaction Volume</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={TOUCHPOINTS_BY_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -191,14 +192,14 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Count" fill="#0d9488" radius={[4, 4, 0, 0]} barSize={28} />
+                                    <Bar dataKey="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Conversion Funnel */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Funnel View</h3>
                             <p className="text-xs text-gray-400">Yield Analysis</p>
@@ -214,7 +215,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'blue'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -224,7 +225,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Interactions</h3>
                     </div>
@@ -262,7 +263,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Sankey (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

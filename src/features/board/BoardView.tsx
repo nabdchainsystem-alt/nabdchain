@@ -284,7 +284,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
     // Filter views for fullscreen navigation - only dashboard views (exclude overview, datatable)
     const fullscreenNavigableViews = useMemo(() => {
-        const dashboardViews = ['sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost'];
+        const dashboardViews = ['sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost', 'supplier_quality', 'supplier_lead_time', 'supplier_risk', 'supplier_strategic'];
         return sanitizedAvailableViews.filter(view => dashboardViews.includes(view));
     }, [sanitizedAvailableViews]);
 
@@ -577,6 +577,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
 
     const handleContextMenu = (e: React.MouseEvent, viewId: BoardViewType) => {
         e.preventDefault();
+        // Disable context menu for all tabs in department layouts (dashboards shouldn't be deletable)
+        if (isDepartmentLayout) {
+            return;
+        }
         setContextMenu({
             x: e.clientX,
             y: e.clientY,
@@ -873,6 +877,10 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             case 'supplier_delivery':
             case 'supplier_cost':
             case 'sales_promotions':
+            case 'supplier_quality':
+            case 'supplier_lead_time':
+            case 'supplier_risk':
+            case 'supplier_strategic':
                 if (renderCustomView) {
                     const custom = renderCustomView(baseViewType);
                     if (custom) {
@@ -1023,7 +1031,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
             {/* Dashboard Sections / Top Part */}
             <div
-                className={`flex-shrink-0 bg-white dark:bg-[#1a1d24] grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isFullScreen ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                className={`flex-shrink-0 bg-white dark:bg-monday-dark-surface grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isFullScreen ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
                     }`}
             >
                 <div className="overflow-hidden">
@@ -1054,7 +1062,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                         side="bottom"
                                         align="start"
                                     >
-                                        <div className="w-80 bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-xl border border-blue-500/20 dark:border-blue-400/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-5 animate-in fade-in zoom-in-95 duration-200 mt-2">
+                                        <div className="w-80 bg-white/90 dark:bg-monday-dark-surface/90 backdrop-blur-xl border border-blue-500/20 dark:border-blue-400/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] p-5 animate-in fade-in zoom-in-95 duration-200 mt-2">
                                             <div className="space-y-5">
                                                 <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
                                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('board_settings')}</span>
@@ -1195,7 +1203,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                             const label = viewNames[activeDragId] || option.label;
                                             return (
 
-                                                <button className="flex items-center gap-2 py-1.5 border-b-2 border-slate-900 text-[13px] font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap bg-white dark:bg-[#1a1d24] shadow-lg rounded opacity-90 cursor-grabbing">
+                                                <button className="flex items-center gap-2 py-1.5 border-b-2 border-slate-900 text-[13px] font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap bg-white dark:bg-monday-dark-surface shadow-lg rounded opacity-90 cursor-grabbing">
                                                     <div className="relative">
                                                         <option.icon size={16} />
                                                     </div>
@@ -1226,7 +1234,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                             side="bottom"
                                             align="start"
                                         >
-                                            <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl w-[450px] py-3 animate-in fade-in zoom-in-95 duration-150">
+                                            <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl w-[450px] py-3 animate-in fade-in zoom-in-95 duration-150">
                                                 <div className="px-4 pb-3 border-b border-gray-100 dark:border-gray-800">
                                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('add_view')}</h3>
                                                 </div>
@@ -1311,14 +1319,14 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             {(() => {
                 const type = getBaseViewType(activeView);
                 const isDashboardBoard = ['dept-sales', 'supplier-data', 'customer-data'].includes(board.id);
-                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost'].includes(type) || (type === 'overview' && isDashboardBoard);
+                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost', 'supplier_quality', 'supplier_lead_time', 'supplier_risk', 'supplier_strategic'].includes(type) || (type === 'overview' && isDashboardBoard);
                 const currentViewIndex = fullscreenNavigableViews.indexOf(activeView);
                 const currentViewOption = effectiveViewOptions.find(v => v.id === getBaseViewType(activeView));
 
                 return (
                     <div
                         ref={contentRef}
-                        className={`flex-1 overflow-hidden flex flex-col relative bg-white dark:bg-[#1a1d24] ${isFullWidth ? 'px-0' : 'px-6'}`}
+                        className={`flex-1 overflow-hidden flex flex-col relative bg-white dark:bg-monday-dark-surface ${isFullWidth ? 'px-0' : 'px-6'}`}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                     >
@@ -1338,28 +1346,11 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                             {renderView()}
                         </div>
 
-                        {/* Fullscreen Navigation Indicator */}
-                        {isFullScreen && (
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-sm border border-stone-200 dark:border-stone-700 rounded-full shadow-sm opacity-60 hover:opacity-100 transition-opacity">
-                                <span className="text-xs font-medium text-stone-600 dark:text-stone-300">
-                                    {viewNames[activeView] || currentViewOption?.label || activeView}
-                                </span>
-                                <div className="flex gap-1">
-                                    {fullscreenNavigableViews.map((_, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentViewIndex ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'}`}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                         {/* Global Exit Full Screen Floating Button */}
                         {isFullScreen && (
                             <button
                                 onClick={toggleFullScreen}
-                                className="absolute top-3 right-6 z-50 p-2 bg-white dark:bg-[#1a1d24] border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
+                                className="absolute bottom-6 right-6 z-50 p-2 bg-white dark:bg-monday-dark-surface border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-lg shadow-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-all opacity-50 hover:opacity-100"
                                 title={t('exit_fullscreen')}
                             >
                                 <Minimize2 size={18} />
@@ -1379,7 +1370,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                         {/* Transparent overlay for click-outside handled by global listener, but this ensures z-index stacking is correct */}
                         <div
                             ref={contextMenuRef}
-                            className="absolute bg-white/90 dark:bg-[#1a1d24]/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl shadow-2xl py-2 w-64 pointer-events-auto border border-blue-500/20"
+                            className="absolute bg-white/90 dark:bg-monday-dark-surface/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl shadow-2xl py-2 w-64 pointer-events-auto border border-blue-500/20"
                             style={{ top: contextMenu.y, left: contextMenu.x }}
                         >
                             <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">

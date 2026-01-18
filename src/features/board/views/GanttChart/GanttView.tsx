@@ -241,9 +241,9 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#1a1d24] text-gray-900 dark:text-gray-100 overflow-hidden font-sans">
+        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface text-gray-900 dark:text-gray-100 overflow-hidden font-sans">
             {/* Toolbar - Matches logic and some style, refined placement */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1d24] flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-monday-dark-surface flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setCurrentDate(new Date())}
@@ -296,7 +296,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
             <div className="flex-1 overflow-hidden flex flex-col relative">
 
                 {/* Header Row (Sidebar Header + Timeline Header) */}
-                <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1d24] min-h-[60px]">
+                <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-monday-dark-surface min-h-[60px]">
                     {/* Sidebar Header */}
                     <div className="flex-shrink-0 flex items-center border-r border-gray-200 dark:border-gray-800" style={{ width: SIDEBAR_WIDTH }}>
                         <div className="flex-1 px-4 py-2 text-xs font-semibold text-gray-500 uppercase flex items-center justify-between border-r border-gray-100 dark:border-gray-800 h-full">
@@ -325,9 +325,9 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
                     <div className="flex flex-col min-w-max">
 
                         {/* Sticky Header Wrapper to maintain z-index context */}
-                        <div className="sticky top-0 z-30 flex bg-white dark:bg-[#1a1d24] shadow-sm">
+                        <div className="sticky top-0 z-30 flex bg-white dark:bg-monday-dark-surface shadow-sm">
                             {/* Sidebar Header (Sticky Left + Sticky Top) */}
-                            <div className="sticky left-0 z-40 flex-shrink-0 flex items-center border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1d24] border-b border-gray-200 dark:border-gray-800" style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT }}>
+                            <div className="sticky left-0 z-40 flex-shrink-0 flex items-center border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-monday-dark-surface border-b border-gray-200 dark:border-gray-800" style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT }}>
                                 <div className="flex-1 px-4 text-xs font-medium text-gray-500 border-r border-gray-100 dark:border-gray-800 h-full flex items-center">
                                     Name
                                 </div>
@@ -411,7 +411,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
                                 {/* Group Header Row */}
                                 <div className="flex h-10 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                                     {/* Sidebar Cell */}
-                                    <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1d24] border-r border-gray-200 dark:border-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-[#20232b]" style={{ width: SIDEBAR_WIDTH }}>
+                                    <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-monday-dark-surface border-r border-gray-200 dark:border-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-monday-dark-elevated" style={{ width: SIDEBAR_WIDTH }}>
                                         <div className="flex-1 px-4 flex items-center gap-2 overflow-hidden border-r border-gray-100 dark:border-gray-800 h-full">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setIsGroupOpen(!isGroupOpen); }}
@@ -440,7 +440,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
                                     return (
                                         <div key={task.id} className="flex h-9 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group">
                                             {/* Sidebar Cells */}
-                                            <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1d24] border-r border-gray-200 dark:border-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-[#20232b]" style={{ width: SIDEBAR_WIDTH }}>
+                                            <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-monday-dark-surface border-r border-gray-200 dark:border-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-monday-dark-elevated" style={{ width: SIDEBAR_WIDTH }}>
                                                 <div className="flex-1 px-4 pl-10 flex items-center gap-2 overflow-hidden border-r border-gray-100 dark:border-gray-800 h-full">
                                                     <span className={`w-2 h-2 rounded-full ${task.status === 'Done' ? 'bg-emerald-500' : task.status === 'In Progress' ? 'bg-amber-500' : 'bg-gray-300'}`} />
                                                     <span className="text-sm text-gray-600 dark:text-gray-300 truncate">{task.name}</span>
@@ -471,7 +471,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
                                 {/* Add Task Row Placeholder */}
                                 {isGroupOpen && (
                                     <div className="flex h-9 group">
-                                        <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-transparent bg-white dark:bg-[#1a1d24] border-r border-gray-200 dark:border-gray-800" style={{ width: SIDEBAR_WIDTH }}>
+                                        <div className="sticky left-0 z-20 flex-shrink-0 flex items-center border-b border-transparent bg-white dark:bg-monday-dark-surface border-r border-gray-200 dark:border-gray-800" style={{ width: SIDEBAR_WIDTH }}>
                                             <div className="flex-1 px-4 pl-10 flex items-center gap-2 h-full">
                                                 <button className="flex items-center gap-2 text-gray-400 hover:text-gray-600 text-sm">
                                                     <Plus size={14} /> Add task
@@ -485,7 +485,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board
                     </div>
                 </div>
                 {/* Floating Zoom Controls */}
-                <div className="absolute bottom-6 right-6 z-50 flex flex-col bg-white dark:bg-[#20232b] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="absolute bottom-6 right-6 z-50 flex flex-col bg-white dark:bg-monday-dark-elevated rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <button
                         onClick={handleZoomIn}
                         className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400"

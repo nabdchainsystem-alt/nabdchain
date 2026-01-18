@@ -141,6 +141,7 @@ export const PurchaseFunnelInfo: React.FC<PurchaseFunnelInfoProps> = ({ isOpen, 
                                     <DetailItem title="Approval Rate" desc="Percentage of submitted requests that get approved." />
                                     <DetailItem title="Bottleneck Stage" desc="The approval stage with the highest average delay." />
                                     <DetailItem title="Delayed Requests" desc="Count of active requests exceeding the SLA time limit." />
+                                    <DetailItem title="SLA Compliance" desc="Percentage of requests approved within target timeframes." />
                                 </div>
                             </div>
 
@@ -150,7 +151,9 @@ export const PurchaseFunnelInfo: React.FC<PurchaseFunnelInfoProps> = ({ isOpen, 
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Request Funnel" desc="Funnel chart (ECharts) showing volume drop-off at each stage." />
-                                    <DetailItem title="Delays per Stage" desc="Bar chart (Recharts) showing average days spent in each step." />
+                                    <DetailItem title="Avg Hours per Stage" desc="Bar chart (Recharts) showing average processing time at each step." />
+                                    <DetailItem title="Request Volume Trend" desc="Bar chart (Recharts) showing monthly request submission patterns." />
+                                    <DetailItem title="Stage Status Distribution" desc="Pie chart (ECharts) showing breakdown of approved, pending, rejected, and cancelled requests." />
                                     <DetailItem title="Request Status Table" desc="Detailed list of active requests and their current aging." />
                                     <DetailItem title="Approval Flow Sankey" desc="Sankey diagram (ECharts) visualizing the multi-path flow of approvals." />
                                 </div>

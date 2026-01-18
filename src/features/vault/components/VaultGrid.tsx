@@ -58,13 +58,13 @@ export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onTogg
                     className={`
                         group relative flex flex-col items-center p-4 rounded-xl transition-all duration-200 cursor-pointer
                         hover:bg-gray-100 dark:hover:bg-[#20232b]
-                        ${contextMenu?.id === item.id ? 'bg-gray-100 dark:bg-[#20232b] ring-2 ring-indigo-500/20' : ''}
+                        ${contextMenu?.id === item.id ? 'bg-gray-100 dark:bg-monday-dark-elevated ring-2 ring-indigo-500/20' : ''}
                     `}
                 >
                     {/* Context Menu */}
                     {contextMenu?.id === item.id && (
                         <div
-                            className="absolute top-10 right-4 z-50 bg-white dark:bg-[#1f2937] rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 w-40 animate-in fade-in zoom-in-95 duration-100"
+                            className="absolute top-10 right-4 z-50 bg-white dark:bg-monday-dark-surface rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 w-40 animate-in fade-in zoom-in-95 duration-100"
                             style={{ position: 'absolute' }} // Simplified positioning for now
                             onClick={(e) => e.stopPropagation()}
                         >

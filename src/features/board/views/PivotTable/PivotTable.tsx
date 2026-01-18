@@ -54,7 +54,7 @@ const ConfigDropdown: React.FC<{
             <button
                 ref={ref}
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-40 px-3 py-2 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors group"
+                className="flex items-center justify-between w-40 px-3 py-2 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors group"
             >
                 <div className="flex items-center gap-2 overflow-hidden">
                     <Icon size={14} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
@@ -70,7 +70,7 @@ const ConfigDropdown: React.FC<{
                     side="bottom"
                     align="start"
                 >
-                    <div className="w-40 bg-white dark:bg-[#1a1d24] border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="w-40 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-100">
                         {options.map((opt) => (
                             <button
                                 key={opt.id}
@@ -364,7 +364,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#1a1d24] text-gray-900 dark:text-gray-100 p-6 overflow-hidden">
+        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface text-gray-900 dark:text-gray-100 p-6 overflow-hidden">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -377,7 +377,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
             <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-6 p-1">
 
                 {/* Configuration Controls */}
-                <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#20232b] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <div className="flex items-center gap-4 bg-gray-50 dark:bg-monday-dark-elevated p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
                     <ConfigDropdown
                         label="Rows"
                         icon={Layout}
@@ -415,7 +415,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleImportClick}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#20232b] border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600 text-gray-600 dark:text-gray-300 rounded-lg shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-monday-dark-elevated border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600 text-gray-600 dark:text-gray-300 rounded-lg shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                         <Upload size={16} />
                         <span className="text-sm font-medium">Import</span>
@@ -433,11 +433,11 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
 
             {/* Pivot Table Grid */}
             <div className="flex-1 overflow-auto border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
-                <table className="min-w-full border-collapse bg-white dark:bg-[#1a1d24]">
-                    <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-[#20232b]">
+                <table className="min-w-full border-collapse bg-white dark:bg-monday-dark-surface">
+                    <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-monday-dark-elevated">
                         <tr>
                             {/* Top-Left Corner (Row Label) */}
-                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 border-r dark:border-gray-800 w-48 bg-gray-100/50 dark:bg-[#252830]">
+                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-500 border-b border-gray-200 dark:border-gray-800 border-r dark:border-gray-800 w-48 bg-gray-100/50 dark:bg-monday-dark-elevated">
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400 font-normal">{AVAILABLE_FIELDS.find(f => f.id === config.rowGroup)?.label}</span>
                                     <ChevronDown size={12} className="-rotate-90 text-gray-300" />
@@ -451,7 +451,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                                     {colHeader}
                                 </th>
                             ))}
-                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#20232b] min-w-[100px]">
+                            <th className="p-4 text-left text-[14.7px] font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-monday-dark-elevated min-w-[100px]">
                                 Total
                             </th>
                         </tr>
@@ -463,7 +463,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                             return (
                                 <tr key={rowHeader} className="hover:bg-gray-50 dark:hover:bg-[#20232b]/50 transition-colors">
                                     {/* Row Header */}
-                                    <td className="p-4 text-sm font-medium text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 border-r border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-[#20232b]/30">
+                                    <td className="p-4 text-sm font-medium text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 border-r border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-monday-dark-elevated/30">
                                         {rowHeader}
                                     </td>
 
@@ -493,7 +493,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                                         );
                                     })}
                                     {/* Row Total */}
-                                    <td className="p-4 text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800 bg-gray-50/10 dark:bg-[#20232b]/10">
+                                    <td className="p-4 text-sm font-bold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-800 bg-gray-50/10 dark:bg-monday-dark-elevated/10">
                                         {rowTotal}
                                     </td>
                                 </tr>
@@ -501,7 +501,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                         })}
 
                         {/* Grand Total Row */}
-                        <tr className="bg-gray-50 dark:bg-[#20232b] font-semibold border-t-2 border-gray-200 dark:border-gray-700">
+                        <tr className="bg-gray-50 dark:bg-monday-dark-elevated font-semibold border-t-2 border-gray-200 dark:border-gray-700">
                             <td className="p-4 text-sm border-r border-gray-200 dark:border-gray-700">Total</td>
                             {pivotedData.colHeaders.map(colHeader => {
                                 const total = pivotedData.rowHeaders.reduce((acc, rowHeader) => {

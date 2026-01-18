@@ -128,11 +128,18 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
     };
 
     // KPI Config
-    const ANALYSIS_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
         { id: '1', label: 'Total Sales Value', subtitle: 'Gross revenue generated', value: '0', rawValue: 284500, isCurrency: true, change: '+14.2%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [40, 45, 42, 50, 55, 62, 70] },
         { id: '2', label: 'Total Orders', subtitle: 'Volume of transactions', value: '1,248', change: '+8.5%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [20, 22, 25, 23, 28, 30, 32] },
         { id: '3', label: 'Avg Order Value', subtitle: 'Revenue per transaction', value: '0', rawValue: 228, isCurrency: true, change: '-2.1%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [240, 235, 230, 225, 228, 226, 228] },
         { id: '4', label: 'Sales Growth Rate', subtitle: 'Period over period', value: '18.4%', change: '+1.2%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [12, 14, 15, 16, 17, 18, 18.4] },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '5', label: 'Top Agent', subtitle: 'Best performer', value: 'Sarah', change: '+15%', trend: 'up', icon: <Database size={18} />, sparklineData: [35, 37, 38, 40, 41, 42, 42] },
+        { id: '6', label: 'Top Product', subtitle: 'Revenue leader', value: 'Laptops', change: '+22%', trend: 'up', icon: <Lightbulb size={18} />, sparklineData: [40, 44, 46, 48, 50, 51, 52] },
+        { id: '7', label: 'Top Region', subtitle: 'Highest volume', value: 'Riyadh', change: '+10%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [38, 40, 42, 43, 44, 45, 45] },
+        { id: '8', label: 'Completion Rate', subtitle: 'Order fulfillment', value: '94.2%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [88, 90, 91, 92, 93, 93.5, 94.2] },
     ];
 
     // ECharts Region Option
@@ -189,7 +196,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-start gap-2">
-                    <ChartBar size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
+                    <ChartBar size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Sales Insights & Patterns</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Deep sales performance analysis and pattern detection</p>
@@ -199,7 +206,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -207,101 +214,124 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION 1: KPI Cards --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {ANALYSIS_KPIS.map((kpi) => (
-                    <KPICard
-                        key={kpi.id}
-                        {...kpi}
-                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                        color="indigo"
-                        loading={isLoading}
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                {/* --- Row 1: Top 4 KPIs --- */}
+                {TOP_KPIS.map((kpi) => (
+                    <div key={kpi.id} className="col-span-1">
+                        <KPICard
+                            {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                            color="blue"
+                            loading={isLoading}
+                        />
+                    </div>
                 ))}
-            </div>
 
-            {/* --- SECTION 2: Middle Charts --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                {/* Sales by Product (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[280px]" title="Sales by Product" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Product</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Comparison of revenue generating items</p>
-                        </div>
-                        <div className="h-[280px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={SALES_BY_PRODUCT_DATA} margin={{ left: -10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                    <Bar dataKey="sales" radius={[6, 6, 0, 0]} barSize={32}>
-                                        {SALES_BY_PRODUCT_DATA.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
+                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Sales by Salesperson (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[280px]" title="Sales by Agent" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Agent</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Individual contribution analysis</p>
-                        </div>
-                        <div className="h-[280px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={SALES_BY_PERSON_DATA} layout="vertical" margin={{ left: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                    <Bar dataKey="sales" radius={[0, 6, 6, 0]} barSize={24}>
-                                        {SALES_BY_PERSON_DATA.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
+                {/* Charts Area - 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Sales by Region (ECharts) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="Regional Split" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
-                        <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Split</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Geographic revenue distribution (%)</p>
+                    {/* Row 1, Col 1: Sales by Product */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Sales by Product" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Sales by Product</h3>
+                                <p className="text-xs text-gray-400">Revenue generating items</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={SALES_BY_PRODUCT_DATA} margin={{ left: -15, right: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                        <Bar dataKey="sales" radius={[4, 4, 0, 0]} barSize={22} fill="#3b82f6" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[280px]">
-                            <ReactECharts option={regionPieOption} style={{ height: '100%' }} />
-                        </div>
-                    </div>
-                )}
-            </div>
+                    )}
 
-            {/* --- SECTION 3: Table & Companion Chart --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Row 1, Col 2: Sales by Agent */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Sales by Agent" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Sales by Agent</h3>
+                                <p className="text-xs text-gray-400">Individual contribution</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={SALES_BY_PERSON_DATA} layout="vertical" margin={{ left: 20, right: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                        <Bar dataKey="sales" radius={[0, 4, 4, 0]} barSize={18} fill="#3b82f6" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: Regional Split Pie */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Regional Split" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Regional Split</h3>
+                                <p className="text-xs text-gray-400">Geographic distribution</p>
+                            </div>
+                            <ReactECharts option={regionPieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: Sales Flow Sankey */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Sales Flow" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Sales Flow</h3>
+                                <p className="text-xs text-gray-400">Region → Agent → Status</p>
+                            </div>
+                            <ReactECharts option={flowChartOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Right Column: Side KPIs (1 col) */}
+                <div className="col-span-1 flex flex-col gap-6">
+                    {SIDE_KPIS.map((kpi) => (
+                        <div key={kpi.id} className="flex-1">
+                            <KPICard
+                                {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                color="blue"
+                                className="h-full"
+                                loading={isLoading}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Data Table (1/2 Columns) */}
                 {isLoading ? (
@@ -323,9 +353,9 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                             <table className="w-full text-sm text-left h-full">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('id')}>Order ID</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('date')}>Date</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('customer')}>Customer</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('id')}>Order ID</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('date')}>Date</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('customer')}>Customer</th>
                                         <th className="px-6 py-4 text-right">Total</th>
                                         <th className="px-6 py-4">Status</th>
                                     </tr>
@@ -333,7 +363,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
-                                            <td className="px-6 py-5 font-mono text-xs text-indigo-600 dark:text-indigo-400">{row.id}</td>
+                                            <td className="px-6 py-5 font-mono text-xs text-blue-600 dark:text-blue-400">{row.id}</td>
                                             <td className="px-6 py-5 text-gray-500 whitespace-nowrap">{row.date}</td>
                                             <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
                                             <td className="px-6 py-5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
@@ -377,30 +407,39 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                     </div>
                 )}
 
-                {/* Companion Chart: Hidden Story (1/2 Column) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[400px]" title="Hidden Story" />
-                ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                                Hidden Story
-                            </h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Flow analysis: Region → Agent → Fulfilment status</p>
+                    {/* Companion Chart: Regional Performance */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[450px]" title="Regional Performance" />
+                    ) : (
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                                    Regional Performance
+                                </h3>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Comparative volume by territory</p>
+                            </div>
+                            <div className="flex-1 min-h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={SALES_BY_REGION_DATA} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis dataKey="name" type="category" width={60} fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="value" name="Share %" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={18} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-normal">
+                                    <strong>Insight:</strong> Riyadh leads with 45% of sales, followed by Jeddah (25%). Expansion opportunities exist in Abha region.
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-h-[400px]">
-                            <ReactECharts option={flowChartOption} style={{ height: '100%', width: '100%' }} />
-                        </div>
-                        <div className="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 leading-normal">
-                                <strong>Insight:</strong> Riyadh contributes the highest volume through Ahmed, but Abha shows the fastest "Shipped" turnaround per agent.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
             </div>
-
         </div>
     );
 };

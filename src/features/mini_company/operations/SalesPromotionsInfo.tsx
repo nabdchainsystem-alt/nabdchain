@@ -123,11 +123,38 @@ export const SalesPromotionsInfo: React.FC<SalesPromotionsInfoProps> = ({ isOpen
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Campaign KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="ROI %" desc="Return on Investment calculated as (Promo Revenue - Promo Spend) / Promo Spend." />
-                                    <DetailItem title="Incremental Sales" desc="Sales volume generated specifically due to the promo, above the baseline." />
-                                    <DetailItem title="Conversion from Promo" desc="The percentage of customers who engaged with the promo and completed a purchase." />
+                                    <DetailItem title="Campaigns Active" desc="Number of currently live promotional events." />
+                                    <DetailItem title="Total Spend" desc="Marketing budget utilized across all campaigns." />
+                                    <DetailItem title="Revenue from Promo" desc="Attributed gross volume generated from promotions." />
+                                    <DetailItem title="Overall ROI" desc="Campaign profitability percentage." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Promo Conversion" desc="Percentage of engaged customers who completed a purchase." />
+                                    <DetailItem title="Incremental Sales" desc="Sales above organic baseline attributed to promotions." />
+                                    <DetailItem title="Engagement Rate" desc="Average clicks and engagement per campaign." />
+                                    <DetailItem title="Coupon Redemption" desc="Percentage of issued codes that were used." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Campaign Performance" desc="Bar chart showing revenue per campaign." />
+                                    <DetailItem title="Conversion by Campaign" desc="Horizontal bar showing conversion efficiency." />
+                                    <DetailItem title="Revenue by Type" desc="Pie chart of promotion type breakdown." />
+                                    <DetailItem title="Campaign Impact" desc="Scatter chart showing ROI vs Conversion." />
+                                    <DetailItem title="Campaign Audit Table" desc="Detailed ROI and budget tracking per campaign." />
+                                    <DetailItem title="Campaign ROI Analysis" desc="Companion chart comparing budget vs revenue." />
                                 </div>
                             </div>
                         </div>

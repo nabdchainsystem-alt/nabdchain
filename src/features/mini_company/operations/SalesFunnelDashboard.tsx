@@ -125,16 +125,17 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
 
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Leads Entered', subtitle: 'New potential leads', value: '1,248', change: '+12%', trend: 'up', icon: <Users size={18} />, color: 'indigo' },
-        { id: '2', label: 'Leads Contacted', subtitle: 'First outreach made', value: '984', change: '+8%', trend: 'up', icon: <Notepad size={18} />, color: 'blue' },
-        { id: '3', label: 'Quotes Sent', subtitle: 'Price proposals delivered', value: '642', change: '+15%', trend: 'up', icon: <CurrencyDollar size={18} />, color: 'amber' },
-        { id: '4', label: 'Orders Placed', subtitle: 'Closed won deals', value: '420', change: '+5%', trend: 'up', icon: <ShoppingCart size={18} />, color: 'emerald' },
+        { id: '1', label: 'Leads Entered', subtitle: 'New potential leads', value: '1,248', change: '+12%', trend: 'up', icon: <Users size={18} />, sparklineData: [980, 1020, 1080, 1120, 1180, 1220, 1248] },
+        { id: '2', label: 'Leads Contacted', subtitle: 'First outreach made', value: '984', change: '+8%', trend: 'up', icon: <Notepad size={18} />, sparklineData: [820, 850, 880, 910, 940, 960, 984] },
+        { id: '3', label: 'Quotes Sent', subtitle: 'Price proposals delivered', value: '642', change: '+15%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [480, 510, 540, 570, 600, 620, 642] },
+        { id: '4', label: 'Orders Placed', subtitle: 'Closed won deals', value: '420', change: '+5%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [360, 375, 385, 395, 405, 415, 420] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Conversion Rate', subtitle: 'Leads → Orders', value: '33.6%', change: '+2.4%', trend: 'up', icon: <Percent size={18} />, color: 'violet' },
-        { id: '6', label: 'Funnel Drop-Off', subtitle: 'Avg. stage leakage', value: '18.5%', change: '-1.2%', trend: 'up', icon: <TrendDown size={18} />, color: 'rose' },
-        { id: '7', label: 'Potential Revenue Lost', subtitle: 'Value in dropped deals', value: '0', rawValue: 184500, isCurrency: true, change: '+4%', trend: 'down', icon: <Warning size={18} />, color: 'orange' },
+        { id: '5', label: 'Conversion Rate', subtitle: 'Leads → Orders', value: '33.6%', change: '+2.4%', trend: 'up', icon: <Percent size={18} />, sparklineData: [28, 29.5, 30.5, 31.5, 32.2, 33, 33.6] },
+        { id: '6', label: 'Funnel Drop-Off', subtitle: 'Avg. stage leakage', value: '18.5%', change: '-1.2%', trend: 'up', icon: <TrendDown size={18} />, sparklineData: [22, 21, 20.5, 20, 19.5, 19, 18.5] },
+        { id: '7', label: 'Potential Revenue Lost', subtitle: 'Value in dropped deals', value: '0', rawValue: 184500, isCurrency: true, change: '+4%', trend: 'down', icon: <Warning size={18} />, sparklineData: [165, 170, 175, 178, 180, 182, 184.5] },
+        { id: '8', label: 'Avg Deal Size', subtitle: 'Won deals value', value: '0', rawValue: 28500, isCurrency: true, change: '+6%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [24, 25, 26, 26.5, 27, 28, 28.5] },
     ];
 
     // ECharts Funnel Option
@@ -226,7 +227,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-start gap-2 text-left">
-                    <FunnelIcon size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
+                    <FunnelIcon size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Sales Funnel & Leakage</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Optimizing lead-to-order flow and minimizing drop-offs</p>
@@ -236,7 +237,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -244,195 +245,226 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION 1: Top KPIs --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                {/* --- Row 1: Top 4 KPIs --- */}
                 {TOP_KPIS.map((kpi) => (
-                    <KPICard
-                        key={kpi.id}
-                        {...kpi}
-                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                        loading={isLoading}
-                    />
-                ))}
-            </div>
-
-            {/* --- SECTION 2: Middle - Funnel + Side KPIs --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-                {/* Funnel Chart (span 3) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[480px]" title="Main Sales Funnel" className="lg:col-span-3" />
-                ) : (
-                    <div className="lg:col-span-3 bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Main Sales Funnel</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Visualizing lead volume through each conversion stage</p>
-                        </div>
-                        <div className="h-[400px]">
-                            <ReactECharts option={funnelOption} style={{ height: '100%' }} />
-                        </div>
+                    <div key={kpi.id} className="col-span-1">
+                        <KPICard
+                            {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                            color="blue"
+                            loading={isLoading}
+                        />
                     </div>
-                )}
+                ))}
 
-                {/* Side KPIs (Inverted L part) */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
+                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+
+                {/* Charts Area - 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* Row 1, Col 1: Main Sales Funnel (ECharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Main Sales Funnel" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Main Sales Funnel</h3>
+                                <p className="text-xs text-gray-400">Lead conversion stages</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ReactECharts option={funnelOption} style={{ height: '100%' }} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 1, Col 2: Drop-off by Sales Rep (Recharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Drop-off by Sales Rep" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Drop-off by Sales Rep</h3>
+                                <p className="text-xs text-gray-400">Team leakage analysis</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={DROPOFF_BY_REP_DATA} margin={{ left: -20, right: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                        <Bar dataKey="dropoff" name="Leakage %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: Won vs Lost Deals (ECharts) */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Won vs Lost Deals" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Won vs Lost Deals</h3>
+                                <p className="text-xs text-gray-400">Success rate breakdown</p>
+                            </div>
+                            <ReactECharts option={wonLostPieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: Leakage Heatmap (ECharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Leakage Heatmap" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Leakage Heatmap</h3>
+                                <p className="text-xs text-gray-400">Stage vs category analysis</p>
+                            </div>
+                            <ReactECharts option={heatmapOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Right Column: Side KPIs (1 col) */}
+                <div className="col-span-1 flex flex-col gap-6">
                     {SIDE_KPIS.map((kpi) => (
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                color="blue"
+                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
                     ))}
                 </div>
-            </div>
 
-            {/* --- SECTION 3: Secondary Charts --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Drop-off by Rep (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[380px]" title="Drop-off by Sales Rep" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Drop-off by Sales Rep</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Identifying leakage points in the sales team</p>
-                        </div>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={DROPOFF_BY_REP_DATA} margin={{ left: -20, right: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                    <Bar dataKey="dropoff" name="Leakage %" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={32} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
-
-                {/* Won vs Lost (ECharts) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="Won vs Lost Deals" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Won vs Lost Deals</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Overall success rate visualization</p>
-                        </div>
-                        <div className="h-[300px]">
-                            <ReactECharts option={wonLostPieOption} style={{ height: '100%' }} />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* --- SECTION 4: Bottom Table & Heatmap --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Detailed Table (Col 1) */}
-                {isLoading ? (
-                    <TableSkeleton rows={5} columns={5} />
-                ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
-                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20 text-left">
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider leading-normal">
-                                    Lead Tracking Table
-                                </h3>
-                                <p className="text-xs text-gray-400 mt-1 italic leading-tight">Detailed stage and status monitoring</p>
+                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Lead Tracking Table */}
+                    {isLoading ? (
+                        <TableSkeleton rows={5} columns={5} />
+                    ) : (
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
+                            <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20 text-left">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider leading-normal">
+                                        Lead Tracking Table
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-1 italic leading-tight">Detailed stage and status monitoring</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex-1 overflow-x-auto min-h-[350px]">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
-                                    <tr>
-                                        <th className="px-6 py-4">Lead/Customer</th>
-                                        <th className="px-6 py-4">Stage</th>
-                                        <th className="px-6 py-4">Date Entered</th>
-                                        <th className="px-6 py-4 text-right">Value</th>
-                                        <th className="px-6 py-4">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                                    {paginatedData.map((row) => (
-                                        <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
-                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
-                                            <td className="px-6 py-5 text-gray-500">{row.stage}</td>
-                                            <td className="px-6 py-5 text-gray-500 font-mono text-xs">{row.date}</td>
-                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.value, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5">
-                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Won' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
-                                                    row.status === 'Lost' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' :
-                                                        'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                                                    }`}>
-                                                    {row.status}
-                                                </span>
-                                            </td>
+                            <div className="flex-1 overflow-x-auto min-h-[350px]">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
+                                        <tr>
+                                            <th className="px-6 py-4">Lead/Customer</th>
+                                            <th className="px-6 py-4">Stage</th>
+                                            <th className="px-6 py-4">Date Entered</th>
+                                            <th className="px-6 py-4 text-right">Value</th>
+                                            <th className="px-6 py-4">Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                        {paginatedData.map((row) => (
+                                            <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
+                                                <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
+                                                <td className="px-6 py-5 text-gray-500">{row.stage}</td>
+                                                <td className="px-6 py-5 text-gray-500 font-mono text-xs">{row.date}</td>
+                                                <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.value, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-5">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Won' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
+                                                        row.status === 'Lost' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' :
+                                                            'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                        }`}>
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        {/* Pagination */}
-                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto text-left">
-                            <span className="text-xs text-gray-500">
-                                Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                                >
-                                    <CaretLeft size={16} />
-                                </button>
-                                <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                                >
-                                    <CaretRight size={16} />
-                                </button>
+                            {/* Pagination */}
+                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto text-left">
+                                <span className="text-xs text-gray-500">
+                                    Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                    >
+                                        <CaretLeft size={16} />
+                                    </button>
+                                    <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                    >
+                                        <CaretRight size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Leakage Heatmap (Col 3) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[450px]" title="Leakage Heatmap" />
-                ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                Leakage Heatmap
-                            </h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Stage vs Category: Darker = Higher Value Loss</p>
+                    {/* Companion Chart: Stage Velocity */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[450px]" title="Stage Velocity Analysis" />
+                    ) : (
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
+                                    Stage Velocity Analysis
+                                </h3>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Average time and conversion by stage</p>
+                            </div>
+                            <div className="flex-1 min-h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={[
+                                        { stage: 'Lead→Contact', days: 2.5, conversion: 78 },
+                                        { stage: 'Contact→Quote', days: 4.2, conversion: 65 },
+                                        { stage: 'Quote→Order', days: 7.8, conversion: 70 },
+                                    ]} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis dataKey="stage" type="category" width={100} fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="days" name="Avg Days" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[0, 4, 4, 0]} barSize={16} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">
+                                    <strong>Insight:</strong> Quote→Order stage takes the longest (7.8 days avg) but maintains 70% conversion. Focus on reducing this cycle time.
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-h-[300px]">
-                            <ReactECharts option={heatmapOption} style={{ height: '100%', width: '100%' }} />
-                        </div>
-                        <div className="mt-4 p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl border border-rose-100 dark:border-rose-800/50">
-                            <p className="text-[10px] text-rose-700 dark:text-rose-400 leading-normal">
-                                <strong>Critical Link:</strong> Highest leakage observed in "Quote" stage for "Hardware" category. Suggests a need for competitive pricing analysis.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
+
             </div>
-
         </div>
     );
 };

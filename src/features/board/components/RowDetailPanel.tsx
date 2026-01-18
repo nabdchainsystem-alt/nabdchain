@@ -51,13 +51,13 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
             {/* Panel */}
             <div
                 className={`
-                    absolute top-0 right-0 h-full w-full max-w-2xl bg-white dark:bg-[#1a1c22] shadow-2xl border-l border-stone-200 dark:border-stone-800
+                    absolute top-0 right-0 h-full w-full max-w-2xl bg-white dark:bg-monday-dark-surface shadow-2xl border-l border-stone-200 dark:border-stone-800
                     transform transition-transform duration-300 ease-in-out flex flex-col
                     ${isOpen ? 'translate-x-0' : 'translate-x-full'}
                 `}
             >
                 {/* Header */}
-                <div className="flex-none px-6 py-4 border-b border-stone-100 dark:border-stone-800 flex items-start justify-between gap-4 bg-white dark:bg-[#1a1c22]">
+                <div className="flex-none px-6 py-4 border-b border-stone-100 dark:border-stone-800 flex items-start justify-between gap-4 bg-white dark:bg-monday-dark-surface">
                     <div className="flex-1 mt-1">
                         <h2 className="text-2xl font-semibold text-stone-800 dark:text-stone-100 leading-snug break-words">
                             {row?.name || 'Untitled Item'}
@@ -72,7 +72,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
                 </div>
 
                 {/* Tabs */}
-                <div className="flex-none px-6 border-b border-stone-100 dark:border-stone-800 flex gap-6 bg-white dark:bg-[#1a1c22]">
+                <div className="flex-none px-6 border-b border-stone-100 dark:border-stone-800 flex gap-6 bg-white dark:bg-monday-dark-surface">
                     {[
                         { id: 'updates', label: 'Updates', icon: MessageSquare },
                         { id: 'files', label: 'Files', icon: FileText },
@@ -95,11 +95,11 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto bg-stone-50/50 dark:bg-[#111216] p-6">
+                <div className="flex-1 overflow-y-auto bg-stone-50/50 dark:bg-monday-dark-elevated p-6">
                     {activeTab === 'updates' && (
                         <div className="space-y-8">
                             {/* Write Update Box */}
-                            <div className="bg-white dark:bg-[#1a1c22] rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                            <div className="bg-white dark:bg-monday-dark-surface rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
                                 <div className="p-4">
                                     <textarea
                                         value={updateText}
@@ -137,7 +137,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
                             {updates.length > 0 && (
                                 <div className="space-y-4">
                                     {updates.map(update => (
-                                        <div key={update.id} className="bg-white dark:bg-[#1a1c22] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm group">
+                                        <div key={update.id} className="bg-white dark:bg-monday-dark-surface border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm group">
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="prose dark:prose-invert prose-sm max-w-none text-stone-700 dark:text-stone-300 whitespace-pre-wrap">
                                                     {update.text}

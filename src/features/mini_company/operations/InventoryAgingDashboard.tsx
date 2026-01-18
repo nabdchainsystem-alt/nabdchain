@@ -10,16 +10,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Avg Stock Age', subtitle: 'Global Mean', value: '48d', change: '+2d', trend: 'down', icon: <Clock size={18} />, sparklineData: [45, 45, 46, 47, 48, 48], color: 'indigo' },
-    { id: '2', label: 'Aging Stock Value', subtitle: '> 90 Days', value: '$35k', rawValue: 35000, isCurrency: true, change: '+5%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [30, 31, 32, 33, 34, 35], color: 'amber' },
-    { id: '3', label: 'Dead Stock Value', subtitle: '> 365 Days', value: '$12k', rawValue: 12000, isCurrency: true, change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'rose' },
-    { id: '4', label: 'Capital Locked', subtitle: '% in Dead Stock', value: '8.5%', change: '+0.2%', trend: 'down', icon: <Coin size={18} />, sparklineData: [8, 8.2, 8.3, 8.4, 8.5, 8.5], color: 'violet' },
+    { id: '1', label: 'Avg Stock Age', subtitle: 'Global Mean', value: '48d', change: '+2d', trend: 'down', icon: <Clock size={18} />, sparklineData: [45, 45, 46, 47, 48, 48], color: 'blue' },
+    { id: '2', label: 'Aging Stock Value', subtitle: '> 90 Days', value: '$35k', rawValue: 35000, isCurrency: true, change: '+5%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [30, 31, 32, 33, 34, 35], color: 'blue' },
+    { id: '3', label: 'Dead Stock Value', subtitle: '> 365 Days', value: '$12k', rawValue: 12000, isCurrency: true, change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
+    { id: '4', label: 'Capital Locked', subtitle: '% in Dead Stock', value: '8.5%', change: '+0.2%', trend: 'down', icon: <Coin size={18} />, sparklineData: [8, 8.2, 8.3, 8.4, 8.5, 8.5], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Stock > 90 Days', subtitle: '% Volume', value: '15%', change: '+1%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [12, 13, 13, 14, 15, 15], color: 'orange' },
+    { id: '5', label: 'Stock > 90 Days', subtitle: '% Volume', value: '15%', change: '+1%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [12, 13, 13, 14, 15, 15], color: 'blue' },
     { id: '6', label: 'Slow Moving SKUs', subtitle: 'Low Velocity', value: '85', change: '+5', trend: 'down', icon: <Clock size={18} />, sparklineData: [70, 75, 78, 80, 82, 85], color: 'blue' },
-    { id: '7', label: 'Clearance Targets', subtitle: 'Recommended', value: '25', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'cyan' },
+    { id: '7', label: 'Clearance Targets', subtitle: 'Recommended', value: '25', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'blue' },
+    { id: '8', label: 'Write-off Risk', subtitle: 'Potential loss', value: '$8.2k', change: '-$500', trend: 'up', icon: <Fire size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.5, 8.2], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -36,6 +37,22 @@ const AGE_DISTRIBUTION = [
     { value: 35, name: 'Mature (61-120)' },
     { value: 15, name: 'Aging (121-365)' },
     { value: 5, name: 'Dead (>365)' }
+];
+
+// New chart data: Aging by Warehouse
+const AGING_BY_WAREHOUSE = [
+    { name: 'Main Hub', value: 25000 },
+    { name: 'North Br', value: 18000 },
+    { name: 'South Br', value: 12000 },
+    { name: 'Retail', value: 8000 },
+];
+
+// New chart data: Velocity Status
+const VELOCITY_STATUS = [
+    { value: 40, name: 'Fast Moving' },
+    { value: 35, name: 'Normal' },
+    { value: 15, name: 'Slow Moving' },
+    { value: 10, name: 'Non-Moving' }
 ];
 
 // --- Mock Data: Table & Heat Spiral ---
@@ -73,7 +90,7 @@ export const InventoryAgingDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Age Distribution
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -84,6 +101,21 @@ export const InventoryAgingDashboard: React.FC = () => {
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
             data: AGE_DISTRIBUTION
+        }]
+    };
+
+    // Pie Chart - Velocity Status
+    const velocityPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: VELOCITY_STATUS,
+            color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
         }]
     };
 
@@ -147,7 +179,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'orange'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -167,7 +199,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Aging Buckets</h3>
                                 <p className="text-xs text-gray-400">Value by age group</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={AGING_BUCKETS} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -193,7 +225,46 @@ export const InventoryAgingDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Age Distribution</h3>
                                 <p className="text-xs text-gray-400">Classification split</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Recharts: Aging by Warehouse */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Aging by Warehouse" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Aging by Warehouse</h3>
+                                <p className="text-xs text-gray-400">Value by location</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={AGING_BY_WAREHOUSE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ECharts: Velocity Status */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Velocity Status" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Velocity Status</h3>
+                                <p className="text-xs text-gray-400">Movement speed distribution</p>
+                            </div>
+                            <ReactECharts option={velocityPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -205,7 +276,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'rose'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -257,7 +328,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                 {/* Companion Chart: Heat Spiral (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Aging Spiral" />
+                        <ChartSkeleton height="h-[280px]" title="Aging Spiral" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

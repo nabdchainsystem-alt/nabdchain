@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Retention Rate', subtitle: 'Last 90 Days', value: '85%', change: '-2%', trend: 'down', icon: <Heart size={18} />, sparklineData: [88, 87, 87, 86, 86, 85], color: 'indigo' },
-    { id: '2', label: 'Churn Rate', subtitle: 'Annualized', value: '15%', change: '+2%', trend: 'down', icon: <Prohibit size={18} />, sparklineData: [12, 13, 13, 14, 14, 15], color: 'red' },
-    { id: '3', label: 'At-Risk Customers', subtitle: 'High Probability', value: '45', change: '+5', trend: 'down', icon: <ShieldWarning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'orange' },
-    { id: '4', label: 'Avg Lifespan', subtitle: 'Customer Tenure', value: '18mo', change: '+1mo', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [16, 16, 17, 17, 18, 18], color: 'emerald' },
+    { id: '1', label: 'Retention Rate', subtitle: 'Last 90 Days', value: '85%', change: '-2%', trend: 'down', icon: <Heart size={18} />, sparklineData: [88, 87, 87, 86, 86, 85], color: 'blue' },
+    { id: '2', label: 'Churn Rate', subtitle: 'Annualized', value: '15%', change: '+2%', trend: 'down', icon: <Prohibit size={18} />, sparklineData: [12, 13, 13, 14, 14, 15], color: 'blue' },
+    { id: '3', label: 'At-Risk Customers', subtitle: 'High Probability', value: '45', change: '+5', trend: 'down', icon: <ShieldWarning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'blue' },
+    { id: '4', label: 'Avg Lifespan', subtitle: 'Customer Tenure', value: '18mo', change: '+1mo', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [16, 16, 17, 17, 18, 18], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '5', label: 'Recovered', subtitle: 'Won Back', value: '12', change: '+2', trend: 'up', icon: <FirstAid size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
-    { id: '6', label: 'Churn Cost', subtitle: 'Est. Revenue Loss', value: '$12.5k', change: '+$1k', trend: 'down', icon: <Coin size={18} />, sparklineData: [10, 11, 11.5, 12, 12.2, 12.5], color: 'slate' },
-    { id: '7', label: 'Loyalty Index', subtitle: 'NPS Adjusted', value: '72', change: '-1', trend: 'neutral', icon: <Heart size={18} />, sparklineData: [74, 74, 73, 73, 72, 72], color: 'pink' },
+    { id: '6', label: 'Churn Cost', subtitle: 'Est. Revenue Loss', value: '$12.5k', change: '+$1k', trend: 'down', icon: <Coin size={18} />, sparklineData: [10, 11, 11.5, 12, 12.2, 12.5], color: 'blue' },
+    { id: '7', label: 'Loyalty Index', subtitle: 'NPS Adjusted', value: '72', change: '-1', trend: 'neutral', icon: <Heart size={18} />, sparklineData: [74, 74, 73, 73, 72, 72], color: 'blue' },
+    { id: '8', label: 'Win-Back Rate', subtitle: 'Reactivated Customers', value: '18%', change: '+3%', trend: 'up', icon: <FirstAid size={18} />, sparklineData: [12, 13, 14, 15, 16, 18], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -131,7 +132,7 @@ export const RetentionChurnDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <RetentionChurnInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -146,14 +147,14 @@ export const RetentionChurnDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-pink-500" />
                         About Dashboard
@@ -168,7 +169,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -179,12 +180,12 @@ export const RetentionChurnDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Retention by Cohort (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cohort Retention</h3>
                             <p className="text-xs text-gray-400">% Active after N Months</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={RETENTION_COHORT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -194,19 +195,19 @@ export const RetentionChurnDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Rate" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28} />
+                                    <Bar dataKey="Rate" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Churn Split (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Composition</h3>
                             <p className="text-xs text-gray-400">Current Status</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -217,7 +218,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -227,7 +228,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Churn Risk Analysis</h3>
                     </div>
@@ -249,7 +250,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                                         <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.lastPurchase}</td>
                                         <td className="px-5 py-3">
                                             <span className={`font-medium ${row.risk.startsWith('High') ? 'text-red-600' :
-                                                    row.risk.startsWith('Medium') ? 'text-amber-600' : 'text-green-600'
+                                                row.risk.startsWith('Medium') ? 'text-amber-600' : 'text-green-600'
                                                 }`}>
                                                 {row.risk}
                                             </span>
@@ -257,8 +258,8 @@ export const RetentionChurnDashboard: React.FC = () => {
                                         <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs italic">{row.reason}</td>
                                         <td className="px-5 py-3 text-right">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Lost' ? 'bg-red-100 text-red-700' :
-                                                    row.status === 'At Risk' ? 'bg-orange-100 text-orange-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                                row.status === 'At Risk' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {row.status}
                                             </span>
@@ -271,7 +272,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Spiral (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={spiralOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

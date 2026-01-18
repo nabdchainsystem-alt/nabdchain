@@ -121,16 +121,17 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Campaigns Active', subtitle: 'Live promotional events', value: '4', change: 'Stable', trend: 'neutral', icon: <Megaphone size={18} />, color: 'rose' },
-        { id: '2', label: 'Total Spend', subtitle: 'Marketing budget used', value: '0', rawValue: 42500, isCurrency: true, change: '+12%', trend: 'down', icon: <Tag size={18} />, color: 'orange' },
-        { id: '3', label: 'Revenue from Promo', subtitle: 'Attributed gross volume', value: '0', rawValue: 284500, isCurrency: true, change: '+24%', trend: 'up', icon: <CurrencyDollar size={18} />, color: 'emerald' },
-        { id: '4', label: 'Overall ROI', subtitle: 'Campaign profitability', value: '569%', change: '+45%', trend: 'up', icon: <TrendUp size={18} />, color: 'indigo' },
+        { id: '1', label: 'Campaigns Active', subtitle: 'Live promotional events', value: '4', change: 'Stable', trend: 'neutral', icon: <Megaphone size={18} />, sparklineData: [3, 4, 5, 4, 3, 4, 4] },
+        { id: '2', label: 'Total Spend', subtitle: 'Marketing budget used', value: '0', rawValue: 42500, isCurrency: true, change: '+12%', trend: 'down', icon: <Tag size={18} />, sparklineData: [32, 35, 38, 40, 41, 42, 42.5] },
+        { id: '3', label: 'Revenue from Promo', subtitle: 'Attributed gross volume', value: '0', rawValue: 284500, isCurrency: true, change: '+24%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [180, 200, 220, 245, 260, 275, 284.5] },
+        { id: '4', label: 'Overall ROI', subtitle: 'Campaign profitability', value: '569%', change: '+45%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [380, 420, 460, 500, 530, 550, 569] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Promo Conversion', subtitle: 'Engaged vs Purchased', value: '18.4%', change: '+3.2%', trend: 'up', icon: <Percent size={18} />, color: 'violet' },
-        { id: '6', label: 'Incremental Sales', subtitle: 'Above organic baseline', value: '0', rawValue: 105000, isCurrency: true, change: '+18%', trend: 'up', icon: <RocketLaunch size={18} />, color: 'blue' },
-        { id: '7', label: 'Engagement Rate', subtitle: 'Clicks/Engagement avg', value: '4.2%', change: '+1.1%', trend: 'up', icon: <Users size={18} />, color: 'pink' },
+        { id: '5', label: 'Promo Conversion', subtitle: 'Engaged vs Purchased', value: '18.4%', change: '+3.2%', trend: 'up', icon: <Percent size={18} />, sparklineData: [12, 13.5, 15, 16, 17, 17.8, 18.4] },
+        { id: '6', label: 'Incremental Sales', subtitle: 'Above organic baseline', value: '0', rawValue: 105000, isCurrency: true, change: '+18%', trend: 'up', icon: <RocketLaunch size={18} />, sparklineData: [75, 80, 85, 90, 95, 100, 105] },
+        { id: '7', label: 'Engagement Rate', subtitle: 'Clicks/Engagement avg', value: '4.2%', change: '+1.1%', trend: 'up', icon: <Users size={18} />, sparklineData: [2.8, 3.2, 3.5, 3.8, 4, 4.1, 4.2] },
+        { id: '8', label: 'Coupon Redemption', subtitle: 'Codes used vs issued', value: '32.5%', change: '+5.2%', trend: 'up', icon: <Tag size={18} />, sparklineData: [22, 24, 26, 28, 30, 31, 32.5] },
     ];
 
     // ECharts Revenue Type Pie Option
@@ -185,7 +186,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-start gap-2 text-left">
-                    <Megaphone size={28} className="text-rose-600 dark:text-rose-400 mt-1" />
+                    <Megaphone size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Promotions & Campaign Effectiveness</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Measuring ROI and optimizing marketing spend impact</p>
@@ -195,7 +196,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -203,69 +204,124 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION 1: Top KPIs --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                {/* --- Row 1: Top 4 KPIs --- */}
                 {TOP_KPIS.map((kpi) => (
-                    <KPICard
-                        key={kpi.id}
-                        {...kpi}
-                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                        loading={isLoading}
-                    />
-                ))}
-            </div>
-
-            {/* --- SECTION 2: Middle Charts --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-                {/* Bar Chart (span 3) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[350px]" title="Campaign Performance Ranking" className="lg:col-span-3" />
-                ) : (
-                    <div className="lg:col-span-3 bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Campaign Performance Ranking</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic leading-tight">Revenue and conversion efficiency per event</p>
-                        </div>
-                        <div className="h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={REVENUE_PER_CAMPAIGN_DATA} margin={{ left: -10, right: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                    <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                    <Bar dataKey="revenue" name="Revenue" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={24} />
-                                    <Bar dataKey="conversion" name="Conversion" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                    <div key={kpi.id} className="col-span-1">
+                        <KPICard
+                            {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                            color="blue"
+                            loading={isLoading}
+                        />
                     </div>
-                )}
+                ))}
 
-                {/* Side KPIs (Inverted L) */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
+                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+
+                {/* Charts Area - 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* Row 1, Col 1: Campaign Performance Bar Chart */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Campaign Performance" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Campaign Performance</h3>
+                                <p className="text-xs text-gray-400">Revenue per campaign</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={REVENUE_PER_CAMPAIGN_DATA} margin={{ left: -15, right: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 1, Col 2: Conversion by Campaign */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Conversion by Campaign" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion by Campaign</h3>
+                                <p className="text-xs text-gray-400">Conversion efficiency</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={REVENUE_PER_CAMPAIGN_DATA} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis dataKey="name" type="category" width={70} fontSize={9} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[0, 4, 4, 0]} barSize={14} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: Revenue by Type Pie */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Revenue by Type" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Type</h3>
+                                <p className="text-xs text-gray-400">Promotion type breakdown</p>
+                            </div>
+                            <ReactECharts option={typePieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: Campaign Impact Bubble */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Campaign Impact Matrix" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Campaign Impact</h3>
+                                <p className="text-xs text-gray-400">ROI vs Conversion</p>
+                            </div>
+                            <ReactECharts option={impactBubbleOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Right Column: Side KPIs (1 col) */}
+                <div className="col-span-1 flex flex-col gap-6">
                     {SIDE_KPIS.map((kpi) => (
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                color="blue"
+                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
                     ))}
                 </div>
-            </div>
 
-            {/* --- SECTION 3: Bottom Table & Bubble Chart --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Campaign Table (Col 1) */}
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={6} title="Campaign Audit Table" />
@@ -286,7 +342,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                         <th className="px-6 py-4">Type</th>
                                         <th className="px-6 py-4 text-right">Budget</th>
                                         <th className="px-6 py-4 text-right">Revenue</th>
-                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-rose-600" onClick={() => handleSort('roi')}>ROI %</th>
+                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('roi')}>ROI %</th>
                                         <th className="px-6 py-4">Status</th>
                                     </tr>
                                 </thead>
@@ -301,7 +357,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                                 <span className={`font-bold ${row.roi > 300 ? 'text-emerald-500' : 'text-amber-500'}`}>{row.roi}%</span>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.status === 'Active' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.status === 'Active' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                                     row.status === 'Completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                                                         'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
                                                     }`}>
@@ -338,27 +394,40 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                     </div>
                 )}
 
-                {/* Campaign Impact Bubble (Companion) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[300px]" title="Campaign Impact Matrix" />
-                ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Campaign Impact Matrix</h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">ROI vs Conversion: Bubble size = Profitable Volume</p>
+                    {/* Campaign ROI Companion */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[450px]" title="Campaign ROI Analysis" />
+                    ) : (
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
+                                    Campaign ROI Analysis
+                                </h3>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Budget vs Revenue comparison</p>
+                            </div>
+                            <div className="flex-1 min-h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={REVENUE_PER_CAMPAIGN_DATA} margin={{ left: -10, right: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">
+                                    <strong>Insight:</strong> "Flash Deal" shows the highest conversion (22.4%) and ROI (800%), suggesting high-intensity short-term deals are most effective for immediate revenue.
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-h-[300px]">
-                            <ReactECharts option={impactBubbleOption} style={{ height: '100%', width: '100%' }} />
-                        </div>
-                        <div className="mt-4 p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl border border-rose-100 dark:border-rose-800/50">
-                            <p className="text-[10px] text-rose-700 dark:text-rose-400 leading-normal">
-                                <strong>Insight:</strong> "Flash Deal" shows the highest conversion (22.4%) and ROI (800%), suggesting high-intensity short-term deals are most effective for immediate revenue.
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
 
+            </div>
         </div>
     );
 };

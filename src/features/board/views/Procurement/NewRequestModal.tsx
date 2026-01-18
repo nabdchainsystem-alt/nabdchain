@@ -126,10 +126,10 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#1a1d24] w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden transform transition-all scale-100">
+            <div className="bg-white dark:bg-monday-dark-surface w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1d24]">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-monday-dark-surface">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">New Request</h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Submit a new procurement requisition for approval</p>
@@ -140,7 +140,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                 </div>
 
                 {/* Body - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-gray-50/50 dark:bg-[#15171b]">
+                <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-gray-50/50 dark:bg-monday-dark-bg">
 
                     {/* 1. Request Header Details */}
                     <div className="grid grid-cols-3 gap-6">
@@ -392,7 +392,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({ isOpen, onClos
                 </div>
 
                 {/* Footer */}
-                <div className="px-8 py-5 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1d24] flex items-center justify-between">
+                <div className="px-8 py-5 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-monday-dark-surface flex items-center justify-between">
                     <span className="text-xs text-gray-400 font-medium">
                         {items.length} item{items.length !== 1 ? 's' : ''} in request
                     </span>

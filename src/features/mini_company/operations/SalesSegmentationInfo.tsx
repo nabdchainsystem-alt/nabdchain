@@ -123,12 +123,38 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Loyalty Metrics</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Top KPIs</h4>
                                 <div className="space-y-3">
+                                    <DetailItem title="Total Customers" desc="Lifetime registered customer base count." />
+                                    <DetailItem title="Active Customers" desc="Customers with activity in the last 90 days." />
                                     <DetailItem title="Repeat Customer %" desc="Percentage of customers who have made more than one purchase." />
-                                    <DetailItem title="Customer Lifetime Value (CLV)" desc="Total estimated value a customer brings over their entire relationship." />
-                                    <DetailItem title="Engagement Score" desc="A composite metric reflecting purchase frequency and interaction recency." />
-                                    <DetailItem title="Churn Rate %" desc="Percentage of customers who have not made a purchase within a 12-month period." />
+                                    <DetailItem title="Avg. CLV" desc="Average estimated lifetime value per customer." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Avg. Orders" desc="Average number of orders per customer." />
+                                    <DetailItem title="Churn Rate %" desc="Percentage of customers who have not purchased in 12 months." />
+                                    <DetailItem title="Engagement Score" desc="Composite metric of recency, frequency, and value." />
+                                    <DetailItem title="New Customers" desc="Monthly customer acquisition count." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Charts & Tables</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Customer Segmentation" desc="Bar chart showing customer count per segment tier." />
+                                    <DetailItem title="Repeat vs One-Time" desc="Stacked bar showing loyalty depth by segment." />
+                                    <DetailItem title="Revenue by Segment" desc="Pie chart showing revenue contribution per segment." />
+                                    <DetailItem title="Loyalty Curve" desc="Scatter chart showing orders vs revenue by segment." />
+                                    <DetailItem title="Top Customers List" desc="Table with customer details and engagement scores." />
+                                    <DetailItem title="Customer Value Distribution" desc="Companion chart showing revenue by segment tier." />
                                 </div>
                             </div>
                         </div>

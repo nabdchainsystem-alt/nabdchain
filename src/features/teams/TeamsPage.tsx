@@ -207,7 +207,7 @@ export const TeamsPage: React.FC = () => {
                                                         <span className={`text-sm font-medium ${member.status === 'Active' ? 'text-green-700 dark:text-green-400' :
                                                             member.status === 'Invited' ? 'text-yellow-700 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'
                                                             }`}>
-                                                            {member.status}
+                                                            {t(member.status.toLowerCase())}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -217,7 +217,7 @@ export const TeamsPage: React.FC = () => {
                                                             'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
                                                         }`}>
                                                         {member.role === 'Admin' && <Shield size={12} />}
-                                                        {member.role}
+                                                        {t(member.role.toLowerCase() === 'member' ? 'member_role' : member.role.toLowerCase())}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

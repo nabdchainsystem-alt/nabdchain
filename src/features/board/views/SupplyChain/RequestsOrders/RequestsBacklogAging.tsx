@@ -82,7 +82,7 @@ export const RequestsBacklogAging: React.FC = () => {
     ];
 
     return (
-        <div className="flex flex-col h-full bg-gray-50 dark:bg-[#09090b] p-6 overflow-y-auto">
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-monday-dark-bg p-6 overflow-y-auto">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Requests Backlog & Aging</h1>
             <p className="text-gray-500 text-sm mb-6">Backlog health, aging buckets, and bottlenecks.</p>
 
@@ -97,7 +97,7 @@ export const RequestsBacklogAging: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 h-96">
                 <div className="h-full"><DashboardChart title="Backlog Trend (7 Days)" options={backlogTrend} height="100%" /></div>
-                <div className="lg:col-span-2 h-full bg-white dark:bg-[#1a1d24] rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                <div className="lg:col-span-2 h-full bg-white dark:bg-monday-dark-surface rounded-xl p-4 border border-gray-100 dark:border-gray-800">
                     <DashboardTable title="Backlog List" columns={tableColumns} data={tableData} />
                 </div>
             </div>

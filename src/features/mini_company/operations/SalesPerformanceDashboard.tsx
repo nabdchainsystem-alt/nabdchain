@@ -158,7 +158,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
-                    <Gauge size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
+                    <Gauge size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Performance & Efficiency</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Operational leakage and fulfillment efficiency analysis</p>
@@ -168,7 +168,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -176,9 +176,9 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
@@ -193,7 +193,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                         <KPICard
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                            color="indigo"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -204,7 +204,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 {/* Orders vs Completed (2 cols) */}
                 <div className="col-span-1 md:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[320px]" title="Orders vs Completed" />
+                        <ChartSkeleton height="h-[280px]" title="Orders vs Completed" />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-5">
@@ -231,9 +231,9 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                        <Bar dataKey="orders" name="Total Orders" fill="#e0e7ff" radius={[4, 4, 0, 0]} barSize={30} />
-                                        <Bar dataKey="completed" name="Completed" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+
+                                        <Bar dataKey="orders" name="Total Orders" fill="#dbeafe" radius={[4, 4, 0, 0]} barSize={30} />
+                                        <Bar dataKey="completed" name="Completed" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -244,7 +244,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 {/* Revenue by Channel (2 cols) */}
                 <div className="col-span-1 md:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[320px]" title="Revenue by Channel" />
+                        <ChartSkeleton height="h-[280px]" title="Revenue by Channel" />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-5">
@@ -273,7 +273,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                             formatter={(value: number) => [formatCurrency(value, currency.code, currency.symbol), 'Revenue']}
                                         />
-                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+
                                         <Bar
                                             name="Revenue"
                                             dataKey="value"
@@ -287,11 +287,8 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                                 formatter: (val: number) => formatCurrency(val, currency.code, currency.symbol),
                                                 dx: 5
                                             }}
-                                        >
-                                            {REVENUE_CHANNEL_DATA.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]} />
-                                            ))}
-                                        </Bar>
+                                            fill="#3b82f6"
+                                        />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -334,7 +331,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                                color="indigo"
+                                color="blue"
                                 loading={isLoading}
                             />
                         </div>

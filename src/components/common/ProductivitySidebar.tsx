@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface ProductivitySidebarProps {
     layout?: 'right' | 'bottom';
@@ -6,6 +7,7 @@ interface ProductivitySidebarProps {
 }
 
 const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'right', contentOnly = false }) => {
+    const { t } = useAppContext();
     const isRight = layout === 'right';
 
     const content = (
@@ -21,7 +23,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
                         <span className={`material-icons mr-2 ${isRight ? 'text-base' : 'text-sm'}`}>check_circle_outline</span>
-                        Tasks
+                        {t('tasks')}
                     </h3>
                     <button className="text-primary hover:text-primary-dark">
                         <span className="material-icons text-lg">add</span>
@@ -33,7 +35,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <div className="text-text-secondary-light dark:text-text-secondary-dark opacity-50">
                         <span className="material-icons text-2xl mb-1">done_all</span>
-                        <p className="text-xs">No active tasks</p>
+                        <p className="text-xs">{t('no_active_tasks')}</p>
                     </div>
                 </div>
             </div>
@@ -49,7 +51,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
                         <span className={`material-icons mr-2 ${isRight ? 'text-base' : 'text-sm'}`}>alarm</span>
-                        Reminders
+                        {t('reminders')}
                     </h3>
                     <button className="text-primary hover:text-primary-dark">
                         <span className="material-icons text-lg">add</span>
@@ -61,7 +63,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <div className="text-text-secondary-light dark:text-text-secondary-dark opacity-50">
                         <span className="material-icons text-2xl mb-1">notifications_off</span>
-                        <p className="text-xs">No reminders</p>
+                        <p className="text-xs">{t('no_reminders')}</p>
                     </div>
                 </div>
             </div>
@@ -74,9 +76,9 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
                         <span className={`material-icons mr-2 ${isRight ? 'text-base' : 'text-sm'}`}>folder_open</span>
-                        Mentions &amp; Files
+                        {t('mentions_and_files')}
                     </h3>
-                    <button className="text-primary hover:text-primary-dark text-xs font-medium">View All</button>
+                    <button className="text-primary hover:text-primary-dark text-xs font-medium">{t('view_all')}</button>
                 </div>
                 <div className={`
                         ${isRight ? 'p-4 space-y-3' : 'p-2 space-y-2'} 
@@ -84,7 +86,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                     `}>
                     <div className="text-text-secondary-light dark:text-text-secondary-dark opacity-50">
                         <span className="material-icons text-2xl mb-1">description</span>
-                        <p className="text-xs">No recent files</p>
+                        <p className="text-xs">{t('no_recent_files')}</p>
                     </div>
                 </div>
             </div>

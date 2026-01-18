@@ -130,12 +130,24 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Expected Revenue" desc="Projected revenue for the next 30/60/90 days based on historical weighted trends." />
+                                    <DetailItem title="Expected Revenue" desc="Projected revenue for the next 90 days based on historical weighted trends." />
                                     <DetailItem title="Forecast Accuracy" desc="Percentage of how closely past predictions matched actual sales outcomes." />
-                                    <DetailItem title="Growth Trend" desc="The expected direction of sales performance (Up, Flat, or Down)." />
-                                    <DetailItem title="Risk Level" desc="Overall potential for falling short of forecasted targets." />
+                                    <DetailItem title="Risk Level" desc="Overall potential for falling short of forecasted targets (Low/Medium/High)." />
+                                    <DetailItem title="Exp. Profit Margin" desc="Projected efficiency ratio indicating expected profit percentage." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Growth Rate" desc="Year-over-year projected growth percentage for sales." />
+                                    <DetailItem title="Pipeline Value" desc="Total potential revenue from opportunities in the sales pipeline." />
+                                    <DetailItem title="Confidence Score" desc="Statistical confidence level of the forecast model reliability." />
+                                    <DetailItem title="Deviation Avg" desc="Average forecast error expressed as percentage deviation from actuals." />
                                 </div>
                             </div>
 
@@ -144,10 +156,12 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Actual vs Forecast" desc="ECharts line comparison showing how reality aligns with projections." />
-                                    <DetailItem title="Risk Distribution" desc="Donut chart visualizing where potential shortfalls are concentrated." />
+                                    <DetailItem title="Actual vs Forecast" desc="ECharts line comparison showing how reality aligns with projections over time." />
+                                    <DetailItem title="Forecast per Product" desc="Bar chart comparing current vs projected spend by product category." />
+                                    <DetailItem title="Risk Distribution" desc="Pie chart visualizing where potential shortfalls are concentrated." />
+                                    <DetailItem title="Regional Forecast" desc="Horizontal bar chart showing territory performance projections." />
                                     <DetailItem title="Decision Table" desc="Actionable log highlighting deviations between current and predicted sales." />
-                                    <DetailItem title="Deviation Scatter" desc="Companion chart visualizing forecast confidence vs actual deviation." />
+                                    <DetailItem title="Deviation Scatter" desc="Companion chart visualizing forecast value vs actual deviation percentage." />
                                 </div>
                             </div>
                         </div>

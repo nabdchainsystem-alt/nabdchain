@@ -14,8 +14,8 @@ const INITIAL_BOARD: Board = {
         { id: 'industry', title: 'Industry', type: 'text' }
     ],
     tasks: [],
-    availableViews: ['table', 'kanban', 'overview', 'data'],
-    defaultView: 'table'
+    availableViews: ['datatable'],
+    defaultView: 'overview'
 };
 
 const CustomersPage: React.FC = () => {

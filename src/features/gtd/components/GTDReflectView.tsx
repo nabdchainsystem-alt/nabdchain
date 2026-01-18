@@ -30,7 +30,7 @@ const StatCard: React.FC<{
     const recentItems = items.slice(0, 3); // Show top 3 recent items
 
     return (
-        <div className="bg-white dark:bg-[#111] rounded-3xl p-6 border border-gray-100 dark:border-white/5 flex flex-col items-start gap-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer group h-full min-h-[200px]"
+        <div className="bg-white dark:bg-monday-dark-bg rounded-3xl p-6 border border-gray-100 dark:border-white/5 flex flex-col items-start gap-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer group h-full min-h-[200px]"
             onClick={onClick}
         >
             <div className="flex items-center gap-2 w-full mb-2">
@@ -151,7 +151,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-                                className="bg-white dark:bg-[#111] w-full max-w-[600px] h-[600px] rounded-[2rem] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col pointer-events-auto"
+                                className="bg-white dark:bg-monday-dark-bg w-full max-w-[600px] h-[600px] rounded-[2rem] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden flex flex-col pointer-events-auto"
                             >
                                 {/* Header */}
                                 <div className="p-8 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-white/5">

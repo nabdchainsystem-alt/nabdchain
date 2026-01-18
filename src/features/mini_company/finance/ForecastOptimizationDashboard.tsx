@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Forecasted Expenses', subtitle: 'Next Month', value: '$135k', change: '+5%', trend: 'up', icon: <Graph size={18} />, sparklineData: [120, 125, 128, 130, 132, 135], color: 'indigo' },
+    { id: '1', label: 'Forecasted Expenses', subtitle: 'Next Month', value: '$135k', change: '+5%', trend: 'up', icon: <Graph size={18} />, sparklineData: [120, 125, 128, 130, 132, 135], color: 'blue' },
     { id: '2', label: 'Forecast Accuracy', subtitle: 'Historical', value: '94%', change: '+1%', trend: 'up', icon: <Crosshair size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'blue' },
-    { id: '3', label: 'Expected Savings', subtitle: 'Identified', value: '$8,500', change: '+500', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [5, 6, 7, 7, 8, 8.5], color: 'emerald' },
-    { id: '4', label: 'Cost Reduction', subtitle: 'Potential', value: '12%', change: '0%', trend: 'neutral', icon: <TrendUp size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'cyan' },
+    { id: '3', label: 'Expected Savings', subtitle: 'Identified', value: '$8,500', change: '+500', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [5, 6, 7, 7, 8, 8.5], color: 'blue' },
+    { id: '4', label: 'Cost Reduction', subtitle: 'Potential', value: '12%', change: '0%', trend: 'neutral', icon: <TrendUp size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Risk Exposure', subtitle: 'Unbudgeted', value: '$2k', change: '-500', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 2.8, 2.5, 2.2, 2.1, 2], color: 'amber' },
-    { id: '6', label: 'Optimization Actions', subtitle: 'Open Items', value: '5', change: '+2', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [3, 3, 3, 4, 4, 5], color: 'purple' },
-    { id: '7', label: 'Confidence Level', subtitle: 'Model', value: 'High', change: '', trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'teal' },
+    { id: '5', label: 'Risk Exposure', subtitle: 'Unbudgeted', value: '$2k', change: '-500', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 2.8, 2.5, 2.2, 2.1, 2], color: 'blue' },
+    { id: '6', label: 'Optimization Actions', subtitle: 'Open Items', value: '5', change: '+2', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [3, 3, 3, 4, 4, 5], color: 'blue' },
+    { id: '7', label: 'Confidence Level', subtitle: 'Model', value: 'High', change: '', trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
+    { id: '8', label: 'ROI Expected', subtitle: 'Initiatives', value: '18%', change: '+3%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [12, 13, 14, 15, 16, 18], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -111,7 +112,7 @@ export const ForecastOptimizationDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <ForecastOptimizationInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -126,14 +127,14 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
                         About Dashboard
@@ -159,12 +160,12 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Forecast per Category (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast by Category</h3>
                             <p className="text-xs text-gray-400">Current vs Forecast</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={FORECAST_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -182,12 +183,12 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                     </div>
 
                     {/* ECharts: Future Allocation (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Future Allocation</h3>
                             <p className="text-xs text-gray-400">Projected Spend Share</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -208,7 +209,7 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Optimization Opportunities</h3>
                     </div>
@@ -239,7 +240,7 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Landscape (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={scatterOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

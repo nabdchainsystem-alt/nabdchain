@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Categories', subtitle: 'Active Budget Lines', value: '15', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [12, 12, 13, 13, 14, 15], color: 'indigo' },
-    { id: '2', label: 'Highest Cost Category', subtitle: 'Current Period', value: 'Payroll', change: '', trend: 'neutral', icon: <ArrowDown size={18} />, sparklineData: [45000, 46000, 45500, 48000, 47000, 45000], color: 'rose' },
-    { id: '3', label: 'Category Variance %', subtitle: 'Avg Deviation', value: '8.5%', change: '-1.2%', trend: 'down', icon: <Activity size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.6, 8.5], color: 'amber' },
-    { id: '4', label: 'Budget Breach Count', subtitle: 'Categories > Budget', value: '2', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 3, 2, 2, 3, 2], color: 'red' },
+    { id: '1', label: 'Total Categories', subtitle: 'Active Budget Lines', value: '15', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [12, 12, 13, 13, 14, 15], color: 'blue' },
+    { id: '2', label: 'Highest Cost Category', subtitle: 'Current Period', value: 'Payroll', change: '', trend: 'neutral', icon: <ArrowDown size={18} />, sparklineData: [45000, 46000, 45500, 48000, 47000, 45000], color: 'blue' },
+    { id: '3', label: 'Category Variance %', subtitle: 'Avg Deviation', value: '8.5%', change: '-1.2%', trend: 'down', icon: <Activity size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.6, 8.5], color: 'blue' },
+    { id: '4', label: 'Budget Breach Count', subtitle: 'Categories > Budget', value: '2', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 3, 2, 2, 3, 2], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Avg Category Spend', subtitle: 'Per Month', value: '$8,250', change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'cyan' },
-    { id: '6', label: 'Volatility Index', subtitle: 'Fluctuation Score', value: 'Medium', change: '', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [40, 45, 42, 48, 45, 45], color: 'violet' },
-    { id: '7', label: 'Control Score', subtitle: 'Budget Adherence', value: '88/100', change: '+2', trend: 'up', icon: <Target size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'emerald' },
+    { id: '5', label: 'Avg Category Spend', subtitle: 'Per Month', value: '$8,250', change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'blue' },
+    { id: '6', label: 'Volatility Index', subtitle: 'Fluctuation Score', value: 'Medium', change: '', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [40, 45, 42, 48, 45, 45], color: 'blue' },
+    { id: '7', label: 'Control Score', subtitle: 'Budget Adherence', value: '88/100', change: '+2', trend: 'up', icon: <Target size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
+    { id: '8', label: 'Category Growth Rate', subtitle: 'MoM Average', value: '+2.3%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [3.2, 3.0, 2.8, 2.6, 2.4, 2.3], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -118,7 +119,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <CategoryAnalysisInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -133,14 +134,14 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -155,7 +156,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'indigo'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -166,31 +167,31 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Spend per Category (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Category</h3>
                             <p className="text-xs text-gray-400">Actual spend breakdown</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={SPEND_PER_CATEGORY} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                                     <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} hide />
                                     <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} width={60} />
                                     <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                    <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Category Share (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Allocation</h3>
                             <p className="text-xs text-gray-400">Departmental breakdown</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -201,7 +202,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'indigo'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -211,7 +212,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget Analysis</h3>
                     </div>
@@ -235,8 +236,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                                         <td className={`px-5 py-3 text-right font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-emerald-500'}`}>{row.variance}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Over' ? 'bg-red-100 text-red-700' :
-                                                    row.status === 'Under' ? 'bg-emerald-100 text-emerald-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                                row.status === 'Under' ? 'bg-emerald-100 text-emerald-700' :
+                                                    'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {row.status}
                                             </span>
@@ -249,7 +250,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Radar (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

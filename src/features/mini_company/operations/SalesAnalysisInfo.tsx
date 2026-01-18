@@ -129,7 +129,7 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Total Sales Value" desc="Gross revenue generated before deductions. The top-line health metric." />
                                     <DetailItem title="Total Orders" desc="Number of transactions processed in the selected period." />
@@ -141,11 +141,24 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Top Agent" desc="Best performing salesperson based on closed revenue." />
+                                    <DetailItem title="Top Product" desc="Revenue leader among all products sold." />
+                                    <DetailItem title="Top Region" desc="Highest volume region driving sales." />
+                                    <DetailItem title="Completion Rate" desc="Order fulfillment success rate percentage." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Sales by Product" desc="Bar chart identifying your most popular and profitable items." />
                                     <DetailItem title="Sales by Agent" desc="Horizontal bars comparing salesperson performance." />
                                     <DetailItem title="Regional Split" desc="Donut chart showing revenue distribution by geography." />
+                                    <DetailItem title="Agent Performance" desc="Pie chart showing contribution by each sales agent." />
                                     <DetailItem title="Operational Log" desc="Sortable table with raw transactional data for auditing." />
                                     <DetailItem title="Hidden Story" desc="Sankey diagram visualizing the flow from Regions to Agents to Status." />
                                 </div>

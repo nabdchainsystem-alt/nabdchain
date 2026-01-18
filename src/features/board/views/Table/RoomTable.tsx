@@ -2135,7 +2135,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Secondary Toolbar */}
-                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22] pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
+                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
                     {/* Left: New Table */}
 
 
@@ -2734,12 +2734,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             {/* Group Header - wrapper spans full width, content is sticky left */}
                                             {(!hideGroupHeader || paginatedGroups.length > 1) && (
                                                 <div
-                                                    className="shrink-0 bg-white dark:bg-[#1a1c22] border-b border-stone-100 dark:border-stone-800/50 sticky top-0 z-50"
+                                                    className="shrink-0 bg-white dark:bg-monday-dark-surface border-b border-stone-100 dark:border-stone-800/50 sticky top-0 z-50"
                                                     style={{
                                                         minWidth: totalWidth,
                                                     }}
                                                 >
-                                                    <div className="flex items-center gap-2 px-4 py-3 sticky left-0 z-10 w-fit bg-white dark:bg-[#1a1c22]">
+                                                    <div className="flex items-center gap-2 px-4 py-3 sticky left-0 z-10 w-fit bg-white dark:bg-monday-dark-surface">
                                                         {/* Color accent bar (Drag Handle) */}
                                                         <GroupDragHandle colorClass={group.color.bg} />
                                                         <button
@@ -3029,7 +3029,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 </div>
 
                 {showPagination && (
-                    <div className="shrink-0 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1c22]">
+                    <div className="shrink-0 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface">
                         <TablePagination
                             totalItems={rows.length}
                             pageSize={rowsPerPage}

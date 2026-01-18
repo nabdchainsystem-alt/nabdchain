@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         return (
             <div className="bg-white dark:bg-monday-dark-surface p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
-                <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                     {payload[0].name}: {payload[0].value}
                 </p>
             </div>
@@ -222,7 +222,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
 
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
-                    <ChartLineUp size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
+                    <ChartLineUp size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Sales Insights</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Key sales metrics and revenue distribution overview</p>
@@ -232,7 +232,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -240,9 +240,9 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
@@ -257,7 +257,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                         <KPICard
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                            color="indigo"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -268,7 +268,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 {/* Sales Over Time (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[340px]" title="Sales Over Time" />
+                        <ChartSkeleton height="h-[280px]" title="Sales Over Time" />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
@@ -296,18 +296,8 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
-                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                        <Bar dataKey="sales" name="Daily Sales" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000}>
-                                            {SALES_OVER_TIME_DATA.map((entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
-                                                    fillOpacity={activeIndex.time === index ? 0.8 : 1}
-                                                    width={activeIndex.time === index ? 52 : 50}
-                                                    className="transition-all duration-300"
-                                                />
-                                            ))}
-                                        </Bar>
+
+                                        <Bar dataKey="sales" name="Daily Sales" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -318,7 +308,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 {/* Sales By Channel (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[340px]" title="Sales by Channel" />
+                        <ChartSkeleton height="h-[280px]" title="Sales by Channel" />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
@@ -334,16 +324,8 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         <XAxis type="number" hide />
                                         <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
-                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                        <Bar dataKey="value" name="Revenue" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000}>
-                                            {SALES_BY_CHANNEL_DATA.map((entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
-                                                    fillOpacity={activeIndex.channel === index ? 0.8 : 1}
-                                                />
-                                            ))}
-                                        </Bar>
+
+                                        <Bar dataKey="value" name="Revenue" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -387,7 +369,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {SIDE_KPIS.map((kpi, index) => (
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
-                            <KPICard {...kpi} color="indigo" loading={isLoading} />
+                            <KPICard {...kpi} color="blue" loading={isLoading} />
                         </div>
                     ))}
                 </div>

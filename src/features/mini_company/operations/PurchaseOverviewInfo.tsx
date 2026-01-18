@@ -21,7 +21,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
     const questions = [
         { q: 'Are purchases increasing?', a: 'Check "Monthly Spend Change %" and the historical trend in charts. High increase requires budget review.' },
         { q: 'Who are our main suppliers?', a: 'Look at "Top Supplier Spend %" and the Supplier Share charts to identify concentration risks.' },
-        { q: 'How diversified is our spending?', a: 'Review the Radial Distribution chart. Balanced shapes indicate healthy diversification; spikes indicate dependency.' },
+        { q: 'How diversified is our spending?', a: 'Review the Spend Concentration chart. Even distribution across categories with low primary supplier % indicates healthy diversification; high concentration indicates dependency risk.' },
         { q: 'Are we optimizing order frequency?', a: 'Check "Purchase Frequency" vs "Total Purchase Orders". High frequency with low value might suggest consolidation opportunities.' },
         { q: 'Is spending aligned with categories?', a: 'Analyze "Spend by Category" to ensure budget allocation matches strategic priorities.' }
     ];
@@ -70,7 +70,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                 <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Info size={24} className="text-emerald-600 dark:text-emerald-400" />
+                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
                             Purchase Overview
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Snapshot of purchasing activity & health</p>
@@ -87,7 +87,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">01</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
                             Overview
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -97,7 +97,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">02</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
                             Key Questions Answered
                         </h3>
                         <div className="grid gap-2">
@@ -108,11 +108,11 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                                         className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
                                     >
                                         {openQuestionIndex === i ? (
-                                            <CaretDown weight="bold" className="text-emerald-500 shrink-0" size={14} />
+                                            <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
                                             <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
                                         )}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
@@ -126,7 +126,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">03</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
                             Detailed Breakdown
                         </h3>
 
@@ -141,6 +141,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                                     <DetailItem title="Monthly Spend Change %" desc="Percentage difference in spend compared to the previous month." />
                                     <DetailItem title="Top Supplier Spend %" desc="Percentage of total spend going to the #1 supplier." />
                                     <DetailItem title="Purchase Frequency" desc="Average number of purchases per active interval." />
+                                    <DetailItem title="Unplanned Purchase Rate %" desc="Percentage of purchase orders created outside the approved purchasing plan or budget." />
                                 </div>
                             </div>
 
@@ -154,7 +155,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                                     <DetailItem title="Spend Distribution" desc="Pie chart (ECharts) showing category split." />
                                     <DetailItem title="Supplier Share" desc="Pie chart (ECharts) showing market share of suppliers." />
                                     <DetailItem title="Recent Orders" desc="Table listing details of recent approved purchases." />
-                                    <DetailItem title="Polar Spend Flow" desc="Radial chart (ECharts) visualizing concentration vs diversification." />
+                                    <DetailItem title="Spend Concentration Chart" desc="Marimekko chart showing how total purchasing is distributed across categories, highlighting dependency risk and diversification balance." />
                                 </div>
                             </div>
                         </div>
@@ -162,7 +163,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">04</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
                             Data Sources & Logic
                         </h3>
 
@@ -187,22 +188,22 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                                 </div>
                             </div>
 
-                            <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                                <div className="flex items-center gap-2 mb-3 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wide">
-                                    <Calculator size={14} className="text-emerald-600 dark:text-emerald-400" />
+                            <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                                <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
+                                    <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
                                     <span>Core Calculation Logic</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-emerald-900/80 dark:text-emerald-200/80 ml-1">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
                                     <li className="flex gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                                         <span><strong>Includes</strong> only approved purchases.</span>
                                     </li>
                                     <li className="flex gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                                         <span><strong>Excludes</strong> drafts and test data (flagged items).</span>
                                     </li>
                                     <li className="flex gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                                         <span><strong>Date Range</strong> currently reflects YTD or rolling 12 months.</span>
                                     </li>
                                 </ul>
@@ -214,7 +215,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                         Close Guide
                     </button>
@@ -227,7 +228,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
     <div className="group text-left">
-        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

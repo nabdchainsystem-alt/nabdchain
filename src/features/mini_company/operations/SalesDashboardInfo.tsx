@@ -150,14 +150,28 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                         </h3>
 
                         <div className="space-y-6">
-                            {/* KPIs */}
+                            {/* Top KPIs */}
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Total Sales" desc="Gross revenue before any deductions. The top-line number." />
                                     <DetailItem title="Net Revenue" desc="Real money earned after discounts and returns. The bottom-line." />
                                     <DetailItem title="Orders Count" desc="Total number of completed transactions." />
                                     <DetailItem title="Avg Order Value" desc="Average amount a customer spends per transaction. Higher is better." />
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            {/* Side KPIs */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Return Rate" desc="Percentage of orders that were returned." />
+                                    <DetailItem title="Customer Count" desc="Unique customers who placed orders." />
+                                    <DetailItem title="Top Category" desc="Product category generating highest revenue." />
+                                    <DetailItem title="Discount Impact" desc="Revenue reduction from applied discounts." />
                                 </div>
                             </div>
 

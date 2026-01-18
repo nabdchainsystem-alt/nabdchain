@@ -11,15 +11,16 @@ import { useAppContext } from '../../../contexts/AppContext';
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '1', label: 'Total Suppliers', subtitle: 'Global Vendor Base', value: '142', change: '+5', trend: 'up', icon: <Buildings size={18} />, sparklineData: [130, 132, 135, 138, 140, 142], color: 'blue' },
-    { id: '2', label: 'Active Suppliers', subtitle: 'Engaged YTD', value: '88', change: '+2', trend: 'up', icon: <Handshake size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'emerald' },
-    { id: '3', label: 'Total Spend', subtitle: 'YTD Procurement', value: '$4.2M', change: '+12%', trend: 'up', icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'indigo' },
-    { id: '4', label: 'Avg Rating', subtitle: 'Performance Score', value: '4.2', change: '+0.1', trend: 'up', icon: <Star size={18} />, sparklineData: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2], color: 'amber' },
+    { id: '2', label: 'Active Suppliers', subtitle: 'Engaged YTD', value: '88', change: '+2', trend: 'up', icon: <Handshake size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
+    { id: '3', label: 'Total Spend', subtitle: 'YTD Procurement', value: '$4.2M', change: '+12%', trend: 'up', icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
+    { id: '4', label: 'Avg Rating', subtitle: 'Performance Score', value: '4.2', change: '+0.1', trend: 'up', icon: <Star size={18} />, sparklineData: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Risk Profile', subtitle: 'High Risk Vendors', value: '7', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 8, 8, 7, 7, 7], color: 'red' },
-    { id: '6', label: 'On-Time Deliv', subtitle: 'Global Average', value: '94%', change: '+1%', trend: 'up', icon: <Truck size={18} />, sparklineData: [92, 92, 93, 93, 94, 94], color: 'teal' },
-    { id: '7', label: 'Sourcing Mix', subtitle: 'Strategic Partners', value: '25%', change: 'Stable', trend: 'neutral', icon: <Globe size={18} />, sparklineData: [25, 25, 25, 25, 25, 25], color: 'cyan' },
+    { id: '5', label: 'Risk Profile', subtitle: 'High Risk Vendors', value: '7', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 8, 8, 7, 7, 7], color: 'blue' },
+    { id: '6', label: 'On-Time Deliv', subtitle: 'Global Average', value: '94%', change: '+1%', trend: 'up', icon: <Truck size={18} />, sparklineData: [92, 92, 93, 93, 94, 94], color: 'blue' },
+    { id: '7', label: 'Sourcing Mix', subtitle: 'Strategic Partners', value: '25%', change: 'Stable', trend: 'neutral', icon: <Globe size={18} />, sparklineData: [25, 25, 25, 25, 25, 25], color: 'blue' },
+    { id: '8', label: 'New Vendors', subtitle: 'Added This Quarter', value: '8', change: '+3', trend: 'up', icon: <Factory size={18} />, sparklineData: [4, 5, 5, 6, 7, 8], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -130,7 +131,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <SupplierOverviewInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -145,14 +146,14 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
                         About Dashboard
@@ -167,7 +168,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'blue'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -182,12 +183,12 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Top Spend" />
                     ) : (
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Top Spend</h3>
                                 <p className="text-xs text-gray-400">By Supplier</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={SPEND_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -208,12 +209,12 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     {isLoading ? (
                         <PieChartSkeleton title="Spend Mix" />
                     ) : (
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Mix</h3>
                                 <p className="text-xs text-gray-400">By Category</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -225,7 +226,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1" style={{ animationDelay: `${(index + 4) * 100}ms` }}>
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'blue'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -239,7 +240,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={5} />
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Strategic Suppliers</h3>
                         </div>
@@ -281,9 +282,9 @@ export const SupplierOverviewDashboard: React.FC = () => {
 
                 {/* Companion Chart: Bubble Matrix (2 cols) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[340px]" title="Risk vs Value Matrix" />
+                    <ChartSkeleton height="h-[280px]" title="Risk vs Value Matrix" />
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                         <ReactECharts option={bubbleOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}

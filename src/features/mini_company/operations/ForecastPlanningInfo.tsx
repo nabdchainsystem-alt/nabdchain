@@ -141,6 +141,7 @@ export const ForecastPlanningInfo: React.FC<ForecastPlanningInfoProps> = ({ isOp
                                     <DetailItem title="Planned Orders" desc="Number of purchase orders scheduled or drafted." />
                                     <DetailItem title="Budget Impact" desc="Estimated consumption of remaining budget." />
                                     <DetailItem title="Confidence Level" desc="Statistical certainty of the current forecast model." />
+                                    <DetailItem title="Variance Trend" desc="Gap between forecasted and actual spend, tracking improvement over time." />
                                 </div>
                             </div>
 
@@ -150,7 +151,9 @@ export const ForecastPlanningInfo: React.FC<ForecastPlanningInfoProps> = ({ isOp
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Forecast per Category" desc="Bar chart (Recharts) comparing current vs projected spend." />
+                                    <DetailItem title="Spend Projection" desc="Bar chart (Recharts) showing monthly projected spend trajectory." />
                                     <DetailItem title="Future Allocation" desc="Pie chart (ECharts) showing expected budget distribution." />
+                                    <DetailItem title="Budget Utilization" desc="Pie chart (ECharts) showing quarterly actual and forecasted budget usage." />
                                     <DetailItem title="Forecast Diff Table" desc="Detailed comparison of last period actuals vs next period forecast." />
                                     <DetailItem title="Confidence Cone" desc="Area chart (ECharts) visualizing the range of probable outcomes." />
                                 </div>

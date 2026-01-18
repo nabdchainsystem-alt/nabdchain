@@ -39,7 +39,18 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({ activeCategory, onSe
                         `}
                         >
                             <Icon size={18} />
-                            <span>{category.label}</span>
+                            <span>
+                                {category.id === 'all' ? t('all_items') :
+                                    category.id === 'favorites' ? t('favorites') :
+                                        category.id === 'folder' ? t('folders') :
+                                            category.id === 'weblink' ? t('weblinks') :
+                                                category.id === 'document' ? t('documents') :
+                                                    category.id === 'image' ? t('images') :
+                                                        category.id === 'login' ? t('logins') :
+                                                            category.id === 'note' ? t('secure_notes') :
+                                                                category.id === 'trash' ? t('trash') :
+                                                                    category.label}
+                            </span>
                         </button>
                     );
                 })}

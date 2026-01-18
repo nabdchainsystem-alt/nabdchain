@@ -324,7 +324,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
     };
 
     return (
-        <div className="flex flex-col md:flex-row h-full w-full bg-[#f9fafa] dark:bg-[#21262c] text-[#121716] dark:text-[#e2e8f0] font-sans overflow-hidden antialiased transition-colors duration-300 relative" style={{ zoom: '75%' }}>
+        <div className="flex flex-col md:flex-row h-full w-full bg-[#f9fafa] dark:bg-monday-dark-elevated text-[#121716] dark:text-[#e2e8f0] font-sans overflow-hidden antialiased transition-colors duration-300 relative" style={{ zoom: '75%' }}>
 
             <BoardSelectionModal
                 isOpen={isModalOpen}
@@ -340,7 +340,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
             <main className="flex-1 flex flex-col h-full overflow-hidden relative border-r border-slate-200 dark:border-monday-dark-border/50">
 
                 {/* Header */}
-                <header className="px-8 py-6 flex justify-between items-end bg-[#f9fafa]/90 dark:bg-[#21262c]/90 backdrop-blur-sm z-10 sticky top-0">
+                <header className="px-8 py-6 flex justify-between items-end bg-[#f9fafa]/90 dark:bg-monday-dark-elevated/90 backdrop-blur-sm z-10 sticky top-0">
                     <div>
                         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Wednesday, Oct 24</h1>
                         <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">{t('daily_agenda')} • {todayTasks.length} {t('tasks_scheduled')}</p>
@@ -463,10 +463,10 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
             </main>
 
             {/* SIDEBAR (TASK BUCKET) */}
-            <aside className="w-full lg:w-[420px] xl:w-[480px] bg-white dark:bg-[#1a1e23] flex flex-col h-full shadow-2xl lg:shadow-none z-20 border-l border-slate-200 dark:border-monday-dark-border/50" style={{ zoom: '1.05' }}>
+            <aside className="w-full lg:w-[420px] xl:w-[480px] bg-white dark:bg-monday-dark-surface flex flex-col h-full shadow-2xl lg:shadow-none z-20 border-l border-slate-200 dark:border-monday-dark-border/50" style={{ zoom: '1.05' }}>
 
                 {/* Search & Filter Header */}
-                <div className="px-6 pt-6 pb-4 bg-white dark:bg-[#1a1e23]">
+                <div className="px-6 pt-6 pb-4 bg-white dark:bg-monday-dark-surface">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-3">
                             <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{t('task_bucket')}</h2>
@@ -544,7 +544,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                 <div className="h-[1px] bg-slate-100 dark:bg-monday-dark-elevated w-full"></div>
 
                 {/* Task List */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-slate-50/50 dark:bg-[#1a1e23]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-slate-50/50 dark:bg-monday-dark-surface">
 
                     {/* INBOX SECTION */}
                     <div>

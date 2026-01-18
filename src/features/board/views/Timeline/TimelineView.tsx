@@ -191,10 +191,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
     }, [timelineStart]); // Run when range regenerates
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#1a1d24] text-gray-900 dark:text-gray-100 overflow-hidden font-sans relative">
+        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface text-gray-900 dark:text-gray-100 overflow-hidden font-sans relative">
 
             {/* Top Toolbar */}
-            <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-50 bg-white dark:bg-[#1a1d24]">
+            <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-50 bg-white dark:bg-monday-dark-surface">
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
                     <button
@@ -244,7 +244,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                 <div className="h-full flex flex-col relative" style={{ width: days.length * CELL_WIDTH }}>
 
                     {/* Header Row (Months & Days) */}
-                    <div className="flex flex-col h-[70px] border-b border-gray-100 dark:border-gray-800 absolute top-0 left-0 right-0 bg-white dark:bg-[#1a1d24] z-20 pointer-events-none">
+                    <div className="flex flex-col h-[70px] border-b border-gray-100 dark:border-gray-800 absolute top-0 left-0 right-0 bg-white dark:bg-monday-dark-surface z-20 pointer-events-none">
                         {/* Month Row */}
                         <div className="flex-1 relative">
                             {days.map((d, i) => {
@@ -353,14 +353,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
 
             {/* Bottom Overlay Controls */}
             <div className="absolute bottom-5 left-5 z-50">
-                <button className="flex items-center gap-2 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors text-gray-700 dark:text-gray-200">
+                <button className="flex items-center gap-2 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors text-gray-700 dark:text-gray-200">
                     <span className="w-3 h-4 border border-gray-300 rounded-sm"></span>
                     Draft
                 </button>
             </div>
 
             {/* Zoom Controls (Floating Top Right) */}
-            <div className="absolute right-5 top-20 flex flex-col gap-1 z-50 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1">
+            <div className="absolute right-5 top-20 flex flex-col gap-1 z-50 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1">
                 <button onClick={() => setZoom(z => Math.min(z + 0.2, 2))} className="p-1 hover:bg-gray-100 rounded text-gray-500">
                     <Plus size={16} />
                 </button>

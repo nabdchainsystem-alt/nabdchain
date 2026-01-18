@@ -141,6 +141,7 @@ export const SupplierPerformanceInfo: React.FC<SupplierPerformanceInfoProps> = (
                                     <DetailItem title="Supplier Dependency Index" desc="Score (0-100) indicating reliance on top suppliers (higher = more risk)." />
                                     <DetailItem title="Dispute Rate" desc="Percentage of orders resulting in quality or billing disputes." />
                                     <DetailItem title="Preferred Suppliers Count" desc="Number of suppliers marked as 'Preferred' or 'Strategic'." />
+                                    <DetailItem title="Supplier Concentration %" desc="Percentage of total purchase spend concentrated in the top 3 suppliers." />
                                 </div>
                             </div>
 

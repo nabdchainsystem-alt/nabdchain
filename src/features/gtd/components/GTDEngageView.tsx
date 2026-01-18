@@ -62,7 +62,7 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
                             {nextActions.length > 0 ? (
                                 <div className="space-y-3">
                                     {nextActions.map(item => (
-                                        <div key={item.id} className="bg-white dark:bg-[#111] p-4 rounded-2xl flex items-center justify-between group border border-gray-100 dark:border-white/5 hover:border-green-500/50 transition-colors">
+                                        <div key={item.id} className="bg-white dark:bg-monday-dark-bg p-4 rounded-2xl flex items-center justify-between group border border-gray-100 dark:border-white/5 hover:border-green-500/50 transition-colors">
                                             <div className="flex items-center gap-4 flex-1 min-w-0">
                                                 <button
                                                     onClick={() => onComplete(item.id)}

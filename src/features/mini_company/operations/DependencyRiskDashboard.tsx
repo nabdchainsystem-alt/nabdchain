@@ -20,6 +20,7 @@ const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
     { id: '5', label: 'Backup Suppliers', subtitle: 'Avg per Category', value: '1.8', change: '+0.1', trend: 'up', icon: <UserSwitch size={18} />, sparklineData: [1.5, 1.5, 1.6, 1.6, 1.7, 1.7, 1.8] },
     { id: '6', label: 'Avg Switching Cost', subtitle: 'Est. Impact', value: '$12k', change: '0', trend: 'neutral', icon: <CurrencyDollar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12, 12] },
     { id: '7', label: 'Active Risk Alerts', subtitle: 'Critical Issues', value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [0, 0, 1, 1, 1, 2, 2] },
+    { id: '8', label: 'Mitigation Progress', subtitle: 'Actions Completed', value: '72%', change: '+8%', trend: 'up', icon: <Compass size={18} />, sparklineData: [58, 62, 64, 66, 68, 70, 72] },
 ];
 
 // --- Mock Data: Charts ---
@@ -35,6 +36,25 @@ const RISK_LEVELS = [
     { value: 12, name: 'High Risk' },
     { value: 28, name: 'Medium Risk' },
     { value: 60, name: 'Low Risk' }
+];
+
+// New: Risk Trend Over Time
+const RISK_TREND = [
+    { name: 'Jan', high: 15, medium: 25, low: 55 },
+    { name: 'Feb', high: 14, medium: 26, low: 56 },
+    { name: 'Mar', high: 13, medium: 27, low: 58 },
+    { name: 'Apr', high: 12, medium: 28, low: 58 },
+    { name: 'May', high: 12, medium: 28, low: 60 },
+    { name: 'Jun', high: 12, medium: 28, low: 60 },
+];
+
+// New: Diversification Score by Category
+const DIVERSIFICATION_SCORES = [
+    { name: 'Electronics', value: 35 },
+    { name: 'Office', value: 65 },
+    { name: 'Hardware', value: 25 },
+    { name: 'Services', value: 80 },
+    { name: 'Furniture', value: 0 },
 ];
 
 // --- Mock Data: Table & Network ---
@@ -88,7 +108,7 @@ export const DependencyRiskDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Risk Distribution
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -98,12 +118,29 @@ export const DependencyRiskDashboard: React.FC = () => {
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
             data: RISK_LEVELS.map(d => ({
                 ...d,
                 itemStyle: {
                     color: d.name === 'High Risk' ? '#ef4444' : d.name === 'Medium Risk' ? '#f59e0b' : '#10b981'
                 }
             }))
+        }]
+    };
+
+    // Pie Chart - Diversification Scores
+    const diversificationPieOption: EChartsOption = {
+        tooltip: { trigger: 'item', formatter: '{b}: {c}% diversified' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            data: DIVERSIFICATION_SCORES,
+            color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
         }]
     };
 
@@ -167,7 +204,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color="orange"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -175,10 +212,10 @@ export const DependencyRiskDashboard: React.FC = () => {
 
                 {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Charts Area */}
+                {/* Charts Area - 2x2 Grid */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Recharts: Dependency by Category */}
+                    {/* Row 1, Col 1: Recharts - Dependency by Category */}
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Dependency by Category" />
                     ) : (
@@ -187,7 +224,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency by Category</h3>
                                 <p className="text-xs text-gray-400">Primary vs Secondary Share</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={DEPENDENCY_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
                                         <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f3f4f6" />
@@ -198,7 +235,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="primary" stackId="a" name="Primary" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                                        <Bar dataKey="primary" stackId="a" name="Primary" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12} />
                                         <Bar dataKey="secondary" stackId="a" name="Backup" fill="#d1d5db" radius={[0, 4, 4, 0]} barSize={12} />
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -206,7 +243,36 @@ export const DependencyRiskDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ECharts: Risk Levels */}
+                    {/* Row 1, Col 2: Recharts - Risk Trend */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Risk Trend" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Trend</h3>
+                                <p className="text-xs text-gray-400">Monthly risk distribution</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={RISK_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="high" stackId="a" name="High" fill="#ef4444" radius={[0, 0, 0, 0]} barSize={20} />
+                                        <Bar dataKey="medium" stackId="a" name="Medium" fill="#f59e0b" radius={[0, 0, 0, 0]} barSize={20} />
+                                        <Bar dataKey="low" stackId="a" name="Low" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: ECharts - Risk Distribution */}
                     {isLoading ? (
                         <PieChartSkeleton title="Risk Distribution" />
                     ) : (
@@ -215,7 +281,20 @@ export const DependencyRiskDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
                                 <p className="text-xs text-gray-400">Supplier classification</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: ECharts - Diversification Score */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Diversification Score" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Diversification Score</h3>
+                                <p className="text-xs text-gray-400">By category coverage</p>
+                            </div>
+                            <ReactECharts option={diversificationPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -227,7 +306,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color="orange"
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -283,7 +362,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                 {/* Companion Chart: Network Graph (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Supply Chain Network" />
+                        <ChartSkeleton height="h-[280px]" title="Supply Chain Network" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

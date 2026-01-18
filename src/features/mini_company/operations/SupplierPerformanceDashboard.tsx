@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
-import { Users, Truck, Clock, CurrencyDollar, ShieldWarning, Warning, Star, Info, ArrowsOut } from 'phosphor-react';
+import { Users, Truck, Clock, CurrencyDollar, ShieldWarning, Warning, Star, Info, ArrowsOut, ChartPieSlice } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { SupplierPerformanceInfo } from './SupplierPerformanceInfo';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -24,6 +24,7 @@ const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
     { id: '5', label: 'Dependency Index', subtitle: 'Risk (0-100)', value: '65', change: '+5', trend: 'down', icon: <ShieldWarning size={18} />, sparklineData: [55, 58, 60, 62, 63, 64, 65] },
     { id: '6', label: 'Dispute Rate', subtitle: 'Issues / Orders', value: '2.1%', change: '-0.4%', trend: 'up', icon: <Warning size={18} />, sparklineData: [3.5, 3, 2.8, 2.5, 2.4, 2.2, 2.1] },
     { id: '7', label: 'Preferred Suppliers', subtitle: 'Strategic Partners', value: '8', change: '0', trend: 'neutral', icon: <Star size={18} />, sparklineData: [6, 6, 7, 7, 8, 8, 8] },
+    { id: '8', label: 'Supplier Concentration', subtitle: 'Top 3 Spend %', value: '73%', change: '-2%', trend: 'up', icon: <ChartPieSlice size={18} />, sparklineData: [78, 77, 76, 75, 74, 73.5, 73] },
 ];
 
 // --- Mock Data: Charts ---
@@ -103,16 +104,15 @@ export const SupplierPerformanceDashboard: React.FC = () => {
 
     // Scatter Matrix: Spend (X) vs Lead Time (Y) vs Risk (Bubble Size/Color)
     const scatterOption: EChartsOption = {
-        title: { text: 'Risk vs value Matrix', left: 'center', top: 5, textStyle: { fontSize: 12, color: '#6b7280' } },
         tooltip: {
             trigger: 'item',
             formatter: (params: any) => {
                 return `<b>${params.data[3]}</b><br/>Spend: ${formatCurrency(params.data[0], currency.code, currency.symbol)}<br/>Lead Time: ${params.data[1]} days<br/>Risk Score: ${params.data[2]}`;
             }
         },
-        grid: { top: 40, right: 30, bottom: 20, left: 50, containLabel: true },
-        xAxis: { type: 'value', name: 'Spend', nameLocation: 'middle', nameGap: 25, splitLine: { lineStyle: { type: 'dashed' } } },
-        yAxis: { type: 'value', name: 'Lead Time (Days)', nameLocation: 'middle', nameGap: 30, splitLine: { lineStyle: { type: 'dashed' } } },
+        grid: { top: 10, right: 20, bottom: 5, left: 10, containLabel: true },
+        xAxis: { type: 'value', name: 'Spend', nameLocation: 'middle', nameGap: 20, splitLine: { lineStyle: { type: 'dashed' } } },
+        yAxis: { type: 'value', name: 'Lead Time (Days)', nameLocation: 'middle', nameGap: 25, splitLine: { lineStyle: { type: 'dashed' } } },
         series: [{
             type: 'scatter',
             symbolSize: (data: any) => Math.max(10, data[2] / 2), // Bubble size based on Risk Score
@@ -193,7 +193,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Supplier</h3>
                                 <p className="text-xs text-gray-400">Total volume by partner</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={SPEND_PER_SUPPLIER} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -220,7 +220,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time (Days)</h3>
                                 <p className="text-xs text-gray-400">Speed of delivery breakdown</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={LEAD_TIME_PER_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -230,7 +230,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -246,22 +246,27 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
                                 <p className="text-xs text-gray-400">Suppliers by risk category</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
-                    {/* Placeholder for symmetry or extra chart if needed, can use simple summary or empty state */}
+                    {/* Performance Status Card */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[240px]" title="Performance Status" />
+                        <PieChartSkeleton title="Performance Status" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center text-center animate-fade-in-up">
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-3">
-                                <Star className="text-blue-500" size={32} weight="duotone" />
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up h-full flex flex-col">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Performance Status</h3>
+                                <p className="text-xs text-gray-400">Overall supplier health summary</p>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Performance Status</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 px-4">
-                                Overall supplier health is stable. <br /> 8 Preferred Suppliers are maintaining 95%+ performance.
-                            </p>
+                            <div className="flex flex-col items-center justify-center text-center flex-1">
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-2">
+                                    <Star className="text-blue-500" size={28} weight="duotone" />
+                                </div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 px-4">
+                                    Overall supplier health is stable. <br /> 8 Preferred Suppliers are maintaining 95%+ performance.
+                                </p>
+                            </div>
                         </div>
                     )}
 
@@ -316,8 +321,8 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                             <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{s.onTime}%</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium border ${s.risk === 'Low' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                        s.risk === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                                            'bg-red-50 text-red-700 border-red-100'
+                                                    s.risk === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                        'bg-red-50 text-red-700 border-red-100'
                                                     }`}>
                                                     {s.risk}
                                                 </span>
@@ -333,11 +338,17 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 {/* Companion Chart: Scatter Matrix (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[350px]" title="Risk vs Value Matrix" />
+                        <ChartSkeleton height="h-[280px]" title="Risk vs Value Matrix" />
                     </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={scatterOption} style={{ height: '300px', width: '100%' }} />
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up h-full flex flex-col">
+                        <div className="p-4 mb-1">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk vs Value Matrix</h3>
+                            <p className="text-xs text-gray-400">Spend vs lead time with risk indicators</p>
+                        </div>
+                        <div className="flex-1 w-full min-h-0 px-2 pb-2">
+                            <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
+                        </div>
                     </div>
                 )}
 

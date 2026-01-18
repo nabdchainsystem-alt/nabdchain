@@ -18,9 +18,10 @@ const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Volatility Index', subtitle: 'Price Stability', value: '42', change: '-5', trend: 'down', icon: <TrendDown size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] }, // Down is good
+    { id: '5', label: 'Volatility Index', subtitle: 'Price Stability', value: '42', change: '-5', trend: 'up', icon: <TrendDown size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] },
     { id: '6', label: 'High-Risk Items', subtitle: 'Over Budget / Volatile', value: '12', change: '+2', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 10, 10, 11, 11, 12, 12] },
     { id: '7', label: 'Optimization Opps', subtitle: 'Potential Savings', value: '8', change: '0', trend: 'neutral', icon: <CurrencyDollar size={18} />, sparklineData: [6, 7, 7, 8, 8, 8, 8] },
+    { id: '8', label: 'Cost Efficiency', subtitle: 'Savings Rate %', value: '8.7%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [6.5, 7, 7.3, 7.8, 8.2, 8.5, 8.7] },
 ];
 
 // --- Mock Data: Charts ---
@@ -38,6 +39,24 @@ const COST_ALLOCATION = [
     { name: 'Hardware', value: 25000 },
     { name: 'Services', value: 55000 },
     { name: 'Furniture', value: 12000 },
+];
+
+// New: Monthly Cost Trend
+const MONTHLY_COST_TREND = [
+    { name: 'Jan', value: 22000 },
+    { name: 'Feb', value: 24500 },
+    { name: 'Mar', value: 21000 },
+    { name: 'Apr', value: 26000 },
+    { name: 'May', value: 25500 },
+    { name: 'Jun', value: 23500 },
+];
+
+// New: Savings Breakdown
+const SAVINGS_BREAKDOWN = [
+    { name: 'Negotiation', value: 5200 },
+    { name: 'Volume Discount', value: 3800 },
+    { name: 'Contract Terms', value: 2100 },
+    { name: 'Process Efficiency', value: 1300 },
 ];
 
 // --- Mock Data: Table & Radar ---
@@ -75,7 +94,7 @@ export const CostControlDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Cost Allocation
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -87,6 +106,22 @@ export const CostControlDashboard: React.FC = () => {
             label: { show: false },
             emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
             data: COST_ALLOCATION
+        }]
+    };
+
+    // Pie Chart - Savings Breakdown
+    const savingsPieOption: EChartsOption = {
+        tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            data: SAVINGS_BREAKDOWN,
+            color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
         }]
     };
 
@@ -161,7 +196,7 @@ export const CostControlDashboard: React.FC = () => {
                         <KPICard
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                            color="emerald"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -169,10 +204,10 @@ export const CostControlDashboard: React.FC = () => {
 
                 {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Charts Area */}
+                {/* Charts Area - 2x2 Grid */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Recharts: Cost vs Budget */}
+                    {/* Row 1, Col 1: Recharts - Cost vs Budget */}
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Cost vs Budget" />
                     ) : (
@@ -181,7 +216,7 @@ export const CostControlDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost vs Budget</h3>
                                 <p className="text-xs text-gray-400">Actual vs Planned Spend</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={COST_VS_BUDGET} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -201,7 +236,34 @@ export const CostControlDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ECharts: Cost Allocation */}
+                    {/* Row 1, Col 2: Recharts - Monthly Cost Trend */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Monthly Cost Trend" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Monthly Cost Trend</h3>
+                                <p className="text-xs text-gray-400">Cost fluctuation over time</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={MONTHLY_COST_TREND} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                            formatter={(val: number) => formatCurrency(val, currency.code, currency.symbol)}
+                                        />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: ECharts - Cost Allocation */}
                     {isLoading ? (
                         <PieChartSkeleton title="Cost Allocation" />
                     ) : (
@@ -210,7 +272,20 @@ export const CostControlDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Allocation</h3>
                                 <p className="text-xs text-gray-400">Spend breakdown by category</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: ECharts - Savings Breakdown */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Savings Breakdown" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Savings Breakdown</h3>
+                                <p className="text-xs text-gray-400">Cost optimization sources</p>
+                            </div>
+                            <ReactECharts option={savingsPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -223,7 +298,7 @@ export const CostControlDashboard: React.FC = () => {
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                                color="emerald"
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -279,7 +354,7 @@ export const CostControlDashboard: React.FC = () => {
                 {/* Companion Chart: Radar (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Deviation Radar" />
+                        <ChartSkeleton height="h-[280px]" title="Deviation Radar" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

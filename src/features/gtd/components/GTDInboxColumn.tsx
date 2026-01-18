@@ -12,7 +12,7 @@ export const GTDInboxColumn: React.FC<GTDInboxColumnProps> = ({ title, subtitle,
     return (
 
         <div
-            className="flex flex-col h-[400px] border border-gray-100 dark:border-white/5 rounded-[2rem] p-8 bg-white dark:bg-[#111111] shadow-[0_2px_40px_-10px_rgba(0,0,0,0.05)] relative overflow-hidden group hover:shadow-[0_8px_40px_-5px_rgba(0,0,0,0.1)] transition-all duration-500"
+            className="flex flex-col h-[400px] border border-gray-100 dark:border-white/5 rounded-[2rem] p-8 bg-white dark:bg-monday-dark-bg shadow-[0_2px_40px_-10px_rgba(0,0,0,0.05)] relative overflow-hidden group hover:shadow-[0_8px_40px_-5px_rgba(0,0,0,0.1)] transition-all duration-500"
         >
             <div className="flex justify-between items-start mb-2">
                 <div>

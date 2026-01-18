@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
-import { ChartSkeleton, TableSkeleton } from '../../board/components/dashboard/KPICardVariants';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, Funnel, CheckCircle, XCircle, Timer, Warning, TrendUp } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { PurchaseFunnelInfo } from './PurchaseFunnelInfo';
@@ -19,7 +19,8 @@ const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
     { id: '5', label: 'Bottleneck Stage', subtitle: 'Highest Delay', value: 'Finance', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
     { id: '6', label: 'Delayed Requests', subtitle: 'Over SLA', value: '14', change: '+3', trend: 'down', icon: <Timer size={18} />, sparklineData: [10, 11, 12, 11, 12, 13, 14] },
-    { id: '7', label: 'Rejected Requests', subtitle: 'Denied', value: '25', change: '-2', trend: 'up', icon: <XCircle size={18} />, sparklineData: [28, 27, 26, 26, 25, 25, 25] }, // Down is good
+    { id: '7', label: 'Rejected Requests', subtitle: 'Denied', value: '25', change: '-2', trend: 'up', icon: <XCircle size={18} />, sparklineData: [28, 27, 26, 26, 25, 25, 25] },
+    { id: '8', label: 'SLA Compliance', subtitle: 'On-Time Rate', value: '86%', change: '+3%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [80, 81, 82, 83, 84, 85, 86] },
 ];
 
 // --- Mock Data: Charts ---
@@ -34,9 +35,27 @@ const FUNNEL_DATA = [
 const DELAYS_PER_STAGE = [
     { name: 'Submission', count: 2 },
     { name: 'Manager', count: 12 },
-    { name: 'Finance', count: 24 }, // Bottleneck
+    { name: 'Finance', count: 24 },
     { name: 'Procurement', count: 8 },
     { name: 'Final', count: 4 },
+];
+
+// New: Request Volume by Month
+const REQUEST_VOLUME_TREND = [
+    { name: 'Jan', value: 22 },
+    { name: 'Feb', value: 28 },
+    { name: 'Mar', value: 32 },
+    { name: 'Apr', value: 25 },
+    { name: 'May', value: 35 },
+    { name: 'Jun', value: 30 },
+];
+
+// New: Stage Status Distribution
+const STAGE_STATUS_MIX = [
+    { name: 'Approved', value: 62 },
+    { name: 'Pending', value: 23 },
+    { name: 'Rejected', value: 10 },
+    { name: 'Cancelled', value: 5 },
 ];
 
 // --- Mock Data: Table & Sankey ---
@@ -89,14 +108,13 @@ export const PurchaseFunnelDashboard: React.FC = () => {
 
     // Funnel Chart
     const funnelOption: EChartsOption = {
-        title: { text: 'Request Funnel', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', formatter: '{b} : {c}%' },
         series: [
             {
                 name: 'Funnel',
                 type: 'funnel',
                 left: '10%',
-                top: 30,
+                top: 10,
                 bottom: 10,
                 width: '80%',
                 min: 0,
@@ -109,9 +127,26 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 labelLine: { length: 10, lineStyle: { width: 1, type: 'solid' } },
                 itemStyle: { borderColor: '#fff', borderWidth: 1 },
                 emphasis: { label: { fontSize: 20 } },
-                data: FUNNEL_DATA
+                data: FUNNEL_DATA,
+                color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
             }
         ]
+    };
+
+    // Pie Chart - Stage Status Distribution
+    const stageStatusPieOption: EChartsOption = {
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            data: STAGE_STATUS_MIX,
+            color: ['#10b981', '#f59e0b', '#ef4444', '#6b7280']
+        }]
     };
 
     // Sankey Chart
@@ -173,7 +208,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color="cyan"
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -181,10 +216,62 @@ export const PurchaseFunnelDashboard: React.FC = () => {
 
                 {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
 
-                {/* Charts Area */}
+                {/* Charts Area - 2x2 Grid */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* ECharts: Funnel Chart */}
+                    {/* Row 1, Col 1: Recharts - Request Volume Trend */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Request Volume Trend" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Request Volume Trend</h3>
+                                <p className="text-xs text-gray-400">Monthly submission patterns</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={REQUEST_VOLUME_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 1, Col 2: Recharts - Avg Hours per Stage */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Avg Hours per Stage" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Hours per Stage</h3>
+                                <p className="text-xs text-gray-400">Identifying bottlenecks</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={DELAYS_PER_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} interval={0} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="count" name="Hours" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: ECharts - Conversion Funnel */}
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Conversion Funnel" />
                     ) : (
@@ -197,29 +284,16 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Recharts: Delays per Stage */}
+                    {/* Row 2, Col 2: ECharts - Stage Status Distribution */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Avg Hours per Stage" />
+                        <PieChartSkeleton title="Stage Status Distribution" />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Hours per Stage</h3>
-                                <p className="text-xs text-gray-400">Identifying bottlenecks</p>
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Stage Status Distribution</h3>
+                                <p className="text-xs text-gray-400">Request outcomes</p>
                             </div>
-                            <div className="h-[200px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={DELAYS_PER_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} interval={0} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="count" name="Hours" fill="#06b6d4" radius={[4, 4, 0, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                            <ReactECharts option={stageStatusPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -231,7 +305,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color="cyan"
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -286,7 +360,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 {/* Companion Chart: Sankey (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[360px]" title="Approval Flow Analysis" />
+                        <ChartSkeleton height="h-[280px]" title="Approval Flow Analysis" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

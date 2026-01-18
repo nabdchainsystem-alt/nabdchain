@@ -72,7 +72,7 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
             {...listeners}
             {...attributes}
             onClick={onClick}
-            className="group flex items-center gap-2 px-2 py-1 bg-white dark:bg-[#252830] border border-gray-100 dark:border-gray-800 rounded shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-grab active:cursor-grabbing select-none mb-1 overflow-hidden"
+            className="group flex items-center gap-2 px-2 py-1 bg-white dark:bg-monday-dark-elevated border border-gray-100 dark:border-gray-800 rounded shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-grab active:cursor-grabbing select-none mb-1 overflow-hidden"
         >
             <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
             <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate leading-tight">
@@ -119,7 +119,7 @@ const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isTod
             className={`
                 relative flex flex-col transition-all cursor-pointer h-full min-h-[120px]
                 border-b border-r border-gray-100 dark:border-gray-800
-                bg-white dark:bg-[#1a1d24]
+                bg-white dark:bg-monday-dark-surface
                 ${isOver ? 'ring-inset ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'}
                 ${isToday ? 'ring-inset ring-1 ring-black dark:ring-white z-10' : ''}
                 group
@@ -157,7 +157,7 @@ const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isTod
                                 align="start"
                                 side="bottom"
                             >
-                                <div className="w-64 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2 max-h-80 overflow-y-auto z-50">
+                                <div className="w-64 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2 max-h-80 overflow-y-auto z-50">
                                     <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
                                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                                             {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -403,7 +403,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#1a1d24]">
+        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface">
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -439,7 +439,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                                 </button>
 
                                 {isViewMenuOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
+                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
                                         {[
                                             { label: 'Day', value: 'daily' },
                                             { label: '4 Days', value: '5days' },
@@ -500,7 +500,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                                             placeholder="Search..."
                                             value={filterText}
                                             onChange={(e) => setFilterText(e.target.value)}
-                                            className="text-xs px-2 py-1 bg-gray-50 dark:bg-[#252830] border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            className="text-xs px-2 py-1 bg-gray-50 dark:bg-monday-dark-elevated border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             autoFocus
                                         />
                                     )}
@@ -541,7 +541,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                                         People
                                     </button>
                                     {isAssigneeMenuOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
+                                        <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
                                             <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-800">
                                                 <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">All Users</span>
                                                 {selectedAssigneeId && (
@@ -603,7 +603,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
 
                 {/* --- Grid Section --- */}
                 {/* Weekday Header */}
-                <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1d24]">
+                <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-monday-dark-surface">
                     {(!isScheduleView ? WEEKDAY_LABELS : weekDays.map(d => d.toLocaleDateString('default', { weekday: 'short' }))).map((day, i) => (
                         <div key={i} className="px-2 py-2 text-[11px] font-semibold text-gray-500 dark:text-gray-500 uppercase">
                             {day}
@@ -612,14 +612,14 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                 </div>
 
                 {/* Calendar Grid Container */}
-                <div className="flex-1 overflow-hidden relative bg-white dark:bg-[#151820]">
+                <div className="flex-1 overflow-hidden relative bg-white dark:bg-monday-dark-surface">
                     <motion.div
                         key={calendarView + currentDate.toISOString()}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2 }}
                         className={`
-                            h-full bg-white dark:bg-[#1a1d24]
+                            h-full bg-white dark:bg-monday-dark-surface
                             grid
                             ${isScheduleView
                                 ? `grid-cols-${calendarView === '5days' ? '5' : '7'}`

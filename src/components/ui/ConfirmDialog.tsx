@@ -53,7 +53,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-sm bg-white dark:bg-[#0d0d0e] border border-stone-200 dark:border-stone-800 rounded-3xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+            <div className="relative w-full max-w-sm bg-white dark:bg-monday-dark-bg border border-stone-200 dark:border-stone-800 rounded-3xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in zoom-in-95 duration-500">
                 <div className="relative p-8">
                     <button
                         onClick={onClose}

@@ -141,6 +141,7 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                                     <DetailItem title="Avg Switching Cost" desc="Estimated financial impact of changing a primary supplier." />
                                     <DetailItem title="Risk Alerts" desc="Active warnings (e.g., bankruptcy news, severe delays)." />
                                     <DetailItem title="Stability Score" desc="Computed 0-100 index of supply chain robustness." />
+                                    <DetailItem title="Mitigation Progress" desc="Percentage of risk mitigation actions that have been completed." />
                                 </div>
                             </div>
 
@@ -150,7 +151,9 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Dependency by Category" desc="Bar chart (Recharts) showing dominant supplier share per category." />
+                                    <DetailItem title="Risk Trend" desc="Stacked bar chart (Recharts) showing high/medium/low risk distribution over time." />
                                     <DetailItem title="Risk Levels" desc="Pie chart (ECharts) classifying suppliers by Low/Med/High risk." />
+                                    <DetailItem title="Diversification Score" desc="Pie chart (ECharts) showing sourcing diversification levels across categories." />
                                     <DetailItem title="Risk Detail Table" desc="List of suppliers with their respective impact and risk scores." />
                                     <DetailItem title="Network Dependency Graph" desc="Network graph (ECharts) visualizing connections between categories and suppliers." />
                                 </div>

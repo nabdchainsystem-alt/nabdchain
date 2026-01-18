@@ -190,7 +190,7 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
                 {kpis.map((kpi, index) => (
                     <div
                         key={index}
-                        className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                        className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                     >
                         <div className="flex justify-between items-start mb-3">
                             <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
@@ -216,7 +216,7 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
+            <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4">RFQs by Status</h3>
                 <div className="h-[300px]">
                     <ReactECharts option={chartData} style={{ height: '100%', width: '100%' }} />
@@ -224,7 +224,7 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
             </div>
 
             {/* Table */}
-            <div className="bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
+            <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
                 <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">RFQ Table</h3>
                     <div className="flex items-center gap-3 relative">
@@ -247,7 +247,7 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
                                 Filter
                             </button>
                             {rfqFilterOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a1d24] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-2 z-20">
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-2 z-20">
                                     <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</label>
                                     <select
                                         value={rfqStatusFilter}

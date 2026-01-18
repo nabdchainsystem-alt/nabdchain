@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { Truck, Factory, Money, Star, Package, Clock, ShieldCheck, MapTrifold, Handshake } from 'phosphor-react';
+import { Truck, Factory, Money, Star, Package, Clock, ShieldCheck, MapTrifold, Handshake, Rocket, ShieldWarning } from 'phosphor-react';
 import { SupplierOverviewDashboard } from './SupplierOverviewDashboard';
 import { SupplierDeliveryDashboard } from './SupplierDeliveryDashboard';
 import { SupplierCostDashboard } from './SupplierCostDashboard';
+import { SupplierQualityComplianceDashboard } from './SupplierQualityComplianceDashboard';
+import { SupplierLeadTimeResponsivenessDashboard } from './SupplierLeadTimeResponsivenessDashboard';
+import { SupplierRiskDependencyDashboard } from './SupplierRiskDependencyDashboard';
+import { SupplierStrategicValueGrowthDashboard } from './SupplierStrategicValueGrowthDashboard';
 
 const INITIAL_BOARD: Board = {
     id: 'supplier-data',
@@ -21,45 +25,49 @@ const INITIAL_BOARD: Board = {
         'supplier_overview',
         'supplier_delivery',
         'supplier_cost',
-        'table',
-        'kanban'
-    ]
+        'supplier_quality',
+        'supplier_lead_time',
+        'supplier_risk',
+        'supplier_strategic',
+        'datatable'
+    ],
+    defaultView: 'overview'
 };
 
 export const SuppliersPage = () => {
-    const [board, setBoard] = useState<Board>(INITIAL_BOARD);
-
-    // Load board from local storage on mount
-    useEffect(() => {
+    const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('mini_company_suppliers_board');
         if (saved) {
             const parsed = JSON.parse(saved);
-            const requiredViews = ['supplier_overview', 'supplier_delivery', 'supplier_cost'];
-            const currentViews = parsed.availableViews || [];
-            if (requiredViews.some(v => !currentViews.includes(v))) {
-                const merged = {
-                    ...parsed,
-                    availableViews: Array.from(new Set([...currentViews, ...requiredViews]))
-                };
-                setBoard(merged);
-            } else {
-                setBoard(parsed);
-            }
+            // Ensure all initial views are present (merge new dashboards with saved preferences)
+            const savedViews = parsed.availableViews || [];
+            const initialViews = INITIAL_BOARD.availableViews || [];
+            // Add any new views from INITIAL_BOARD that aren't in saved data
+            const mergedViews = [...savedViews];
+            initialViews.forEach(view => {
+                if (!mergedViews.includes(view)) {
+                    mergedViews.push(view);
+                }
+            });
+            return { ...parsed, availableViews: mergedViews };
         }
-    }, []);
-
-    // Save board to local storage whenever it changes
-    useEffect(() => {
-        localStorage.setItem('mini_company_suppliers_board', JSON.stringify(board));
-    }, [board]);
+        return INITIAL_BOARD;
+    });
 
     const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
-        setBoard(prev => ({ ...prev, ...updates }));
+        setBoard(prev => {
+            const updated = { ...prev, ...updates };
+            localStorage.setItem('mini_company_suppliers_board', JSON.stringify(updated));
+            return updated;
+        });
     };
 
     const handleUpdateTasks = (tasks: any[]) => {
-        // In a real app, this would update tasks in the backend
-        console.log('Tasks updated:', tasks);
+        setBoard(prev => {
+            const updated = { ...prev, tasks };
+            localStorage.setItem('mini_company_suppliers_board', JSON.stringify(updated));
+            return updated;
+        });
     };
 
     const dashboardSections = [
@@ -83,6 +91,30 @@ export const SuppliersPage = () => {
                     label: 'Cost & Variance',
                     icon: Money,
                     description: 'Spend controls'
+                },
+                {
+                    id: 'supplier_quality',
+                    label: 'Quality & Compliance',
+                    icon: ShieldCheck,
+                    description: 'Defects & Standards'
+                },
+                {
+                    id: 'supplier_lead_time',
+                    label: 'Lead Time & Speed',
+                    icon: Clock,
+                    description: 'Responsiveness'
+                },
+                {
+                    id: 'supplier_risk',
+                    label: 'Risk & Dependency',
+                    icon: ShieldWarning,
+                    description: 'Supply Chain Risks'
+                },
+                {
+                    id: 'supplier_strategic',
+                    label: 'Value & Growth',
+                    icon: Rocket,
+                    description: 'Innovation & Partnerships'
                 }
             ]
         }
@@ -96,6 +128,14 @@ export const SuppliersPage = () => {
                 return <SupplierDeliveryDashboard />;
             case 'supplier_cost':
                 return <SupplierCostDashboard />;
+            case 'supplier_quality':
+                return <SupplierQualityComplianceDashboard />;
+            case 'supplier_lead_time':
+                return <SupplierLeadTimeResponsivenessDashboard />;
+            case 'supplier_risk':
+                return <SupplierRiskDependencyDashboard />;
+            case 'supplier_strategic':
+                return <SupplierStrategicValueGrowthDashboard />;
             default:
                 return null;
         }

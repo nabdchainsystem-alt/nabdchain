@@ -10,16 +10,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Stock Accuracy', subtitle: 'Audit Match %', value: '98.2%', change: '+0.5%', trend: 'up', icon: <Target size={18} />, sparklineData: [96, 97, 97.5, 98, 98.1, 98.2], color: 'emerald' },
-    { id: '2', label: 'Shrinkage Value', subtitle: 'Lost Inventory', value: '$8.2k', rawValue: 8200, isCurrency: true, change: '-5.0%', trend: 'up', icon: <Warning size={18} />, sparklineData: [9, 8.8, 8.6, 8.5, 8.3, 8.2], color: 'red' },
-    { id: '3', label: 'Adjustment Count', subtitle: 'Manual Fixes', value: '142', change: '-10', trend: 'up', icon: <Lightning size={18} />, sparklineData: [160, 155, 150, 148, 145, 142], color: 'indigo' },
-    { id: '4', label: 'Loss Rate', subtitle: '% of Total Value', value: '0.45%', change: '-0.02%', trend: 'up', icon: <XCircle size={18} />, sparklineData: [0.5, 0.49, 0.48, 0.47, 0.46, 0.45], color: 'orange' },
+    { id: '1', label: 'Stock Accuracy', subtitle: 'Audit Match %', value: '98.2%', change: '+0.5%', trend: 'up', icon: <Target size={18} />, sparklineData: [96, 97, 97.5, 98, 98.1, 98.2], color: 'blue' },
+    { id: '2', label: 'Shrinkage Value', subtitle: 'Lost Inventory', value: '$8.2k', rawValue: 8200, isCurrency: true, change: '-5.0%', trend: 'up', icon: <Warning size={18} />, sparklineData: [9, 8.8, 8.6, 8.5, 8.3, 8.2], color: 'blue' },
+    { id: '3', label: 'Adjustment Count', subtitle: 'Manual Fixes', value: '142', change: '-10', trend: 'up', icon: <Lightning size={18} />, sparklineData: [160, 155, 150, 148, 145, 142], color: 'blue' },
+    { id: '4', label: 'Loss Rate', subtitle: '% of Total Value', value: '0.45%', change: '-0.02%', trend: 'up', icon: <XCircle size={18} />, sparklineData: [0.5, 0.49, 0.48, 0.47, 0.46, 0.45], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'High-Risk SKUs', subtitle: 'Frequent Losses', value: '18', change: '-2', trend: 'up', icon: <Warning size={18} />, sparklineData: [20, 20, 19, 19, 18, 18], color: 'rose' },
+    { id: '5', label: 'High-Risk SKUs', subtitle: 'Frequent Losses', value: '18', change: '-2', trend: 'up', icon: <Warning size={18} />, sparklineData: [20, 20, 19, 19, 18, 18], color: 'blue' },
     { id: '6', label: 'Audit Frequency', subtitle: 'Days per Cycle', value: '30d', change: '0d', trend: 'neutral', icon: <FileSearch size={18} />, sparklineData: [30, 30, 30, 30, 30, 30], color: 'blue' },
-    { id: '7', label: 'Variance Alerts', subtitle: 'Open Issues', value: '5', change: '-3', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [8, 7, 7, 6, 6, 5], color: 'cyan' },
+    { id: '7', label: 'Variance Alerts', subtitle: 'Open Issues', value: '5', change: '-3', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [8, 7, 7, 6, 6, 5], color: 'blue' },
+    { id: '8', label: 'Recovery Rate', subtitle: 'Found items %', value: '72%', change: '+5%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [60, 63, 66, 68, 70, 72], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -36,6 +37,22 @@ const SHRINKAGE_CAUSES = [
     { value: 30, name: 'Theft (External)' },
     { value: 15, name: 'Damage/Spoilage' },
     { value: 10, name: 'Theft (Internal)' }
+];
+
+// New chart data: Accuracy by Warehouse
+const ACCURACY_BY_WAREHOUSE = [
+    { name: 'Main Hub', value: 99.2 },
+    { name: 'North Br', value: 97.8 },
+    { name: 'South Br', value: 96.5 },
+    { name: 'Retail', value: 98.1 },
+];
+
+// New chart data: Adjustment Types
+const ADJUSTMENT_TYPES = [
+    { value: 40, name: 'Quantity Correction' },
+    { value: 25, name: 'Location Update' },
+    { value: 20, name: 'Damage Write-off' },
+    { value: 15, name: 'Found Items' }
 ];
 
 // --- Mock Data: Table & Radar ---
@@ -79,7 +96,7 @@ export const StockAccuracyDashboard: React.FC = () => {
 
     // --- ECharts Options ---
 
-    // Pie Chart
+    // Pie Chart - Shrinkage Causes
     const pieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
@@ -90,6 +107,21 @@ export const StockAccuracyDashboard: React.FC = () => {
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
             data: SHRINKAGE_CAUSES
+        }]
+    };
+
+    // Pie Chart - Adjustment Types
+    const adjustmentPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: ADJUSTMENT_TYPES,
+            color: ['#f97316', '#eab308', '#dc2626', '#22c55e']
         }]
     };
 
@@ -153,7 +185,7 @@ export const StockAccuracyDashboard: React.FC = () => {
                         <KPICard
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? `$${kpi.rawValue.toLocaleString()}` : kpi.value} // Simple format for mock
-                            color={kpi.color as any || 'red'}
+                            color="blue"
                             loading={isLoading}
                         />
                     </div>
@@ -173,7 +205,7 @@ export const StockAccuracyDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Variance by Category</h3>
                                 <p className="text-xs text-gray-400">Value of discrepancies</p>
                             </div>
-                            <div className="h-[200px] w-full">
+                            <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={VARIANCE_PER_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -199,7 +231,46 @@ export const StockAccuracyDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Shrinkage Causes</h3>
                                 <p className="text-xs text-gray-400">Root cause analysis</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Recharts: Accuracy by Warehouse */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Accuracy by Warehouse" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Accuracy by Warehouse</h3>
+                                <p className="text-xs text-gray-400">Audit score by location</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={ACCURACY_BY_WAREHOUSE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[90, 100]} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ECharts: Adjustment Types */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Adjustment Types" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Adjustment Types</h3>
+                                <p className="text-xs text-gray-400">Correction categories</p>
+                            </div>
+                            <ReactECharts option={adjustmentPieOption} style={{ height: '200px' }} />
                         </div>
                     )}
 
@@ -211,7 +282,7 @@ export const StockAccuracyDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'rose'}
+                                color="blue"
                                 className="h-full"
                                 loading={isLoading}
                             />
@@ -263,7 +334,7 @@ export const StockAccuracyDashboard: React.FC = () => {
                 {/* Companion Chart: Radar (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[340px]" title="Accuracy Metrics" />
+                        <ChartSkeleton height="h-[280px]" title="Accuracy Metrics" />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

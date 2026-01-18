@@ -55,7 +55,7 @@ export const TestPage: React.FC = () => {
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
             {/* Header Section */}
-            <div className="flex-shrink-0 bg-white dark:bg-[#1a1d24] grid grid-rows-[1fr]">
+            <div className="flex-shrink-0 bg-white dark:bg-monday-dark-surface grid grid-rows-[1fr]">
                 <div className="overflow-hidden">
                     <div className="pl-[24px] pr-[20px] pt-4 pb-0">
                         {/* Title Row */}
@@ -111,7 +111,7 @@ export const TestPage: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1a1d24] p-0">
+            <div className="flex-1 overflow-y-auto bg-white dark:bg-monday-dark-surface p-0">
                 {activeTab?.content}
             </div>
         </div>

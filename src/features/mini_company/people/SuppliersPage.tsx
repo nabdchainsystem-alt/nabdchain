@@ -14,8 +14,8 @@ const INITIAL_BOARD: Board = {
         { id: 'category', title: 'Category', type: 'status' }
     ],
     tasks: [],
-    availableViews: ['table', 'kanban', 'overview', 'data'],
-    defaultView: 'table'
+    availableViews: ['datatable'],
+    defaultView: 'overview'
 };
 
 const SuppliersPage: React.FC = () => {

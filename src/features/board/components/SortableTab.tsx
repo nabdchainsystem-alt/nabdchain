@@ -62,7 +62,7 @@ export const SortableTab: React.FC<SortableTabProps> = ({
             <div className="relative">
                 <Icon size={16} />
                 {isPinned && (
-                    <div className="absolute -top-1.5 -right-1.5 bg-white dark:bg-[#1a1d24] rounded-full p-0.5 shadow-sm">
+                    <div className="absolute -top-1.5 -right-1.5 bg-white dark:bg-monday-dark-surface rounded-full p-0.5 shadow-sm">
                         <Pin size={8} className="text-blue-500 fill-current" />
                     </div>
                 )}

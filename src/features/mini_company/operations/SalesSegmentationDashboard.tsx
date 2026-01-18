@@ -126,16 +126,17 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Total Customers', subtitle: 'Lifetime registered base', value: '4,850', change: '+3.2%', trend: 'up', icon: <Users size={18} />, color: 'violet' },
-        { id: '2', label: 'Active Customers', subtitle: 'Last 90 days activity', value: '3,240', change: '+5.4%', trend: 'up', icon: <Star size={18} />, color: 'indigo' },
-        { id: '3', label: 'Repeat Customer %', subtitle: 'Loyalty retention rate', value: '64.2%', change: '+1.5%', trend: 'up', icon: <Repeat size={18} />, color: 'emerald' },
-        { id: '4', label: 'Avg. CLV', subtitle: 'Est. lifetime value', value: '0', rawValue: 12450, isCurrency: true, change: '+8.4%', trend: 'up', icon: <CurrencyDollar size={18} />, color: 'amber' },
+        { id: '1', label: 'Total Customers', subtitle: 'Lifetime registered base', value: '4,850', change: '+3.2%', trend: 'up', icon: <Users size={18} />, sparklineData: [4200, 4350, 4480, 4580, 4680, 4780, 4850] },
+        { id: '2', label: 'Active Customers', subtitle: 'Last 90 days activity', value: '3,240', change: '+5.4%', trend: 'up', icon: <Star size={18} />, sparklineData: [2800, 2920, 3020, 3080, 3140, 3200, 3240] },
+        { id: '3', label: 'Repeat Customer %', subtitle: 'Loyalty retention rate', value: '64.2%', change: '+1.5%', trend: 'up', icon: <Repeat size={18} />, sparklineData: [58, 59.5, 60.8, 62, 63, 63.8, 64.2] },
+        { id: '4', label: 'Avg. CLV', subtitle: 'Est. lifetime value', value: '0', rawValue: 12450, isCurrency: true, change: '+8.4%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [10.2, 10.8, 11.2, 11.6, 12, 12.2, 12.45] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Avg. Orders', subtitle: 'Per customer frequency', value: '4.2', change: '+0.5', trend: 'up', icon: <ChartLine size={18} />, color: 'blue' },
-        { id: '6', label: 'Churn Rate %', subtitle: 'Lost customer ratio', value: '12.4%', change: '-0.8%', trend: 'up', icon: <Warning size={18} />, color: 'rose' },
-        { id: '7', label: 'Engagement Score', subtitle: 'Recency/Freq/Value avg', value: '78/100', change: '+4%', trend: 'up', icon: <Heart size={18} />, color: 'pink' },
+        { id: '5', label: 'Avg. Orders', subtitle: 'Per customer frequency', value: '4.2', change: '+0.5', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [3.5, 3.7, 3.8, 3.9, 4, 4.1, 4.2] },
+        { id: '6', label: 'Churn Rate %', subtitle: 'Lost customer ratio', value: '12.4%', change: '-0.8%', trend: 'up', icon: <Warning size={18} />, sparklineData: [15, 14.5, 14, 13.5, 13, 12.8, 12.4] },
+        { id: '7', label: 'Engagement Score', subtitle: 'Recency/Freq/Value avg', value: '78/100', change: '+4%', trend: 'up', icon: <Heart size={18} />, sparklineData: [68, 70, 72, 74, 75, 77, 78] },
+        { id: '8', label: 'New Customers', subtitle: 'Monthly acquisitions', value: '186', change: '+12%', trend: 'up', icon: <UserPlus size={18} />, sparklineData: [145, 152, 160, 168, 175, 180, 186] },
     ];
 
     // ECharts Revenue Pie Option
@@ -189,7 +190,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-start gap-2 text-left">
-                    <Users size={28} className="text-violet-600 dark:text-violet-400 mt-1" />
+                    <Users size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">Customer Segmentation & Loyalty</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Personalizing campaigns and maximizing customer lifetime value</p>
@@ -199,7 +200,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                     {!hideFullscreen && (
                         <button
                             onClick={toggleFullScreen}
-                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                             title="Full Screen"
                         >
                             <ArrowsOut size={18} />
@@ -207,111 +208,126 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                     )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
-                        <Info size={18} className="text-indigo-500" />
+                        <Info size={18} className="text-blue-500" />
                         About Dashboard
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION 1: Top KPIs --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                {/* --- Row 1: Top 4 KPIs --- */}
                 {TOP_KPIS.map((kpi) => (
-                    <KPICard
-                        key={kpi.id}
-                        {...kpi}
-                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
-                        loading={isLoading}
-                    />
-                ))}
-            </div>
-
-            {/* --- SECTION 2: Middle - Comparison Charts + Side KPIs --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-                {/* Bar Chart (span 3) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[350px]" title="Customer Segmentation Analysis" />
-                ) : (
-                    <div className="lg:col-span-3 bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Customer Segmentation Analysis</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic leading-tight">Count vs Revenue contribution per segment</p>
-                        </div>
-                        <div className="h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={CUSTOMERS_PER_SEGMENT_DATA} margin={{ left: 10, right: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                    <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                    <Bar dataKey="count" name="Customers" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                    <div key={kpi.id} className="col-span-1">
+                        <KPICard
+                            {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                            color="blue"
+                            loading={isLoading}
+                        />
                     </div>
-                )}
+                ))}
 
-                {/* Side KPIs (Inverted L) */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
+                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+
+                {/* Charts Area - 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* Row 1, Col 1: Customer Segmentation Bar Chart */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Customer Segmentation" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Customer Segmentation</h3>
+                                <p className="text-xs text-gray-400">Count per segment</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={CUSTOMERS_PER_SEGMENT_DATA} margin={{ left: -10, right: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                        <Bar dataKey="count" name="Customers" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 1, Col 2: Repeat vs One-time (Recharts) */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Repeat vs One-Time" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Repeat vs One-Time</h3>
+                                <p className="text-xs text-gray-400">Loyalty depth by segment</p>
+                            </div>
+                            <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={REPEAT_VS_ONETIME_DATA} layout="vertical" margin={{ left: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                        <Bar dataKey="repeat" name="Repeat %" stackId="a" fill="#10b981" barSize={16} />
+                                        <Bar dataKey="onetime" name="One-Time %" stackId="a" fill="#f43f5e" barSize={16} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 1: Revenue by Segment Pie */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Revenue by Segment" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Segment</h3>
+                                <p className="text-xs text-gray-400">Contribution share</p>
+                            </div>
+                            <ReactECharts option={revenuePieOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                    {/* Row 2, Col 2: Loyalty Curve Scatter */}
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Loyalty Curve" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2 text-left">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Loyalty Curve</h3>
+                                <p className="text-xs text-gray-400">Orders vs revenue by segment</p>
+                            </div>
+                            <ReactECharts option={loyaltyScatterOption} style={{ height: '200px' }} />
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Right Column: Side KPIs (1 col) */}
+                <div className="col-span-1 flex flex-col gap-6">
                     {SIDE_KPIS.map((kpi) => (
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                color="blue"
+                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
                     ))}
                 </div>
-            </div>
 
-            {/* --- SECTION 3: Secondary Visuals --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Repeat vs One-time (Recharts) */}
-                {isLoading ? (
-                    <ChartSkeleton height="h-[250px]" title="Repeat vs One-Time Purchases" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Repeat vs One-Time Purchases</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Loyalty depth by customer segment</p>
-                        </div>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={REPEAT_VS_ONETIME_DATA} layout="vertical" margin={{ left: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                    <Legend />
-                                    <Bar dataKey="repeat" name="Repeat %" stackId="a" fill="#10b981" barSize={20} />
-                                    <Bar dataKey="onetime" name="One-Time %" stackId="a" fill="#f43f5e" barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
-
-                {/* Revenue Share (ECharts) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="Revenue by Segment" />
-                ) : (
-                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
-                        <div className="mb-6 text-left">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Revenue by Segment</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Contribution share of each group</p>
-                        </div>
-                        <div className="h-[250px]">
-                            <ReactECharts option={revenuePieOption} style={{ height: '100%' }} />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* --- SECTION 4: Bottom Table & Companion --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Customer Table (Col 1) */}
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={5} />
@@ -340,8 +356,8 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
                                             <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
                                             <td className="px-6 py-5">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.segment === 'High Value' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' :
-                                                    row.segment === 'Medium Value' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.segment === 'High Value' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                    row.segment === 'Medium Value' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300' :
                                                         'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
                                                     }`}>
                                                     {row.segment}
@@ -380,27 +396,39 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                     </div>
                 )}
 
-                {/* Loyalty Curve (Companion) */}
+                {/* Customer Value Companion Chart */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[300px]" title="Loyalty Curve" />
+                    <ChartSkeleton height="h-[450px]" title="Customer Value Distribution" />
                 ) : (
                     <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
                         <div className="mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Loyalty Curve</h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Orders vs Revenue: Bubble size = Value Intensity</p>
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
+                                Customer Value Distribution
+                            </h3>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Revenue contribution by segment tier</p>
                         </div>
                         <div className="flex-1 min-h-[300px]">
-                            <ReactECharts option={loyaltyScatterOption} style={{ height: '100%', width: '100%' }} />
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={CUSTOMERS_PER_SEGMENT_DATA} margin={{ left: -10, right: 10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                    <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
-                        <div className="mt-4 p-3 bg-violet-50/50 dark:bg-violet-900/10 rounded-xl border border-violet-100 dark:border-violet-800/50">
-                            <p className="text-[10px] text-violet-700 dark:text-violet-400 leading-normal">
+                        <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                            <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">
                                 <strong>Insight:</strong> The "High Value" segment accounts for 55% of revenue while making up only 7.5% of the total customer base.
                             </p>
                         </div>
                     </div>
                 )}
-            </div>
+                </div>
 
+            </div>
         </div>
     );
 };

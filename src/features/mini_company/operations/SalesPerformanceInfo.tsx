@@ -133,15 +133,24 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Sales Growth %" desc="Measures the direction and speed of sales change." />
-                                    <DetailItem title="Conversion Rate" desc="Orders divided by visits. Shows how efficiently interest turns into orders." />
-                                    <DetailItem title="Revenue per Customer" desc="Total Revenue / Unique Customers. Indicates customer value, not just volume." />
+                                    <DetailItem title="Sales Growth %" desc="Measures the direction and speed of sales change vs previous period." />
+                                    <DetailItem title="Conversion Rate" desc="Orders divided by visits. Shows efficiency of interest to orders." />
+                                    <DetailItem title="Revenue per Customer" desc="Total Revenue / Unique Customers. Indicates customer value." />
                                     <DetailItem title="Repeat Customers %" desc="Percentage of customers who placed more than one order." />
-                                    <DetailItem title="Discount Impact %" desc="Percentage of revenue lost or foregone due to discounts." />
-                                    <DetailItem title="Avg Fulfillment Time" desc="Average time from order creation to shipment/completion." />
-                                    <DetailItem title="Cancelled Orders %" desc="Percentage of cancellations. Indicates sales friction or inventory gaps." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Discount Impact %" desc="Percentage of revenue foregone due to discounts." />
+                                    <DetailItem title="Avg Fulfillment" desc="Average time from order creation to shipment (hours)." />
+                                    <DetailItem title="Cancelled %" desc="Order failure rate indicating sales friction." />
+                                    <DetailItem title="Return Rate" desc="Percentage of product returns." />
                                 </div>
                             </div>
 

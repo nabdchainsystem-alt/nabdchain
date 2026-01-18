@@ -9,16 +9,17 @@ import { useAppContext } from '../../../contexts/AppContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Forecasted CLV', subtitle: 'Next 12 Months', value: '$2.4M', change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'purple' },
-    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Precision', value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 91, 91, 92], color: 'teal' },
-    { id: '3', label: 'High-Risk Customers', subtitle: 'Churn Probability > 80%', value: '18', change: '-3', trend: 'up', icon: <Warning size={18} />, sparklineData: [25, 24, 22, 20, 19, 18], color: 'red' },
-    { id: '4', label: 'Expected Churn %', subtitle: 'Projected Attrition', value: '5.2%', change: '-0.5%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [6.0, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'orange' },
+    { id: '1', label: 'Forecasted CLV', subtitle: 'Next 12 Months', value: '$2.4M', change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'blue' },
+    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Precision', value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 91, 91, 92], color: 'blue' },
+    { id: '3', label: 'High-Risk Customers', subtitle: 'Churn Probability > 80%', value: '18', change: '-3', trend: 'up', icon: <Warning size={18} />, sparklineData: [25, 24, 22, 20, 19, 18], color: 'blue' },
+    { id: '4', label: 'Expected Churn %', subtitle: 'Projected Attrition', value: '5.2%', change: '-0.5%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [6.0, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'blue' },
 ];
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Upsell Potential', subtitle: 'Extension Revenue', value: '$450k', change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'yellow' },
-    { id: '6', label: 'LTV Growth', subtitle: 'Year-over-Year', value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'green' },
+    { id: '5', label: 'Upsell Potential', subtitle: 'Extension Revenue', value: '$450k', change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'blue' },
+    { id: '6', label: 'LTV Growth', subtitle: 'Year-over-Year', value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
     { id: '7', label: 'Confidence Level', subtitle: 'Statistical Certainty', value: 'High', change: 'Stable', trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
+    { id: '8', label: 'Prediction Horizon', subtitle: 'Forecast Window', value: '12mo', change: 'Stable', trend: 'neutral', icon: <Target size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
 // --- Mock Data: Charts ---
@@ -138,7 +139,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <ForecastLifetimeRiskInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
@@ -153,14 +154,14 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title="Full Screen"
                     >
                         <ArrowsOut size={18} />
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-purple-500" />
                         About Dashboard
@@ -175,7 +176,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
-                            color={kpi.color as any || 'purple'}
+                            color="blue"
                         />
                     </div>
                 ))}
@@ -186,12 +187,12 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Recharts: Forecast CLV (Bar) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Projected CLV</h3>
                             <p className="text-xs text-gray-400">By Segment</p>
                         </div>
-                        <div className="h-[200px] w-full">
+                        <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={FORECAST_BY_SEGMENT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -201,19 +202,19 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Value" fill="#9333ea" radius={[4, 4, 0, 0]} barSize={28} />
+                                    <Bar dataKey="Value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* ECharts: Risk Distribution (Pie) */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Profile</h3>
                             <p className="text-xs text-gray-400">Customer Base</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
                     </div>
 
                 </div>
@@ -224,7 +225,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                         <div key={kpi.id} className="flex-1">
                             <KPICard
                                 {...kpi}
-                                color={kpi.color as any || 'blue'}
+                                color="blue"
                                 className="h-full"
                             />
                         </div>
@@ -234,7 +235,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                 {/* --- Row 3: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Action Plan</h3>
                     </div>
@@ -274,7 +275,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                 </div>
 
                 {/* Companion Chart: Cone (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
                     <ReactECharts option={coneOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 

@@ -129,24 +129,38 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Metrics</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
                                 <div className="space-y-3">
                                     <DetailItem title="Leads Entered" desc="Total number of potential customers entering the top of the funnel." />
-                                    <DetailItem title="Conversion Rate" desc="The percentage of leads that successfully transition into confirmed orders." />
-                                    <DetailItem title="Drop-Off %" desc="The percentage of leads lost at each transition stage of the funnel." />
-                                    <DetailItem title="Potential Revenue Lost" desc="Financial value of deals that were marked as 'Lost' or dropped out." />
+                                    <DetailItem title="Leads Contacted" desc="Number of leads that received first outreach from sales team." />
+                                    <DetailItem title="Quotes Sent" desc="Number of price proposals delivered to qualified prospects." />
+                                    <DetailItem title="Orders Placed" desc="Total closed won deals that converted to actual orders." />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Visual Insights</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Sales Funnel Chart" desc="ECharts visualization mapping the volume flow and drop-off per stage." />
-                                    <DetailItem title="Drop-off Analysis" desc="Bar charts identifying leakage by Sales Rep or Category." />
-                                    <DetailItem title="Won vs Lost" desc="Revenue share comparison between successful and failed deals." />
-                                    <DetailItem title="Leakage Heatmap" desc="Matrix view showing where value loss is most concentrated." />
+                                    <DetailItem title="Conversion Rate" desc="Percentage of leads that successfully transition into confirmed orders." />
+                                    <DetailItem title="Funnel Drop-Off" desc="Average stage leakage rate across all funnel transitions." />
+                                    <DetailItem title="Potential Revenue Lost" desc="Financial value of deals that were marked as Lost or dropped out." />
+                                    <DetailItem title="Avg Deal Size" desc="Average value of won deals indicating deal quality." />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <div className="space-y-3">
+                                    <DetailItem title="Main Sales Funnel" desc="ECharts funnel visualization showing lead volume through conversion stages." />
+                                    <DetailItem title="Drop-off by Sales Rep" desc="Bar chart identifying team members with highest leakage rates." />
+                                    <DetailItem title="Won vs Lost Deals" desc="Pie chart showing success rate breakdown between won and lost." />
+                                    <DetailItem title="Leakage Heatmap" desc="Matrix view showing stage vs category value loss intensity." />
+                                    <DetailItem title="Lead Tracking Table" desc="Detailed log of leads with stage, date, value and status." />
+                                    <DetailItem title="Stage Velocity Analysis" desc="Companion chart showing average time and conversion by stage." />
                                 </div>
                             </div>
                         </div>

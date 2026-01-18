@@ -141,6 +141,7 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                                     <DetailItem title="Price Volatility Index" desc="Measure of price fluctuation for key items over time (0-100)." />
                                     <DetailItem title="High-Risk Items" desc="Count of items significantly over budget or with supply instability." />
                                     <DetailItem title="Optimization Opportunities" desc="Count of flagged potential savings (e.g., volume discounts)." />
+                                    <DetailItem title="Cost Efficiency %" desc="Ratio of achieved savings to total spending potential, indicating optimization effectiveness." />
                                 </div>
                             </div>
 
@@ -149,10 +150,12 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Cost vs Budget" desc="Bar chart (Recharts) comparing spent vs planned funds." />
-                                    <DetailItem title="Cost Allocation" desc="Pie chart (ECharts) showing spend distribution." />
-                                    <DetailItem title="Item Variance Table" desc="Detailed list of items with cost, budget, and variance." />
-                                    <DetailItem title="Cost Deviation Radar" desc="Radar/Spider chart (ECharts) visualizing budget adherence by category." />
+                                    <DetailItem title="Cost vs Budget" desc="Bar chart (Recharts) comparing actual spending vs planned budget by category." />
+                                    <DetailItem title="Monthly Cost Trend" desc="Bar chart (Recharts) showing cost fluctuation patterns over months." />
+                                    <DetailItem title="Cost Allocation" desc="Donut chart (ECharts) showing spend distribution by category." />
+                                    <DetailItem title="Savings Breakdown" desc="Donut chart (ECharts) showing cost optimization sources (Negotiation, Volume Discount, Contract Terms, Process Efficiency)." />
+                                    <DetailItem title="Item Cost Variance Table" desc="Detailed list of items with cost, budget, and variance percentage." />
+                                    <DetailItem title="Cost Deviation Radar" desc="Radar chart (ECharts) visualizing budget adherence by category with actual vs planned overlay." />
                                 </div>
                             </div>
                         </div>

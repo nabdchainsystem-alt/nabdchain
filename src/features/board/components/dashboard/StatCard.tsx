@@ -13,7 +13,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, trend, trendDi
     const trendColor = trendDirection === 'up' ? 'text-green-500' : trendDirection === 'down' ? 'text-red-500' : 'text-gray-500';
 
     return (
-        <div className="bg-white dark:bg-[#1a1d24] p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
                 <div className="text-gray-500 text-sm font-medium">{title}</div>
                 {icon && <div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-500`}>{icon}</div>}

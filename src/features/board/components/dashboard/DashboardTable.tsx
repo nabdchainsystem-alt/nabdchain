@@ -14,7 +14,7 @@ interface DashboardTableProps {
 
 export const DashboardTable: React.FC<DashboardTableProps> = ({ title, columns, data }) => {
     return (
-        <div className="bg-white dark:bg-[#1a1d24] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden h-full flex flex-col">
+        <div className="bg-white dark:bg-monday-dark-surface rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden h-full flex flex-col">
             <div className="p-6 border-b border-gray-100 dark:border-gray-800">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{title}</h3>
             </div>

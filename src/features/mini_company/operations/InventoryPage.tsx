@@ -23,12 +23,11 @@ const INITIAL_BOARD: Board = {
     ],
     tasks: [],
     availableViews: [
-        'table', 'kanban',
         'inventory_overview', 'stock_movement', 'inventory_aging',
         'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast',
         'datatable'
     ],
-    defaultView: 'table'
+    defaultView: 'overview'
 };
 
 const InventoryPage: React.FC = () => {
@@ -87,17 +86,16 @@ const InventoryPage: React.FC = () => {
         const saved = localStorage.getItem('dept-inventory-data');
         if (saved) {
             const parsed = JSON.parse(saved);
-            // Ensure new dashboard views are available
-            const requiredViews = [
-                'inventory_overview', 'stock_movement', 'inventory_aging',
-                'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast'
-            ];
-            const currentViews = parsed.availableViews || [];
-            const missingViews = requiredViews.filter((v: string) => !currentViews.includes(v));
-            if (missingViews.length > 0) {
-                parsed.availableViews = [...currentViews, ...missingViews];
-            }
-            return parsed;
+            // Ensure all initial views are present (merge new dashboards with saved preferences)
+            const savedViews = parsed.availableViews || [];
+            const initialViews = INITIAL_BOARD.availableViews || [];
+            const mergedViews = [...savedViews];
+            initialViews.forEach(view => {
+                if (!mergedViews.includes(view)) {
+                    mergedViews.push(view);
+                }
+            });
+            return { ...parsed, availableViews: mergedViews };
         }
         return INITIAL_BOARD;
     });
