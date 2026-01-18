@@ -38,28 +38,28 @@ export const MarketplaceSection: React.FC = () => {
     ];
 
     return (
-        <section className="py-32 bg-[#FAFAFA]">
+        <section className="py-32 bg-[#FAFAFA] dark:bg-monday-dark-bg">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="text-center mb-20">
                     <p className="text-blue-600 font-medium mb-4">Global Marketplace</p>
-                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900">
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-monday-dark-text">
                         Accelerating innovation across <br /> every department
                     </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map((t, i) => (
-                        <div key={i} className={`p-8 rounded-2xl flex flex-col justify-between h-full ${t.bg ? t.bg : 'bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)]'} border ${t.bg ? 'border-transparent' : 'border-zinc-100'}`}>
-                            <p className={`text-lg mb-8 leading-relaxed ${t.text ? t.text : 'text-zinc-700'}`}>
+                        <div key={i} className={`p-8 rounded-2xl flex flex-col justify-between h-full ${t.bg ? t.bg : 'bg-white dark:bg-monday-dark-surface shadow-[0_2px_10px_rgba(0,0,0,0.04)]'} border ${t.bg ? 'border-transparent' : 'border-zinc-100 dark:border-monday-dark-border'}`}>
+                            <p className={`text-lg mb-8 leading-relaxed ${t.text ? t.text : 'text-zinc-700 dark:text-monday-dark-text-secondary'}`}>
                                 "{t.quote}"
                             </p>
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full ${t.bg ? 'bg-white/20' : 'bg-zinc-100'} flex items-center justify-center font-bold ${t.bg ? 'text-white' : 'text-zinc-500'}`}>
+                                <div className={`w-10 h-10 rounded-full ${t.bg ? 'bg-white/20' : 'bg-zinc-100 dark:bg-monday-dark-hover'} flex items-center justify-center font-bold ${t.bg ? 'text-white' : 'text-zinc-500 dark:text-monday-dark-text-secondary'}`}>
                                     {t.author[0]}
                                 </div>
                                 <div className="text-sm">
-                                    <div className={`font-bold ${t.text ? t.text : 'text-zinc-900'}`}>{t.author}</div>
-                                    <div className={`${t.text ? 'text-white/80' : 'text-zinc-500'}`}>{t.role}</div>
+                                    <div className={`font-bold ${t.text ? t.text : 'text-zinc-900 dark:text-monday-dark-text'}`}>{t.author}</div>
+                                    <div className={`${t.text ? 'text-white/80' : 'text-zinc-500 dark:text-monday-dark-text-secondary'}`}>{t.role}</div>
                                 </div>
                             </div>
                         </div>

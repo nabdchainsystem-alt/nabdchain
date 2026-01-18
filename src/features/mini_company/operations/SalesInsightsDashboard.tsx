@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import {
@@ -6,7 +6,8 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
-import { ChartLineUp, CurrencyDollar, ShoppingCart, Users, Receipt, TrendUp, TrendDown, Star, Tag, Package, Info, ArrowsOut, ArrowsIn } from 'phosphor-react';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
+import { ChartLineUp, CurrencyDollar, ShoppingCart, Users, Receipt, TrendUp, TrendDown, Star, Tag, Package, Info, ArrowsOut } from 'phosphor-react';
 import { SalesDashboardInfo } from './SalesDashboardInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { formatCurrency } from '../../../utils/formatters';
@@ -17,7 +18,7 @@ const COLORS_SEQUENCE = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-[#1a1d24] p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
+            <div className="bg-white dark:bg-monday-dark-surface p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
                 <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
                     {payload[0].name}: {payload[0].value}
@@ -96,8 +97,23 @@ const SIDE_KPIS: KPIConfig[] = [
     { id: '8', label: 'Conversion Rate', subtitle: 'Visitor to buyer', value: '3.8%', change: '+0.4%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [3.0, 3.2, 3.1, 3.5, 3.6, 3.7, 3.8] },
 ];
 
-export const SalesInsightsDashboard: React.FC = () => {
+interface SalesInsightsDashboardProps {
+    hideFullscreen?: boolean;
+}
+
+export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency } = useAppContext();
+
+    // Loading state for smooth entrance animation
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate data loading with staggered animation
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800); // Short delay for smooth transition
+        return () => clearTimeout(timer);
+    }, []);
 
     // State to track hovered items for extra animation control
     const [activeIndex, setActiveIndex] = useState<{ [key: string]: number | null }>({
@@ -106,23 +122,9 @@ export const SalesInsightsDashboard: React.FC = () => {
     });
 
     const [showInfo, setShowInfo] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
-
-    React.useEffect(() => {
-        const handleFullScreenChange = () => {
-            setIsFullScreen(!!document.fullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', handleFullScreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-    }, []);
 
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) {
-            containerRef.current?.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
+        window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
     // Calculate total revenue for percentage
@@ -214,7 +216,7 @@ export const SalesInsightsDashboard: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
 
             <SalesDashboardInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -227,16 +229,18 @@ export const SalesInsightsDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                    >
-                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
-                    </button>
+                    {!hideFullscreen && (
+                        <button
+                            onClick={toggleFullScreen}
+                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            title="Full Screen"
+                        >
+                            <ArrowsOut size={18} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -248,12 +252,13 @@ export const SalesInsightsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- COMPONENT 1: Top 4 KPIs (Row 1) --- */}
-                {TOP_KPIS.map((kpi) => (
-                    <div key={kpi.id} className="col-span-1">
+                {TOP_KPIS.map((kpi, index) => (
+                    <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="indigo"
+                            loading={isLoading}
                         />
                     </div>
                 ))}
@@ -262,80 +267,88 @@ export const SalesInsightsDashboard: React.FC = () => {
 
                 {/* Sales Over Time (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px]">
-                        <div className="flex flex-col gap-0.5 mb-5">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales Over Time</h3>
-                            <p className="text-xs text-gray-400 mt-1">Weekly performance overview</p>
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[340px]" title="Sales Over Time" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales Over Time</h3>
+                                <p className="text-xs text-gray-400 mt-1">Weekly performance overview</p>
+                            </div>
+                            <div className="h-[260px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={SALES_OVER_TIME_DATA}
+                                        onMouseMove={(e: any) => {
+                                            if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, time: e.activeTooltipIndex }));
+                                        }}
+                                        onMouseLeave={() => setActiveIndex(prev => ({ ...prev, time: null }))}
+                                        wrapperStyle={{ outline: 'none' }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis
+                                            dataKey="name"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={<CustomAxisTick />}
+                                            interval={0}
+                                            height={50}
+                                        />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                        <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
+                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Bar dataKey="sales" name="Daily Sales" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000}>
+                                            {SALES_OVER_TIME_DATA.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
+                                                    fillOpacity={activeIndex.time === index ? 0.8 : 1}
+                                                    width={activeIndex.time === index ? 52 : 50}
+                                                    className="transition-all duration-300"
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[260px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={SALES_OVER_TIME_DATA}
-                                    onMouseMove={(e: any) => {
-                                        if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, time: e.activeTooltipIndex }));
-                                    }}
-                                    onMouseLeave={() => setActiveIndex(prev => ({ ...prev, time: null }))}
-                                    wrapperStyle={{ outline: 'none' }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                    <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={<CustomAxisTick />}
-                                        interval={0}
-                                        height={50}
-                                    />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                    <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
-                                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Bar dataKey="sales" name="Daily Sales" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000}>
-                                        {SALES_OVER_TIME_DATA.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
-                                                fillOpacity={activeIndex.time === index ? 0.8 : 1}
-                                                width={activeIndex.time === index ? 52 : 50}
-                                                className="transition-all duration-300"
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Sales By Channel (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px]">
-                        <div className="flex flex-col gap-0.5 mb-5">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales by Channel</h3>
-                            <p className="text-xs text-gray-400 mt-1">Revenue distribution source</p>
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[340px]" title="Sales by Channel" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales by Channel</h3>
+                                <p className="text-xs text-gray-400 mt-1">Revenue distribution source</p>
+                            </div>
+                            <div className="h-[260px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={SALES_BY_CHANNEL_DATA} onMouseMove={(e: any) => {
+                                        if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, channel: e.activeTooltipIndex }));
+                                    }} onMouseLeave={() => setActiveIndex(prev => ({ ...prev, channel: null }))}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                        <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
+                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Bar dataKey="value" name="Revenue" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000}>
+                                            {SALES_BY_CHANNEL_DATA.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
+                                                    fillOpacity={activeIndex.channel === index ? 0.8 : 1}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[260px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart layout="vertical" data={SALES_BY_CHANNEL_DATA} onMouseMove={(e: any) => {
-                                    if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, channel: e.activeTooltipIndex }));
-                                }} onMouseLeave={() => setActiveIndex(prev => ({ ...prev, channel: null }))}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e5e7eb" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                    <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
-                                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Bar dataKey="value" name="Revenue" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000}>
-                                        {SALES_BY_CHANNEL_DATA.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]}
-                                                fillOpacity={activeIndex.channel === index ? 0.8 : 1}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
 
@@ -344,29 +357,37 @@ export const SalesInsightsDashboard: React.FC = () => {
                 {/* Pie Charts Inner Grid (Left Half) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Category Pie */}
-                    <div className="col-span-1 bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px]">
-                        <div className="flex flex-col gap-0.5 mb-4">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Category</h3>
-                            <p className="text-xs text-gray-400 mt-1">Sales by product category</p>
+                    {isLoading ? (
+                        <PieChartSkeleton title="Category" />
+                    ) : (
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Category</h3>
+                                <p className="text-xs text-gray-400 mt-1">Sales by product category</p>
+                            </div>
+                            <ReactECharts option={categoryPieOption} style={{ height: '210px' }} />
                         </div>
-                        <ReactECharts option={categoryPieOption} style={{ height: '210px' }} />
-                    </div>
+                    )}
 
                     {/* Status Pie */}
-                    <div className="col-span-1 bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px]">
-                        <div className="flex flex-col gap-0.5 mb-4">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Status</h3>
-                            <p className="text-xs text-gray-400 mt-1">Current order status split</p>
+                    {isLoading ? (
+                        <PieChartSkeleton title="Status" />
+                    ) : (
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Status</h3>
+                                <p className="text-xs text-gray-400 mt-1">Current order status split</p>
+                            </div>
+                            <ReactECharts option={statusPieOption} style={{ height: '210px' }} />
                         </div>
-                        <ReactECharts option={statusPieOption} style={{ height: '210px' }} />
-                    </div>
+                    )}
                 </div>
 
                 {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="col-span-1">
-                            <KPICard {...kpi} color="indigo" />
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
+                            <KPICard {...kpi} color="indigo" loading={isLoading} />
                         </div>
                     ))}
                 </div>
@@ -375,45 +396,53 @@ export const SalesInsightsDashboard: React.FC = () => {
                 {/* --- COMPONENT 4: Expanded Products Table & Treemap (Row 4) --- */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Table: Top 5 Products */}
-                    <div className="bg-white dark:bg-[#2b2e36] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Top 5 Selling Products</h3>
-                            <p className="text-xs text-gray-400 mt-1">Inventory and revenue leaders</p>
-                        </div>
-                        <div className="overflow-x-auto h-auto flex flex-col justify-center">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 uppercase sticky top-0">
-                                    <tr>
-                                        <th className="px-6 py-3 font-medium">Product Name</th>
-                                        <th className="px-6 py-3 font-medium text-right">Qty</th>
-                                        <th className="px-6 py-3 font-medium text-right">Revenue</th>
-                                        <th className="px-6 py-3 font-medium text-right">Profit</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {TOP_PRODUCTS_DATA.map((product, index) => (
-                                        <tr key={product.id} className="border-b dark:border-gray-700 last:border-none hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
-                                                {index + 1}. {product.name}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">{product.quantity}</td>
-                                            <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
+                    {isLoading ? (
+                        <TableSkeleton rows={5} columns={4} />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full animate-fade-in-up">
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Top 5 Selling Products</h3>
+                                <p className="text-xs text-gray-400 mt-1">Inventory and revenue leaders</p>
+                            </div>
+                            <div className="overflow-x-auto h-auto flex flex-col justify-center">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 uppercase sticky top-0">
+                                        <tr>
+                                            <th className="px-6 py-3 font-medium">Product Name</th>
+                                            <th className="px-6 py-3 font-medium text-right">Qty</th>
+                                            <th className="px-6 py-3 font-medium text-right">Revenue</th>
+                                            <th className="px-6 py-3 font-medium text-right">Profit</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {TOP_PRODUCTS_DATA.map((product, index) => (
+                                            <tr key={product.id} className="border-b dark:border-gray-700 last:border-none hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                                                    {index + 1}. {product.name}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">{product.quantity}</td>
+                                                <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Treemap: Product Revenue Contribution */}
-                    <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
-                        <div className="flex flex-col gap-0.5 mb-4">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue Contribution</h3>
-                            <p className="text-xs text-gray-400 mt-1">Visual dominance of product sales</p>
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[420px]" title="Revenue Contribution" showLegend={false} />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue Contribution</h3>
+                                <p className="text-xs text-gray-400 mt-1">Visual dominance of product sales</p>
+                            </div>
+                            <ReactECharts option={treemapOption} style={{ height: '350px' }} />
                         </div>
-                        <ReactECharts option={treemapOption} style={{ height: '350px' }} />
-                    </div>
+                    )}
                 </div>
 
             </div>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
-import { Gauge, TrendUp, Users, Info, ArrowsOut, ArrowsIn, Percent, Warning, Clock, ShareNetwork } from 'phosphor-react';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
+import { Gauge, TrendUp, Users, Info, ArrowsOut, Percent, Warning, Clock, ShareNetwork, ArrowsIn } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { SalesPerformanceInfo } from './SalesPerformanceInfo';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -62,26 +63,24 @@ const LOW_PERFORMANCE_PRODUCTS = [
     { id: 5, name: 'Canvas Bag', views: 380, orders: 4, conversion: '1.0%' },
 ];
 
-export const SalesPerformanceDashboard: React.FC = () => {
+interface SalesPerformanceDashboardProps {
+    hideFullscreen?: boolean;
+}
+
+export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    React.useEffect(() => {
-        const handleFullScreenChange = () => {
-            setIsFullScreen(!!document.fullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', handleFullScreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
     }, []);
 
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) {
-            containerRef.current?.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
+        window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
 
@@ -152,7 +151,7 @@ export const SalesPerformanceDashboard: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
 
             <SalesPerformanceInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -166,16 +165,18 @@ export const SalesPerformanceDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                    >
-                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
-                    </button>
+                    {!hideFullscreen && (
+                        <button
+                            onClick={toggleFullScreen}
+                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            title="Full Screen"
+                        >
+                            <ArrowsOut size={18} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -193,6 +194,7 @@ export const SalesPerformanceDashboard: React.FC = () => {
                             {...kpi}
                             value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="indigo"
+                            loading={isLoading}
                         />
                     </div>
                 ))}
@@ -200,110 +202,130 @@ export const SalesPerformanceDashboard: React.FC = () => {
                 {/* --- Row 2: Two Bar Charts --- */}
 
                 {/* Orders vs Completed (2 cols) */}
-                <div className="col-span-1 md:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-5">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Orders vs Completed</h3>
-                        <p className="text-xs text-gray-400 mt-1">Operational leakage analysis</p>
-                    </div>
-                    <div className="h-[240px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={ORDERS_VS_COMPLETED_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    dy={10}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: '#f9fafb' }}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Bar dataKey="orders" name="Total Orders" fill="#e0e7ff" radius={[4, 4, 0, 0]} barSize={30} />
-                                <Bar dataKey="completed" name="Completed" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                <div className="col-span-1 md:col-span-2">
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[320px]" title="Orders vs Completed" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-5">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Orders vs Completed</h3>
+                                <p className="text-xs text-gray-400 mt-1">Operational leakage analysis</p>
+                            </div>
+                            <div className="h-[240px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={ORDERS_VS_COMPLETED_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis
+                                            dataKey="name"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Bar dataKey="orders" name="Total Orders" fill="#e0e7ff" radius={[4, 4, 0, 0]} barSize={30} />
+                                        <Bar dataKey="completed" name="Completed" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Revenue by Channel (2 cols) */}
-                <div className="col-span-1 md:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-5">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Channel</h3>
-                        <p className="text-xs text-gray-400 mt-1">Where sales are coming from</p>
-                    </div>
-                    <div className="h-[240px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                layout="vertical"
-                                data={REVENUE_CHANNEL_DATA}
-                                margin={{ top: 10, right: 40, left: 10, bottom: 0 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f3f4f6" />
-                                <XAxis type="number" hide />
-                                <YAxis
-                                    dataKey="name"
-                                    type="category"
-                                    width={120}
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#6b7280', fontSize: 11 }}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: 'transparent' }}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    formatter={(value: number) => [formatCurrency(value, currency.code, currency.symbol), 'Revenue']}
-                                />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Bar
-                                    name="Revenue"
-                                    dataKey="value"
-                                    radius={[0, 6, 6, 0]}
-                                    barSize={32}
-                                    label={{
-                                        position: 'right',
-                                        fill: '#6b7280',
-                                        fontSize: 12,
-                                        fontWeight: 600,
-                                        formatter: (val: number) => formatCurrency(val, currency.code, currency.symbol),
-                                        dx: 5
-                                    }}
-                                >
-                                    {REVENUE_CHANNEL_DATA.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                <div className="col-span-1 md:col-span-2">
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[320px]" title="Revenue by Channel" />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-5">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Channel</h3>
+                                <p className="text-xs text-gray-400 mt-1">Where sales are coming from</p>
+                            </div>
+                            <div className="h-[240px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        layout="vertical"
+                                        data={REVENUE_CHANNEL_DATA}
+                                        margin={{ top: 10, right: 40, left: 10, bottom: 0 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f3f4f6" />
+                                        <XAxis type="number" hide />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            width={120}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'transparent' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                            formatter={(value: number) => [formatCurrency(value, currency.code, currency.symbol), 'Revenue']}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Bar
+                                            name="Revenue"
+                                            dataKey="value"
+                                            radius={[0, 6, 6, 0]}
+                                            barSize={32}
+                                            label={{
+                                                position: 'right',
+                                                fill: '#6b7280',
+                                                fontSize: 12,
+                                                fontWeight: 600,
+                                                formatter: (val: number) => formatCurrency(val, currency.code, currency.symbol),
+                                                dx: 5
+                                            }}
+                                        >
+                                            {REVENUE_CHANNEL_DATA.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS_SEQUENCE[index % COLORS_SEQUENCE.length]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- Row 3: Two Pies + 4 Efficiency KPIs --- */}
 
                 {/* New vs Returning (1 col) */}
-                <div className="col-span-1 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">New vs Returning</h3>
-                        <p className="text-xs text-gray-400 mt-1">Customer base quality</p>
+                {isLoading ? (
+                    <PieChartSkeleton title="New vs Returning" />
+                ) : (
+                    <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-3">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">New vs Returning</h3>
+                            <p className="text-xs text-gray-400 mt-1">Customer base quality</p>
+                        </div>
+                        <ReactECharts option={newVsReturningOption} style={{ height: '200px' }} />
                     </div>
-                    <ReactECharts option={newVsReturningOption} style={{ height: '200px' }} />
-                </div>
+                )}
 
                 {/* Discount vs Full-Price (1 col) */}
-                <div className="col-span-1 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Discount vs Full-Price</h3>
-                        <p className="text-xs text-gray-400 mt-1">Pricing health check</p>
+                {isLoading ? (
+                    <PieChartSkeleton title="Discount vs Full-Price" />
+                ) : (
+                    <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-3">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Discount vs Full-Price</h3>
+                            <p className="text-xs text-gray-400 mt-1">Pricing health check</p>
+                        </div>
+                        <ReactECharts option={discountPieOption} style={{ height: '200px' }} />
                     </div>
-                    <ReactECharts option={discountPieOption} style={{ height: '200px' }} />
-                </div>
+                )}
 
                 {/* Efficiency KPIs (2 cols - Nested 2x2 Grid) */}
                 <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
@@ -313,6 +335,7 @@ export const SalesPerformanceDashboard: React.FC = () => {
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="indigo"
+                                loading={isLoading}
                             />
                         </div>
                     ))}
@@ -321,48 +344,60 @@ export const SalesPerformanceDashboard: React.FC = () => {
                 {/* --- Row 4: Table (3 Cols) + Companion Chart (1 Col) --- */}
 
                 {/* Table: Low Performance Products (2 cols) */}
-                <div className="col-span-1 md:col-span-2 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                Low Performance Products
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1">High interest (views) but low conversion</p>
+                <div className="col-span-1 md:col-span-2">
+                    {isLoading ? (
+                        <TableSkeleton rows={5} columns={4} />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full animate-fade-in-up">
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                                        Low Performance Products
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-1">High interest (views) but low conversion</p>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                        <tr>
+                                            <th className="px-6 py-3">Product Name</th>
+                                            <th className="px-6 py-3 text-right">Views</th>
+                                            <th className="px-6 py-3 text-right">Orders</th>
+                                            <th className="px-6 py-3 text-right">Conv. Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {LOW_PERFORMANCE_PRODUCTS.map((product) => (
+                                            <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                                <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{product.name}</td>
+                                                <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.views}</td>
+                                                <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.orders}</td>
+                                                <td className="px-6 py-3 text-right text-orange-500 font-medium">{product.conversion}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-6 py-3">Product Name</th>
-                                    <th className="px-6 py-3 text-right">Views</th>
-                                    <th className="px-6 py-3 text-right">Orders</th>
-                                    <th className="px-6 py-3 text-right">Conv. Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {LOW_PERFORMANCE_PRODUCTS.map((product) => (
-                                    <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{product.name}</td>
-                                        <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.views}</td>
-                                        <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.orders}</td>
-                                        <td className="px-6 py-3 text-right text-orange-500 font-medium">{product.conversion}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    )}
                 </div>
 
                 {/* Companion Chart: Parallel Coordinates (2 Cols) */}
-                <div className="col-span-1 md:col-span-2 bg-white dark:bg-[#2b2e36] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
-                    <div className="mb-4 shrink-0">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Flow</h3>
-                        <p className="text-xs text-gray-400 mt-1">Hidden story: Views to Orders path</p>
-                    </div>
-                    <div className="flex-1 min-h-[200px]">
-                        <ReactECharts option={parallelChartOption} style={{ height: '100%', width: '100%' }} />
-                    </div>
+                <div className="col-span-1 md:col-span-2">
+                    {isLoading ? (
+                        <ChartSkeleton height="h-[280px]" title="Conversion Flow" showLegend={false} />
+                    ) : (
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col animate-fade-in-up">
+                            <div className="mb-4 shrink-0">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Flow</h3>
+                                <p className="text-xs text-gray-400 mt-1">Hidden story: Views to Orders path</p>
+                            </div>
+                            <div className="flex-1 min-h-[200px]">
+                                <ReactECharts option={parallelChartOption} style={{ height: '100%', width: '100%' }} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             </div>

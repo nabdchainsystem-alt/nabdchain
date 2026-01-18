@@ -55,7 +55,13 @@ export type BoardViewType =
   | 'kanban' | 'table' | 'datatable' | 'list' | 'doc' | 'calendar' | 'gantt'
   | 'pivot_table' | 'overview' | 'warehouse_capacity_map' | 'gtd' | 'cornell'
   | 'dashboards' | 'whiteboard' | 'automation_rules' | 'goals_okrs' | 'workload'
-  | 'recurring' | 'spreadsheet' | 'timeline';
+  | 'recurring' | 'spreadsheet' | 'timeline' | 'purchase_overview' | 'supplier_performance' | 'purchase_behavior' | 'cost_control' | 'purchase_funnel' | 'dependency_risk' | 'forecast_planning'
+  | 'inventory_overview' | 'stock_movement' | 'inventory_aging' | 'stock_accuracy' | 'reorder_planning' | 'warehouse_performance' | 'inventory_forecast'
+  | 'sales_insights' | 'sales_performance' | 'sales_analysis' | 'sales_forecast' | 'sales_funnel' | 'sales_segmentation' | 'sales_promotions' | 'expenses_overview' | 'category_analysis' | 'fixed_variable'
+  | 'trends_anomalies' | 'approval_flow' | 'dept_accountability' | 'forecast_optimization'
+  | 'customer_overview' | 'segmentation_value' | 'behavior_patterns'
+  | 'retention_churn' | 'journey_touchpoints' | 'satisfaction_feedback' | 'forecast_risk'
+  | 'supplier_overview' | 'supplier_delivery' | 'supplier_cost';
 
 export interface Board {
   id: string;

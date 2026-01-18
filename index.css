@@ -86,10 +86,105 @@
     }
 }
 
+/* Dashboard slide animations for fullscreen navigation */
+@keyframes slideInFromRight {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromLeft {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Shimmer loading animation for KPI cards and charts */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes pulse-subtle {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.9;
+    }
+}
+
+@keyframes fade-in-up {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.shimmer {
+    background: linear-gradient(
+        90deg,
+        rgba(200, 200, 200, 0.1) 25%,
+        rgba(200, 200, 200, 0.3) 50%,
+        rgba(200, 200, 200, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .shimmer {
+    background: linear-gradient(
+        90deg,
+        rgba(100, 100, 100, 0.1) 25%,
+        rgba(100, 100, 100, 0.3) 50%,
+        rgba(100, 100, 100, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+}
+
 @layer base {
 
     html {
         zoom: 1.05;
+    }
+
+    /* Smooth theme transitions */
+    body,
+    main,
+    nav,
+    aside,
+    header,
+    footer,
+    section,
+    .transition-theme {
+        @apply transition-colors duration-200;
     }
 
     h1,

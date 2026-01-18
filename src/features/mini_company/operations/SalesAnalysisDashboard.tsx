@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import {
     ChartLineUp, ChartBar, CurrencyDollar, ShoppingCart, TrendUp,
-    Info, ArrowsOut, ArrowsIn,
+    Info, ArrowsOut,
     CaretLeft, CaretRight, Database, Lightbulb
 } from 'phosphor-react';
 import { SalesAnalysisInfo } from './SalesAnalysisInfo';
@@ -57,7 +58,7 @@ const TABLE_DATA = [
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-[#1a1d24] p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
+            <div className="bg-white dark:bg-monday-dark-surface p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
                 <div className="flex items-center gap-2 mt-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].fill }}></div>
@@ -71,26 +72,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export const SalesAnalysisDashboard: React.FC = () => {
+interface SalesAnalysisDashboardProps {
+    hideFullscreen?: boolean;
+}
+
+export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'date', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    React.useEffect(() => {
-        const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
-        document.addEventListener('fullscreenchange', handleFullScreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-    }, []);
-
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-        else document.exitFullscreen();
+        window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
     // Filtered & Sorted Table Data
@@ -178,7 +182,7 @@ export const SalesAnalysisDashboard: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
 
             <SalesAnalysisInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -192,16 +196,18 @@ export const SalesAnalysisDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                    >
-                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
-                    </button>
+                    {!hideFullscreen && (
+                        <button
+                            onClick={toggleFullScreen}
+                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            title="Full Screen"
+                        >
+                            <ArrowsOut size={18} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -217,6 +223,7 @@ export const SalesAnalysisDashboard: React.FC = () => {
                         {...kpi}
                         value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                         color="indigo"
+                        loading={isLoading}
                     />
                 ))}
             </div>
@@ -224,153 +231,173 @@ export const SalesAnalysisDashboard: React.FC = () => {
             {/* --- SECTION 2: Middle Charts --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 {/* Sales by Product (Recharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Product</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Comparison of revenue generating items</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[280px]" title="Sales by Product" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Product</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Comparison of revenue generating items</p>
+                        </div>
+                        <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={SALES_BY_PRODUCT_DATA} margin={{ left: -10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                    <Bar dataKey="sales" radius={[6, 6, 0, 0]} barSize={32}>
+                                        {SALES_BY_PRODUCT_DATA.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={SALES_BY_PRODUCT_DATA} margin={{ left: -10 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                <Bar dataKey="sales" radius={[6, 6, 0, 0]} barSize={32}>
-                                    {SALES_BY_PRODUCT_DATA.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
 
                 {/* Sales by Salesperson (Recharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Agent</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Individual contribution analysis</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[280px]" title="Sales by Agent" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sales by Agent</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Individual contribution analysis</p>
+                        </div>
+                        <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={SALES_BY_PERSON_DATA} layout="vertical" margin={{ left: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                    <Bar dataKey="sales" radius={[0, 6, 6, 0]} barSize={24}>
+                                        {SALES_BY_PERSON_DATA.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={SALES_BY_PERSON_DATA} layout="vertical" margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="sales" radius={[0, 6, 6, 0]} barSize={24}>
-                                    {SALES_BY_PERSON_DATA.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
 
                 {/* Sales by Region (ECharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Split</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Geographic revenue distribution (%)</p>
+                {isLoading ? (
+                    <PieChartSkeleton title="Regional Split" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Split</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Geographic revenue distribution (%)</p>
+                        </div>
+                        <div className="h-[280px]">
+                            <ReactECharts option={regionPieOption} style={{ height: '100%' }} />
+                        </div>
                     </div>
-                    <div className="h-[280px]">
-                        <ReactECharts option={regionPieOption} style={{ height: '100%' }} />
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* --- SECTION 3: Table & Companion Chart --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Data Table (1/2 Columns) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
-                    {/* Table Header / Toolbar */}
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                Operational Sales Log
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1">Detailed transactional review for auditing</p>
+                {isLoading ? (
+                    <TableSkeleton rows={5} columns={5} />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
+                        {/* Table Header / Toolbar */}
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                                    Operational Sales Log
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1">Detailed transactional review for auditing</p>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Table Body */}
-                    <div className="flex-1 overflow-x-auto min-h-[400px]">
-                        <table className="w-full text-sm text-left h-full">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
-                                <tr>
-                                    <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('id')}>Order ID</th>
-                                    <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('date')}>Date</th>
-                                    <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('customer')}>Customer</th>
-                                    <th className="px-6 py-4 text-right">Total</th>
-                                    <th className="px-6 py-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                                {paginatedData.map((row) => (
-                                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
-                                        <td className="px-6 py-5 font-mono text-xs text-indigo-600 dark:text-indigo-400">{row.id}</td>
-                                        <td className="px-6 py-5 text-gray-500 whitespace-nowrap">{row.date}</td>
-                                        <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
-                                        <td className="px-6 py-5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
-                                                row.status === 'Pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
-                                                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                                }`}>
-                                                {row.status}
-                                            </span>
-                                        </td>
+                        {/* Table Body */}
+                        <div className="flex-1 overflow-x-auto min-h-[400px]">
+                            <table className="w-full text-sm text-left h-full">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
+                                    <tr>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('id')}>Order ID</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('date')}>Date</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => handleSort('customer')}>Customer</th>
+                                        <th className="px-6 py-4 text-right">Total</th>
+                                        <th className="px-6 py-4">Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                    {paginatedData.map((row) => (
+                                        <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
+                                            <td className="px-6 py-5 font-mono text-xs text-indigo-600 dark:text-indigo-400">{row.id}</td>
+                                            <td className="px-6 py-5 text-gray-500 whitespace-nowrap">{row.date}</td>
+                                            <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
+                                            <td className="px-6 py-5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
+                                                    row.status === 'Pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
+                                                        'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                    }`}>
+                                                    {row.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                    {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
-                        <span className="text-xs text-gray-500">
-                            Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretLeft size={16} />
-                            </button>
-                            <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretRight size={16} />
-                            </button>
+                        {/* Pagination */}
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
+                            <span className="text-xs text-gray-500">
+                                Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretLeft size={16} />
+                                </button>
+                                <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretRight size={16} />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Companion Chart: Hidden Story (1/2 Column) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
-                    <div className="mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                            Hidden Story
-                        </h3>
-                        <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Flow analysis: Region → Agent → Fulfilment status</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[400px]" title="Hidden Story" />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                                Hidden Story
+                            </h3>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Flow analysis: Region → Agent → Fulfilment status</p>
+                        </div>
+                        <div className="flex-1 min-h-[400px]">
+                            <ReactECharts option={flowChartOption} style={{ height: '100%', width: '100%' }} />
+                        </div>
+                        <div className="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 leading-normal">
+                                <strong>Insight:</strong> Riyadh contributes the highest volume through Ahmed, but Abha shows the fastest "Shipped" turnaround per agent.
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-h-[400px]">
-                        <ReactECharts option={flowChartOption} style={{ height: '100%', width: '100%' }} />
-                    </div>
-                    <div className="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-                        <p className="text-[10px] text-indigo-600 dark:text-indigo-400 leading-normal">
-                            <strong>Insight:</strong> Riyadh contributes the highest volume through Ahmed, but Abha shows the fastest "Shipped" turnaround per agent.
-                        </p>
-                    </div>
-                </div>
+                )}
 
             </div>
 

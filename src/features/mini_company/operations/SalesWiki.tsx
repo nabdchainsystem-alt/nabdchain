@@ -3,8 +3,8 @@ import { Book, Target, TrendingUp, Users, Truck, Settings, DollarSign, ArrowRigh
 
 const SalesWiki: React.FC = () => {
     return (
-        <div className="flex-1 h-full overflow-y-auto bg-gray-50 dark:bg-[#1a1d24] p-8">
-            <div className="max-w-5xl mx-auto bg-white dark:bg-[#1f2937] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 min-h-screen">
+        <div className="flex-1 h-full overflow-y-auto bg-gray-50 dark:bg-monday-dark-surface p-8">
+            <div className="max-w-5xl mx-auto bg-white dark:bg-monday-dark-bg rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 min-h-screen">
 
                 {/* Header */}
                 <div className="border-b border-gray-100 dark:border-gray-700 p-8 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-[#1f2937]">

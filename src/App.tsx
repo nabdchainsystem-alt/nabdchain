@@ -6,7 +6,7 @@ import { NabdSmartBar } from './components/ui/NabdSmartBar';
 import { SignedIn, SignedOut, SignIn, useUser, useAuth } from './auth-adapter';
 import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
-import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem } from './types';
+import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem, Task } from './types';
 import { BoardTemplate } from './features/board/data/templates';
 import { AppProvider } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -749,10 +749,12 @@ const AppContent: React.FC = () => {
 
   // Mini Company - Finance
   const ExpensesPage = lazyWithRetry(() => import('./features/mini_company/finance/ExpensesPage'));
+  const CustomersPage = lazyWithRetry(() => import('./features/mini_company/customers/CustomersPage').then(module => ({ default: module.CustomersPage })));
+  const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/suppliers/SuppliersPage').then(module => ({ default: module.SuppliersPage })));
 
   // Mini Company - People
-  const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/people/SuppliersPage'));
-  const CustomersPage = lazyWithRetry(() => import('./features/mini_company/people/CustomersPage'));
+
+
 
   const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
   const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
@@ -993,6 +995,8 @@ const AppContent: React.FC = () => {
               <SuppliersPage />
             ) : activeView === 'customers' ? (
               <CustomersPage />
+            ) : activeView === 'suppliers' ? (
+              <SuppliersPage />
             ) : activeView === 'reports' ? (
               <ReportsPage />
             ) : activeView === 'it_support' ? (
@@ -1041,7 +1045,7 @@ const AppRoutes: React.FC = () => {
 
   if (!isLoaded) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#F7F9FB]">
+      <div className="h-screen w-full flex items-center justify-center bg-[#F7F9FB] dark:bg-monday-dark-bg">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );

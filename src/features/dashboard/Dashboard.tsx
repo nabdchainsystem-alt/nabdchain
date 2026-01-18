@@ -600,31 +600,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8 h-full">
+    <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-monday-dark-elevated dark:bg-monday-dark-bg p-6 lg:p-8 h-full">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t(greeting)}, {userDisplayName}!</h1>
-            <p className="text-gray-500 mt-1">{t('daily_overview')}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-monday-dark-text">{t(greeting)}, {userDisplayName}!</h1>
+            <p className="text-gray-500 dark:text-monday-dark-text-secondary dark:text-monday-dark-text-secondary mt-1">{t('daily_overview')}</p>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Weather Widget */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100 hidden sm:flex">
-              <span className="text-gray-500">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-monday-dark-surface rounded-full shadow-sm border border-gray-100 dark:border-monday-dark-border dark:border-monday-dark-border hidden sm:flex">
+              <span className="text-gray-500 dark:text-monday-dark-text-secondary">
                 {weather?.condition.includes('Cloud') ? <Cloud size={20} weight="light" /> :
                   weather?.condition.includes('Rain') ? <CloudRain size={20} weight="light" /> :
                     weather?.condition.includes('Snow') ? <Snowflake size={20} weight="light" /> :
                       weather?.condition.includes('Storm') ? <Lightning size={20} weight="light" /> :
                         weather?.condition.includes('Fog') ? <CloudFog size={20} weight="light" /> : <Sun size={20} weight="light" />}
               </span>
-              <span className="text-sm font-semibold text-gray-700">{weather ? `${weather.temp}°C` : '--'}</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-monday-dark-text">{weather ? `${weather.temp}°C` : '--'}</span>
             </div>
 
             {/* Date Widget */}
-            <div className="px-5 py-2 bg-white rounded-full shadow-sm border border-gray-100">
-              <span className="text-sm font-medium text-gray-600">
+            <div className="px-5 py-2 bg-white dark:bg-monday-dark-surface rounded-full shadow-sm border border-gray-100 dark:border-monday-dark-border dark:border-monday-dark-border">
+              <span className="text-sm font-medium text-gray-600 dark:text-monday-dark-text-secondary">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long' })}, {currentTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
               </span>
             </div>
@@ -637,21 +637,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <ClockCounterClockwise size={24} weight="light" className="text-gray-400" />
+              <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
+                <ClockCounterClockwise size={24} weight="light" className="text-gray-400 dark:text-monday-dark-text-muted" />
                 {t('recently_visited')}
               </h2>
               {/* Scroll Controls */}
               <div className="flex items-center gap-1 ml-2">
                 <button
                   onClick={scrollLeft}
-                  className="p-1 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors"
                 >
                   <CaretLeft size={18} weight="light" />
                 </button>
                 <button
                   onClick={scrollRight}
-                  className="p-1 rounded-full hover:bg-gray-200 text-gray-600 transition-colors"
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors"
                 >
                   <CaretRight size={18} weight="light" />
                 </button>
@@ -669,13 +669,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 ].map((action, idx) => (
                   <button
                     key={idx}
-                    className="group flex items-center gap-0 bg-white p-1 rounded-full border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md hover:pr-4 rtl:hover:pr-1 rtl:hover:pl-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden"
+                    className="group flex items-center gap-0 bg-white p-1 rounded-full border border-gray-200 dark:border-monday-dark-border shadow-sm hover:border-gray-300 hover:shadow-md hover:pr-4 rtl:hover:pr-1 rtl:hover:pl-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden"
                     onClick={() => action.onClick ? action.onClick() : appLogger.debug(`Triggered ${action.label}`)}
                   >
-                    <div className="p-1.5 rounded-full bg-gray-50 text-gray-600 group-hover:bg-gray-100 group-hover:text-gray-900 transition-colors duration-500 shrink-0">
+                    <div className="p-1.5 rounded-full bg-gray-50 dark:bg-monday-dark-elevated text-gray-600 dark:text-monday-dark-text-secondary group-hover:bg-gray-100 dark:hover:bg-monday-dark-elevated group-hover:text-gray-900 transition-colors duration-500 shrink-0">
                       <action.icon size={14} weight="regular" />
                     </div>
-                    <span className="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-2 rtl:group-hover:ml-0 rtl:group-hover:mr-2 transition-all duration-700 ease-out whitespace-nowrap text-[11px] font-medium text-gray-600 group-hover:text-gray-900">
+                    <span className="max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 group-hover:ml-2 rtl:group-hover:ml-0 rtl:group-hover:mr-2 transition-all duration-700 ease-out whitespace-nowrap text-[11px] font-medium text-gray-600 dark:text-monday-dark-text-secondary group-hover:text-gray-900">
                       {action.label}
                     </span>
                   </button>
@@ -699,7 +699,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   return (
                     <div
                       key={item.id}
-                      className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col min-w-[300px] sm:min-w-[340px] snap-start"
+                      className="group bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100 dark:border-monday-dark-border overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col min-w-[300px] sm:min-w-[340px] snap-start"
                     >
                       {/* Cover Image */}
                       <div
@@ -716,14 +716,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         {/* Quick Actions (On Hover) */}
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <button
-                            className="bg-white/95 text-gray-700 p-1 rounded shadow-sm hover:text-blue-600 transition-colors"
+                            className="bg-white/95 text-gray-700 dark:text-monday-dark-text p-1 rounded shadow-sm hover:text-blue-600 transition-colors"
                             title="Open"
                             onClick={(e) => { e.stopPropagation(); onNavigate(item.type, item.boardId); }}
                           >
                             <ArrowSquareOut size={16} weight="light" />
                           </button>
                           <button
-                            className="bg-white/95 text-gray-700 p-1 rounded shadow-sm hover:text-yellow-600 transition-colors"
+                            className="bg-white/95 text-gray-700 dark:text-monday-dark-text p-1 rounded shadow-sm hover:text-yellow-600 transition-colors"
                             title="Favorite"
                             onClick={(e) => { e.stopPropagation(); /* TODO: Implement Favorite */ }}
                           >
@@ -736,7 +736,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       <div className="p-4 cursor-pointer flex-1 flex flex-col justify-between" onClick={() => onNavigate(item.type, item.boardId)}>
                         <div>
                           <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-blue-600 transition-colors">{item.title}</h3>
-                          <p className="text-xs text-gray-500 mb-2 truncate">
+                          <p className="text-xs text-gray-500 dark:text-monday-dark-text-secondary mb-2 truncate">
                             {item.boardId ? t('project_board') : t('application_module')}
                           </p>
                         </div>
@@ -744,9 +744,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         {/* Stats / Info */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1">
                           {stats ? (
-                            <div className="flex gap-2 text-xs text-gray-500">
+                            <div className="flex gap-2 text-xs text-gray-500 dark:text-monday-dark-text-secondary">
                               <span className="flex items-center gap-0.5" title="Active Tasks">
-                                <CheckCircle size={12} weight="light" className="text-gray-400" />
+                                <CheckCircle size={12} weight="light" className="text-gray-400 dark:text-monday-dark-text-muted" />
                                 {stats.total}
                               </span>
                               <span className="flex items-center gap-0.5" title="High Priority">
@@ -764,7 +764,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   );
                 })
             ) : (
-              <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+              <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 dark:text-monday-dark-text-muted border-2 border-dashed border-gray-200 dark:border-monday-dark-border rounded-xl bg-gray-50 dark:bg-monday-dark-elevated/50">
                 <ClockCounterClockwise size={40} weight="light" className="text-gray-300 mb-3" />
                 <p className="text-sm font-medium">{t('no_recent_history')}</p>
                 <p className="text-xs mt-1 opacity-70">{t('pages_appear_here')}</p>
@@ -781,12 +781,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
             {/* Urgent Tasks */}
             <div className="lg:col-span-2">
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
+              <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
 
                   {/* Left Side: Title & Controls */}
                   <div className="flex items-center gap-6">
-                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                       <WarningCircle size={24} weight="light" className="text-red-500" />
                       {t('urgent_tasks')}
                     </h2>
@@ -806,26 +806,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   {/* Right Side: Filters */}
                   <div className="flex items-center justify-end min-w-[80px]">
                     {/* Filter Toolbar */}
-                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100 relative">
+                    <div className="flex items-center bg-gray-50 dark:bg-monday-dark-elevated rounded-lg p-0.5 border border-gray-100 dark:border-monday-dark-border relative">
                       {/* Standard Filters */}
                       <div className="flex items-center">
                         <button
                           onClick={() => setActiveFilter('all')}
-                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                           title={t('all_tasks')}
                         >
                           <SquaresFour size={16} weight={activeFilter === 'all' ? 'fill' : 'regular'} />
                         </button>
                         <button
                           onClick={() => setActiveFilter('high')}
-                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'high' ? 'bg-white shadow-sm text-red-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'high' ? 'bg-white shadow-sm text-red-500' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                           title={t('high_priority')}
                         >
                           <WarningCircle size={16} weight={activeFilter === 'high' ? 'fill' : 'regular'} />
                         </button>
                         <button
                           onClick={() => setActiveFilter('overdue')}
-                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'overdue' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'overdue' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                           title={t('overdue')}
                         >
                           <CalendarBlank size={16} weight={activeFilter === 'overdue' ? 'fill' : 'regular'} />
@@ -862,7 +862,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               <input
                                 autoFocus
                                 type="text"
-                                className="flex-1 text-xs border-none focus:ring-0 p-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent min-w-[60px]"
+                                className="flex-1 text-xs border-none focus:ring-0 p-1 outline-none text-gray-700 dark:text-monday-dark-text placeholder-gray-400 bg-transparent min-w-[60px]"
                                 placeholder={selectedPersons.length === 0 ? t('search_people') : t('add_more')}
                                 value={personSearchQuery}
                                 onChange={(e) => {
@@ -910,7 +910,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                 setSelectedPersons([]);
                                 setActiveFilter('all');
                               }}
-                              className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-gray-600 shrink-0"
+                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-elevated text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary shrink-0"
                               title={t('clear_and_close')}
                             >
                               <X size={12} />
@@ -918,7 +918,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
                             {/* Dropdown - shows when typing or when focused with no selection */}
                             {(personSearchQuery || selectedPersons.length === 0) && (
-                              <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 max-h-48 overflow-y-auto">
+                              <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 dark:border-monday-dark-border py-1 z-50 max-h-48 overflow-y-auto">
                                 {filteredPeopleAndTeams.map((item, idx) => (
                                     <button
                                       key={item.id}
@@ -928,8 +928,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                         setActiveFilter('person');
                                         setHighlightedIndex(0);
                                       }}
-                                      className={`w-full text-left px-3 py-2 text-xs text-gray-700 flex items-center gap-2 transition-colors ${
-                                        idx === highlightedIndex ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'
+                                      className={`w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-monday-dark-text flex items-center gap-2 transition-colors ${
+                                        idx === highlightedIndex ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50 dark:hover:bg-monday-dark-elevated dark:bg-monday-dark-elevated'
                                       }`}
                                     >
                                       <div className={`w-5 h-5 rounded-full ${item.type === 'team' ? 'bg-indigo-500' : item.color} flex items-center justify-center text-[10px] font-bold text-white`}>
@@ -942,7 +942,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                                     </button>
                                   ))}
                                 {filteredPeopleAndTeams.length === 0 && (
-                                    <div className="px-3 py-2 text-xs text-gray-400 text-center">{t('no_matches')}</div>
+                                    <div className="px-3 py-2 text-xs text-gray-400 dark:text-monday-dark-text-muted text-center">{t('no_matches')}</div>
                                   )}
                               </div>
                             )}
@@ -954,7 +954,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               setActiveFilter('person');
                               setHighlightedIndex(0);
                             }}
-                            className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                            className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                             title={t('filter_by_person')}
                           >
                             <User size={16} weight={activeFilter === 'person' ? 'fill' : 'regular'} />
@@ -968,10 +968,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   {paginatedUrgentTasks.length > 0 ? (
                     <>
                       {paginatedUrgentTasks.map(task => (
-                        <div key={task.id} className="flex items-center p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors group">
+                        <div key={task.id} className="flex items-center p-3 rounded-lg border border-gray-100 dark:border-monday-dark-border hover:bg-gray-50 dark:hover:bg-monday-dark-elevated dark:bg-monday-dark-elevated transition-colors group">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
-                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <p className="text-xs text-gray-500 dark:text-monday-dark-text-secondary mt-1 flex items-center gap-1">
                               <CalendarBlank size={12} weight="light" />
                               {task.date ? formatDate(task.date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('no_date')}
                               <span className="mx-1">•</span>
@@ -1000,7 +1000,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                           <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => onNavigate('board', task.boardId)}
-                              className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-monday-dark-hover text-gray-400 dark:text-monday-dark-text-muted hover:text-blue-600 transition-colors"
                               title={t('open_in_board')}
                             >
                               <PencilSimple size={18} weight="light" />
@@ -1010,16 +1010,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       ))}
                     </>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-gray-50 dark:bg-monday-dark-elevated rounded-lg border border-dashed border-gray-200 dark:border-monday-dark-border">
                       <CheckCircle size={32} weight="light" className="text-gray-300 mb-1" />
-                      <p className="text-sm text-gray-500">{t('no_urgent_tasks')}</p>
+                      <p className="text-sm text-gray-500 dark:text-monday-dark-text-secondary">{t('no_urgent_tasks')}</p>
                     </div>
                   )}
                 </div>
                 {/* Footer: Pagination */}
                 <div className="flex items-center justify-end pt-4 mt-auto">
                   {totalUrgentPages > 1 && (
-                    <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100 shadow-sm">
+                    <div className="flex items-center bg-gray-50 dark:bg-monday-dark-elevated rounded-lg p-0.5 border border-gray-100 dark:border-monday-dark-border shadow-sm">
                       <button
                         onClick={() => setUrgentTasksPage(p => Math.max(1, p - 1))}
                         disabled={urgentTasksPage === 1}
@@ -1027,7 +1027,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       >
                         <CaretLeft size={14} weight="light" />
                       </button>
-                      <span className="text-[10px] font-medium text-gray-500 px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
+                      <span className="text-[10px] font-medium text-gray-500 dark:text-monday-dark-text-secondary px-2 select-none">{urgentTasksPage}/{totalUrgentPages}</span>
                       <button
                         onClick={() => setUrgentTasksPage(p => Math.min(totalUrgentPages, p + 1))}
                         disabled={urgentTasksPage === totalUrgentPages}
@@ -1043,9 +1043,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
             {/* Quick Actions */}
             <div className="lg:col-span-1">
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+              <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                     <Lightning size={24} weight="light" className="text-amber-500" />
                     {t('quick_actions')}
                   </h2>
@@ -1053,37 +1053,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsNewTaskModalOpen(true)}
-                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
-                    <ListPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    <ListPlus size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('new_task')}</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <UserPlus size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <UserPlus size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('invite_member')}</span>
                   </button>
                   <button
                     onClick={() => setIsGlobalSearchOpen(true)}
-                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
-                    <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('search_all')}</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('new_board')}</span>
                   </button>
                   <button
                     onClick={() => setIsEventModalOpen(true)}
-                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
-                    <CalendarBlank size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                    <CalendarBlank size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('events')}</span>
                   </button>
                   <button
                     onClick={handleUploadClick}
-                    className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
                   >
-                    <UploadSimple size={32} weight="light" className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    <UploadSimple size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('upload')}</span>
                   </button>
                   <input
@@ -1102,9 +1102,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
             {/* Recent Activity - Spans 2 Rows to match Quick Notes + Reminders */}
             <div className="lg:col-span-2 lg:row-span-2 h-full min-h-0">
-              <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
+              <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                     <Clock size={24} weight="light" className="text-blue-500" />
                     {t('recent_activity')}
                   </h2>
@@ -1131,11 +1131,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               </div>
                               <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                                 <div>
-                                  <p className="text-sm text-gray-500">
+                                  <p className="text-sm text-gray-500 dark:text-monday-dark-text-secondary">
                                     {activity.content}
                                   </p>
                                 </div>
-                                <div className="text-right text-sm whitespace-nowrap text-gray-500">
+                                <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-monday-dark-text-secondary">
                                   {formatTimeAgo(new Date(activity.createdAt).getTime())}
                                 </div>
                               </div>
@@ -1144,7 +1144,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                         </li>
                       ))
                     ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-gray-400">
+                      <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-gray-400 dark:text-monday-dark-text-muted">
                         <Clock size={32} weight="light" className="text-gray-300 mb-1" />
                         <p className="text-sm">{t('no_recent_activity')}</p>
                       </div>
@@ -1155,16 +1155,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             </div>
 
             {/* Quick Notes (Row 1, Col 3) */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+            <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 lg:col-span-1">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                   <NotePencil size={24} weight="light" className="text-yellow-500" />
                   {t('quick_notes')}
                 </h2>
-                <span className="text-xs text-gray-400">{t('auto_saved')}</span>
+                <span className="text-xs text-gray-400 dark:text-monday-dark-text-muted">{t('auto_saved')}</span>
               </div>
               <textarea
-                className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
+                className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 dark:text-monday-dark-text placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
                 placeholder={t('jot_down')}
                 value={quickNote}
                 onChange={(e) => setQuickNote(e.target.value)}
@@ -1172,9 +1172,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             </section>
 
             {/* Reminders (Row 2, Col 3) */}
-            <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-1">
+            <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 lg:col-span-1">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                   <Bell size={24} weight="light" className="text-purple-500" />
                   {t('reminders')}
                 </h2>
@@ -1183,11 +1183,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               <div className="space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                  <span className="text-sm text-gray-600 group-hover:text-gray-900">{t('email_update_to_client')}</span>
+                  <span className="text-sm text-gray-600 dark:text-monday-dark-text-secondary group-hover:text-gray-900">{t('email_update_to_client')}</span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input className="mt-1 h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" type="checkbox" />
-                  <span className="text-sm text-gray-600 group-hover:text-gray-900">{t('check_in_with_design')}</span>
+                  <span className="text-sm text-gray-600 dark:text-monday-dark-text-secondary group-hover:text-gray-900">{t('check_in_with_design')}</span>
                 </label>
               </div>
             </section>

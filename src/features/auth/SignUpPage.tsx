@@ -7,6 +7,7 @@ import {
     ShoppingCart, FileText, ChartBar as BarChart, Chat as MessageSquare, CheckSquare, Layout,
     ListChecks as ListTodo, Clock, BookOpen, PenNib as PenTool, Brain, MapTrifold as Map, GridFour as Grid, Cube as Box, Globe, CaretRight as ChevronRight, ArrowLeft
 } from 'phosphor-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface SignUpPageProps {
     onNavigateToLogin: () => void;
@@ -184,6 +185,7 @@ const FEATURE_SLIDES = [
 ];
 
 export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => {
+    const { t } = useAppContext();
     const { isLoaded, signUp, setActive } = useSignUp();
     const [step, setStep] = useState<Step>('discovery');
     const [loading, setLoading] = useState(false);
@@ -239,7 +241,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
             setStep('verification');
         } catch (err: any) {
             console.error(JSON.stringify(err, null, 2));
-            setError(err.errors?.[0]?.message || "Something went wrong. Please try again.");
+            setError(err.errors?.[0]?.message || t('something_went_wrong_retry'));
         } finally {
             setLoading(false);
         }
@@ -257,13 +259,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
             });
 
             if (completeSignUp.status !== 'complete') {
-                setError("Verification was not completed. Please try again.");
+                setError(t('verification_not_completed'));
             } else {
                 await setActive({ session: completeSignUp.createdSessionId });
             }
         } catch (err: any) {
             console.error(JSON.stringify(err, null, 2));
-            setError(err.errors?.[0]?.message || "Invalid code");
+            setError(err.errors?.[0]?.message || t('invalid_code'));
         } finally {
             setLoading(false);
         }
@@ -276,27 +278,27 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                     <StepWrapper stepKey="discovery">
                         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
                             <motion.div variants={itemVariants}>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Industry</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('industry')}</label>
                                 <div className="relative group">
-                                    <Building className="absolute left-3 top-3 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
+                                    <Building className="absolute start-3 top-3 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
                                     <select
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                                        className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50"
                                         value={formData.industry}
                                         onChange={e => setFormData({ ...formData, industry: e.target.value })}
                                     >
-                                        <option value="">Select your industry...</option>
-                                        <option value="logistics">Logistics & Supply Chain</option>
-                                        <option value="manufacturing">Manufacturing</option>
-                                        <option value="retail">Retail & E-commerce</option>
-                                        <option value="healthcare">Healthcare</option>
-                                        <option value="technology">Technology</option>
-                                        <option value="other">Other</option>
+                                        <option value="">{t('select_your_industry')}</option>
+                                        <option value="logistics">{t('logistics_supply_chain')}</option>
+                                        <option value="manufacturing">{t('manufacturing')}</option>
+                                        <option value="retail">{t('retail_ecommerce')}</option>
+                                        <option value="healthcare">{t('healthcare')}</option>
+                                        <option value="technology">{t('technology')}</option>
+                                        <option value="other">{t('other')}</option>
                                     </select>
                                 </div>
                             </motion.div>
 
                             <motion.div variants={itemVariants}>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Size</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('company_size')}</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {['1-10', '11-50', '51-200', '201+'].map(size => (
                                         <motion.button
@@ -309,7 +311,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                                 : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
                                                 }`}
                                         >
-                                            {size} employees
+                                            {size} {t('employees')}
                                         </motion.button>
                                     ))}
                                 </div>
@@ -321,11 +323,11 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                 whileTap={{ scale: 0.99 }}
                                 onClick={() => {
                                     if (formData.industry && formData.teamSize) setStep('personal');
-                                    else setError("Please complete all fields");
+                                    else setError(t('please_complete_fields'));
                                 }}
                                 className="w-full bg-black dark:bg-white text-white dark:text-black font-semibold py-4 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-black/5 dark:shadow-white/5"
                             >
-                                Next Step <ChevronRight size={18} />
+                                {t('next_step')} <ChevronRight size={18} />
                             </motion.button>
                         </motion.div>
                     </StepWrapper>
@@ -337,13 +339,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <motion.div variants={itemVariants}>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">First Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('first_name')}</label>
                                     <div className="relative group">
-                                        <User className="absolute left-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
+                                        <User className="absolute start-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
                                         <input
                                             type="text"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                             placeholder="John"
                                             value={formData.firstName}
                                             onChange={e => setFormData({ ...formData, firstName: e.target.value })}
@@ -351,7 +353,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                     </div>
                                 </motion.div>
                                 <motion.div variants={itemVariants}>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('last_name')}</label>
                                     <input
                                         type="text"
                                         required
@@ -364,12 +366,12 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                             </div>
 
                             <motion.div variants={itemVariants}>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('phone_number')}</label>
                                 <div className="relative group">
-                                    <Phone className="absolute left-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
+                                    <Phone className="absolute start-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
                                     <input
                                         type="tel"
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                         placeholder="+1 (555) 000-0000"
                                         value={formData.phone}
                                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
@@ -382,16 +384,16 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                     onClick={() => setStep('discovery')}
                                     className="w-1/3 py-4 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                                 >
-                                    Back
+                                    {t('back')}
                                 </button>
                                 <button
                                     onClick={() => {
                                         if (formData.firstName && formData.lastName) setStep('account');
-                                        else setError("Name is required");
+                                        else setError(t('name_required'));
                                     }}
                                     className="w-2/3 bg-black dark:bg-white text-white dark:text-black font-semibold py-4 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/5"
                                 >
-                                    Next Step <ChevronRight size={18} />
+                                    {t('next_step')} <ChevronRight size={18} />
                                 </button>
                             </motion.div>
                         </motion.div>
@@ -404,13 +406,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
                             <form onSubmit={handleCreateAccount} className="space-y-4">
                                 <motion.div variants={itemVariants}>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Work Email</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('work_email')}</label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
+                                        <Mail className="absolute start-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
                                         <input
                                             type="email"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                             placeholder="name@company.com"
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -419,13 +421,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                 </motion.div>
 
                                 <motion.div variants={itemVariants}>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('password')}</label>
                                     <div className="relative group">
-                                        <Lock className="absolute left-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
+                                        <Lock className="absolute start-3 top-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" size={18} />
                                         <input
                                             type="password"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            className="w-full ps-10 pe-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                             placeholder="••••••••"
                                             value={formData.password}
                                             onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -439,14 +441,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                         onClick={() => setStep('personal')}
                                         className="w-1/3 py-4 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                                     >
-                                        Back
+                                        {t('back')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading}
                                         className="w-2/3 bg-blue-600 text-white font-semibold py-4 rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" /> : 'Create Account'}
+                                        {loading ? <Loader2 className="animate-spin" /> : t('create_account')}
                                     </button>
                                 </motion.div>
                             </form>
@@ -462,8 +464,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                 <Mail className="text-blue-600 dark:text-blue-400" size={32} />
                             </motion.div>
                             <motion.div variants={itemVariants}>
-                                <h3 className="text-xl font-bold mb-2">Check your email</h3>
-                                <p className="text-gray-500 text-sm">We sent a verification code to <span className="font-semibold text-gray-800 dark:text-gray-200">{formData.email}</span></p>
+                                <h3 className="text-xl font-bold mb-2">{t('check_your_email')}</h3>
+                                <p className="text-gray-500 text-sm">{t('sent_verification_code')} <span className="font-semibold text-gray-800 dark:text-gray-200">{formData.email}</span></p>
                             </motion.div>
 
                             <form onSubmit={handleVerify} className="space-y-6">
@@ -482,7 +484,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                                     disabled={loading}
                                     className="w-full bg-blue-600 text-white font-semibold py-4 rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" /> : 'Verify & Launch'}
+                                    {loading ? <Loader2 className="animate-spin" /> : t('verify_launch')}
                                 </motion.button>
                             </form>
                         </motion.div>
@@ -532,14 +534,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
 
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">
-                            {step === 'discovery' ? 'Tell us about your team' :
-                                step === 'personal' ? 'Who are you?' :
-                                    step === 'account' ? 'Secure your account' : 'Verify Email'}
+                            {step === 'discovery' ? t('tell_us_about_team') :
+                                step === 'personal' ? t('who_are_you') :
+                                    step === 'account' ? t('secure_your_account') : t('verify_email')}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 text-lg">
-                            {step === 'discovery' ? 'We\'ll customize your workspace based on your industry.' :
-                                step === 'personal' ? 'Enter your details to personalize your profile.' :
-                                    step === 'account' ? 'Choose a strong password to protect your data.' : 'Enter the code sent to your inbox.'}
+                            {step === 'discovery' ? t('customize_workspace_industry') :
+                                step === 'personal' ? t('enter_details_personalize') :
+                                    step === 'account' ? t('choose_strong_password') : t('enter_code_inbox')}
                         </p>
                     </div>
 
@@ -560,13 +562,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
 
                     {step === 'discovery' && (
                         <div className="mt-12 text-center text-sm text-gray-600 dark:text-gray-400">
-                            Already have an account?{' '}
+                            {t('already_have_account')}{' '}
                             <button
                                 onClick={onNavigateToLogin}
                                 className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
                                 type="button"
                             >
-                                Sign in
+                                {t('sign_in')}
                             </button>
                         </div>
                     )}
@@ -574,9 +576,9 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
 
                 <div className="mt-auto pt-8 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400 flex justify-between">
                     <span>© 2025 NABD Chain System</span>
-                    <div className="space-x-4">
-                        <a href="#" className="hover:text-gray-600">Privacy</a>
-                        <a href="#" className="hover:text-gray-600">Terms</a>
+                    <div className="space-x-4 rtl:space-x-reverse">
+                        <a href="#" className="hover:text-gray-600">{t('privacy')}</a>
+                        <a href="#" className="hover:text-gray-600">{t('terms')}</a>
                     </div>
                 </div>
             </div>

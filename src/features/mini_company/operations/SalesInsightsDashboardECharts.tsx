@@ -200,7 +200,7 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div ref={containerRef} className={`p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
 
             <SalesDashboardInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -215,14 +215,14 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                         title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
                     >
                         {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
                     </button>
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -249,12 +249,12 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
 
                     {/* Charts Row 1: Sales Over Time & Sales by Channel */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales Over Time</h3>
                             <ReactECharts option={salesOverTimeOption} style={{ height: 250 }} />
                         </div>
 
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales by Channel</h3>
                             <ReactECharts option={salesByChannelOption} style={{ height: 250 }} />
                         </div>
@@ -262,12 +262,12 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
 
                     {/* Charts Row 2: Pie Charts */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales by Category</h3>
                             <ReactECharts option={categoryPieOption} style={{ height: 250 }} />
                         </div>
 
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Order Status</h3>
                             <ReactECharts option={statusPieOption} style={{ height: 250 }} />
                         </div>
@@ -276,7 +276,7 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
                     {/* Charts Row 3: Product Performance (Table & Treemap) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Table: Top 5 Products */}
-                        <div className="bg-white dark:bg-[#2b2e36] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
+                        <div className="bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full">
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Top 5 Selling Products</h3>
                                 <p className="text-xs text-gray-400 mt-1">Inventory and revenue leaders</p>
@@ -308,7 +308,7 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
                         </div>
 
                         {/* Treemap: Product Revenue Contribution */}
-                        <div className="bg-white dark:bg-[#2b2e36] p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Revenue Contribution</h3>
                             <ReactECharts option={treemapOption} style={{ height: '350px' }} />
                         </div>

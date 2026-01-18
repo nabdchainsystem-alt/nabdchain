@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import {
     ChartLineUp, CurrencyDollar, TrendUp,
-    Info, ArrowsOut, ArrowsIn,
+    Info, ArrowsOut,
     CaretLeft, CaretRight, Warning, Target, ChartLine, ArrowUp, ArrowDown, Minus
 } from 'phosphor-react';
 import { SalesForecastInfo } from './SalesForecastInfo';
@@ -68,7 +69,7 @@ const DECISION_TABLE_DATA = [
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-[#1a1d24] p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
+            <div className="bg-white dark:bg-monday-dark-surface p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
                 {payload.map((entry: any, index: number) => (
                     <div key={index} className="flex items-center gap-2 mt-1">
@@ -84,26 +85,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export const SalesForecastDashboard: React.FC = () => {
+interface SalesForecastDashboardProps {
+    hideFullscreen?: boolean;
+}
+
+export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'deviation', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    React.useEffect(() => {
-        const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
-        document.addEventListener('fullscreenchange', handleFullScreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-    }, []);
-
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-        else document.exitFullscreen();
+        window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
     // Sorted Table Data
@@ -242,7 +246,7 @@ export const SalesForecastDashboard: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
 
             <SalesForecastInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -256,16 +260,18 @@ export const SalesForecastDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                    >
-                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
-                    </button>
+                    {!hideFullscreen && (
+                        <button
+                            onClick={toggleFullScreen}
+                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            title="Full Screen"
+                        >
+                            <ArrowsOut size={18} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -281,6 +287,7 @@ export const SalesForecastDashboard: React.FC = () => {
                         {...kpi}
                         value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                         color={kpi.color || "indigo"}
+                        loading={isLoading}
                     />
                 ))}
             </div>
@@ -288,173 +295,197 @@ export const SalesForecastDashboard: React.FC = () => {
             {/* --- SECTION 2: Middle Charts --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Actual vs Forecast (ECharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Actual vs Forecasted Sales</h3>
-                            <p className="text-xs text-gray-500 mt-1 italic">Comparison with trend extrapolation</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[300px]" title="Actual vs Forecasted Sales" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Actual vs Forecasted Sales</h3>
+                                <p className="text-xs text-gray-500 mt-1 italic">Comparison with trend extrapolation</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-indigo-500" />
+                                <span className="text-[10px] text-gray-500 font-semibold uppercase">Actual</span>
+                                <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                                <span className="text-[10px] text-gray-500 font-semibold uppercase">Forecast</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-indigo-500" />
-                            <span className="text-[10px] text-gray-500 font-semibold uppercase">Actual</span>
-                            <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                            <span className="text-[10px] text-gray-500 font-semibold uppercase">Forecast</span>
+                        <div className="h-[300px]">
+                            <ReactECharts option={lineOption} style={{ height: '100%' }} />
                         </div>
                     </div>
-                    <div className="h-[300px]">
-                        <ReactECharts option={lineOption} style={{ height: '100%' }} />
-                    </div>
-                </div>
+                )}
 
                 {/* Forecast per Product (Recharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Forecast per Product</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Projected demand by category</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[300px]" title="Forecast per Product" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Forecast per Product</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Projected demand by category</p>
+                        </div>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={FORECAST_BY_PRODUCT_DATA} margin={{ left: -10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                    <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
+                                    <Bar dataKey="actual" name="Current" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
+                                    <Bar dataKey="forecast" name="Predicted" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={FORECAST_BY_PRODUCT_DATA} margin={{ left: -10 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                <Bar dataKey="actual" name="Current" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
-                                <Bar dataKey="forecast" name="Predicted" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
 
                 {/* Risk Distribution (ECharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Potential Risk Distribution</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Vulnerability assessment by revenue share</p>
+                {isLoading ? (
+                    <PieChartSkeleton title="Potential Risk Distribution" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Potential Risk Distribution</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Vulnerability assessment by revenue share</p>
+                        </div>
+                        <div className="h-[250px]">
+                            <ReactECharts option={riskPieOption} style={{ height: '100%' }} />
+                        </div>
                     </div>
-                    <div className="h-[250px]">
-                        <ReactECharts option={riskPieOption} style={{ height: '100%' }} />
-                    </div>
-                </div>
+                )}
 
                 {/* Forecast per Region (Recharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Forecast</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Expected performance per territory</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[250px]" title="Regional Forecast" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Regional Forecast</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Expected performance per territory</p>
+                        </div>
+                        <div className="h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={FORECAST_BY_REGION_DATA} layout="vertical" margin={{ left: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                    <Bar dataKey="forecast" name="Exp. Sales" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={24} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[250px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={FORECAST_BY_REGION_DATA} layout="vertical" margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="forecast" name="Exp. Sales" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* --- SECTION 3: Decision Table & Companion Chart --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Decision Table (1/2 Columns) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
-                    {/* Table Header / Toolbar */}
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                Strategic Decision Table
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1 italic">Comparing current trends against predictive targets</p>
+                {isLoading ? (
+                    <TableSkeleton rows={5} columns={5} />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
+                        {/* Table Header / Toolbar */}
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                                    Strategic Decision Table
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1 italic">Comparing current trends against predictive targets</p>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Table Body */}
-                    <div className="flex-1 overflow-x-auto min-h-[400px]">
-                        <table className="w-full text-sm text-left h-full">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
-                                <tr>
-                                    <th className="px-6 py-4">Target (Product/Region)</th>
-                                    <th className="px-6 py-4 text-right">Last 30D Avg</th>
-                                    <th className="px-6 py-4 text-right">Next 30D Forecast</th>
-                                    <th className="px-6 py-4 text-right cursor-pointer hover:text-indigo-600" onClick={() => handleSort('deviation')}>Dev. %</th>
-                                    <th className="px-6 py-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                                {paginatedData.map((row) => (
-                                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
-                                        <td className="px-6 py-5">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900 dark:text-white">{row.name}</span>
-                                                <span className="text-[10px] text-gray-400 uppercase tracking-tighter">{row.type}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 text-right font-medium text-gray-500">{formatCurrency(row.last30, currency.code, currency.symbol)}</td>
-                                        <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.forecast30, currency.code, currency.symbol)}</td>
-                                        <td className="px-6 py-5 text-right">
-                                            <div className={`flex items-center justify-end gap-1 font-bold ${row.deviation > 10 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                                {row.deviation > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                                                {Math.abs(row.deviation)}%
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'On Track' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
-                                                {row.status}
-                                            </span>
-                                        </td>
+                        {/* Table Body */}
+                        <div className="flex-1 overflow-x-auto min-h-[400px]">
+                            <table className="w-full text-sm text-left h-full">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
+                                    <tr>
+                                        <th className="px-6 py-4">Target (Product/Region)</th>
+                                        <th className="px-6 py-4 text-right">Last 30D Avg</th>
+                                        <th className="px-6 py-4 text-right">Next 30D Forecast</th>
+                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-indigo-600" onClick={() => handleSort('deviation')}>Dev. %</th>
+                                        <th className="px-6 py-4">Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                    {paginatedData.map((row) => (
+                                        <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-gray-900 dark:text-white">{row.name}</span>
+                                                    <span className="text-[10px] text-gray-400 uppercase tracking-tighter">{row.type}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-right font-medium text-gray-500">{formatCurrency(row.last30, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.forecast30, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className={`flex items-center justify-end gap-1 font-bold ${row.deviation > 10 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                    {row.deviation > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                                                    {Math.abs(row.deviation)}%
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'On Track' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
+                                                    {row.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                    {/* Pagination */}
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
-                        <span className="text-xs text-gray-500">
-                            Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretLeft size={16} />
-                            </button>
-                            <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretRight size={16} />
-                            </button>
+                        {/* Pagination */}
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
+                            <span className="text-xs text-gray-500">
+                                Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretLeft size={16} />
+                                </button>
+                                <span className="text-xs font-bold mx-2">{currentPage} / {totalPages}</span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretRight size={16} />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Companion Chart: Deviation Scatter (1/2 Column) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
-                    <div className="mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                            Forecast Confidence vs Deviation
-                        </h3>
-                        <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Scatter analysis: Bubble size = Projected Revenue, Red Bubbles = High Deviation</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[400px]" title="Forecast Confidence vs Deviation" />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
+                                Forecast Confidence vs Deviation
+                            </h3>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Scatter analysis: Bubble size = Projected Revenue, Red Bubbles = High Deviation</p>
+                        </div>
+                        <div className="flex-1 min-h-[400px]">
+                            <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
+                        </div>
+                        <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-normal">
+                                <strong>Insight:</strong> Webcam 4K shows the highest deviation from forecast (+52.4%), suggesting an unexpected surge in demand or a conservative initial prediction.
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-h-[400px]">
-                        <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
-                    </div>
-                    <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/50">
-                        <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-normal">
-                            <strong>Insight:</strong> Webcam 4K shows the highest deviation from forecast (+52.4%), suggesting an unexpected surge in demand or a conservative initial prediction.
-                        </p>
-                    </div>
-                </div>
+                )}
 
             </div>
 

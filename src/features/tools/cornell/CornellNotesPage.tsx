@@ -3,6 +3,7 @@ import { CornellLayout } from './CornellLayout';
 import { FloppyDisk as Save, Plus, FileText, Trash as Trash2, MagnifyingGlass as Search, List as Menu, X, Clock, CheckSquare, Tag, Link as LinkIcon, CaretDown as ChevronDown, DotsThree as MoreHorizontal, Funnel as Filter, ArrowUp, ArrowDown, WarningCircle as AlertCircle, CalendarBlank as Calendar } from 'phosphor-react';
 import { SharedDatePicker } from '../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../components/ui/PortalPopup';
+import { useAppContext } from '../../../contexts/AppContext';
 
 // --- Types ---
 interface ActionItem {
@@ -75,6 +76,8 @@ const TEMPLATES = [
 ];
 
 const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' }) => {
+    const { t } = useAppContext();
+
     // --- State ---
     const [notesList, setNotesList] = useState<CornellNote[]>([]);
     const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
@@ -433,28 +436,28 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                     value={actionInput}
                     onChange={(e) => setActionInput(e.target.value)}
                     onKeyDown={handleAddAction}
-                    placeholder="Add action item... (Press Enter)"
-                    className="flex-1 bg-transparent text-sm border-b border-dashed border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none pb-1"
+                    placeholder={t('add_action_item')}
+                    className="flex-1 bg-transparent text-sm border-b border-dashed border-gray-300 dark:border-monday-dark-border focus:border-blue-500 outline-none pb-1"
                 />
             </div>
 
             {/* List */}
             <div className="space-y-1">
                 {actionItems.map(item => (
-                    <div key={item.id} className="group flex items-center gap-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 p-1.5 rounded -ml-1.5">
+                    <div key={item.id} className="group flex items-center gap-3 text-sm hover:bg-gray-50 dark:hover:bg-monday-dark-hover/50 p-1.5 rounded -ml-1.5">
                         <button
                             onClick={() => toggleAction(item.id)}
                             className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${item.done ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-400 text-transparent hover:border-blue-500'}`}
                         >
                             <CheckSquare size={12} fill="currentColor" className={item.done ? 'opacity-100' : 'opacity-0'} />
                         </button>
-                        <span className={`flex-1 ${item.done ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}`}>
+                        <span className={`flex-1 ${item.done ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-monday-dark-text'}`}>
                             {item.title}
                         </span>
 
                         <div className="flex items-center gap-2">
                             {item.dueDate && (
-                                <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-500 px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-[10px] bg-zinc-100 dark:bg-monday-dark-hover text-zinc-500 dark:text-monday-dark-text-secondary px-1.5 py-0.5 rounded font-medium">
                                     {new Date(item.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
                             )}
@@ -463,7 +466,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                     e.stopPropagation();
                                     setActiveDateSelector({ id: 'action', actionId: item.id, rect: e.currentTarget.getBoundingClientRect() });
                                 }}
-                                className={`p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${item.dueDate ? 'text-blue-500' : 'text-gray-400'}`}
+                                className={`p-1 rounded hover:bg-zinc-100 dark:hover:bg-monday-dark-hover transition-colors ${item.dueDate ? 'text-blue-500' : 'text-gray-400'}`}
                             >
                                 <Calendar size={13} />
                             </button>
@@ -474,8 +477,8 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                     </div>
                 ))}
                 {actionItems.length > 0 && (
-                    <div className="text-[10px] text-gray-400 text-right mt-1">
-                        {actionItems.filter(i => i.done).length} / {actionItems.length} completed
+                    <div className="text-[10px] text-gray-400 text-end mt-1">
+                        {actionItems.filter(i => i.done).length} / {actionItems.length} {t('completed')}
                     </div>
                 )}
             </div>
@@ -491,10 +494,10 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                 className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-monday-dark-surface shadow-2xl z-50 transform transition-transform duration-300 ease-in-out border-r border-gray-200 dark:border-monday-dark-border flex flex-col ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
                 <div className="p-4 border-b border-gray-100 dark:border-monday-dark-border flex items-center justify-between bg-gray-50/50 dark:bg-monday-dark-bg/50">
-                    <span className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <FileText size={18} className="text-blue-600" /> Library
+                    <span className="font-semibold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
+                        <FileText size={18} className="text-blue-600" /> {t('library')}
                     </span>
-                    <button onClick={() => setIsDrawerOpen(false)} className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <button onClick={() => setIsDrawerOpen(false)} className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-200 dark:hover:bg-monday-dark-hover">
                         <X size={18} />
                     </button>
                 </div>
@@ -504,19 +507,19 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         onClick={handleCreateNewNote}
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors shadow-sm"
                     >
-                        <Plus size={16} /> New Entry
+                        <Plus size={16} /> {t('new_entry')}
                     </button>
 
                     {/* Filters */}
                     <div className="space-y-2 pt-2">
                         <div className="relative">
-                            <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+                            <Search size={14} className="absolute start-3 top-2.5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder={t('search')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-monday-dark-bg border border-gray-200 dark:border-monday-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                className="w-full ps-9 pe-3 py-2 text-sm bg-gray-50 dark:bg-monday-dark-bg border border-gray-200 dark:border-monday-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -524,17 +527,17 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 <select
                                     value={filterTag}
                                     onChange={(e) => setFilterTag(e.target.value)}
-                                    className="w-full pl-2 pr-6 py-1.5 text-xs bg-gray-50 dark:bg-monday-dark-bg border border-gray-200 dark:border-monday-dark-border rounded-md appearance-none focus:outline-none focus:border-blue-500"
+                                    className="w-full ps-2 pe-6 py-1.5 text-xs bg-gray-50 dark:bg-monday-dark-bg border border-gray-200 dark:border-monday-dark-border rounded-md appearance-none focus:outline-none focus:border-blue-500"
                                 >
-                                    <option value="">All Tags</option>
-                                    {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+                                    <option value="">{t('all_tags')}</option>
+                                    {allTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                                 </select>
-                                <Filter size={10} className="absolute right-2 top-2.5 text-gray-400 pointer-events-none" />
+                                <Filter size={10} className="absolute end-2 top-2.5 text-gray-400 pointer-events-none" />
                             </div>
                             <button
                                 onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
                                 className="px-2 py-1.5 border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg text-gray-600 hover:bg-gray-100"
-                                title={sortOrder === 'newest' ? "Newest First" : "Oldest First"}
+                                title={sortOrder === 'newest' ? t('newest_first') : t('oldest_first')}
                             >
                                 {sortOrder === 'newest' ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
                             </button>
@@ -555,12 +558,12 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         >
                             <div className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${activeNoteId === note.id ? 'bg-blue-500' : 'bg-gray-300'}`} />
                             <div className="flex-1 min-w-0">
-                                <div className={`text-sm font-semibold truncate ${activeNoteId === note.id ? 'text-blue-900 dark:text-blue-100' : 'text-gray-800 dark:text-gray-200'}`}>
-                                    {note.title || 'Untitled'}
+                                <div className={`text-sm font-semibold truncate ${activeNoteId === note.id ? 'text-blue-900 dark:text-blue-100' : 'text-gray-800 dark:text-monday-dark-text'}`}>
+                                    {note.title || t('untitled')}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                                     <span>{note.date}</span>
-                                    {note.tags.length > 0 && <span className="bg-gray-100 dark:bg-gray-800 px-1.5 rounded text-[10px]">{note.tags[0]}</span>}
+                                    {note.tags.length > 0 && <span className="bg-gray-100 dark:bg-monday-dark-hover px-1.5 rounded text-[10px]">{note.tags[0]}</span>}
                                 </div>
                             </div>
                             <div
@@ -573,7 +576,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                     ))}
                     {filteredNotes.length === 0 && (
                         <div className="text-center py-10 text-gray-400 text-sm">
-                            No notes found
+                            {t('no_notes_found')}
                         </div>
                     )}
                 </div>
@@ -586,8 +589,8 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                     <div className="flex items-center gap-4 flex-1">
                         <button
                             onClick={() => setIsDrawerOpen(true)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md text-gray-600 dark:text-gray-300 transition-colors"
-                            title="Open Notes Library (Cmd+L)"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md text-gray-600 dark:text-monday-dark-text-secondary transition-colors"
+                            title={t('open_notes_library')}
                         >
                             <Menu size={20} />
                         </button>
@@ -597,24 +600,24 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 value={title}
                                 onChange={(e) => handleChange(setTitle, e.target.value)}
                                 onBlur={handleSave}
-                                placeholder="Note Title"
-                                className="w-full text-xl font-bold bg-transparent border-none outline-none placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-gray-100 font-sans"
+                                placeholder={t('note_title')}
+                                className="w-full text-xl font-bold bg-transparent border-none outline-none placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-monday-dark-text font-sans"
                             />
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                         {/* Status Indicator */}
-                        <div className="text-xs text-gray-400 flex items-center gap-1.5 mr-2">
-                            {saveStatus === 'saving' && <span className="animate-pulse">Saving...</span>}
-                            {saveStatus === 'saved' && <><Clock size={12} /> Saved</>}
-                            {saveStatus === 'unsaved' && <span className="text-orange-400">Unsaved changes</span>}
+                        <div className="text-xs text-gray-400 flex items-center gap-1.5 me-2">
+                            {saveStatus === 'saving' && <span className="animate-pulse">{t('saving')}</span>}
+                            {saveStatus === 'saved' && <><Clock size={12} /> {t('saved')}</>}
+                            {saveStatus === 'unsaved' && <span className="text-orange-400">{t('unsaved_changes')}</span>}
                         </div>
 
                         {/* Templates Dropdown */}
                         <div className="relative group">
                             <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors">
-                                Templates <ChevronDown size={12} />
+                                {t('templates')} <ChevronDown size={12} />
                             </button>
                             <div className="absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 w-48 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg shadow-xl z-20 hidden group-hover:block animate-in fade-in zoom-in-95 duration-100">
                                 <div className="py-1">
@@ -622,7 +625,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                         <button
                                             key={t.id}
                                             onClick={() => requestApplyTemplate(t.id)}
-                                            className="w-full text-start px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-monday-dark-hover hover:text-blue-600"
+                                            className="w-full text-start px-4 py-2 text-sm text-gray-700 dark:text-monday-dark-text hover:bg-blue-50 dark:hover:bg-monday-dark-hover hover:text-blue-600"
                                         >
                                             {t.label}
                                         </button>
@@ -634,9 +637,9 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         <button
                             onClick={handleSave}
                             className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 shadow-sm transition-colors"
-                            title="Save (Cmd+S)"
+                            title={`${t('save')} (Cmd+S)`}
                         >
-                            <Save size={16} /> Save
+                            <Save size={16} /> {t('save')}
                         </button>
                     </div>
                 </div>
@@ -651,14 +654,14 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 value={topic}
                                 onChange={(e) => handleChange(setTopic, e.target.value)}
                                 onBlur={handleSave}
-                                placeholder="Topic / Objective..."
-                                className="w-full text-sm font-semibold bg-transparent border-none outline-none p-0 focus:ring-0 placeholder-gray-400 text-gray-800 dark:text-gray-200"
+                                placeholder={t('topic_objective')}
+                                className="w-full text-sm font-semibold bg-transparent border-none outline-none p-0 focus:ring-0 placeholder-gray-400 text-gray-800 dark:text-monday-dark-text"
                             />
                             <div className="flex flex-wrap items-center gap-2">
                                 <Tag size={12} className="text-gray-400" />
-                                {tags.map(t => (
-                                    <span key={t} className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700">
-                                        {t} <button onClick={() => removeTag(t)} className="hover:text-red-500"><X size={10} /></button>
+                                {tags.map(tag => (
+                                    <span key={tag} className="inline-flex items-center gap-1 bg-gray-100 dark:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary text-[10px] px-1.5 py-0.5 rounded border border-gray-200 dark:border-monday-dark-border">
+                                        {tag} <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
                                     </span>
                                 ))}
                                 <input
@@ -666,7 +669,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                     value={tagInput}
                                     onChange={(e) => setTagInput(e.target.value)}
                                     onKeyDown={handleAddTag}
-                                    placeholder="Add tag..."
+                                    placeholder={t('add_tag')}
                                     className="bg-transparent text-xs outline-none min-w-[60px] placeholder-gray-300"
                                 />
                             </div>
@@ -677,7 +680,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                             <button
                                 ref={dateTriggerRef}
                                 onClick={() => setActiveDateSelector({ id: 'note', rect: dateTriggerRef.current!.getBoundingClientRect() })}
-                                className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg text-gray-600 dark:text-gray-300 hover:border-blue-500 transition-colors shadow-sm"
+                                className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg text-gray-600 dark:text-monday-dark-text-secondary hover:border-blue-500 transition-colors shadow-sm"
                             >
                                 <span className="font-medium">
                                     {new Date(date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -687,7 +690,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                         </div>
 
                         {/* Links */}
-                        <div className="flex-1 min-w-[200px] border-l border-gray-200 dark:border-gray-700 pl-6 space-y-1">
+                        <div className="flex-1 min-w-[200px] border-s border-gray-200 dark:border-monday-dark-border ps-6 space-y-1">
                             <div className="flex flex-wrap gap-2 items-center">
                                 <LinkIcon size={12} className="text-gray-400" />
                                 {linkedRecords.map(l => (
@@ -700,7 +703,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                     value={linkInput}
                                     onChange={(e) => setLinkInput(e.target.value)}
                                     onKeyDown={handleAddLink}
-                                    placeholder="Link record (e.g. PR-123)..."
+                                    placeholder={t('link_record')}
                                     className="bg-transparent text-xs outline-none min-w-[100px] placeholder-gray-300"
                                 />
                             </div>
@@ -717,8 +720,8 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 value={cues}
                                 onChange={(e) => handleChange(setCues, e.target.value)}
                                 onBlur={handleSave}
-                                placeholder="Key questions, cues, or main points..."
-                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-700 dark:text-gray-200 text-sm leading-relaxed placeholder-gray-300 font-medium"
+                                placeholder={t('key_questions_cues')}
+                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-700 dark:text-monday-dark-text text-sm leading-relaxed placeholder-gray-300 font-medium"
                             />
                         }
                         notesContent={
@@ -726,8 +729,8 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 value={notes}
                                 onChange={(e) => handleChange(setNotes, e.target.value)}
                                 onBlur={handleSave}
-                                placeholder="Record detailed notes here..."
-                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-800 dark:text-gray-100 text-base leading-7 placeholder-gray-300"
+                                placeholder={t('record_detailed_notes')}
+                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-800 dark:text-monday-dark-text text-base leading-7 placeholder-gray-300"
                             />
                         }
                         summaryContent={
@@ -735,8 +738,8 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 value={summary}
                                 onChange={(e) => handleChange(setSummary, e.target.value)}
                                 onBlur={handleSave}
-                                placeholder="Summarize the main takeaways..."
-                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-700 dark:text-gray-200 text-sm placeholder-gray-300"
+                                placeholder={t('summarize_takeaways')}
+                                className="w-full h-full p-0 resize-none border-none outline-none focus:ring-0 bg-transparent text-gray-700 dark:text-monday-dark-text text-sm placeholder-gray-300"
                             />
                         }
                         actionsContent={renderActionItems()}
@@ -761,17 +764,17 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                             <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                 <AlertCircle size={20} />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Append Template?</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[260px]">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('append_template')}</h3>
+                            <p className="text-sm text-gray-500 dark:text-monday-dark-text-muted max-w-[260px]">
                                 {confirmationModal.message}
                             </p>
                         </div>
                         <div className="flex items-center gap-3 mt-8">
                             <button
                                 onClick={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
-                                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none dark:bg-transparent dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
+                                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none dark:bg-transparent dark:text-monday-dark-text-secondary dark:border-monday-dark-border dark:hover:bg-monday-dark-hover"
                             >
-                                Cancel
+                                {t('cancel')}
                             </button>
                             <button
                                 onClick={() => {
@@ -779,7 +782,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 }}
                                 className="flex-1 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30"
                             >
-                                Append
+                                {t('append')}
                             </button>
                             <button
                                 onClick={() => {
@@ -787,7 +790,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 }}
                                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md shadow-blue-500/20"
                             >
-                                Replace
+                                {t('replace')}
                             </button>
                         </div>
                     </div>

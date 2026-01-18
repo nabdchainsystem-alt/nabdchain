@@ -668,6 +668,211 @@ const translations: Translations = {
   promotions: { en: 'Promotions', ar: 'العروض الترويجية' },
   campaign_effectiveness: { en: 'Campaign effectiveness', ar: 'فعالية الحملة' },
   key_metrics_overview: { en: 'Key metrics overview', ar: 'نظرة عامة على المقاييس الرئيسية' },
+
+  // My Work Page
+  add_to_project: { en: 'Add to Project', ar: 'إضافة إلى مشروع' },
+  create_new_project: { en: 'Create New Project', ar: 'إنشاء مشروع جديد' },
+  search_projects: { en: 'Search projects...', ar: 'البحث في المشاريع...' },
+  no_projects_found: { en: 'No projects found', ar: 'لم يتم العثور على مشاريع' },
+  project_name: { en: 'Project Name', ar: 'اسم المشروع' },
+  create_project: { en: 'Create Project', ar: 'إنشاء مشروع' },
+  daily_agenda: { en: 'Daily Agenda', ar: 'جدول اليوم' },
+  tasks_scheduled: { en: 'tasks scheduled', ar: 'مهمة مجدولة' },
+  no_tasks_scheduled_today: { en: 'No tasks scheduled for today', ar: 'لا توجد مهام مجدولة لهذا اليوم' },
+  add_task: { en: 'Add Task', ar: 'إضافة مهمة' },
+  due_today: { en: 'Due Today', ar: 'مستحقة اليوم' },
+  lunch_break: { en: 'Lunch Break', ar: 'استراحة الغداء' },
+  task_bucket: { en: 'Task Bucket', ar: 'سلة المهام' },
+  items: { en: 'items', ar: 'عنصر' },
+  add_new_task_placeholder: { en: 'Add a new task...', ar: 'إضافة مهمة جديدة...' },
+  design_filter: { en: 'Design', ar: 'تصميم' },
+  development_filter: { en: 'Development', ar: 'تطوير' },
+  no_tasks_in_inbox: { en: 'No tasks in inbox', ar: 'لا توجد مهام في الوارد' },
+  active_projects: { en: 'Active Projects', ar: 'المشاريع النشطة' },
+  new_goal: { en: 'New Goal', ar: 'هدف جديد' },
+  new_project: { en: 'New Project', ar: 'مشروع جديد' },
+
+  // Teams Page
+  team_overview: { en: 'Team Overview', ar: 'نظرة عامة على الفريق' },
+  manage_team_access: { en: "Manage your team's performance and access.", ar: 'إدارة أداء فريقك والوصول.' },
+  total_members: { en: 'Total Members', ar: 'إجمالي الأعضاء' },
+  online_now: { en: 'Online Now', ar: 'متصل الآن' },
+  guests_access: { en: 'Guests Access', ar: 'وصول الضيوف' },
+  pending_invites: { en: 'Pending Invites', ar: 'الدعوات المعلقة' },
+  all_members: { en: 'All Members', ar: 'جميع الأعضاء' },
+  inactive: { en: 'Inactive', ar: 'غير نشط' },
+  search_team: { en: 'Search team...', ar: 'البحث في الفريق...' },
+  user: { en: 'User', ar: 'المستخدم' },
+  role: { en: 'Role', ar: 'الدور' },
+  actions: { en: 'Actions', ar: 'الإجراءات' },
+  no_members_found: { en: 'No members found', ar: 'لم يتم العثور على أعضاء' },
+  adjust_search_filters: { en: "Try adjusting your search or filters to find what you're looking for.", ar: 'حاول تعديل البحث أو الفلاتر للعثور على ما تبحث عنه.' },
+  invite_to_workspace: { en: 'Invite to Workspace', ar: 'دعوة إلى مساحة العمل' },
+  invite_link_description: { en: 'Share this link with your team members. When they click it, they will be added to your workspace automatically.', ar: 'شارك هذا الرابط مع أعضاء فريقك. عند النقر عليه، سيتم إضافتهم تلقائياً إلى مساحة العمل.' },
+  generating_link: { en: 'Generating link...', ar: 'جاري إنشاء الرابط...' },
+  view_profile: { en: 'View Profile', ar: 'عرض الملف الشخصي' },
+  away: { en: 'Away', ar: 'بعيد' },
+  invited: { en: 'Invited', ar: 'تمت الدعوة' },
+  admin: { en: 'Admin', ar: 'مدير' },
+  member_role: { en: 'Member', ar: 'عضو' },
+  guest: { en: 'Guest', ar: 'ضيف' },
+
+  // Auth - Sign Up
+  industry: { en: 'Industry', ar: 'الصناعة' },
+  select_your_industry: { en: 'Select your industry...', ar: 'اختر صناعتك...' },
+  logistics_supply_chain: { en: 'Logistics & Supply Chain', ar: 'الخدمات اللوجستية وسلسلة التوريد' },
+  retail_ecommerce: { en: 'Retail & E-commerce', ar: 'التجزئة والتجارة الإلكترونية' },
+  healthcare: { en: 'Healthcare', ar: 'الرعاية الصحية' },
+  technology: { en: 'Technology', ar: 'التكنولوجيا' },
+  company_size: { en: 'Company Size', ar: 'حجم الشركة' },
+  employees: { en: 'employees', ar: 'موظفين' },
+  first_name: { en: 'First Name', ar: 'الاسم الأول' },
+  last_name: { en: 'Last Name', ar: 'اسم العائلة' },
+  phone_number: { en: 'Phone Number', ar: 'رقم الهاتف' },
+  work_email: { en: 'Work Email', ar: 'البريد الإلكتروني للعمل' },
+  password: { en: 'Password', ar: 'كلمة المرور' },
+  next_step: { en: 'Next Step', ar: 'الخطوة التالية' },
+  create_account: { en: 'Create Account', ar: 'إنشاء حساب' },
+  verify_launch: { en: 'Verify & Launch', ar: 'تأكيد وبدء' },
+  tell_us_about_team: { en: 'Tell us about your team', ar: 'أخبرنا عن فريقك' },
+  who_are_you: { en: 'Who are you?', ar: 'من أنت؟' },
+  secure_your_account: { en: 'Secure your account', ar: 'تأمين حسابك' },
+  verify_email: { en: 'Verify Email', ar: 'تأكيد البريد الإلكتروني' },
+  customize_workspace_industry: { en: "We'll customize your workspace based on your industry.", ar: 'سنخصص مساحة عملك بناءً على صناعتك.' },
+  enter_details_personalize: { en: 'Enter your details to personalize your profile.', ar: 'أدخل بياناتك لتخصيص ملفك الشخصي.' },
+  choose_strong_password: { en: 'Choose a strong password to protect your data.', ar: 'اختر كلمة مرور قوية لحماية بياناتك.' },
+  enter_code_inbox: { en: 'Enter the code sent to your inbox.', ar: 'أدخل الرمز المرسل إلى بريدك الإلكتروني.' },
+  please_complete_fields: { en: 'Please complete all fields', ar: 'يرجى إكمال جميع الحقول' },
+  name_required: { en: 'Name is required', ar: 'الاسم مطلوب' },
+  something_went_wrong_retry: { en: 'Something went wrong. Please try again.', ar: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.' },
+  verification_not_completed: { en: 'Verification was not completed. Please try again.', ar: 'لم يكتمل التحقق. يرجى المحاولة مرة أخرى.' },
+  invalid_code: { en: 'Invalid code', ar: 'رمز غير صالح' },
+  check_your_email: { en: 'Check your email', ar: 'تحقق من بريدك الإلكتروني' },
+  sent_verification_code: { en: 'We sent a verification code to', ar: 'أرسلنا رمز التحقق إلى' },
+  already_have_account: { en: 'Already have an account?', ar: 'لديك حساب بالفعل؟' },
+  sign_in: { en: 'Sign in', ar: 'تسجيل الدخول' },
+  privacy: { en: 'Privacy', ar: 'الخصوصية' },
+  terms: { en: 'Terms', ar: 'الشروط' },
+
+  // Auth - Accept Invite
+  please_sign_in_accept: { en: 'Please sign in to accept the invitation...', ar: 'يرجى تسجيل الدخول لقبول الدعوة...' },
+  joining_team: { en: 'Joining Team...', ar: 'جاري الانضمام للفريق...' },
+  verifying_token: { en: 'Verifying your invitation token.', ar: 'جاري التحقق من رمز الدعوة.' },
+  welcome_to_team: { en: 'Welcome to the Team!', ar: 'مرحباً بك في الفريق!' },
+  successfully_joined: { en: 'You have successfully joined the workspace.', ar: 'لقد انضممت بنجاح إلى مساحة العمل.' },
+  redirecting_dashboard: { en: 'Redirecting to dashboard...', ar: 'جاري التوجيه إلى لوحة التحكم...' },
+  invitation_failed: { en: 'Invitation Failed', ar: 'فشلت الدعوة' },
+  go_to_dashboard: { en: 'Go to Dashboard', ar: 'الذهاب إلى لوحة التحكم' },
+  invalid_invitation_link: { en: 'Invalid invitation link (missing token).', ar: 'رابط دعوة غير صالح (الرمز مفقود).' },
+  failed_to_join: { en: 'Failed to join team.', ar: 'فشل الانضمام للفريق.' },
+
+  // Auth - Developer Login Modal
+  sign_in_to_nabd: { en: 'Sign in to NabdChain', ar: 'تسجيل الدخول إلى نبض' },
+  welcome_back_continue: { en: 'Welcome back! Please sign in to continue', ar: 'مرحباً بعودتك! يرجى تسجيل الدخول للمتابعة' },
+  continue_with_google: { en: 'Continue with Google', ar: 'المتابعة مع جوجل' },
+  or_divider: { en: 'or', ar: 'أو' },
+  continue_btn: { en: 'Continue', ar: 'متابعة' },
+  dont_have_account: { en: "Don't have an account?", ar: 'ليس لديك حساب؟' },
+  sign_up: { en: 'Sign up', ar: 'إنشاء حساب' },
+  invalid_dev_credentials: { en: 'Invalid credentials for Development Mode', ar: 'بيانات اعتماد غير صالحة لوضع التطوير' },
+
+  // Tools - Whiteboard
+  mindmap_studio: { en: 'MindMap Studio Pro', ar: 'استوديو الخرائط الذهنية' },
+  collaborative_workspace: { en: 'Collaborative Workspace', ar: 'مساحة عمل تعاونية' },
+  weight: { en: 'Weight', ar: 'السماكة' },
+  opacity: { en: 'Opacity', ar: 'الشفافية' },
+  type_something: { en: 'Type something...', ar: 'اكتب شيئاً...' },
+  sticky_note_placeholder: { en: 'Sticky note...', ar: 'ملاحظة لاصقة...' },
+  search_commands: { en: 'Search mind-map nodes or commands...', ar: 'البحث في العقد أو الأوامر...' },
+
+  // Tools - Workload
+  workload_view: { en: 'Workload view', ar: 'عرض عبء العمل' },
+  balance_capacity: { en: 'Balance capacity by person', ar: 'توازن السعة حسب الشخص' },
+  this_month: { en: 'This month', ar: 'هذا الشهر' },
+  this_quarter: { en: 'This quarter', ar: 'هذا الربع' },
+  overloaded: { en: 'Overloaded', ar: 'مثقل' },
+  available: { en: 'Available', ar: 'متاح' },
+  healthy: { en: 'Healthy', ar: 'صحي' },
+  later: { en: 'Later', ar: 'لاحقاً' },
+  upcoming_items: { en: 'Upcoming items', ar: 'العناصر القادمة' },
+  no_items_scheduled: { en: 'No items scheduled in this range.', ar: 'لا توجد عناصر مجدولة في هذا النطاق.' },
+  no_workload_yet: { en: 'No workload yet. Assign owners and due dates to see the load chart.', ar: 'لا يوجد عبء عمل بعد. عيّن المالكين وتواريخ الاستحقاق لرؤية مخطط الحمل.' },
+  workload_indicator_help: { en: 'Indicators show overload, healthy load, or available capacity for the selected window.', ar: 'تُظهر المؤشرات الحمل الزائد أو الحمل الصحي أو السعة المتاحة للفترة المحددة.' },
+
+  // Tools - Spreadsheet
+  smart_insights: { en: 'Smart Insights', ar: 'رؤى ذكية' },
+  analyzing: { en: 'Analyzing...', ar: 'جاري التحليل...' },
+  ai_assistant: { en: 'AI Assistant', ar: 'مساعد الذكاء الاصطناعي' },
+  last_edit: { en: 'Last edit was', ar: 'آخر تعديل كان' },
+  minutes_ago: { en: 'minutes ago', ar: 'دقائق مضت' },
+  sorting_filtering: { en: 'Sorting & Filtering', ar: 'الفرز والتصفية' },
+  sort_az: { en: 'Sort A → Z', ar: 'فرز أ → ي' },
+  alphabetical_order: { en: 'Alphabetical order', ar: 'ترتيب أبجدي' },
+  sort_za: { en: 'Sort Z → A', ar: 'فرز ي → أ' },
+  reverse_order: { en: 'Reverse order', ar: 'ترتيب عكسي' },
+  filter_by_category: { en: 'Filter by category', ar: 'تصفية حسب الفئة' },
+  select_all: { en: 'Select All', ar: 'تحديد الكل' },
+  search_categories: { en: 'Search categories...', ar: 'البحث في الفئات...' },
+  apply_filter: { en: 'Apply Filter', ar: 'تطبيق الفلتر' },
+  intelligence: { en: 'Intelligence', ar: 'الذكاء' },
+  live_performance: { en: 'Live Performance', ar: 'الأداء المباشر' },
+  total_net_profit: { en: 'Total Net Profit', ar: 'إجمالي صافي الربح' },
+  auto_calculated: { en: 'AUTO-CALCULATED FROM GRID', ar: 'محسوب تلقائياً من الجدول' },
+  need_review: { en: 'Need Review', ar: 'يحتاج مراجعة' },
+  transactions: { en: 'Transactions', ar: 'المعاملات' },
+  transaction_volume: { en: 'Transaction Volume', ar: 'حجم المعاملات' },
+  growth_forecast: { en: 'Growth Forecast', ar: 'توقعات النمو' },
+  analyze_more: { en: 'Analyze More', ar: 'تحليل المزيد' },
+  report_total: { en: 'Report Total', ar: 'إجمالي التقرير' },
+
+  // Tools - Automation Rules
+  manage_workflow: { en: 'Manage your workflow logic and integrations.', ar: 'إدارة منطق سير العمل والتكاملات.' },
+  create_new_rule: { en: 'Create New Rule', ar: 'إنشاء قاعدة جديدة' },
+  search_rules: { en: 'Search rules...', ar: 'البحث في القواعد...' },
+  all_rules: { en: 'All Rules', ar: 'جميع القواعد' },
+  paused: { en: 'Paused', ar: 'متوقف' },
+  draft: { en: 'Draft', ar: 'مسودة' },
+  task_completed: { en: 'Task Completed', ar: 'المهمة مكتملة' },
+  notify_slack: { en: 'Notify Slack', ar: 'إشعار سلاك' },
+  time_schedule: { en: 'Time Schedule', ar: 'جدول زمني' },
+  every_friday: { en: 'Every Friday', ar: 'كل جمعة' },
+  send_report: { en: 'Send Report', ar: 'إرسال تقرير' },
+  email_to_admin: { en: 'Email to Admin', ar: 'بريد للمدير' },
+  paused_by_user: { en: 'Paused by User', ar: 'أوقفه المستخدم' },
+  no_recent_data: { en: 'No recent data', ar: 'لا توجد بيانات حديثة' },
+  urgent_ticket_alert: { en: 'Urgent Ticket Alert', ar: 'تنبيه تذكرة عاجلة' },
+  ticket_tagged: { en: 'Ticket Tagged', ar: 'تذكرة موسومة' },
+  page_oncall: { en: 'Page On-Call', ar: 'صفحة الطوارئ' },
+  logic_incomplete: { en: 'Logic configuration incomplete...', ar: 'تكوين المنطق غير مكتمل...' },
+  last_edited: { en: 'Last edited', ar: 'آخر تعديل' },
+  days_ago: { en: 'days ago', ar: 'أيام مضت' },
+  continue_setup: { en: 'Continue Setup', ar: 'متابعة الإعداد' },
+  new_user: { en: 'New User', ar: 'مستخدم جديد' },
+  on_signup: { en: 'On Signup', ar: 'عند التسجيل' },
+  create_record: { en: 'Create Record', ar: 'إنشاء سجل' },
+  start_from_scratch: { en: 'Start from scratch or use a template', ar: 'ابدأ من الصفر أو استخدم قالب' },
+  success_rate: { en: 'Success', ar: 'نجاح' },
+
+  // Tools - Dashboards (additional)
+  open_items: { en: 'Open items', ar: 'العناصر المفتوحة' },
+  in_progress_planned: { en: 'In progress or planned', ar: 'قيد التنفيذ أو مخطط' },
+  upcoming: { en: 'Upcoming', ar: 'القادم' },
+  due_within: { en: 'Due within', ar: 'مستحق خلال' },
+  completion_rate: { en: 'Completion', ar: 'الإكمال' },
+  of_done: { en: 'of', ar: 'من' },
+  done_label: { en: 'done', ar: 'مكتمل' },
+  status_distribution: { en: 'Status distribution', ar: 'توزيع الحالة' },
+  fast_overview: { en: 'Fast overview across the team', ar: 'نظرة سريعة على الفريق' },
+  no_status_data: { en: 'No status data yet.', ar: 'لا توجد بيانات حالة بعد.' },
+  readiness: { en: 'Readiness', ar: 'الجاهزية' },
+  health_overdue_risk: { en: 'Health based on overdue risk', ar: 'الصحة بناءً على مخاطر التأخر' },
+  higher_better: { en: 'Higher is better. Based on overdue vs total items.', ar: 'الأعلى أفضل. بناءً على المتأخر مقارنة بالإجمالي.' },
+  timeline_readonly: { en: 'Timeline (read-only)', ar: 'الجدول الزمني (للقراءة فقط)' },
+  upcoming_overdue_range: { en: 'Upcoming and overdue items within the selected range', ar: 'العناصر القادمة والمتأخرة ضمن النطاق المحدد' },
+  no_items_yet: { en: 'No items yet. Add tasks to see live dashboards.', ar: 'لا توجد عناصر بعد. أضف مهام لرؤية لوحات المعلومات.' },
+  priority_mix: { en: 'Priority mix', ar: 'مزيج الأولويات' },
+  based_on_tasks: { en: 'Based on existing tasks', ar: 'بناءً على المهام الموجودة' },
+  no_priority_data: { en: 'No priority data yet.', ar: 'لا توجد بيانات أولوية بعد.' },
 };
 
 interface AppContextType {
@@ -687,7 +892,12 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('app-theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
+  });
   const [language, setLanguage] = useState<Language>('en');
   const [userDisplayName, setUserDisplayName] = useState<string>(() => {
     return localStorage.getItem('app-user-display-name') || 'Alex';
@@ -708,6 +918,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } else {
       root.classList.remove('dark');
     }
+    // Persist theme preference
+    localStorage.setItem('app-theme', theme);
   }, [theme]);
 
   useEffect(() => {

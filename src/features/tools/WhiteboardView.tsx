@@ -22,6 +22,7 @@ import {
     CornersOut,
     MagnifyingGlass
 } from 'phosphor-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 // Custom mapped styles
 const styles = `
@@ -77,6 +78,7 @@ interface TextItem {
 }
 
 const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
+    const { t } = useAppContext();
     const [showProperties, setShowProperties] = React.useState(false);
     const [zoom, setZoom] = React.useState(100);
     const [currentTool, setCurrentTool] = React.useState<DrawingTool>('select');
@@ -280,7 +282,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
     const resetZoom = () => setZoom(100);
 
     return (
-        <div className="relative w-full h-full bg-white dark:bg-[#171d26] font-sans overflow-hidden select-none">
+        <div className="relative w-full h-full bg-white dark:bg-monday-dark-bg font-sans overflow-hidden select-none">
             <style>{styles}</style>
 
             {/* Background Grid & Canvas */}
@@ -316,7 +318,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                         <textarea
                             autoFocus={!item.text}
                             className={`w-full h-full bg-transparent resize-none focus:outline-none ${item.type === 'text' ? 'text-2xl font-bold text-gray-800' : 'text-sm font-medium'}`}
-                            placeholder={item.type === 'text' ? 'Type something...' : 'Sticky note...'}
+                            placeholder={item.type === 'text' ? t('type_something') : t('sticky_note_placeholder')}
                             defaultValue={item.text}
                             onBlur={(e) => {
                                 const val = e.target.value;
@@ -368,8 +370,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                             <ShareNetwork size={20} />
                         </div>
                         <div>
-                            <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-none">MindMap Studio Pro</h1>
-                            <span className="text-[10px] text-gray-500 font-medium italic">Collaborative Workspace</span>
+                            <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-none">{t('mindmap_studio')}</h1>
+                            <span className="text-[10px] text-gray-500 font-medium italic">{t('collaborative_workspace')}</span>
                         </div>
                     </div>
 
@@ -377,17 +379,17 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                         <div className="flex items-center px-2">
                             {/* Avatars */}
                             <div className="flex -space-x-2 overflow-hidden">
-                                <div className="z-30 inline-block h-9 w-9 rounded-full ring-2 ring-white dark:ring-[#171d26] bg-center bg-cover border border-white" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAK2xh5jgqi0xaEVydCWWbsfYdUrjoVWw_Trypbzbs8-hiz_WAQ2FKiw4m_9lzr7gUuGcWdP_Jq5YHbbBDg0_kf6E5u4BrW7CHIsdn3_1FTG0_0UY0HhdHQp2gLggOE2bg3iKfRbmU9wa374WU5DqhZw8KVU2M7U1-WhSZzUANXJDvUvLvcI5c3KxCf_dy3cm8bKmZiZ3HhCtYAO5GPRqmDcrd-Gxkz4irDj8dsrb1MUHMUM4mMQSRDcHIDs9AHGFnFUvRTZCGruSKR")' }}></div>
-                                <div className="z-20 inline-block h-9 w-9 rounded-full ring-2 ring-white dark:ring-[#171d26] bg-center bg-cover border border-white" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCRCbbKse96EXyElTNnTs07-a8WvljrY_6eIrP-rf6ACh2LWfSYiApx916H7khlnWmletK2eq2Jp9Bn52sb4D4vjf_sQBApz6Gsc0uw4KMWYLdAYMVQ0eEIcyjjZBa0hQdOQhw3NFGeZqBm1rlahMfsiIHZtETNJ6OhO4jLcmCHO5R4yOnA9SiEp9pivSxBzUheDH-OcWLp3VKpMheLc4rCXYOHUu-ckEI0sPz1OIFFq0GOu7J8hUxlR7K7w56cr3YaUsZh0DcAQ9Qm")' }}></div>
-                                <div className="z-10 bg-[#00bdc7]/20 text-[#00bdc7] rounded-full flex items-center justify-center h-9 w-9 ring-2 ring-white dark:ring-[#171d26] text-xs font-bold border border-white">
+                                <div className="z-30 inline-block h-9 w-9 rounded-full ring-2 ring-white dark:ring-monday-dark-bg bg-center bg-cover border border-white" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAK2xh5jgqi0xaEVydCWWbsfYdUrjoVWw_Trypbzbs8-hiz_WAQ2FKiw4m_9lzr7gUuGcWdP_Jq5YHbbBDg0_kf6E5u4BrW7CHIsdn3_1FTG0_0UY0HhdHQp2gLggOE2bg3iKfRbmU9wa374WU5DqhZw8KVU2M7U1-WhSZzUANXJDvUvLvcI5c3KxCf_dy3cm8bKmZiZ3HhCtYAO5GPRqmDcrd-Gxkz4irDj8dsrb1MUHMUM4mMQSRDcHIDs9AHGFnFUvRTZCGruSKR")' }}></div>
+                                <div className="z-20 inline-block h-9 w-9 rounded-full ring-2 ring-white dark:ring-monday-dark-bg bg-center bg-cover border border-white" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCRCbbKse96EXyElTNnTs07-a8WvljrY_6eIrP-rf6ACh2LWfSYiApx916H7khlnWmletK2eq2Jp9Bn52sb4D4vjf_sQBApz6Gsc0uw4KMWYLdAYMVQ0eEIcyjjZBa0hQdOQhw3NFGeZqBm1rlahMfsiIHZtETNJ6OhO4jLcmCHO5R4yOnA9SiEp9pivSxBzUheDH-OcWLp3VKpMheLc4rCXYOHUu-ckEI0sPz1OIFFq0GOu7J8hUxlR7K7w56cr3YaUsZh0DcAQ9Qm")' }}></div>
+                                <div className="z-10 bg-[#00bdc7]/20 text-[#00bdc7] rounded-full flex items-center justify-center h-9 w-9 ring-2 ring-white dark:ring-monday-dark-bg text-xs font-bold border border-white">
                                     +4
                                 </div>
                             </div>
                         </div>
-                        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+                        <div className="h-6 w-px bg-gray-200 dark:bg-monday-dark-border"></div>
                         <button className="flex items-center justify-center rounded-lg h-9 bg-[#00bdc7] text-white gap-2 text-xs font-bold px-4 hover:brightness-110 transition-all">
                             <UserPlus size={16} />
-                            <span>Share</span>
+                            <span>{t('share')}</span>
                         </button>
                     </div>
                 </div>
@@ -403,41 +405,41 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 <div className="grid grid-cols-4 gap-2">
                                     <button
                                         onClick={() => setStrokeColor('#000000')}
-                                        className={`w-6 h-6 rounded-md bg-black border border-white/20 ${strokeColor === '#000000' ? 'ring-2 ring-black ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-black border border-white/20 ${strokeColor === '#000000' ? 'ring-2 ring-black ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#00bdc7')}
-                                        className={`w-6 h-6 rounded-md bg-[#00bdc7] border border-white/20 ${strokeColor === '#00bdc7' ? 'ring-2 ring-[#00bdc7] ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-[#00bdc7] border border-white/20 ${strokeColor === '#00bdc7' ? 'ring-2 ring-[#00bdc7] ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#fb923c')}
-                                        className={`w-6 h-6 rounded-md bg-orange-400 border border-white/20 ${strokeColor === '#fb923c' ? 'ring-2 ring-orange-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-orange-400 border border-white/20 ${strokeColor === '#fb923c' ? 'ring-2 ring-orange-400 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#ef4444')}
-                                        className={`w-6 h-6 rounded-md bg-red-500 border border-white/20 ${strokeColor === '#ef4444' ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-red-500 border border-white/20 ${strokeColor === '#ef4444' ? 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#3b82f6')}
-                                        className={`w-6 h-6 rounded-md bg-blue-500 border border-white/20 ${strokeColor === '#3b82f6' ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-blue-500 border border-white/20 ${strokeColor === '#3b82f6' ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#22c55e')}
-                                        className={`w-6 h-6 rounded-md bg-green-500 border border-white/20 ${strokeColor === '#22c55e' ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-green-500 border border-white/20 ${strokeColor === '#22c55e' ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#a855f7')}
-                                        className={`w-6 h-6 rounded-md bg-purple-500 border border-white/20 ${strokeColor === '#a855f7' ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-purple-500 border border-white/20 ${strokeColor === '#a855f7' ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                     <button
                                         onClick={() => setStrokeColor('#e5e7eb')}
-                                        className={`w-6 h-6 rounded-md bg-gray-200 border border-white/20 ${strokeColor === '#e5e7eb' ? 'ring-2 ring-gray-200 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                                        className={`w-6 h-6 rounded-md bg-gray-200 border border-white/20 ${strokeColor === '#e5e7eb' ? 'ring-2 ring-gray-200 ring-offset-2 dark:ring-offset-monday-dark-bg' : ''}`}
                                     ></button>
                                 </div>
-                                <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-monday-dark-border">
                                     <div className="space-y-1">
                                         <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                            <span>Weight</span>
+                                            <span>{t('weight')}</span>
                                             <span className="text-[#00bdc7]">{strokeWidth}px</span>
                                         </div>
                                         <input
@@ -449,7 +451,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     </div>
                                     <div className="space-y-1">
                                         <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                            <span>Opacity</span>
+                                            <span>{t('opacity')}</span>
                                             <span className="text-[#00bdc7]">{strokeOpacity}%</span>
                                         </div>
                                         <input
@@ -464,7 +466,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                         )}
                         <button
                             onClick={() => setShowProperties(!showProperties)}
-                            className={`glass-panel p-2.5 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group ${showProperties ? 'bg-blue-50 dark:bg-blue-900/20 text-[#00bdc7]' : 'text-gray-600 dark:text-gray-400'}`}
+                            className={`glass-panel p-2.5 rounded-xl shadow-lg hover:bg-gray-50 dark:hover:bg-monday-dark-hover transition-colors group ${showProperties ? 'bg-blue-50 dark:bg-blue-900/20 text-[#00bdc7]' : 'text-gray-600 dark:text-monday-dark-text-muted'}`}
                         >
                             <Stack size={20} className="group-hover:text-[#00bdc7]" />
                         </button>
@@ -476,20 +478,20 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                             <div className="flex items-center gap-0.5">
                                 <button
                                     onClick={() => setCurrentTool('select')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'select' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'select' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Select"
                                 >
                                     <Cursor size={20} />
                                 </button>
-                                <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors" title="Lasso Select">
+                                <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors" title="Lasso Select">
                                     <Selection size={20} />
                                 </button>
                             </div>
-                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="w-px h-8 bg-gray-200 dark:bg-monday-dark-border mx-1"></div>
                             <div className="flex items-center gap-0.5">
                                 <button
                                     onClick={() => setCurrentTool('pen')}
-                                    className={`p-2.5 rounded-xl transition-colors relative ${currentTool === 'pen' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors relative ${currentTool === 'pen' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Pen"
                                 >
                                     <Pen size={20} />
@@ -497,76 +499,76 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('highlighter')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'highlighter' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'highlighter' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Highlighter"
                                 >
                                     <PenNib size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('laser')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'laser' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'laser' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Laser Pointer"
                                 >
                                     <Sparkle size={20} />
                                 </button>
                             </div>
-                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="w-px h-8 bg-gray-200 dark:bg-monday-dark-border mx-1"></div>
                             <div className="flex items-center gap-0.5">
                                 <button
                                     onClick={() => setCurrentTool('rectangle')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'rectangle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'rectangle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Rectangle"
                                 >
                                     <FrameCorners size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('circle')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'circle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'circle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Circle"
                                 >
                                     <Polygon size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('mindmap')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'mindmap' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'mindmap' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Mind-map Node"
                                 >
                                     <GitFork size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('connector')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'connector' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'connector' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Connectors"
                                 >
                                     <ArrowUpRight size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('table')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'table' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'table' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Table"
                                 >
                                     <GridFour size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('frame')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'frame' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'frame' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Frame Container"
                                 >
                                     <FrameCorners size={20} />
                                 </button>
                             </div>
-                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="w-px h-8 bg-gray-200 dark:bg-monday-dark-border mx-1"></div>
                             <div className="flex items-center gap-0.5">
                                 <button
                                     onClick={() => setCurrentTool('note')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'note' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'note' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Sticky Note"
                                 >
                                     <Note size={20} />
                                 </button>
                                 <button
                                     onClick={() => setCurrentTool('text')}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'text' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'text' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Text Tool"
                                 >
                                     <TextT size={20} />
@@ -576,16 +578,16 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                         setCurrentTool('image');
                                         fileInputRef.current?.click();
                                     }}
-                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'image' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                                    className={`p-2.5 rounded-xl transition-colors ${currentTool === 'image' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Images"
                                 >
                                     <PhImage size={20} />
                                 </button>
                             </div>
-                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="w-px h-8 bg-gray-200 dark:bg-monday-dark-border mx-1"></div>
                             <button
                                 onClick={() => setCurrentTool('eraser')}
-                                className={`p-2.5 rounded-xl transition-colors ${currentTool === 'eraser' ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border border-red-200' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300 hover:text-red-500'}`}
+                                className={`p-2.5 rounded-xl transition-colors ${currentTool === 'eraser' ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border border-red-200' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-monday-dark-text-secondary hover:text-red-500'}`}
                                 title="Eraser"
                             >
                                 <Eraser size={20} />
@@ -600,7 +602,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                             <div className="flex items-center">
                                 <button
                                     onClick={zoomOut}
-                                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 active:scale-90 transition-transform"
+                                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
                                 >
                                     <Minus size={20} />
                                 </button>
@@ -609,15 +611,15 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 </div>
                                 <button
                                     onClick={zoomIn}
-                                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 active:scale-90 transition-transform"
+                                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
                                 >
                                     <Plus size={20} />
                                 </button>
                             </div>
-                            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                            <div className="w-px h-6 bg-gray-200 dark:bg-monday-dark-border mx-1"></div>
                             <button
                                 onClick={resetZoom}
-                                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 active:scale-90 transition-transform"
+                                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
                                 title="Reset Zoom"
                             >
                                 <CornersOut size={20} />
@@ -633,9 +635,9 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                     <div className="text-[#00bdc7] px-3">
                         <MagnifyingGlass size={20} />
                     </div>
-                    <input className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium py-3 placeholder:text-gray-400" placeholder="Search mind-map nodes or commands..." />
+                    <input className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium py-3 placeholder:text-gray-400" placeholder={t('search_commands')} />
                     <div className="flex items-center gap-1 px-3">
-                        <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[10px] text-gray-500 font-bold">ESC</kbd>
+                        <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-monday-dark-hover border border-gray-300 dark:border-monday-dark-border text-[10px] text-gray-500 font-bold">ESC</kbd>
                     </div>
                 </div>
             </div>

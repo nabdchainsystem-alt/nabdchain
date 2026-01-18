@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import {
     Users, Medal, ChartLine, CurrencyDollar, TrendUp, Warning,
-    Info, ArrowsOut, ArrowsIn,
+    Info, ArrowsOut,
     CaretLeft, CaretRight, Star, Heart, Repeat, UserPlus
 } from 'phosphor-react';
 import { SalesSegmentationInfo } from './SalesSegmentationInfo';
@@ -55,7 +56,7 @@ const TABLE_DATA = [
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-[#1a1d24] p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
+            <div className="bg-white dark:bg-monday-dark-surface p-3 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg">
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</p>
                 {payload.map((entry: any, index: number) => (
                     <div key={index} className="flex items-center gap-2 mt-1 px-1">
@@ -71,26 +72,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export const SalesSegmentationDashboard: React.FC = () => {
+interface SalesSegmentationDashboardProps {
+    hideFullscreen?: boolean;
+}
+
+export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'revenue', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    React.useEffect(() => {
-        const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
-        document.addEventListener('fullscreenchange', handleFullScreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-    }, []);
-
     const toggleFullScreen = () => {
-        if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-        else document.exitFullscreen();
+        window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
     // Sorted Table Data
@@ -178,7 +182,7 @@ export const SalesSegmentationDashboard: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className={`p-6 bg-white dark:bg-[#1a1d24] min-h-full font-sans text-gray-800 dark:text-gray-200 relative ${isFullScreen ? 'overflow-y-auto' : ''}`}>
+        <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
 
             <SalesSegmentationInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
@@ -192,16 +196,18 @@ export const SalesSegmentationDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={toggleFullScreen}
-                        className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                    >
-                        {isFullScreen ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
-                    </button>
+                    {!hideFullscreen && (
+                        <button
+                            onClick={toggleFullScreen}
+                            className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                            title="Full Screen"
+                        >
+                            <ArrowsOut size={18} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowInfo(true)}
-                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-[#2b2e36] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
                         About Dashboard
@@ -216,6 +222,7 @@ export const SalesSegmentationDashboard: React.FC = () => {
                         key={kpi.id}
                         {...kpi}
                         value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                        loading={isLoading}
                     />
                 ))}
             </div>
@@ -223,24 +230,28 @@ export const SalesSegmentationDashboard: React.FC = () => {
             {/* --- SECTION 2: Middle - Comparison Charts + Side KPIs --- */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
                 {/* Bar Chart (span 3) */}
-                <div className="lg:col-span-3 bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6 text-left">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Customer Segmentation Analysis</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic leading-tight">Count vs Revenue contribution per segment</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[350px]" title="Customer Segmentation Analysis" />
+                ) : (
+                    <div className="lg:col-span-3 bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6 text-left">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Customer Segmentation Analysis</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic leading-tight">Count vs Revenue contribution per segment</p>
+                        </div>
+                        <div className="h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={CUSTOMERS_PER_SEGMENT_DATA} margin={{ left: 10, right: 10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                    <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
+                                    <Bar dataKey="count" name="Customers" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={CUSTOMERS_PER_SEGMENT_DATA} margin={{ left: 10, right: 10 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                <Bar dataKey="count" name="Customers" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
 
                 {/* Side KPIs (Inverted L) */}
                 <div className="lg:col-span-1 flex flex-col gap-6">
@@ -249,6 +260,7 @@ export const SalesSegmentationDashboard: React.FC = () => {
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
+                                loading={isLoading}
                             />
                         </div>
                     ))}
@@ -258,119 +270,135 @@ export const SalesSegmentationDashboard: React.FC = () => {
             {/* --- SECTION 3: Secondary Visuals --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Repeat vs One-time (Recharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6 text-left">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Repeat vs One-Time Purchases</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Loyalty depth by customer segment</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[250px]" title="Repeat vs One-Time Purchases" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6 text-left">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Repeat vs One-Time Purchases</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Loyalty depth by customer segment</p>
+                        </div>
+                        <div className="h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={REPEAT_VS_ONETIME_DATA} layout="vertical" margin={{ left: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                                    <Legend />
+                                    <Bar dataKey="repeat" name="Repeat %" stackId="a" fill="#10b981" barSize={20} />
+                                    <Bar dataKey="onetime" name="One-Time %" stackId="a" fill="#f43f5e" barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[250px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={REPEAT_VS_ONETIME_DATA} layout="vertical" margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                                <Legend />
-                                <Bar dataKey="repeat" name="Repeat %" stackId="a" fill="#10b981" barSize={20} />
-                                <Bar dataKey="onetime" name="One-Time %" stackId="a" fill="#f43f5e" barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+                )}
 
                 {/* Revenue Share (ECharts) */}
-                <div className="bg-white dark:bg-[#2b2e36] p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="mb-6 text-left">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Revenue by Segment</h3>
-                        <p className="text-xs text-gray-500 mt-1 italic">Contribution share of each group</p>
+                {isLoading ? (
+                    <PieChartSkeleton title="Revenue by Segment" />
+                ) : (
+                    <div className="bg-white dark:bg-monday-dark-elevated p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                        <div className="mb-6 text-left">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Revenue by Segment</h3>
+                            <p className="text-xs text-gray-500 mt-1 italic">Contribution share of each group</p>
+                        </div>
+                        <div className="h-[250px]">
+                            <ReactECharts option={revenuePieOption} style={{ height: '100%' }} />
+                        </div>
                     </div>
-                    <div className="h-[250px]">
-                        <ReactECharts option={revenuePieOption} style={{ height: '100%' }} />
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* --- SECTION 4: Bottom Table & Companion --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Customer Table (Col 1) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-left">
-                    <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Top Customers List</h3>
-                            <p className="text-xs text-gray-400 mt-1 italic">Segmentation and engagement monitoring</p>
+                {isLoading ? (
+                    <TableSkeleton rows={5} columns={5} />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-left animate-fade-in-up">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Top Customers List</h3>
+                                <p className="text-xs text-gray-400 mt-1 italic">Segmentation and engagement monitoring</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="flex-1 overflow-x-auto min-h-[350px]">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
-                                <tr>
-                                    <th className="px-6 py-4">Customer</th>
-                                    <th className="px-6 py-4">Segment</th>
-                                    <th className="px-6 py-4 text-right">Orders</th>
-                                    <th className="px-6 py-4 text-right">Revenue</th>
-                                    <th className="px-6 py-4 text-right">Eng. Score</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                                {paginatedData.map((row) => (
-                                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
-                                        <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.segment === 'High Value' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' :
-                                                row.segment === 'Medium Value' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                                    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                                                }`}>
-                                                {row.segment}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5 text-right font-medium text-gray-500">{row.orders}</td>
-                                        <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
-                                        <td className="px-6 py-5 text-right font-mono text-xs">{row.score}/100</td>
+                        <div className="flex-1 overflow-x-auto min-h-[350px]">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
+                                    <tr>
+                                        <th className="px-6 py-4">Customer</th>
+                                        <th className="px-6 py-4">Segment</th>
+                                        <th className="px-6 py-4 text-right">Orders</th>
+                                        <th className="px-6 py-4 text-right">Revenue</th>
+                                        <th className="px-6 py-4 text-right">Eng. Score</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                    {paginatedData.map((row) => (
+                                        <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
+                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.segment === 'High Value' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' :
+                                                    row.segment === 'Medium Value' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                                    }`}>
+                                                    {row.segment}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5 text-right font-medium text-gray-500">{row.orders}</td>
+                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-right font-mono text-xs">{row.score}/100</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
-                        <span className="text-xs text-gray-500">
-                            Page <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> of {totalPages}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretLeft size={16} />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <CaretRight size={16} />
-                            </button>
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
+                            <span className="text-xs text-gray-500">
+                                Page <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> of {totalPages}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretLeft size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-30 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <CaretRight size={16} />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Loyalty Curve (Companion) */}
-                <div className="lg:col-span-1 bg-white dark:bg-[#2b2e36] rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left">
-                    <div className="mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Loyalty Curve</h3>
-                        <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Orders vs Revenue: Bubble size = Value Intensity</p>
+                {isLoading ? (
+                    <ChartSkeleton height="h-[300px]" title="Loyalty Curve" />
+                ) : (
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">Loyalty Curve</h3>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Orders vs Revenue: Bubble size = Value Intensity</p>
+                        </div>
+                        <div className="flex-1 min-h-[300px]">
+                            <ReactECharts option={loyaltyScatterOption} style={{ height: '100%', width: '100%' }} />
+                        </div>
+                        <div className="mt-4 p-3 bg-violet-50/50 dark:bg-violet-900/10 rounded-xl border border-violet-100 dark:border-violet-800/50">
+                            <p className="text-[10px] text-violet-700 dark:text-violet-400 leading-normal">
+                                <strong>Insight:</strong> The "High Value" segment accounts for 55% of revenue while making up only 7.5% of the total customer base.
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-h-[300px]">
-                        <ReactECharts option={loyaltyScatterOption} style={{ height: '100%', width: '100%' }} />
-                    </div>
-                    <div className="mt-4 p-3 bg-violet-50/50 dark:bg-violet-900/10 rounded-xl border border-violet-100 dark:border-violet-800/50">
-                        <p className="text-[10px] text-violet-700 dark:text-violet-400 leading-normal">
-                            <strong>Insight:</strong> The "High Value" segment accounts for 55% of revenue while making up only 7.5% of the total customer base.
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
         </div>

@@ -280,28 +280,95 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
         touchStartY.current = null;
     };
 
-    // Keyboard navigation for fullscreen mode
+    // Filter views for fullscreen navigation - only dashboard views (exclude overview, datatable)
+    const fullscreenNavigableViews = useMemo(() => {
+        const dashboardViews = ['sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost'];
+        return sanitizedAvailableViews.filter(view => dashboardViews.includes(view));
+    }, [sanitizedAvailableViews]);
+
+    // Keyboard navigation for fullscreen mode (both internal and browser fullscreen)
     useEffect(() => {
-        if (!isFullScreen) return;
-
         const handleKeyDown = (e: KeyboardEvent) => {
-            const currentIndex = sanitizedAvailableViews.indexOf(activeView);
+            // Check if in any fullscreen mode (internal or browser)
+            const inBrowserFullscreen = !!document.fullscreenElement;
+            if (!isFullScreen && !inBrowserFullscreen) return;
 
-            if (e.key === 'ArrowRight' && currentIndex < sanitizedAvailableViews.length - 1) {
+            // Use filtered views for navigation in fullscreen
+            const currentIndex = fullscreenNavigableViews.indexOf(activeView);
+
+            if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                setActiveView(sanitizedAvailableViews[currentIndex + 1]);
-            } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                if (currentIndex === -1) {
+                    // If current view is not a dashboard, go to first dashboard
+                    if (fullscreenNavigableViews.length > 0) {
+                        setActiveView(fullscreenNavigableViews[0]);
+                    }
+                } else if (currentIndex < fullscreenNavigableViews.length - 1) {
+                    setActiveView(fullscreenNavigableViews[currentIndex + 1]);
+                }
+            } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                setActiveView(sanitizedAvailableViews[currentIndex - 1]);
+                if (currentIndex === -1) {
+                    // If current view is not a dashboard, go to last dashboard
+                    if (fullscreenNavigableViews.length > 0) {
+                        setActiveView(fullscreenNavigableViews[fullscreenNavigableViews.length - 1]);
+                    }
+                } else if (currentIndex > 0) {
+                    setActiveView(fullscreenNavigableViews[currentIndex - 1]);
+                }
             } else if (e.key === 'Escape') {
-                e.preventDefault();
-                toggleFullScreen();
+                // Only handle escape for internal fullscreen, browser handles its own
+                if (isFullScreen && !inBrowserFullscreen) {
+                    e.preventDefault();
+                    toggleFullScreen();
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFullScreen, activeView, sanitizedAvailableViews]);
+    }, [isFullScreen, activeView, fullscreenNavigableViews]);
+
+    // Listen for dashboard fullscreen requests (so fullscreen persists across view changes)
+    useEffect(() => {
+        const handleDashboardFullscreen = () => {
+            if (!document.fullscreenElement) {
+                contentRef.current?.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        window.addEventListener('dashboard-toggle-fullscreen', handleDashboardFullscreen);
+        return () => window.removeEventListener('dashboard-toggle-fullscreen', handleDashboardFullscreen);
+    }, []);
+
+    // Animation state for view transitions
+    const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const previousViewRef = useRef<string>(activeView);
+
+    // Track view changes and trigger animation
+    useEffect(() => {
+        const inBrowserFullscreen = !!document.fullscreenElement;
+        if ((isFullScreen || inBrowserFullscreen) && previousViewRef.current !== activeView) {
+            const prevIndex = fullscreenNavigableViews.indexOf(previousViewRef.current as BoardViewType);
+            const newIndex = fullscreenNavigableViews.indexOf(activeView);
+
+            if (prevIndex !== -1 && newIndex !== -1) {
+                setSlideDirection(newIndex > prevIndex ? 'left' : 'right');
+                setIsAnimating(true);
+
+                const timer = setTimeout(() => {
+                    setIsAnimating(false);
+                    setSlideDirection(null);
+                }, 300);
+
+                return () => clearTimeout(timer);
+            }
+        }
+        previousViewRef.current = activeView;
+    }, [activeView, isFullScreen, fullscreenNavigableViews]);
 
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; viewId: BoardViewType } | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -752,46 +819,50 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                 return <OverviewView boardId={board.id} tasks={tasks} />;
 
             // Sales Dashboard Views - handled via renderCustomView
+            case 'purchase_overview':
+            case 'supplier_performance':
+            case 'purchase_behavior':
+            case 'cost_control':
+            case 'purchase_funnel':
+            case 'dependency_risk':
+            case 'forecast_planning':
             case 'sales_insights':
             case 'sales_performance':
             case 'sales_analysis':
             case 'sales_forecast':
             case 'sales_funnel':
             case 'sales_segmentation':
+            case 'inventory_overview':
+            case 'stock_movement':
+            case 'inventory_aging':
+            case 'stock_accuracy':
+            case 'reorder_planning':
+            case 'warehouse_performance':
+            case 'inventory_forecast':
+            case 'expenses_overview':
+            case 'category_analysis':
+            case 'fixed_variable':
+            case 'trends_anomalies':
+            case 'approval_flow':
+            case 'dept_accountability':
+            case 'forecast_optimization':
+            case 'customer_overview':
+            case 'segmentation_value':
+            case 'behavior_patterns':
+            case 'retention_churn':
+            case 'journey_touchpoints':
+            case 'satisfaction_feedback':
+            case 'forecast_risk':
+            case 'supplier_overview':
+            case 'supplier_delivery':
+            case 'supplier_cost':
             case 'sales_promotions':
                 if (renderCustomView) {
                     const custom = renderCustomView(baseViewType);
                     if (custom) {
-                        const currentIdx = sanitizedAvailableViews.indexOf(activeView);
-                        const hasPrev = currentIdx > 0;
-                        const hasNext = currentIdx < sanitizedAvailableViews.length - 1;
-
                         return (
                             <div className="w-full h-full overflow-y-auto relative">
                                 {custom}
-                                {/* Navigation arrows overlay */}
-                                <div className="fixed top-[88px] right-8 z-40 flex items-center gap-2">
-                                    <button
-                                        onClick={() => hasPrev && setActiveView(sanitizedAvailableViews[currentIdx - 1])}
-                                        disabled={!hasPrev}
-                                        className={`p-2 rounded-lg border shadow-sm transition-all ${hasPrev
-                                            ? 'bg-white dark:bg-[#2b2e36] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
-                                        title="Previous dashboard"
-                                    >
-                                        <ArrowLeftToLine size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => hasNext && setActiveView(sanitizedAvailableViews[currentIdx + 1])}
-                                        disabled={!hasNext}
-                                        className={`p-2 rounded-lg border shadow-sm transition-all ${hasNext
-                                            ? 'bg-white dark:bg-[#2b2e36] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'}`}
-                                        title="Next dashboard"
-                                    >
-                                        <ArrowLeftToLine size={16} className="rotate-180" />
-                                    </button>
-                                </div>
                             </div>
                         );
                     }
@@ -1021,15 +1092,17 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                             </div>
 
                             {/* Right: Actions */}
-                            <div className="flex items-center gap-1 md:gap-3">
-                                <button
-                                    onClick={toggleFullScreen}
-                                    className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
-                                    title={t('enter_fullscreen')}
-                                >
-                                    <Maximize2 size={18} />
-                                </button>
-                            </div>
+                            {!isDepartmentLayout && (
+                                <div className="flex items-center gap-1 md:gap-3">
+                                    <button
+                                        onClick={toggleFullScreen}
+                                        className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
+                                        title={t('enter_fullscreen')}
+                                    >
+                                        <Maximize2 size={18} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Board Description */}
@@ -1221,8 +1294,8 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
             {/* Main Content Area */}
             {(() => {
                 const type = getBaseViewType(activeView);
-                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions'].includes(type);
-                const currentViewIndex = sanitizedAvailableViews.indexOf(activeView);
+                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost'].includes(type);
+                const currentViewIndex = fullscreenNavigableViews.indexOf(activeView);
                 const currentViewOption = effectiveViewOptions.find(v => v.id === getBaseViewType(activeView));
 
                 return (
@@ -1232,7 +1305,21 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                     >
-                        {renderView()}
+                        <div
+                            className={`flex-1 overflow-hidden transition-all duration-300 ease-out ${isAnimating
+                                ? slideDirection === 'left'
+                                    ? 'animate-slide-in-right'
+                                    : 'animate-slide-in-left'
+                                : ''
+                                }`}
+                            style={{
+                                animation: isAnimating
+                                    ? `${slideDirection === 'left' ? 'slideInFromRight' : 'slideInFromLeft'} 0.3s ease-out forwards`
+                                    : 'none'
+                            }}
+                        >
+                            {renderView()}
+                        </div>
 
                         {/* Fullscreen Navigation Indicator */}
                         {isFullScreen && (
@@ -1241,7 +1328,7 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                                     {viewNames[activeView] || currentViewOption?.label || activeView}
                                 </span>
                                 <div className="flex gap-1">
-                                    {sanitizedAvailableViews.map((_, idx) => (
+                                    {fullscreenNavigableViews.map((_, idx) => (
                                         <div
                                             key={idx}
                                             className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentViewIndex ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'}`}

@@ -43,42 +43,43 @@ interface MyWorkPageProps {
     onAddBoard: (board: Board) => void;
 }
 
-const PriorityMenu = ({ onSelect, onClose }: { onSelect: (p: any) => void, onClose: () => void }) => (
-    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-32 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
-        {['Low', 'Medium', 'High'].map(p => (
+const PriorityMenu = ({ onSelect, onClose, t }: { onSelect: (p: any) => void, onClose: () => void, t: (key: string) => string }) => (
+    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-32 bg-white dark:bg-monday-dark-elevated rounded-lg shadow-xl border border-slate-200 dark:border-monday-dark-border py-1 z-50">
+        {[{ key: 'Low', label: t('low') }, { key: 'Medium', label: t('medium') }, { key: 'High', label: t('high') }].map(p => (
             <button
-                key={p}
-                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-                onClick={() => { onSelect(p); onClose(); }}
+                key={p.key}
+                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-monday-dark-hover transition-colors flex items-center gap-2"
+                onClick={() => { onSelect(p.key); onClose(); }}
             >
-                <div className={`w-2 h-2 rounded-full ${p === 'High' ? 'bg-red-500' : p === 'Medium' ? 'bg-orange-500' : 'bg-blue-500'}`} />
-                <span className="text-slate-700 dark:text-slate-200">{p}</span>
+                <div className={`w-2 h-2 rounded-full ${p.key === 'High' ? 'bg-red-500' : p.key === 'Medium' ? 'bg-orange-500' : 'bg-blue-500'}`} />
+                <span className="text-slate-700 dark:text-monday-dark-text">{p.label}</span>
             </button>
         ))}
     </div>
 );
 
-const DateMenu = ({ onSelect, onClose }: { onSelect: (d: string) => void, onClose: () => void }) => (
-    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-48 bg-white dark:bg-[#2c333a] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
-        {['Today', 'Tomorrow', 'Next Week'].map(d => (
+const DateMenu = ({ onSelect, onClose, t }: { onSelect: (d: string) => void, onClose: () => void, t: (key: string) => string }) => (
+    <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-1 w-48 bg-white dark:bg-monday-dark-elevated rounded-lg shadow-xl border border-slate-200 dark:border-monday-dark-border py-1 z-50">
+        {[{ key: 'Today', label: t('today') }, { key: 'Tomorrow', label: t('tomorrow') }, { key: 'Next Week', label: t('next_week') }].map(d => (
             <button
-                key={d}
-                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-200"
-                onClick={() => { onSelect(d); onClose(); }}
+                key={d.key}
+                className="w-full text-start px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-monday-dark-hover transition-colors text-slate-700 dark:text-monday-dark-text"
+                onClick={() => { onSelect(d.key); onClose(); }}
             >
-                {d}
+                {d.label}
             </button>
         ))}
     </div>
 );
 
-const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard, onCreateBoard }: {
+const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard, onCreateBoard, t }: {
     isOpen: boolean;
     onClose: () => void;
     boards: Board[];
     taskName: string;
     onSelectBoard: (boardId: string) => void;
     onCreateBoard: (name: string) => void;
+    t: (key: string) => string;
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [newBoardName, setNewBoardName] = useState('');
@@ -90,12 +91,12 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-            <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-[#1e2329] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-[#252a30]">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100">
-                        {mode === 'select' ? 'Add to Project' : 'Create New Project'}
+            <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-monday-dark-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-monday-dark-border animate-in fade-in zoom-in duration-200">
+                <div className="p-4 border-b border-slate-100 dark:border-monday-dark-border flex justify-between items-center bg-slate-50/50 dark:bg-monday-dark-elevated">
+                    <h3 className="font-bold text-slate-800 dark:text-monday-dark-text">
+                        {mode === 'select' ? t('add_to_project') : t('create_new_project')}
                     </h3>
-                    <button onClick={onClose} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-1 hover:bg-slate-200 dark:hover:bg-monday-dark-hover rounded-full transition-colors">
                         <X size={18} className="text-slate-500" />
                     </button>
                 </div>
@@ -104,12 +105,12 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
                     {mode === 'select' ? (
                         <>
                             <div className="relative mb-4">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="Search projects..."
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20"
+                                    placeholder={t('search_projects')}
+                                    className="w-full ps-9 pe-4 py-2 bg-slate-50 dark:bg-monday-dark-elevated border-none rounded-lg text-sm text-slate-800 dark:text-monday-dark-text focus:ring-2 focus:ring-blue-500/20"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -126,15 +127,15 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
                                             <Hash size={16} />
                                         </div>
                                         <div>
-                                            <p className="font-medium text-sm text-slate-700 dark:text-slate-200">{board.name}</p>
-                                            <p className="text-[10px] text-slate-400">{board.tasks?.length || 0} tasks</p>
+                                            <p className="font-medium text-sm text-slate-700 dark:text-monday-dark-text">{board.name}</p>
+                                            <p className="text-[10px] text-slate-400">{board.tasks?.length || 0} {t('tasks')}</p>
                                         </div>
-                                        <ChevronRight size={14} className="ml-auto text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <ChevronRight size={14} className="ms-auto text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
                                     </button>
                                 ))}
                                 {filteredBoards.length === 0 && (
                                     <div className="text-center py-8 text-slate-400">
-                                        <p className="text-sm">No projects found</p>
+                                        <p className="text-sm">{t('no_projects_found')}</p>
                                     </div>
                                 )}
                             </div>
@@ -143,20 +144,20 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
                                 onClick={() => setMode('create')}
                                 className="w-full py-2 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 font-medium text-sm hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-colors border border-dashed border-blue-200 dark:border-blue-800"
                             >
-                                <Plus size={16} /> Create "{searchTerm || 'New Project'}"
+                                <Plus size={16} /> {t('create')} "{searchTerm || t('new_project')}"
                             </button>
                         </>
                     ) : (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Project Name</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('project_name')}</label>
                                 <input
                                     autoFocus
                                     type="text"
                                     value={newBoardName}
                                     onChange={(e) => setNewBoardName(e.target.value)}
                                     placeholder="e.g. Q4 Marketing Campaign"
-                                    className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                    className="w-full p-2 bg-slate-50 dark:bg-monday-dark-elevated border border-slate-200 dark:border-monday-dark-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                             </div>
                             <div className="flex gap-2 justify-end">
@@ -164,7 +165,7 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
                                     onClick={() => setMode('select')}
                                     className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                                 >
-                                    Back
+                                    {t('back')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -175,7 +176,7 @@ const BoardSelectionModal = ({ isOpen, onClose, boards, taskName, onSelectBoard,
                                     disabled={!newBoardName.trim()}
                                     className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-600/20"
                                 >
-                                    Create Project
+                                    {t('create_project')}
                                 </button>
                             </div>
                         </div>
@@ -312,7 +313,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
             case 'High': return 'text-red-600 bg-red-100 dark:bg-red-900/30';
             case 'Medium': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30';
             case 'Low': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
-            default: return 'text-slate-500 bg-slate-100 dark:bg-slate-800';
+            default: return 'text-slate-500 bg-slate-100 dark:bg-monday-dark-elevated';
         }
     };
 
@@ -332,24 +333,25 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                 taskName={newTaskName}
                 onSelectBoard={handleSelectBoard}
                 onCreateBoard={handleCreateBoard}
+                t={t}
             />
 
             {/* MAIN CONTENT (AGENDA) */}
-            <main className="flex-1 flex flex-col h-full overflow-hidden relative border-r border-slate-200 dark:border-slate-700/50">
+            <main className="flex-1 flex flex-col h-full overflow-hidden relative border-r border-slate-200 dark:border-monday-dark-border/50">
 
                 {/* Header */}
                 <header className="px-8 py-6 flex justify-between items-end bg-[#f9fafa]/90 dark:bg-[#21262c]/90 backdrop-blur-sm z-10 sticky top-0">
                     <div>
                         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Wednesday, Oct 24</h1>
-                        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">Daily Agenda • {todayTasks.length} tasks scheduled</p>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">{t('daily_agenda')} • {todayTasks.length} {t('tasks_scheduled')}</p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500">
-                            <ChevronLeft size={20} />
+                        <button className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-monday-dark-hover transition-colors text-slate-500">
+                            <ChevronLeft size={20} className="rtl:rotate-180" />
                         </button>
-                        <button className="px-3 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition-all">Today</button>
-                        <button className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500">
-                            <ChevronRight size={20} />
+                        <button className="px-3 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition-all">{t('today')}</button>
+                        <button className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-monday-dark-hover transition-colors text-slate-500">
+                            <ChevronRight size={20} className="rtl:rotate-180" />
                         </button>
                     </div>
                 </header>
@@ -367,15 +369,15 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                         <div className="flex flex-col gap-2 pt-6">
                             {todayTasks.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center p-10 text-slate-400">
-                                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-monday-dark-elevated flex items-center justify-center mb-4">
                                         <CalendarIcon size={32} />
                                     </div>
-                                    <p className="font-medium">No tasks scheduled for today</p>
+                                    <p className="font-medium">{t('no_tasks_scheduled_today')}</p>
                                     <button
                                         onClick={() => setIsModalOpen(true)}
                                         className="mt-4 text-blue-600 hover:text-blue-700 font-bold text-sm"
                                     >
-                                        + Add Task
+                                        + {t('add_task')}
                                     </button>
                                 </div>
                             ) : (
@@ -386,31 +388,31 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                             <div className="absolute right-[-5px] top-5 w-2.5 h-2.5 rounded-full border-[2px] border-[#f9fafa] dark:border-[#21262c] bg-slate-300 dark:bg-slate-600 z-10 group-hover:bg-blue-500 group-hover:scale-125 transition-all"></div>
                                             <span>{task.id.slice(-4)}</span>
                                         </div>
-                                        <div className="flex-1 border-l-2 border-slate-200 dark:border-slate-700/50 pl-8 pb-8 relative">
+                                        <div className="flex-1 border-l-2 border-slate-200 dark:border-monday-dark-border/50 pl-8 pb-8 relative">
                                             <div
                                                 onClick={() => onNavigateToBoard('board', boardId)}
-                                                className={`h-full w-full bg-white dark:bg-[#2c333a] rounded-2xl shadow-sm hover:shadow-lg dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex gap-5 transition-all hover:-translate-y-1 duration-200 cursor-pointer relative overflow-hidden group/card ${task.priority === 'High' ? 'border-l-[4px] border-l-red-500' : task.priority === 'Medium' ? 'border-l-[4px] border-l-orange-500' : 'border-l-[4px] border-l-blue-500'}`}
+                                                className={`h-full w-full bg-white dark:bg-monday-dark-elevated rounded-2xl shadow-sm hover:shadow-lg dark:shadow-none border border-slate-200 dark:border-monday-dark-border p-6 flex gap-5 transition-all hover:-translate-y-1 duration-200 cursor-pointer relative overflow-hidden group/card ${task.priority === 'High' ? 'border-l-[4px] border-l-red-500' : task.priority === 'Medium' ? 'border-l-[4px] border-l-orange-500' : 'border-l-[4px] border-l-blue-500'}`}
                                             >
                                                 <div className={`absolute inset-0 bg-gradient-to-br from-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity pointer-events-none ${task.priority === 'High' ? 'from-red-50/50 dark:from-red-900/5' : 'from-blue-50/50 dark:from-blue-900/5'}`}></div>
                                                 <div className="flex-1 relative z-10 flex flex-col">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold inline-block uppercase tracking-wider ${task.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'}`}>
-                                                            {task.priority || 'Normal'}
+                                                            {task.priority ? t(task.priority.toLowerCase()) : t('normal')}
                                                         </span>
                                                         <MoreHorizontal className="text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors" size={18} />
                                                     </div>
                                                     <h3 className="text-slate-800 dark:text-gray-100 font-bold text-xl leading-tight mb-1 group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors">{task.name}</h3>
                                                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-lg truncate flex items-center gap-2">
-                                                        <Hash size={12} /> {boardName} Board
+                                                        <Hash size={12} /> {boardName} {t('board')}
                                                     </p>
                                                     <div className="mt-auto pt-5 flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex -space-x-2">
                                                                 <div className="w-6 h-6 rounded-full bg-indigo-500 border-2 border-white dark:border-[#2c333a] flex items-center justify-center text-[8px] text-white font-bold">M</div>
                                                             </div>
-                                                            <span className="text-slate-400 text-xs font-medium">Due Today</span>
+                                                            <span className="text-slate-400 text-xs font-medium">{t('due_today')}</span>
                                                         </div>
-                                                        <button className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${task.status === 'Done' ? 'bg-green-100 text-green-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-md hover:scale-110'}`}>
+                                                        <button className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${task.status === 'Done' ? 'bg-green-100 text-green-600' : 'bg-slate-50 dark:bg-monday-dark-elevated text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-md hover:scale-110'}`}>
                                                             <CheckCircle2 size={18} />
                                                         </button>
                                                     </div>
@@ -427,12 +429,12 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                     <div className="absolute right-[-4px] top-3 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 z-10"></div>
                                     12:00
                                 </div>
-                                <div className="flex-1 border-l-2 border-slate-200 dark:border-slate-700/50 pl-8 pb-8 relative">
-                                    <div className="h-full w-full rounded-2xl bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-800/30 border border-dashed border-slate-200 dark:border-slate-700 flex items-center gap-3 px-6 text-slate-400 overflow-hidden">
+                                <div className="flex-1 border-l-2 border-slate-200 dark:border-monday-dark-border/50 pl-8 pb-8 relative">
+                                    <div className="h-full w-full rounded-2xl bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-800/30 border border-dashed border-slate-200 dark:border-monday-dark-border flex items-center gap-3 px-6 text-slate-400 overflow-hidden">
                                         <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                                             <Coffee size={16} />
                                         </div>
-                                        <span className="font-medium text-sm">Lunch Break</span>
+                                        <span className="font-medium text-sm">{t('lunch_break')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -448,27 +450,27 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                         onClick={() => setCurrentTab('timeline')}
                         className={`px-6 py-2.5 rounded-full text-[13px] font-bold transition-all duration-300 ${currentTab === 'timeline' ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30 scale-105' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
                     >
-                        Timeline
+                        {t('timeline')}
                     </button>
                     <button
                         onClick={() => setCurrentTab('kanban')}
                         className={`px-6 py-2.5 rounded-full text-[13px] font-bold transition-all duration-300 ${currentTab === 'kanban' ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30 scale-105' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
                     >
-                        Kanban
+                        {t('kanban')}
                     </button>
                 </div>
 
             </main>
 
             {/* SIDEBAR (TASK BUCKET) */}
-            <aside className="w-full lg:w-[420px] xl:w-[480px] bg-white dark:bg-[#1a1e23] flex flex-col h-full shadow-2xl lg:shadow-none z-20 border-l border-slate-200 dark:border-slate-700/50" style={{ zoom: '1.05' }}>
+            <aside className="w-full lg:w-[420px] xl:w-[480px] bg-white dark:bg-[#1a1e23] flex flex-col h-full shadow-2xl lg:shadow-none z-20 border-l border-slate-200 dark:border-monday-dark-border/50" style={{ zoom: '1.05' }}>
 
                 {/* Search & Filter Header */}
                 <div className="px-6 pt-6 pb-4 bg-white dark:bg-[#1a1e23]">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Task Bucket</h2>
-                            <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-full">{inboxTasks.length + activeProjects.length} items</span>
+                            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{t('task_bucket')}</h2>
+                            <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-full">{inboxTasks.length + activeProjects.length} {t('items')}</span>
                         </div>
                         <button className="text-blue-600 hover:bg-blue-600/10 p-2 rounded-full transition-colors">
                             <Filter size={18} />
@@ -476,11 +478,11 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                     </div>
 
                     {/* Input */}
-                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl shadow-inner border border-slate-200 dark:border-slate-700 focus-within:bg-white dark:focus-within:bg-[#252a30] focus-within:shadow-md focus-within:border-blue-500/50 transition-all duration-200 relative group/input">
+                    <div className="bg-slate-50 dark:bg-monday-dark-elevated p-2 rounded-xl shadow-inner border border-slate-200 dark:border-monday-dark-border focus-within:bg-white dark:focus-within:bg-[#252a30] focus-within:shadow-md focus-within:border-blue-500/50 transition-all duration-200 relative group/input">
                         <div className="flex items-center gap-2 px-1">
                             <input
-                                className="w-full bg-transparent border-none p-1.5 text-sm font-medium focus:outline-none placeholder-slate-400 text-slate-800 dark:text-slate-100"
-                                placeholder="Add a new task..."
+                                className="w-full bg-transparent border-none p-1.5 text-sm font-medium focus:outline-none placeholder-slate-400 text-slate-800 dark:text-monday-dark-text"
+                                placeholder={t('add_new_task_placeholder')}
                                 type="text"
                                 value={newTaskName}
                                 onChange={(e) => setNewTaskName(e.target.value)}
@@ -491,35 +493,35 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                             <div className="flex gap-1.5 relative">
                                 <button
                                     onClick={() => setIsProjectActive(!isProjectActive)}
-                                    className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${isProjectActive ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-500'}`}
-                                    title="Project (#)"
+                                    className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${isProjectActive ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-monday-dark-hover hover:text-blue-500'}`}
+                                    title={t('project')}
                                 >
                                     <Tag size={16} />
-                                    <span className="text-[10px] font-bold transition-colors hidden sm:inline">Project</span>
+                                    <span className="text-[10px] font-bold transition-colors hidden sm:inline">{t('project')}</span>
                                 </button>
 
                                 <div className="relative">
                                     <button
                                         onClick={() => toggleMenu('priority')}
-                                        className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${newTaskPriority ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-red-500'}`}
-                                        title="Priority (!)"
+                                        className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${newTaskPriority ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-monday-dark-hover hover:text-red-500'}`}
+                                        title={t('priority')}
                                     >
                                         <AlertCircle size={16} />
-                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline">{newTaskPriority || 'Priority'}</span>
+                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline">{newTaskPriority ? t(newTaskPriority.toLowerCase()) : t('priority')}</span>
                                     </button>
-                                    {activeMenu === 'priority' && <PriorityMenu onSelect={setNewTaskPriority} onClose={() => setActiveMenu('none')} />}
+                                    {activeMenu === 'priority' && <PriorityMenu onSelect={setNewTaskPriority} onClose={() => setActiveMenu('none')} t={t} />}
                                 </div>
 
                                 <div className="relative">
                                     <button
                                         onClick={() => toggleMenu('date')}
-                                        className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${newTaskDate ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-sky-500'}`}
-                                        title="Date (@)"
+                                        className={`flex items-center gap-1 p-1 pr-2 rounded transition-colors group/btn ${newTaskDate ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-monday-dark-hover hover:text-sky-500'}`}
+                                        title={t('date')}
                                     >
                                         <CalendarIcon size={16} />
-                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline">{newTaskDate || 'Date'}</span>
+                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline">{newTaskDate || t('date')}</span>
                                     </button>
-                                    {activeMenu === 'date' && <DateMenu onSelect={setNewTaskDate} onClose={() => setActiveMenu('none')} />}
+                                    {activeMenu === 'date' && <DateMenu onSelect={setNewTaskDate} onClose={() => setActiveMenu('none')} t={t} />}
                                 </div>
                             </div>
                             <button
@@ -533,13 +535,13 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
 
                     {/* Quick Filters */}
                     <div className="flex gap-2 mt-4 overflow-x-auto hide-scrollbar pb-1">
-                        <button onClick={() => setFilter('all')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors ${filter === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>All Tasks</button>
-                        <button onClick={() => setFilter('design')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'design' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>Design</button>
-                        <button onClick={() => setFilter('dev')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'dev' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>Development</button>
+                        <button onClick={() => setFilter('all')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors ${filter === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-monday-dark-elevated border border-slate-200 dark:border-monday-dark-border text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>{t('all_tasks')}</button>
+                        <button onClick={() => setFilter('design')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'design' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-monday-dark-elevated border border-slate-200 dark:border-monday-dark-border text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>{t('design_filter')}</button>
+                        <button onClick={() => setFilter('dev')} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'dev' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-monday-dark-elevated border border-slate-200 dark:border-monday-dark-border text-slate-600 dark:text-slate-400 hover:border-blue-600 hover:text-blue-600'}`}>{t('development_filter')}</button>
                     </div>
                 </div>
 
-                <div className="h-[1px] bg-slate-100 dark:bg-slate-800 w-full"></div>
+                <div className="h-[1px] bg-slate-100 dark:bg-monday-dark-elevated w-full"></div>
 
                 {/* Task List */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-slate-50/50 dark:bg-[#1a1e23]">
@@ -553,31 +555,31 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                         <div className="space-y-3">
                             {/* Render Inbox Tasks */}
                             {inboxTasks.slice(0, 5).map(({ task, boardName, boardId }, idx) => (
-                                <div key={task.id} className="group bg-white dark:bg-[#2c333a] p-4 rounded-xl shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-700/50 hover:border-blue-600/30 cursor-grab active:cursor-grabbing transition-all flex gap-3 items-start select-none relative">
+                                <div key={task.id} className="group bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm hover:shadow-md border border-slate-100 dark:border-monday-dark-border/50 hover:border-blue-600/30 cursor-grab active:cursor-grabbing transition-all flex gap-3 items-start select-none relative">
                                     <div className="mt-1 cursor-grab active:cursor-grabbing text-slate-300 group-hover:text-blue-600 transition-colors">
                                         <GripVertical size={20} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start mb-1">
                                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${getPriorityColor(task.priority)}`}>
-                                                {task.priority || 'Normal'}
+                                                {task.priority ? t(task.priority.toLowerCase()) : t('normal')}
                                             </span>
                                             {task.date && (
                                                 <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                                                     <CalendarIcon size={10} />
-                                                    {task.date === new Date().toISOString().split('T')[0] ? 'Today' : task.date}
+                                                    {task.date === new Date().toISOString().split('T')[0] ? t('today') : task.date}
                                                 </span>
                                             )}
                                         </div>
-                                        <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug mb-1 truncate">{task.name}</h4>
+                                        <h4 className="font-bold text-slate-800 dark:text-monday-dark-text text-sm leading-snug mb-1 truncate">{task.name}</h4>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-1 truncate max-w-[100px]">
+                                            <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-monday-dark-elevated px-1.5 py-0.5 rounded flex items-center gap-1 truncate max-w-[100px]">
                                                 <Hash size={10} /> {boardName}
                                             </span>
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-2 items-end">
-                                        <button className="text-slate-300 hover:text-green-500 transition-colors bg-slate-50 dark:bg-slate-800 p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20">
+                                        <button className="text-slate-300 hover:text-green-500 transition-colors bg-slate-50 dark:bg-monday-dark-elevated p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20">
                                             <CheckCircle2 size={16} />
                                         </button>
                                     </div>
@@ -585,7 +587,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                             ))}
                             {inboxTasks.length === 0 && (
                                 <div className="text-center py-6 text-slate-400 text-xs italic">
-                                    No tasks in inbox
+                                    {t('no_tasks_in_inbox')}
                                 </div>
                             )}
                         </div>
@@ -594,18 +596,18 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                     {/* PROJECTS SECTION */}
                     <div>
                         <div className="flex items-center justify-between mb-3 px-1">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Projects</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('active_projects')}</p>
                             <span className="text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">{activeProjects.length}</span>
                         </div>
                         <div className="space-y-4">
                             {activeProjects.map(project => (
-                                <div key={project.id} className="bg-white dark:bg-[#2c333a] rounded-xl border border-slate-100 dark:border-slate-700/50 overflow-hidden">
-                                    <div className="px-4 py-3 bg-slate-50/50 dark:bg-[#252a30] border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                                <div key={project.id} className="bg-white dark:bg-monday-dark-elevated rounded-xl border border-slate-100 dark:border-monday-dark-border/50 overflow-hidden">
+                                    <div className="px-4 py-3 bg-slate-50/50 dark:bg-monday-dark-elevated border-b border-slate-100 dark:border-monday-dark-border/50 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <span className={`w-2 h-2 rounded-full ${project.tasks.some(t => t.priority === 'High') ? 'bg-red-500' : 'bg-blue-500'}`}></span>
-                                            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{project.name}</h3>
+                                            <h3 className="font-bold text-sm text-slate-800 dark:text-monday-dark-text">{project.name}</h3>
                                         </div>
-                                        <span className="text-[10px] text-slate-400">{project.tasks.length} tasks</span>
+                                        <span className="text-[10px] text-slate-400">{project.tasks.length} {t('tasks')}</span>
                                     </div>
                                     <div className="divide-y divide-slate-50 dark:divide-slate-800">
                                         {project.tasks.slice(0, 3).map(task => (
@@ -619,7 +621,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                         ))}
                                         {project.tasks.length > 3 && (
                                             <div className="px-4 py-2 text-center">
-                                                <span className="text-[10px] text-blue-600 font-bold cursor-pointer hover:underline">+ {project.tasks.length - 3} more</span>
+                                                <span className="text-[10px] text-blue-600 font-bold cursor-pointer hover:underline">+ {project.tasks.length - 3} {t('more')}</span>
                                             </div>
                                         )}
                                     </div>
@@ -634,20 +636,20 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
             {/* FAB (Floating Action Button) */}
             <div className="fixed bottom-10 right-10 z-50 flex flex-col items-end gap-4 group">
                 <div className="opacity-0 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible translate-y-4 flex flex-col items-end gap-3 transition-all duration-300">
-                    <button className="flex items-center gap-3 pl-4 pr-2 py-2 bg-white dark:bg-[#2c333a] rounded-full shadow-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">New Goal</span>
+                    <button className="flex items-center gap-3 ps-4 pe-2 py-2 bg-white dark:bg-monday-dark-elevated rounded-full shadow-lg border border-slate-100 dark:border-monday-dark-border hover:bg-slate-50 dark:hover:bg-monday-dark-hover transition-colors">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('new_goal')}</span>
                         <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-sm">
                             <Flag size={18} />
                         </div>
                     </button>
-                    <button className="flex items-center gap-3 pl-4 pr-2 py-2 bg-white dark:bg-[#2c333a] rounded-full shadow-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">New Project</span>
+                    <button className="flex items-center gap-3 ps-4 pe-2 py-2 bg-white dark:bg-monday-dark-elevated rounded-full shadow-lg border border-slate-100 dark:border-monday-dark-border hover:bg-slate-50 dark:hover:bg-monday-dark-hover transition-colors">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('new_project')}</span>
                         <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-sm">
                             <Briefcase size={18} />
                         </div>
                     </button>
-                    <button className="flex items-center gap-3 pl-4 pr-2 py-2 bg-white dark:bg-[#2c333a] rounded-full shadow-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">New Task</span>
+                    <button className="flex items-center gap-3 ps-4 pe-2 py-2 bg-white dark:bg-monday-dark-elevated rounded-full shadow-lg border border-slate-100 dark:border-monday-dark-border hover:bg-slate-50 dark:hover:bg-monday-dark-hover transition-colors">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('new_task')}</span>
                         <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-sm">
                             <CheckCircle2 size={18} />
                         </div>

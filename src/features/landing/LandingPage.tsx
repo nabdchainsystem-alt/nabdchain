@@ -55,7 +55,7 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
     };
 
     return (
-        <div className="h-screen overflow-y-auto bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-[#2563EB]/20">
+        <div className="h-screen overflow-y-auto bg-[#FAFAFA] dark:bg-monday-dark-bg text-zinc-900 dark:text-monday-dark-text font-sans selection:bg-[#2563EB]/20">
             {/* Navbar */}
             <motion.nav
                 style={{
@@ -75,11 +75,11 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                     </div>
 
                     {/* Desktop Links */}
-                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
-                        <a href="#" className="hover:text-zinc-900 transition-colors">Dashboard</a>
-                        <a href="#" className="hover:text-zinc-900 transition-colors">Analytics</a>
-                        <a href="#" className="hover:text-zinc-900 transition-colors">Marketplace</a>
-                        <a href="#" className="hover:text-zinc-900 transition-colors">Docs</a>
+                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600 dark:text-monday-dark-text-secondary">
+                        <a href="#" className="hover:text-zinc-900 dark:hover:text-monday-dark-text transition-colors">Dashboard</a>
+                        <a href="#" className="hover:text-zinc-900 dark:hover:text-monday-dark-text transition-colors">Analytics</a>
+                        <a href="#" className="hover:text-zinc-900 dark:hover:text-monday-dark-text transition-colors">Marketplace</a>
+                        <a href="#" className="hover:text-zinc-900 dark:hover:text-monday-dark-text transition-colors">Docs</a>
                     </div>
                 </div>
 
@@ -110,7 +110,7 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
             </main>
 
             {/* Footer */}
-            <footer className="bg-[#FAFAFA] border-t border-zinc-200 py-20">
+            <footer className="bg-[#FAFAFA] dark:bg-monday-dark-bg border-t border-zinc-200 dark:border-monday-dark-border py-20">
                 <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-5 gap-10">
                     <div className="col-span-2">
                         <div className="flex items-center gap-2 font-bold text-lg tracking-tight mb-6">
@@ -118,16 +118,16 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                             <span>Nabd System</span>
                         </div>
                         <div className="flex gap-4 mb-8">
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 hover:bg-zinc-200 cursor-pointer transition-colors">𝕏</div>
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 hover:bg-zinc-200 cursor-pointer transition-colors">GH</div>
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 hover:bg-zinc-200 cursor-pointer transition-colors">in</div>
+                            <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-monday-dark-surface flex items-center justify-center text-zinc-400 dark:text-monday-dark-text-secondary hover:bg-zinc-200 dark:hover:bg-monday-dark-hover cursor-pointer transition-colors">𝕏</div>
+                            <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-monday-dark-surface flex items-center justify-center text-zinc-400 dark:text-monday-dark-text-secondary hover:bg-zinc-200 dark:hover:bg-monday-dark-hover cursor-pointer transition-colors">GH</div>
+                            <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-monday-dark-surface flex items-center justify-center text-zinc-400 dark:text-monday-dark-text-secondary hover:bg-zinc-200 dark:hover:bg-monday-dark-hover cursor-pointer transition-colors">in</div>
                         </div>
-                        <p className="text-sm text-zinc-500">© 2026 Nabd Chain System.</p>
+                        <p className="text-sm text-zinc-500 dark:text-monday-dark-text-secondary">© 2026 Nabd Chain System.</p>
                     </div>
 
                     <div>
-                        <h4 className="font-semibold text-sm mb-4 text-zinc-900">Platform</h4>
-                        <ul className="space-y-3 text-sm text-zinc-500">
+                        <h4 className="font-semibold text-sm mb-4 text-zinc-900 dark:text-monday-dark-text">Platform</h4>
+                        <ul className="space-y-3 text-sm text-zinc-500 dark:text-monday-dark-text-secondary">
                             <li><a href="#" className="hover:text-[#2563EB]">Analytics</a></li>
                             <li><a href="#" className="hover:text-[#2563EB]">Network</a></li>
                             <li><a href="#" className="hover:text-[#2563EB]">Security</a></li>
@@ -135,8 +135,8 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                     </div>
 
                     <div>
-                        <h4 className="font-semibold text-sm mb-4 text-zinc-900">Resources</h4>
-                        <ul className="space-y-3 text-sm text-zinc-500">
+                        <h4 className="font-semibold text-sm mb-4 text-zinc-900 dark:text-monday-dark-text">Resources</h4>
+                        <ul className="space-y-3 text-sm text-zinc-500 dark:text-monday-dark-text-secondary">
                             <li><a href="#" className="hover:text-[#2563EB]">Docs</a></li>
                             <li><a href="#" className="hover:text-[#2563EB]">API</a></li>
                             <li><a href="#" className="hover:text-[#2563EB]">Status</a></li>
@@ -144,14 +144,14 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                     </div>
 
                     <div>
-                        <h4 className="font-semibold text-sm mb-4 text-zinc-900">Company</h4>
-                        <ul className="space-y-3 text-sm text-zinc-500">
+                        <h4 className="font-semibold text-sm mb-4 text-zinc-900 dark:text-monday-dark-text">Company</h4>
+                        <ul className="space-y-3 text-sm text-zinc-500 dark:text-monday-dark-text-secondary">
                             <li><a href="#" className="hover:text-[#2563EB]">About</a></li>
                             <li><a href="#" className="hover:text-[#2563EB]">Contact</a></li>
                             <li>
                                 <button
                                     onClick={() => setIsDevLoginOpen(true)}
-                                    className="text-zinc-500 hover:text-zinc-900 transition-colors text-left"
+                                    className="text-zinc-500 dark:text-monday-dark-text-secondary hover:text-zinc-900 dark:hover:text-monday-dark-text transition-colors text-left"
                                 >
                                     Developer Access
                                 </button>

@@ -11,15 +11,15 @@ export const StatsSection: React.FC = () => {
     ];
 
     return (
-        <section className="py-12 bg-[#FAFAFA] border-b border-zinc-200">
+        <section className="py-12 bg-[#FAFAFA] dark:bg-monday-dark-bg border-b border-zinc-200 dark:border-monday-dark-border">
             <div className="max-w-7xl mx-auto px-6 text-center">
-                <p className="text-sm font-medium text-zinc-500 mb-8">
+                <p className="text-sm font-medium text-zinc-500 dark:text-monday-dark-text-secondary mb-8">
                     Trusted by fast-growing companies around the world
                 </p>
                 <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
                     {/* Mock Logos */}
                     {companies.map((c) => (
-                        <div key={c.name} className={`text-xl md:text-2xl text-zinc-900 ${c.font} ${c.tracking}`}>
+                        <div key={c.name} className={`text-xl md:text-2xl text-zinc-900 dark:text-monday-dark-text ${c.font} ${c.tracking}`}>
                             {c.name}
                         </div>
                     ))}

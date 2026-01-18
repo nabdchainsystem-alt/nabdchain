@@ -39,6 +39,9 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
 
     if (!mounted || !shouldRender) return null;
 
+    // Use Portal - render to fullscreen element if in fullscreen mode, otherwise body
+    const portalTarget = document.fullscreenElement || document.body;
+
     const questions = [
         { q: 'Which segments drive the most revenue?', a: 'Refer to the "Revenue per Segment" pie chart. High-value segments often represent a small percentage of the customer base but a large portion of revenue.' },
         { q: 'Which segments are at risk of churn?', a: 'Look for segments with a high "Churn Rate %" KPI or those appearing low on the "Engagement Score" distribution chart.' },
@@ -56,13 +59,13 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-[#1a1d24] shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
                     ${isVisible ? 'translate-x-0' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1a1d24] z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 text-left">
                             <Medal size={24} className="text-blue-600 dark:text-blue-400" />
@@ -189,7 +192,7 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
                     </section>
                 </div>
 
-                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#1f2229] z-10">
+                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
@@ -199,7 +202,7 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
                 </div>
             </div>
         </div>,
-        document.body
+        portalTarget
     );
 };
 
