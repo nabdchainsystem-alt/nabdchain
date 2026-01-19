@@ -119,7 +119,7 @@ export const RedirectToSignIn: React.FC = () => {
 
 // Mock SignIn Component for local dev
 export const MockSignIn: React.FC = () => {
-    const { loginAsMaster, signOut } = useMockAuthContext();
+    const { loginAsMaster, loginAsSam, signOut } = useMockAuthContext();
 
     const handleExitToClerk = () => {
         // Remove dev mode flags to return to real Clerk auth
@@ -174,6 +174,14 @@ export const MockSignIn: React.FC = () => {
                     className="w-full px-4 py-3 bg-[#333333] text-white font-medium rounded hover:bg-black transition-colors flex items-center justify-center gap-2"
                 >
                     <span>Login as Master Admin</span>
+                    <span className="text-xs opacity-75">→</span>
+                </button>
+
+                <button
+                    onClick={loginAsSam}
+                    className="w-full px-4 py-3 bg-indigo-500 text-white font-medium rounded hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>Login as Sam</span>
                     <span className="text-xs opacity-75">→</span>
                 </button>
             </div>

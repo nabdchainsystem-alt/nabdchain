@@ -19,6 +19,7 @@ interface MockAuthContextType {
     signIn: () => void; // Default helper
     loginAsGoogle: () => void;
     loginAsMaster: () => void;
+    loginAsSam: () => void;
 }
 
 const MockAuthContext = createContext<MockAuthContextType | null>(null);
@@ -35,6 +36,8 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             loginAsDev();
         } else if (token === 'google-token') {
             loginAsGoogle();
+        } else if (token === 'sam-token') {
+            loginAsSam();
         }
     }, []);
 
@@ -72,6 +75,17 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.setItem('mock_auth_token', 'google-token');
     };
 
+    const loginAsSam = () => {
+        setIsSignedIn(true);
+        setUser({
+            id: 'user_sam_master',
+            fullName: 'Sam',
+            primaryEmailAddress: { emailAddress: 'sam@nabdchain.com' },
+            imageUrl: 'https://ui-avatars.com/api/?name=Sam&background=6366F1&color=fff'
+        });
+        localStorage.setItem('mock_auth_token', 'sam-token');
+    };
+
     const signOut = async () => {
         setIsSignedIn(false);
         setUser(null);
@@ -92,7 +106,8 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         user,
         signIn: loginAsMaster,
         loginAsGoogle,
-        loginAsMaster
+        loginAsMaster,
+        loginAsSam
     };
 
     return (

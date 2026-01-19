@@ -87,6 +87,26 @@ async function main() {
         }
     });
 
+    // 0.3 Sam Master User
+    console.log('Seeding Sam Master User...');
+    const samId = "user_sam_master";
+    await prisma.user.upsert({
+        where: { email: 'sam@nabdchain.com' },
+        update: {
+            workspaceId: 'w1'
+        },
+        create: {
+            id: samId,
+            email: 'sam@nabdchain.com',
+            name: 'Sam',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Sam&background=6366F1&color=fff',
+            workspaceId: 'w1',
+            workspace: {
+                connect: { id: 'w1' }
+            }
+        }
+    });
+
     // 1. Procurement Requests
     if (data.procurementRequests) {
         console.log(`Seeding ${data.procurementRequests.length} Procurement Requests...`);
