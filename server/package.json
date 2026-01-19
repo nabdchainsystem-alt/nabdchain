@@ -16,9 +16,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:generate": "./node_modules/.bin/prisma generate",
+    "prisma:migrate": "./node_modules/.bin/prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:deploy": "./node_modules/.bin/prisma generate && ./node_modules/.bin/prisma db push"
   },
   "keywords": [],
   "author": "",
