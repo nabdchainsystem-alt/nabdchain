@@ -38,7 +38,7 @@ app.use(limiter);
 const corsOptions: cors.CorsOptions = {
     origin: isProduction
         ? getEnv('CORS_ORIGIN', 'https://your-domain.com')
-        : (origin, callback) => {
+        : (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
             // Allow all localhost origins and requests with no origin (like mobile apps or curl)
             if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
                 callback(null, true);
