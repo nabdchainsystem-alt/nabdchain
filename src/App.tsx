@@ -1128,8 +1128,8 @@ const AppRoutes: React.FC = () => {
               </button>
             </div>
             <a
-              href="https://nabdchain.com"
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
+              className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium"
             >
               ← Back to Home
             </a>
@@ -1156,8 +1156,8 @@ const AppRoutes: React.FC = () => {
               </button>
             </div>
             <a
-              href="https://nabdchain.com"
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
+              className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium"
             >
               ← Back to Home
             </a>
