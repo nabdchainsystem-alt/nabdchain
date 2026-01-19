@@ -74,6 +74,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setNewName] = useState(userDisplayName);
 
+    // Keep newName in sync with userDisplayName when not editing
+    useEffect(() => {
+        if (!isEditingName) {
+            setNewName(userDisplayName);
+        }
+    }, [userDisplayName, isEditingName]);
+
     const handleSaveName = () => {
         if (newName.trim()) {
             updateUserDisplayName(newName.trim());

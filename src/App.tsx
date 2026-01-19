@@ -8,7 +8,7 @@ import { LandingPage } from './features/landing/LandingPage';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage';
 import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem, Task } from './types';
 import { BoardTemplate } from './features/board/data/templates';
-import { AppProvider } from './contexts/AppContext';
+import { AppProvider, useAppContext } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { NavigationProvider } from './contexts/NavigationContext';
@@ -38,7 +38,16 @@ const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
 
   const { getToken, isSignedIn } = useAuth();
+  const { user } = useUser();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useUI();
+  const { updateUserDisplayName } = useAppContext();
+
+  // Sync authenticated user's name to AppContext
+  useEffect(() => {
+    if (user?.fullName) {
+      updateUserDisplayName(user.fullName);
+    }
+  }, [user?.fullName, updateUserDisplayName]);
 
   const [activeView, setActiveView] = useState<ViewState | string>(() => {
     const saved = localStorage.getItem('app-active-view');
