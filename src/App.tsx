@@ -1046,41 +1046,26 @@ import { SignUpPage } from './features/auth/SignUpPage';
 const AppRoutes: React.FC = () => {
   const { isLoaded, isSignedIn } = useUser();
 
-  // Detect hostname early for initial state
+  // Detect hostname
   const hostname = window.location.hostname;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isAppSubdomain = hostname.startsWith('app.');
+  const isMainDomain = !isAppSubdomain && !isLocalhost;
 
-  // View state: 'landing' | 'signin' | 'signup' | 'home'
-  // Default to 'home' (landing page) everywhere
-  const [authView, setAuthView] = useState<'landing' | 'signin' | 'signup' | 'home'>('home');
-
-  // Detect if we're on the app subdomain
-  const isAppSubdomain = hostname.startsWith('app.') || isLocalhost;
-  const isMainDomain = !isAppSubdomain && (hostname.includes('nabdchain') || hostname.includes('vercel.app'));
+  // View state for auth screens: 'home' (landing), 'signin', 'signup'
+  const [authView, setAuthView] = useState<'home' | 'signin' | 'signup'>('home');
 
   // Check for dev_auth URL parameter (passed from landing page dev login)
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const devAuthToken = urlParams.get('dev_auth');
     if (devAuthToken) {
-      // Set dev mode in localStorage
       localStorage.setItem('nabd_dev_mode', 'true');
       localStorage.setItem('mock_auth_token', devAuthToken);
-      // Clean URL and reload
       window.history.replaceState({}, '', window.location.pathname);
       window.location.reload();
     }
   }, []);
-
-  // Redirect helper - navigates to app subdomain
-  const redirectToApp = () => {
-    if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
-      window.location.href = 'https://app.nabdchain.com';
-    } else {
-      // For localhost or already on app subdomain, just show signin
-      setAuthView('signin');
-    }
-  };
 
   if (!isLoaded) {
     return (
@@ -1090,28 +1075,33 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  // Main domain (nabdchain.com) - Always show landing page
-  if (isMainDomain && !isSignedIn) {
-    return <LandingPage onEnterSystem={redirectToApp} />;
+  // On app.nabdchain.com: if not signed in, redirect to nabdchain.com for auth
+  if (isAppSubdomain && !isSignedIn) {
+    window.location.href = 'https://nabdchain.com';
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  // Main domain but signed in - redirect to app subdomain
+  // On nabdchain.com: if signed in, redirect to app.nabdchain.com
   if (isMainDomain && isSignedIn) {
-    // User is signed in but on main domain - redirect to app
-    if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
-      window.location.href = 'https://app.nabdchain.com';
-      return (
-        <div className="h-screen w-full flex items-center justify-center bg-[#F7F9FB] dark:bg-monday-dark-bg">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      );
-    }
+    window.location.href = 'https://app.nabdchain.com';
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  // Handler for "Back to Home" - show landing page inline
+  // Handler for "Back to Home" - show landing page
   const handleBackToHome = () => {
     setAuthView('home');
   };
+
+  // Redirect URL after sign-in: go to app subdomain
+  const signInRedirectUrl = isLocalhost ? '/dashboard' : 'https://app.nabdchain.com/dashboard';
 
   // App subdomain (app.nabdchain.com or localhost) - Show app or auth
   return (
@@ -1120,56 +1110,6 @@ const AppRoutes: React.FC = () => {
         {/* Show landing page */}
         {authView === 'home' && (
           <LandingPage onEnterSystem={() => setAuthView('signin')} />
-        )}
-
-        {authView === 'landing' && (
-          // On app subdomain, show sign-in by default, not landing
-          <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6 relative">
-            {/* Back to Home - Fixed at top */}
-            <button
-              onClick={handleBackToHome}
-              className="absolute top-6 left-6 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors z-50"
-            >
-              ← Back to Home
-            </button>
-
-            <SignIn
-              fallbackRedirectUrl="/dashboard"
-              appearance={{
-                variables: {
-                  colorPrimary: '#000000',
-                  colorText: '#000000',
-                  colorTextSecondary: '#71717a',
-                  colorBackground: '#ffffff',
-                  colorInputBackground: '#ffffff',
-                  colorInputText: '#000000',
-                },
-                elements: {
-                  footer: "hidden",
-                  formButtonPrimary: "bg-black hover:bg-zinc-800 text-white",
-                  formButtonReset: "text-black hover:text-zinc-700",
-                  card: "shadow-xl",
-                  headerTitle: "text-black",
-                  headerSubtitle: "text-zinc-500",
-                  socialButtonsBlockButton: "border-zinc-300 hover:bg-zinc-50",
-                  formFieldLabel: "text-zinc-700",
-                  formFieldInput: "border-zinc-300 focus:border-black focus:ring-black",
-                  dividerLine: "bg-zinc-200",
-                  dividerText: "text-zinc-400",
-                  footerActionLink: "text-black hover:text-zinc-700",
-                }
-              }}
-            />
-            <div className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <button
-                onClick={() => setAuthView('signup')}
-                className="text-black font-medium hover:underline"
-              >
-                Sign up
-              </button>
-            </div>
-          </div>
         )}
 
         {authView === 'signin' && (
@@ -1183,7 +1123,7 @@ const AppRoutes: React.FC = () => {
             </button>
 
             <SignIn
-              fallbackRedirectUrl="/dashboard"
+              fallbackRedirectUrl={signInRedirectUrl}
               appearance={{
                 variables: {
                   colorPrimary: '#000000',
