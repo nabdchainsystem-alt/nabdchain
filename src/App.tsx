@@ -1110,21 +1110,17 @@ const AppRoutes: React.FC = () => {
     }
   }
 
-  // Handler for "Back to Home" - on localhost show landing, on prod redirect
+  // Handler for "Back to Home" - show landing page inline
   const handleBackToHome = () => {
-    if (isLocalhost) {
-      setAuthView('home');
-    } else {
-      window.location.href = 'https://nabdchain.com';
-    }
+    setAuthView('home');
   };
 
   // App subdomain (app.nabdchain.com or localhost) - Show app or auth
   return (
     <>
       <SignedOut>
-        {/* Show landing page on localhost */}
-        {authView === 'home' && isLocalhost && (
+        {/* Show landing page */}
+        {authView === 'home' && (
           <LandingPage onEnterSystem={() => setAuthView('signin')} />
         )}
 
