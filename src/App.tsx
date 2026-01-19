@@ -1051,10 +1051,8 @@ const AppRoutes: React.FC = () => {
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
   // View state: 'landing' | 'signin' | 'signup' | 'home'
-  // On localhost, default to 'home' (landing page), on app subdomain default to 'landing' (sign-in)
-  const [authView, setAuthView] = useState<'landing' | 'signin' | 'signup' | 'home'>(() =>
-    isLocalhost ? 'home' : 'landing'
-  );
+  // Default to 'home' (landing page) everywhere
+  const [authView, setAuthView] = useState<'landing' | 'signin' | 'signup' | 'home'>('home');
 
   // Detect if we're on the app subdomain
   const isAppSubdomain = hostname.startsWith('app.') || isLocalhost;
