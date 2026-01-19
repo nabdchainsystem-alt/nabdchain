@@ -1109,7 +1109,15 @@ const AppRoutes: React.FC = () => {
       <SignedOut>
         {authView === 'landing' && (
           // On app subdomain, show sign-in by default, not landing
-          <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6">
+          <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6 relative">
+            {/* Back to Home - Fixed at top */}
+            <a
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
+              className="absolute top-6 left-6 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors z-50"
+            >
+              ← Back to Home
+            </a>
+
             <SignIn
               fallbackRedirectUrl="/dashboard"
               appearance={{
@@ -1127,17 +1135,19 @@ const AppRoutes: React.FC = () => {
                 Sign up
               </button>
             </div>
-            <a
-              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
-              className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium"
-            >
-              ← Back to Home
-            </a>
           </div>
         )}
 
         {authView === 'signin' && (
-          <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6">
+          <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6 relative">
+            {/* Back to Home - Fixed at top */}
+            <a
+              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
+              className="absolute top-6 left-6 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors z-50"
+            >
+              ← Back to Home
+            </a>
+
             <SignIn
               fallbackRedirectUrl="/dashboard"
               appearance={{
@@ -1155,12 +1165,6 @@ const AppRoutes: React.FC = () => {
                 Sign up
               </button>
             </div>
-            <a
-              href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/' : 'https://nabdchain.com'}
-              className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium"
-            >
-              ← Back to Home
-            </a>
           </div>
         )}
 
