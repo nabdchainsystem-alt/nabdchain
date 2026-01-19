@@ -191,73 +191,78 @@ export const StockAccuracyDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Variance per Category */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Variance by Category" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Variance by Category</h3>
-                                <p className="text-xs text-gray-400">Value of discrepancies</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={VARIANCE_PER_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                {/* Recharts: Variance per Category */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Variance by Category" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Variance by Category</h3>
+                            <p className="text-xs text-gray-400">Value of discrepancies</p>
                         </div>
-                    )}
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={VARIANCE_PER_CATEGORY} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
 
+                {/* Recharts: Accuracy by Warehouse */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Accuracy by Warehouse" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Accuracy by Warehouse</h3>
+                            <p className="text-xs text-gray-400">Audit score by location</p>
+                        </div>
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={ACCURACY_BY_WAREHOUSE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} domain={[90, 100]} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Row 3: Two Charts + 4 Side KPIs in 2x2 Grid --- */}
+
+                {/* Left: Two Charts in Nested Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts: Shrinkage Causes */}
                     {isLoading ? (
                         <PieChartSkeleton title="Shrinkage Causes" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Shrinkage Causes</h3>
                                 <p className="text-xs text-gray-400">Root cause analysis</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
-                        </div>
-                    )}
-
-                    {/* Recharts: Accuracy by Warehouse */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Accuracy by Warehouse" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Accuracy by Warehouse</h3>
-                                <p className="text-xs text-gray-400">Audit score by location</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={ACCURACY_BY_WAREHOUSE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[90, 100]} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
@@ -265,25 +270,23 @@ export const StockAccuracyDashboard: React.FC = () => {
                     {isLoading ? (
                         <PieChartSkeleton title="Adjustment Types" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Adjustment Types</h3>
                                 <p className="text-xs text-gray-400">Correction categories</p>
                             </div>
-                            <ReactECharts option={adjustmentPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={adjustmentPieOption} style={{ height: '180px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* Right: Side KPIs in 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>

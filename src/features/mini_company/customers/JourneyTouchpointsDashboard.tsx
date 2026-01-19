@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, TrendUp, Warning, Path, MapTrifold, Hourglass, CheckCircle, XCircle } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { JourneyTouchpointsInfo } from './JourneyTouchpointsInfo';
@@ -90,6 +91,14 @@ const DROP_POINT_SPLIT = [
 export const JourneyTouchpointsDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -201,132 +210,156 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Touchpoints per Stage (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Touchpoints by Stage</h3>
-                            <p className="text-xs text-gray-400">Interaction Volume</p>
+                {/* --- Row 2: Two Bar Charts Side by Side --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2"><ChartSkeleton /></div>
+                        <div className="col-span-2"><ChartSkeleton /></div>
+                    </>
+                ) : (
+                    <>
+                        {/* Recharts: Touchpoints per Stage (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Touchpoints by Stage</h3>
+                                <p className="text-xs text-gray-400">Interaction Volume</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={TOUCHPOINTS_BY_STAGE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={TOUCHPOINTS_BY_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+
+                        {/* Recharts: Channel Performance (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Channel Performance</h3>
+                                <p className="text-xs text-gray-400">Conversions by Source</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={CHANNEL_PERFORMANCE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="Conversions" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* --- Row 3: Two Pie Charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2"><PieChartSkeleton /></div>
+                        <div className="col-span-2"><ChartSkeleton /></div>
+                    </>
+                ) : (
+                    <>
+                        {/* Pie Charts in nested 2-col grid */}
+                        <div className="col-span-2 grid grid-cols-2 gap-6">
+                            {/* ECharts: Conversion Funnel */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Funnel View</h3>
+                                    <p className="text-xs text-gray-400">Yield Analysis</p>
+                                </div>
+                                <ReactECharts option={funnelOption} style={{ height: '180px' }} />
+                            </div>
+
+                            {/* ECharts: Drop Point Split (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Drop-Off Points</h3>
+                                    <p className="text-xs text-gray-400">Where Customers Leave</p>
+                                </div>
+                                <ReactECharts option={dropPieOption} style={{ height: '180px' }} />
+                            </div>
+                        </div>
+
+                        {/* 4 KPIs in 2x2 grid */}
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard
+                                        {...kpi}
+                                        color="blue"
+                                        className="h-full"
                                     />
-                                    <Bar dataKey="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    </>
+                )}
 
-                    {/* ECharts: Conversion Funnel */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Funnel View</h3>
-                            <p className="text-xs text-gray-400">Yield Analysis</p>
+                {/* --- Row 4: Table + Companion Chart --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2"><TableSkeleton /></div>
+                        <div className="col-span-2"><ChartSkeleton /></div>
+                    </>
+                ) : (
+                    <>
+                        {/* Table (2 cols) */}
+                        <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Interactions</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                        <tr>
+                                            <th className="px-5 py-3">Customer</th>
+                                            <th className="px-5 py-3">Stage</th>
+                                            <th className="px-5 py-3">Type</th>
+                                            <th className="px-5 py-3">Date</th>
+                                            <th className="px-5 py-3 text-right">Outcome</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {INTERACTION_LOG.map((row, index) => (
+                                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.stage}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.type}</td>
+                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-mono">{row.date}</td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.outcome === 'Won' ? 'bg-green-100 text-green-700' :
+                                                        row.outcome === 'High Intent' ? 'bg-teal-100 text-teal-700' :
+                                                            'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                        {row.outcome}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <ReactECharts option={funnelOption} style={{ height: '220px' }} />
-                    </div>
 
-                    {/* Recharts: Channel Performance (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Channel Performance</h3>
-                            <p className="text-xs text-gray-400">Conversions by Source</p>
+                        {/* Companion Chart: Sankey (2 cols) */}
+                        <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                         </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={CHANNEL_PERFORMANCE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Bar dataKey="Conversions" fill="#14b8a6" radius={[4, 4, 0, 0]} barSize={28} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* ECharts: Drop Point Split (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Drop-Off Points</h3>
-                            <p className="text-xs text-gray-400">Where Customers Leave</p>
-                        </div>
-                        <ReactECharts option={dropPieOption} style={{ height: '200px' }} />
-                    </div>
-
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
-                            <KPICard
-                                {...kpi}
-                                color="blue"
-                                className="h-full"
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
-
-                {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Interactions</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3">Customer</th>
-                                    <th className="px-5 py-3">Stage</th>
-                                    <th className="px-5 py-3">Type</th>
-                                    <th className="px-5 py-3">Date</th>
-                                    <th className="px-5 py-3 text-right">Outcome</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {INTERACTION_LOG.map((row, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.stage}</td>
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.type}</td>
-                                        <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-mono">{row.date}</td>
-                                        <td className="px-5 py-3 text-right">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.outcome === 'Won' ? 'bg-green-100 text-green-700' :
-                                                row.outcome === 'High Intent' ? 'bg-teal-100 text-teal-700' :
-                                                    'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                {row.outcome}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Companion Chart: Sankey (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
-                </div>
+                    </>
+                )}
 
             </div>
         </div>

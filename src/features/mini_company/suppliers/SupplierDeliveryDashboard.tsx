@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, TrendUp, Warning, Truck, Clock, Crosshair, Package, CalendarCheck, MapPin } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { SupplierDeliveryInfo } from './SupplierDeliveryInfo';
@@ -78,9 +79,26 @@ const ISSUE_CATEGORIES = [
     { value: 5, name: 'Other' }
 ];
 
+const DELIVERY_MODE = [
+    { value: 45, name: 'Ground' },
+    { value: 30, name: 'Air' },
+    { value: 25, name: 'Ocean' }
+];
+
 export const SupplierDeliveryDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
+
+    // Loading state for smooth entrance animation
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate data loading with staggered animation
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -122,24 +140,18 @@ export const SupplierDeliveryDashboard: React.FC = () => {
         }]
     };
 
-    // Gauge Chart (Reliability Index)
-    const gaugeOption: EChartsOption = {
+    // Delivery Mode Pie
+    const deliveryModePieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
         series: [{
-            type: 'gauge',
-            startAngle: 180,
-            endAngle: 0,
-            min: 0,
-            max: 100,
-            splitNumber: 5,
-            itemStyle: { color: '#14b8a6' }, // Teal
-            progress: { show: true, width: 10 },
-            pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '12%', width: 10, offsetCenter: [0, '-60%'], itemStyle: { color: 'auto' } },
-            axisLine: { lineStyle: { width: 10, color: [[0.3, '#f87171'], [0.7, '#facc15'], [1, '#4ade80']] } },
-            axisTick: { distance: -10, length: 8, lineStyle: { color: '#fff', width: 2 } },
-            splitLine: { distance: -10, length: 15, lineStyle: { color: '#fff', width: 2 } },
-            axisLabel: { color: 'auto', distance: 15, fontSize: 10 },
-            detail: { valueAnimation: true, formatter: '{value}', color: 'auto', fontSize: 20, offsetCenter: [0, '-20%'] },
-            data: [{ value: 92, name: 'Reliability' }]
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: DELIVERY_MODE,
+            color: ['#10b981', '#3b82f6', '#8b5cf6']
         }]
     };
 
@@ -177,161 +189,188 @@ export const SupplierDeliveryDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {TOP_KPIS.map((kpi) => (
-                    <div key={kpi.id} className="col-span-1">
+                {TOP_KPIS.map((kpi, index) => (
+                    <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
                             color="blue"
+                            loading={isLoading}
                         />
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: On-Time vs Late (Stacked Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Delivery Volume</h3>
-                            <p className="text-xs text-gray-400">On-Time vs Late</p>
+                {/* --- Row 2: Two bar charts side by side --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Delivery Volume" />
                         </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={DELIVERY_PERFORMANCE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Carrier Performance" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Recharts: On-Time vs Late (Stacked Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Delivery Volume</h3>
+                                <p className="text-xs text-gray-400">On-Time vs Late</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={DELIVERY_PERFORMANCE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                        <Bar dataKey="OnTime" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={28} name="On-Time" animationDuration={1000} />
+                                        <Bar dataKey="Late" stackId="a" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={28} name="Late" animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Recharts: Delivery by Carrier (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Carrier Performance</h3>
+                                <p className="text-xs text-gray-400">On-Time vs Late by Carrier</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={DELIVERY_BY_CARRIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                        <Bar dataKey="OnTime" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={28} name="On-Time" animationDuration={1000} />
+                                        <Bar dataKey="Late" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} name="Late" animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* --- Row 3: Two pie charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <div className="grid grid-cols-2 gap-6">
+                                <PieChartSkeleton title="Issue Breakdown" />
+                                <PieChartSkeleton title="Delivery Mode" />
+                            </div>
+                        </div>
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard {...kpi} color="blue" loading={true} />
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Two pie charts in nested 2-col grid */}
+                        <div className="col-span-2 grid grid-cols-2 gap-6">
+                            {/* ECharts: Issue Categories (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Issue Breakdown</h3>
+                                    <p className="text-xs text-gray-400">By Category</p>
+                                </div>
+                                <ReactECharts option={issuePieOption} style={{ height: '180px' }} />
+                            </div>
+
+                            {/* ECharts: Delivery Mode (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Delivery Mode</h3>
+                                    <p className="text-xs text-gray-400">By Transport Type</p>
+                                </div>
+                                <ReactECharts option={deliveryModePieOption} style={{ height: '180px' }} />
+                            </div>
+                        </div>
+
+                        {/* 4 KPIs in 2x2 grid */}
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard
+                                        {...kpi}
+                                        color="blue"
+                                        loading={isLoading}
                                     />
-                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                    <Bar dataKey="OnTime" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={28} name="On-Time" />
-                                    <Bar dataKey="Late" stackId="a" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={28} name="Late" />
-                                </BarChart>
-                            </ResponsiveContainer>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    </>
+                )}
 
-                    {/* Recharts: Lead Time Trend (Line) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time Trend</h3>
-                            <p className="text-xs text-gray-400">Avg Days to Receipt</p>
-                        </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={LEAD_TIME_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="month" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Line type="monotone" dataKey="LeadTime" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1', r: 3 }} activeDot={{ r: 5 }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Recharts: Delivery by Carrier (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Carrier Performance</h3>
-                            <p className="text-xs text-gray-400">On-Time vs Late by Carrier</p>
-                        </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={DELIVERY_BY_CARRIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                    <Bar dataKey="OnTime" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} barSize={28} name="On-Time" />
-                                    <Bar dataKey="Late" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={28} name="Late" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* ECharts: Issue Categories (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Issue Breakdown</h3>
-                            <p className="text-xs text-gray-400">By Category</p>
-                        </div>
-                        <ReactECharts option={issuePieOption} style={{ height: '200px' }} />
-                    </div>
-
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
-                            <KPICard
-                                {...kpi}
-                                color="blue"
-                                className="h-full"
-                            />
-                        </div>
-                    ))}
-                    {/* Gauge Chart in side column for variety */}
-                    <div className="flex-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-4 hover:shadow-md transition-shadow">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Reliability Index</h4>
-                        <ReactECharts option={gaugeOption} style={{ height: '140px' }} />
-                    </div>
-                </div>
-
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                {/* --- Row 4: Table + Companion Chart --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Performance Log</h3>
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <TableSkeleton rows={5} columns={5} />
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3">Supplier</th>
-                                    <th className="px-5 py-3 text-center">Orders</th>
-                                    <th className="px-5 py-3 text-center">On-Time</th>
-                                    <th className="px-5 py-3 text-center">Lead Time</th>
-                                    <th className="px-5 py-3 text-right">Issues</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {DELIVERY_TABLE.map((row, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.supplier}</td>
-                                        <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.orders}</td>
-                                        <td className={`px-5 py-3 text-center font-bold ${parseInt(row.onTime) >= 95 ? 'text-green-600' : parseInt(row.onTime) >= 85 ? 'text-amber-500' : 'text-red-500'}`}>
-                                            {row.onTime}
-                                        </td>
-                                        <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.leadTime}</td>
-                                        <td className="px-5 py-3 text-right text-xs text-gray-500 dark:text-gray-400">{row.issues}</td>
+                ) : (
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Performance Log</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                    <tr>
+                                        <th className="px-5 py-3">Supplier</th>
+                                        <th className="px-5 py-3 text-center">Orders</th>
+                                        <th className="px-5 py-3 text-center">On-Time</th>
+                                        <th className="px-5 py-3 text-center">Lead Time</th>
+                                        <th className="px-5 py-3 text-right">Issues</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {DELIVERY_TABLE.map((row, index) => (
+                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.supplier}</td>
+                                            <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.orders}</td>
+                                            <td className={`px-5 py-3 text-center font-bold ${parseInt(row.onTime) >= 95 ? 'text-green-600' : parseInt(row.onTime) >= 85 ? 'text-amber-500' : 'text-red-500'}`}>
+                                                {row.onTime}
+                                            </td>
+                                            <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.leadTime}</td>
+                                            <td className="px-5 py-3 text-right text-xs text-gray-500 dark:text-gray-400">{row.issues}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Companion Chart: Heatmap (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-2">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Monthly Consistency</h3>
-                        <p className="text-xs text-gray-400">On-Time Performance Heatmap</p>
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Monthly Consistency" />
                     </div>
-                    <ReactECharts option={heatmapOption} style={{ height: '300px', width: '100%' }} />
-                </div>
+                ) : (
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Monthly Consistency</h3>
+                            <p className="text-xs text-gray-400">On-Time Performance Heatmap</p>
+                        </div>
+                        <ReactECharts option={heatmapOption} style={{ height: '300px', width: '100%' }} />
+                    </div>
+                )}
 
             </div>
         </div>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, TrendUp, Warning, Money, ChartLineUp, Wallet, Coins, Percent, TreeStructure } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend } from 'recharts';
 import { SupplierCostInfo } from './SupplierCostInfo';
@@ -92,10 +93,29 @@ const SPEND_DISTRIBUTION = [
     { value: 25, name: 'Others' }
 ];
 
+const CATEGORY_SPEND = [
+    { value: 35, name: 'Raw Materials' },
+    { value: 25, name: 'Logistics' },
+    { value: 20, name: 'Services' },
+    { value: 15, name: 'Packaging' },
+    { value: 5, name: 'IT/SaaS' }
+];
+
 
 export const SupplierCostDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
+
+    // Loading state for smooth entrance animation
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate data loading with staggered animation
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -143,6 +163,21 @@ export const SupplierCostDashboard: React.FC = () => {
             label: { show: false },
             data: SPEND_DISTRIBUTION,
             color: ['#3b82f6', '#8b5cf6', '#9ca3af']
+        }]
+    };
+
+    // Category Spend Pie
+    const categorySpendPieOption: EChartsOption = {
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: CATEGORY_SPEND,
+            color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
         }]
     };
 
@@ -219,155 +254,185 @@ export const SupplierCostDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {TOP_KPIS.map((kpi) => (
-                    <div key={kpi.id} className="col-span-1">
+                {TOP_KPIS.map((kpi, index) => (
+                    <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
                             color="blue"
+                            loading={isLoading}
                         />
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Monthly Spend Trend (Area) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Trend</h3>
-                            <p className="text-xs text-gray-400">Monthly Run Rate</p>
+                {/* --- Row 2: Two bar charts side by side --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Spend Trend" />
                         </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={MONTHLY_SPEND_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="month" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Savings Sources" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Recharts: Monthly Spend Trend (Area) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Trend</h3>
+                                <p className="text-xs text-gray-400">Monthly Run Rate</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={MONTHLY_SPEND_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis dataKey="month" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                        <Area type="monotone" dataKey="Actual" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} name="Actual" />
+                                        <Area type="monotone" dataKey="Contract" stackId="2" stroke="#9ca3af" fill="none" strokeDasharray="5 5" name="Budget" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Recharts: Savings by Category (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Savings Sources</h3>
+                                <p className="text-xs text-gray-400">By Initiative Type</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart layout="vertical" data={SAVINGS_BY_CATEGORY} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="Savings" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* --- Row 3: Two pie charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <div className="grid grid-cols-2 gap-6">
+                                <PieChartSkeleton title="Spend Distribution" />
+                                <PieChartSkeleton title="Category Split" />
+                            </div>
+                        </div>
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard {...kpi} color="blue" loading={true} />
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Two pie charts in nested 2-col grid */}
+                        <div className="col-span-2 grid grid-cols-2 gap-6">
+                            {/* ECharts: Spend Distribution (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Distribution</h3>
+                                    <p className="text-xs text-gray-400">Concentration Analysis</p>
+                                </div>
+                                <ReactECharts option={spendDistPieOption} style={{ height: '180px' }} />
+                            </div>
+
+                            {/* ECharts: Category Spend (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Split</h3>
+                                    <p className="text-xs text-gray-400">By Category</p>
+                                </div>
+                                <ReactECharts option={categorySpendPieOption} style={{ height: '180px' }} />
+                            </div>
+                        </div>
+
+                        {/* 4 KPIs in 2x2 grid */}
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard
+                                        {...kpi}
+                                        color="blue"
+                                        loading={isLoading}
                                     />
-                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                    <Area type="monotone" dataKey="Actual" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} name="Actual" />
-                                    <Area type="monotone" dataKey="Contract" stackId="2" stroke="#9ca3af" fill="none" strokeDasharray="5 5" name="Budget" />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    </>
+                )}
 
-                    {/* ECharts: Spend Tree Map */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Concentration</h3>
-                            <p className="text-xs text-gray-400">By Category</p>
-                        </div>
-                        <ReactECharts option={treemapOption} style={{ height: '200px' }} />
-                    </div>
-
-                    {/* Recharts: Savings by Category (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Savings Sources</h3>
-                            <p className="text-xs text-gray-400">By Initiative Type</p>
-                        </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={SAVINGS_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Bar dataKey="Savings" fill="#10b981" radius={[4, 4, 0, 0]} barSize={28} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* ECharts: Spend Distribution (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Distribution</h3>
-                            <p className="text-xs text-gray-400">Concentration Analysis</p>
-                        </div>
-                        <ReactECharts option={spendDistPieOption} style={{ height: '200px' }} />
-                    </div>
-
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
-                            <KPICard
-                                {...kpi}
-                                color="blue"
-                                className="h-full"
-                            />
-                        </div>
-                    ))}
-                    {/* Variance Line Chart */}
-                    <div className="flex-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-4 hover:shadow-md transition-shadow">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Cost Variance %</h4>
-                        <div className="h-[120px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={COST_VARIANCE_TREND}>
-                                    <Line type="monotone" dataKey="Variance" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                                    <CartesianGrid stroke="#f3f4f6" vertical={false} />
-                                    <YAxis hide domain={[-5, 10]} />
-                                    <Tooltip />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                {/* --- Row 4: Table + Companion Chart --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Analysis</h3>
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <TableSkeleton rows={5} columns={5} />
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3">Supplier</th>
-                                    <th className="px-5 py-3 text-right">Contract</th>
-                                    <th className="px-5 py-3 text-right">Actual</th>
-                                    <th className="px-5 py-3 text-center">Variance</th>
-                                    <th className="px-5 py-3 text-right">Savings</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {COST_TABLE.map((row, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.supplier}</td>
-                                        <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.contract}</td>
-                                        <td className="px-5 py-3 text-right font-medium text-gray-800 dark:text-gray-200">{row.actual}</td>
-                                        <td className={`px-5 py-3 text-center font-bold ${row.variance.includes('-') ? 'text-green-600' : 'text-red-500'}`}>
-                                            {row.variance}
-                                        </td>
-                                        <td className="px-5 py-3 text-right text-green-600 font-medium">{row.savings}</td>
+                ) : (
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Analysis</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                    <tr>
+                                        <th className="px-5 py-3">Supplier</th>
+                                        <th className="px-5 py-3 text-right">Contract</th>
+                                        <th className="px-5 py-3 text-right">Actual</th>
+                                        <th className="px-5 py-3 text-center">Variance</th>
+                                        <th className="px-5 py-3 text-right">Savings</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {COST_TABLE.map((row, index) => (
+                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.supplier}</td>
+                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.contract}</td>
+                                            <td className="px-5 py-3 text-right font-medium text-gray-800 dark:text-gray-200">{row.actual}</td>
+                                            <td className={`px-5 py-3 text-center font-bold ${row.variance.includes('-') ? 'text-green-600' : 'text-red-500'}`}>
+                                                {row.variance}
+                                            </td>
+                                            <td className="px-5 py-3 text-right text-green-600 font-medium">{row.savings}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Companion Chart: Waterfall (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="mb-2">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Bridge</h3>
-                        <p className="text-xs text-gray-400">Budget to Actual Walk</p>
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Cost Bridge" />
                     </div>
-                    <ReactECharts option={waterfallOption} style={{ height: '300px', width: '100%' }} />
-                </div>
+                ) : (
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Bridge</h3>
+                            <p className="text-xs text-gray-400">Budget to Actual Walk</p>
+                        </div>
+                        <ReactECharts option={waterfallOption} style={{ height: '300px', width: '100%' }} />
+                    </div>
+                )}
 
             </div>
         </div>

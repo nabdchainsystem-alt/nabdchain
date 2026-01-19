@@ -267,86 +267,89 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area - 2x2 Grid */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Row 1, Col 1: Main Sales Funnel (ECharts) */}
+                {/* Main Sales Funnel (Left) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Main Sales Funnel" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Main Sales Funnel</h3>
-                                <p className="text-xs text-gray-400">Lead conversion stages</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Main Sales Funnel</h3>
+                                <p className="text-xs text-gray-400 mt-1">Lead conversion stages</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ReactECharts option={funnelOption} style={{ height: '100%' }} />
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 1, Col 2: Drop-off by Sales Rep (Recharts) */}
+                {/* Drop-off by Sales Rep (Right) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Drop-off by Sales Rep" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Drop-off by Sales Rep</h3>
-                                <p className="text-xs text-gray-400">Team leakage analysis</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Drop-off by Sales Rep</h3>
+                                <p className="text-xs text-gray-400 mt-1">Team leakage analysis</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={DROPOFF_BY_REP_DATA} margin={{ left: -20, right: 10 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                        <Bar dataKey="dropoff" name="Leakage %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.5 }} />
+                                        <Bar dataKey="dropoff" name="Leakage %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 2, Col 1: Won vs Lost Deals (ECharts) */}
+                {/* --- Row 3: Two Charts + 4 Side KPIs --- */}
+
+                {/* Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Won vs Lost Deals Pie */}
                     {isLoading ? (
                         <PieChartSkeleton title="Won vs Lost Deals" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Won vs Lost Deals</h3>
-                                <p className="text-xs text-gray-400">Success rate breakdown</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Won vs Lost Deals</h3>
+                                <p className="text-xs text-gray-400 mt-1">Success rate breakdown</p>
                             </div>
-                            <ReactECharts option={wonLostPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={wonLostPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
-                    {/* Row 2, Col 2: Leakage Heatmap (ECharts) */}
+                    {/* Leakage Heatmap */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Leakage Heatmap" />
+                        <ChartSkeleton height="h-[250px]" title="Leakage Heatmap" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Leakage Heatmap</h3>
-                                <p className="text-xs text-gray-400">Stage vs category analysis</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Leakage Heatmap</h3>
+                                <p className="text-xs text-gray-400 mt-1">Stage vs category analysis</p>
                             </div>
-                            <ReactECharts option={heatmapOption} style={{ height: '200px' }} />
+                            <ReactECharts option={heatmapOption} style={{ height: '210px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
@@ -451,7 +454,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                                         <Bar dataKey="days" name="Avg Days" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
-                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[0, 4, 4, 0]} barSize={16} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>

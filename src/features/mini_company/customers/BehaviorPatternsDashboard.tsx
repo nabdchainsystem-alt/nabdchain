@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, TrendUp, Warning, Activity, ShoppingCart, Clock, Lightning, ChartLineUp } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BehaviorPatternsInfo } from './BehaviorPatternsInfo';
@@ -71,6 +72,17 @@ const PURCHASE_TYPE = [
 export const BehaviorPatternsDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
+
+    // Loading state for smooth entrance animation
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate data loading with staggered animation
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -157,141 +169,166 @@ export const BehaviorPatternsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {TOP_KPIS.map((kpi) => (
-                    <div key={kpi.id} className="col-span-1">
+                {TOP_KPIS.map((kpi, index) => (
+                    <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
                             color="blue"
+                            loading={isLoading}
                         />
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Orders by Time (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                {/* --- Row 2: Two Bar Charts Side by Side --- */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Activity Heatmap" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Activity Heatmap</h3>
                             <p className="text-xs text-gray-400">Orders by Time of Day</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={ORDERS_BY_TIME} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                <BarChart layout="vertical" data={ORDERS_BY_TIME} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
                                     <Tooltip
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Orders" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} />
+                                    <Bar dataKey="Orders" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
+                )}
 
-                    {/* ECharts: Purchase Mix (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Mix</h3>
-                            <p className="text-xs text-gray-400">Preferential Split</p>
-                        </div>
-                        <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Purchase Frequency" />
                     </div>
-
-                    {/* Recharts: Frequency by Segment (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
+                ) : (
+                    <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="mb-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Purchase Frequency</h3>
                             <p className="text-xs text-gray-400">Customer Count by Interval</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={FREQUENCY_BY_SEGMENT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                <BarChart layout="vertical" data={FREQUENCY_BY_SEGMENT} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
                                     <Tooltip
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="Count" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={28} />
+                                    <Bar dataKey="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
+                )}
 
-                    {/* ECharts: Purchase Type (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Purchase Type</h3>
-                            <p className="text-xs text-gray-400">Buying Behavior</p>
+                {/* --- Row 3: Two Pie Charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <div className="grid grid-cols-2 gap-6">
+                            <PieChartSkeleton title="Category Mix" />
+                            <PieChartSkeleton title="Purchase Type" />
                         </div>
-                        <ReactECharts option={purchaseTypePieOption} style={{ height: '200px' }} />
                     </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Mix</h3>
+                                <p className="text-xs text-gray-400">Preferential Split</p>
+                            </div>
+                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        </div>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Purchase Type</h3>
+                                <p className="text-xs text-gray-400">Buying Behavior</p>
+                            </div>
+                            <ReactECharts option={purchaseTypePieOption} style={{ height: '180px' }} />
+                        </div>
+                    </div>
+                )}
 
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 KPIs in 2x2 grid */}
+                <div className="col-span-1 md:col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
                                 className="h-full"
+                                loading={isLoading}
                             />
                         </div>
                     ))}
                 </div>
 
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
-
-                {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Behavior Log</h3>
+                {/* --- Row 4: Table + Companion Chart --- */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <TableSkeleton rows={5} columns={5} />
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3">Customer</th>
-                                    <th className="px-5 py-3 text-right">Orders</th>
-                                    <th className="px-5 py-3 text-right">Avg Order Value</th>
-                                    <th className="px-5 py-3 text-right">Last Purchase</th>
-                                    <th className="px-5 py-3 text-center">Trend</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {BEHAVIOR_LOG.map((row, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
-                                        <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.orders}</td>
-                                        <td className="px-5 py-3 text-right text-green-600 font-medium">{row.aov}</td>
-                                        <td className="px-5 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{row.lastDate}</td>
-                                        <td className="px-5 py-3 text-center">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.trend === 'Surging' ? 'bg-green-100 text-green-700' :
-                                                row.trend === 'Declining' ? 'bg-red-100 text-red-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                {row.trend}
-                                            </span>
-                                        </td>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Behavior Log</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                    <tr>
+                                        <th className="px-5 py-3">Customer</th>
+                                        <th className="px-5 py-3 text-right">Orders</th>
+                                        <th className="px-5 py-3 text-right">Avg Order Value</th>
+                                        <th className="px-5 py-3 text-right">Last Purchase</th>
+                                        <th className="px-5 py-3 text-center">Trend</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {BEHAVIOR_LOG.map((row, index) => (
+                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
+                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.orders}</td>
+                                            <td className="px-5 py-3 text-right text-green-600 font-medium">{row.aov}</td>
+                                            <td className="px-5 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{row.lastDate}</td>
+                                            <td className="px-5 py-3 text-center">
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.trend === 'Surging' ? 'bg-green-100 text-green-700' :
+                                                    row.trend === 'Declining' ? 'bg-red-100 text-red-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {row.trend}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Companion Chart: Wave (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
-                </div>
+                {/* Companion Chart: Wave */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <PieChartSkeleton size={240} title="Behavioral Wave" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                        <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
+                    </div>
+                )}
 
             </div>
         </div>

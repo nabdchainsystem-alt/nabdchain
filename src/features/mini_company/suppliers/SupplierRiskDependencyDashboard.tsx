@@ -99,7 +99,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 800);
+        }, 1200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -213,164 +213,162 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Concentration & Risk (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Exposure Analysis" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                {/* --- Row 2: Two bar charts side by side --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Exposure Analysis" />
+                        </div>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Risk Scores" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Exposure Analysis</h3>
                                 <p className="text-xs text-gray-400">Dependency (Left) vs Risk Score (Right)</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SPEND_CONCENTRATION} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                                    <BarChart layout="vertical" data={SPEND_CONCENTRATION} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
                                         <Tooltip cursor={{ fill: '#f9fafb' }} />
-                                        <Bar dataKey="Spend" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={28} name="Dependency %" />
+                                        <Bar dataKey="Spend" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} name="Dependency %" animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                    )}
 
-                    {/* ECharts: Sensitivity (Pie) */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {isLoading ? (
-                            <>
-                                <PieChartSkeleton title="Sourcing Mix" />
-                                <PieChartSkeleton title="Risk Types" />
-                            </>
-                        ) : (
-                            <>
-                                <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                                    <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Sourcing Mix</h3>
-                                    <ReactECharts option={dependencyPieOption} style={{ height: '160px' }} />
-                                </div>
-                                <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                                    <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Risk Types</h3>
-                                    <ReactECharts option={riskPieOption} style={{ height: '160px' }} />
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Recharts: Risk Score by Supplier (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Risk Scores" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Scores</h3>
                                 <p className="text-xs text-gray-400">By Supplier</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={RISK_SCORE_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                    <BarChart layout="vertical" data={RISK_SCORE_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Score" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={28} />
+                                        <Bar dataKey="Score" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                    )}
-
-                    {/* ECharts: Mitigation Status (Pie) */}
-                    {isLoading ? (
-                        <PieChartSkeleton title="Mitigation Status" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Mitigation Status</h3>
-                                <p className="text-xs text-gray-400">Action Progress</p>
-                            </div>
-                            <ReactECharts option={mitigationPieOption} style={{ height: '200px' }} />
-                        </div>
-                    )}
-
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi, index) => (
-                        <div key={kpi.id} className="flex-1" style={{ animationDelay: `${(index + 4) * 100}ms` }}>
-                            <KPICard
-                                {...kpi}
-                                color="blue"
-                                className="h-full"
-                                loading={isLoading}
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
-
-                {/* Table (2 cols) */}
-                {isLoading ? (
-                    <TableSkeleton rows={5} columns={5} />
-                ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Details</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                    <tr>
-                                        <th className="px-5 py-3">Supplier</th>
-                                        <th className="px-5 py-3 text-center">Dependency</th>
-                                        <th className="px-5 py-3 text-center">Risk</th>
-                                        <th className="px-5 py-3 text-center">Backup</th>
-                                        <th className="px-5 py-3 text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {SUPPLIER_TABLE.map((row, index) => (
-                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
-                                            <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.dependency}</td>
-                                            <td className="px-5 py-3 text-center font-medium text-amber-500">{row.risk}</td>
-                                            <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.backup}</td>
-                                            <td className="px-5 py-3 text-right">
-                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Critical' ? 'bg-red-100 text-red-700' :
-                                                    row.status === 'Check' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-green-100 text-green-700'
-                                                    }`}>
-                                                    {row.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    </>
                 )}
 
-                {/* Companion Chart: Network Graph (2 cols) */}
+                {/* --- Row 3: Two pie charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[280px]" title="Supply Chain Network" />
-                ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Map</h3>
-                            <p className="text-xs text-gray-400">Multi-Tier View</p>
+                    <>
+                        <div className="col-span-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <PieChartSkeleton title="Sourcing Mix" />
+                                <PieChartSkeleton title="Risk Types" />
+                            </div>
                         </div>
-                        <ReactECharts option={networkOption} style={{ height: '300px', width: '100%' }} />
-                    </div>
+                        <div className="col-span-2 min-h-[250px]">
+                            <div className="grid grid-cols-2 gap-4 h-full">
+                                {SIDE_KPIS.map((kpi, index) => (
+                                    <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                        <KPICard {...kpi} color="blue" loading={true} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="col-span-2 grid grid-cols-2 gap-4">
+                            <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Sourcing Mix</h3>
+                                <ReactECharts option={dependencyPieOption} style={{ height: '180px' }} />
+                            </div>
+                            <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Risk Types</h3>
+                                <ReactECharts option={riskPieOption} style={{ height: '180px' }} />
+                            </div>
+                        </div>
+
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard
+                                        {...kpi}
+                                        color="blue"
+                                        loading={isLoading}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {/* --- Row 4: Table (col-span-2) + Companion Chart (col-span-2) --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <TableSkeleton rows={5} columns={5} />
+                        </div>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Dependency Map" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Details</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                        <tr>
+                                            <th className="px-5 py-3">Supplier</th>
+                                            <th className="px-5 py-3 text-center">Dependency</th>
+                                            <th className="px-5 py-3 text-center">Risk</th>
+                                            <th className="px-5 py-3 text-center">Backup</th>
+                                            <th className="px-5 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {SUPPLIER_TABLE.map((row, index) => (
+                                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
+                                                <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.dependency}</td>
+                                                <td className="px-5 py-3 text-center font-medium text-amber-500">{row.risk}</td>
+                                                <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.backup}</td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Critical' ? 'bg-red-100 text-red-700' :
+                                                        row.status === 'Check' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-green-100 text-green-700'
+                                                        }`}>
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div className="mb-2">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Map</h3>
+                                <p className="text-xs text-gray-400">Multi-Tier View</p>
+                            </div>
+                            <ReactECharts option={networkOption} style={{ height: '300px', width: '100%' }} />
+                        </div>
+                    </>
                 )}
 
             </div>

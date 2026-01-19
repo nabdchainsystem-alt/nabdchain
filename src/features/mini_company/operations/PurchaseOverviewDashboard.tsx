@@ -219,102 +219,105 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Spend by Supplier */}
+                {/* Spend by Supplier (Left) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Spend by Supplier" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend by Supplier</h3>
-                                <p className="text-xs text-gray-400">Top 5 suppliers by volume</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend by Supplier</h3>
+                                <p className="text-xs text-gray-400 mt-1">Top 5 suppliers by volume</p>
                             </div>
-                            <div className="h-[220px] w-full">
+                            <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SPEND_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} interval={0} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <BarChart layout="vertical" data={SPEND_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={12} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
+                                            cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                             formatter={(val: number) => formatCurrency(val, currency.code, currency.symbol)}
                                         />
-                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Recharts: Spend by Category */}
+                {/* Spend by Category (Right) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Spend by Category" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend by Category</h3>
-                                <p className="text-xs text-gray-400">Departmental allocation</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend by Category</h3>
+                                <p className="text-xs text-gray-400 mt-1">Departmental allocation</p>
                             </div>
-                            <div className="h-[220px] w-full">
+                            <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SPEND_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} interval={0} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <BarChart layout="vertical" data={SPEND_BY_CATEGORY} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={12} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
+                                            cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                             formatter={(val: number) => formatCurrency(val, currency.code, currency.symbol)}
                                         />
-                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* ECharts: Spend Distribution */}
+                {/* --- Row 3: Two Charts + 4 Side KPIs --- */}
+
+                {/* Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Spend Distribution Pie */}
                     {isLoading ? (
                         <PieChartSkeleton title="Spend Distribution" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Distribution</h3>
-                                <p className="text-xs text-gray-400">Breakdown by purchase type</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend Distribution</h3>
+                                <p className="text-xs text-gray-400 mt-1">Breakdown by purchase type</p>
                             </div>
-                            <ReactECharts option={pieOption1} style={{ height: '200px' }} />
+                            <ReactECharts option={pieOption1} style={{ height: '210px' }} />
                         </div>
                     )}
 
-                    {/* ECharts: Supplier Share */}
+                    {/* Supplier Share Pie */}
                     {isLoading ? (
                         <PieChartSkeleton title="Supplier Share" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Supplier Share</h3>
-                                <p className="text-xs text-gray-400">Market share of top suppliers</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Supplier Share</h3>
+                                <p className="text-xs text-gray-400 mt-1">Market share of top suppliers</p>
                             </div>
-                            <ReactECharts option={pieOption2} style={{ height: '200px' }} />
+                            <ReactECharts option={pieOption2} style={{ height: '210px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color={kpi.color as any || "blue"}
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>

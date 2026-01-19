@@ -298,33 +298,36 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
 
                 {/* --- Row 3: Two Pies + 4 Efficiency KPIs --- */}
 
-                {/* New vs Returning (1 col) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="New vs Returning" />
-                ) : (
-                    <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="mb-3">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">New vs Returning</h3>
-                            <p className="text-xs text-gray-400 mt-1">Customer base quality</p>
+                {/* Pie Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* New vs Returning */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="New vs Returning" />
+                    ) : (
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">New vs Returning</h3>
+                                <p className="text-xs text-gray-400 mt-1">Customer base quality</p>
+                            </div>
+                            <ReactECharts option={newVsReturningOption} style={{ height: '210px' }} />
                         </div>
-                        <ReactECharts option={newVsReturningOption} style={{ height: '200px' }} />
-                    </div>
-                )}
+                    )}
 
-                {/* Discount vs Full-Price (1 col) */}
-                {isLoading ? (
-                    <PieChartSkeleton title="Discount vs Full-Price" />
-                ) : (
-                    <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="mb-3">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Discount vs Full-Price</h3>
-                            <p className="text-xs text-gray-400 mt-1">Pricing health check</p>
+                    {/* Discount vs Full-Price */}
+                    {isLoading ? (
+                        <PieChartSkeleton title="Discount vs Full-Price" />
+                    ) : (
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Discount vs Full-Price</h3>
+                                <p className="text-xs text-gray-400 mt-1">Pricing health check</p>
+                            </div>
+                            <ReactECharts option={discountPieOption} style={{ height: '210px' }} />
                         </div>
-                        <ReactECharts option={discountPieOption} style={{ height: '200px' }} />
-                    </div>
-                )}
+                    )}
+                </div>
 
-                {/* Efficiency KPIs (2 cols - Nested 2x2 Grid) */}
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
                 <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
                     {EFFICIENCY_KPIS.map((kpi) => (
                         <div key={kpi.id} className="col-span-1">

@@ -301,98 +301,101 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area - 2x2 Grid */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Row 1, Col 1: Actual vs Forecast (ECharts) */}
+                {/* Actual vs Forecast (Left) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Actual vs Forecasted Sales" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Actual vs Forecast</h3>
-                                <p className="text-xs text-gray-400">Trend comparison</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Actual vs Forecast</h3>
+                                <p className="text-xs text-gray-400 mt-1">Trend comparison</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ReactECharts option={lineOption} style={{ height: '100%' }} />
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 1, Col 2: Forecast per Product (Recharts) */}
+                {/* Forecast per Product (Right) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Forecast per Product" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast per Product</h3>
-                                <p className="text-xs text-gray-400">Projected demand</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Forecast per Product</h3>
+                                <p className="text-xs text-gray-400 mt-1">Projected demand</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={FORECAST_BY_PRODUCT_DATA} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis dataKey="name" fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis fontSize={12} tick={{ fill: '#94a3b8' }} />
+                                        <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="actual" name="Current" fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={12} />
-                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
+                                        <Bar dataKey="actual" name="Current" fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
+                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 2, Col 1: Risk Distribution (ECharts) */}
+                {/* --- Row 3: Two Charts + 4 Side KPIs --- */}
+
+                {/* Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Risk Distribution Pie */}
                     {isLoading ? (
                         <PieChartSkeleton title="Risk Distribution" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
-                                <p className="text-xs text-gray-400">Vulnerability assessment</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Risk Distribution</h3>
+                                <p className="text-xs text-gray-400 mt-1">Vulnerability assessment</p>
                             </div>
-                            <ReactECharts option={riskPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={riskPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
-                    {/* Row 2, Col 2: Regional Forecast (Recharts) */}
+                    {/* Regional Forecast */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Regional Forecast" />
+                        <ChartSkeleton height="h-[250px]" title="Regional Forecast" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Regional Forecast</h3>
-                                <p className="text-xs text-gray-400">Territory performance</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Regional Forecast</h3>
+                                <p className="text-xs text-gray-400 mt-1">Territory performance</p>
                             </div>
-                            <div className="h-[200px]">
+                            <div className="h-[210px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={FORECAST_BY_REGION_DATA} layout="vertical" margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis dataKey="name" type="category" width={60} fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} />
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis dataKey="name" type="category" width={60} fontSize={10} tick={{ fill: '#94a3b8' }} />
+                                        <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>

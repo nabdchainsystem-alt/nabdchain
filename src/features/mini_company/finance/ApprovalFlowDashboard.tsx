@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
+import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ArrowsOut, Info, TrendUp, Warning, CheckCircle, Clock, XCircle, TreeStructure, Hourglass } from 'phosphor-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ApprovalFlowInfo } from './ApprovalFlowInfo';
@@ -82,6 +83,14 @@ const APPROVAL_OUTCOME = [
 export const ApprovalFlowDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -194,81 +203,104 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Delay per Stage (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Delay per Stage</h3>
-                            <p className="text-xs text-gray-400">In Days</p>
-                        </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={DELAY_PER_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="horizontal">
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Bar dataKey="Days" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* ECharts: Funnel */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Funnel</h3>
-                            <p className="text-xs text-gray-400">Request Progression</p>
-                        </div>
-                        <ReactECharts option={funnelOption} style={{ height: '200px' }} />
-                    </div>
-
-                    {/* Recharts: Approvals by Type (Bar) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approvals by Type</h3>
-                            <p className="text-xs text-gray-400">Approved vs Rejected</p>
-                        </div>
-                        <div className="h-[220px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={APPROVALS_BY_TYPE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    />
-                                    <Legend iconType="circle" fontSize={10} />
-                                    <Bar dataKey="Approved" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
-                                    <Bar dataKey="Rejected" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={12} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* ECharts: Approval Outcome (Pie) */}
-                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Outcome</h3>
-                            <p className="text-xs text-gray-400">Overall success rate</p>
-                        </div>
-                        <ReactECharts option={outcomePieOption} style={{ height: '200px' }} />
-                    </div>
-
+                {/* --- Row 2: Two Bar Charts Side by Side --- */}
+                <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    {isLoading ? (
+                        <ChartSkeleton />
+                    ) : (
+                        <>
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Delay per Stage</h3>
+                                <p className="text-xs text-gray-400">In Days</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={DELAY_PER_STAGE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Bar dataKey="Days" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    {isLoading ? (
+                        <ChartSkeleton />
+                    ) : (
+                        <>
+                            <div className="mb-4">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approvals by Type</h3>
+                                <p className="text-xs text-gray-400">Approved vs Rejected</p>
+                            </div>
+                            <div className="h-[220px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={APPROVALS_BY_TYPE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f9fafb' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                        />
+                                        <Legend iconType="circle" fontSize={10} />
+                                        <Bar dataKey="Approved" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                        <Bar dataKey="Rejected" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* --- Row 3: Two Pie Charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Funnel Chart */}
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        {isLoading ? (
+                            <PieChartSkeleton />
+                        ) : (
+                            <>
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Funnel</h3>
+                                    <p className="text-xs text-gray-400">Request Progression</p>
+                                </div>
+                                <ReactECharts option={funnelOption} style={{ height: '180px' }} />
+                            </>
+                        )}
+                    </div>
+
+                    {/* Approval Outcome Pie */}
+                    <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        {isLoading ? (
+                            <PieChartSkeleton />
+                        ) : (
+                            <>
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Outcome</h3>
+                                    <p className="text-xs text-gray-400">Overall success rate</p>
+                                </div>
+                                <ReactECharts option={outcomePieOption} style={{ height: '180px' }} />
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* 4 KPIs in 2x2 grid */}
+                <div className="col-span-1 md:col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div
+                            key={kpi.id}
+                            className="animate-fade-in"
+                            style={{ animationDelay: `${index * 100}ms` }}
+                        >
                             <KPICard
                                 {...kpi}
                                 color="blue"
@@ -278,49 +310,61 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     ))}
                 </div>
 
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                {/* --- Row 4: Table + Companion Chart --- */}
 
                 {/* Table (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Queue</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3">Expense ID</th>
-                                    <th className="px-5 py-3">Submitted By</th>
-                                    <th className="px-5 py-3">Stage</th>
-                                    <th className="px-5 py-3 text-right">Age (Days)</th>
-                                    <th className="px-5 py-3 text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {APPROVAL_QUEUE.map((row) => (
-                                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.submittedBy}</td>
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.stage}</td>
-                                        <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.days}</td>
-                                        <td className="px-5 py-3 text-center">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Delayed' ? 'bg-red-100 text-red-700' :
-                                                row.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                {row.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {isLoading ? (
+                        <div className="p-5">
+                            <TableSkeleton />
+                        </div>
+                    ) : (
+                        <>
+                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Queue</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
+                                        <tr>
+                                            <th className="px-5 py-3">Expense ID</th>
+                                            <th className="px-5 py-3">Submitted By</th>
+                                            <th className="px-5 py-3">Stage</th>
+                                            <th className="px-5 py-3 text-right">Age (Days)</th>
+                                            <th className="px-5 py-3 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {APPROVAL_QUEUE.map((row) => (
+                                            <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.submittedBy}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.stage}</td>
+                                                <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.days}</td>
+                                                <td className="px-5 py-3 text-center">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Delayed' ? 'bg-red-100 text-red-700' :
+                                                        row.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                                                            'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Companion Chart: Sankey (2 cols) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow">
-                    <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    {isLoading ? (
+                        <ChartSkeleton />
+                    ) : (
+                        <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
+                    )}
                 </div>
 
             </div>

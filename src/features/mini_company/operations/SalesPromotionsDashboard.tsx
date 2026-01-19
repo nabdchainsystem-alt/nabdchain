@@ -226,94 +226,97 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area - 2x2 Grid */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Row 1, Col 1: Campaign Performance Bar Chart */}
+                {/* Campaign Performance (Left) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Campaign Performance" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Campaign Performance</h3>
-                                <p className="text-xs text-gray-400">Revenue per campaign</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Campaign Performance</h3>
+                                <p className="text-xs text-gray-400 mt-1">Revenue per campaign</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={REVENUE_PER_CAMPAIGN_DATA} margin={{ left: -15, right: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.5 }} />
+                                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 1, Col 2: Conversion by Campaign */}
+                {/* Conversion by Campaign (Right) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Conversion by Campaign" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion by Campaign</h3>
-                                <p className="text-xs text-gray-400">Conversion efficiency</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Conversion by Campaign</h3>
+                                <p className="text-xs text-gray-400 mt-1">Conversion efficiency</p>
                             </div>
-                            <div className="h-[220px]">
+                            <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={REVENUE_PER_CAMPAIGN_DATA} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis dataKey="name" type="category" width={70} fontSize={9} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[0, 4, 4, 0]} barSize={14} />
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={12} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis dataKey="name" type="category" width={80} fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} cursor={{ fill: '#f1f5f9', opacity: 0.5 }} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 2, Col 1: Revenue by Type Pie */}
+                {/* --- Row 3: Two Charts + 4 Side KPIs --- */}
+
+                {/* Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Revenue by Type Pie */}
                     {isLoading ? (
                         <PieChartSkeleton title="Revenue by Type" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Type</h3>
-                                <p className="text-xs text-gray-400">Promotion type breakdown</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue by Type</h3>
+                                <p className="text-xs text-gray-400 mt-1">Promotion type breakdown</p>
                             </div>
-                            <ReactECharts option={typePieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={typePieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
-                    {/* Row 2, Col 2: Campaign Impact Bubble */}
+                    {/* Campaign Impact Bubble */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Campaign Impact Matrix" />
+                        <ChartSkeleton height="h-[250px]" title="Campaign Impact Matrix" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2 text-left">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Campaign Impact</h3>
-                                <p className="text-xs text-gray-400">ROI vs Conversion</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Campaign Impact</h3>
+                                <p className="text-xs text-gray-400 mt-1">ROI vs Conversion</p>
                             </div>
-                            <ReactECharts option={impactBubbleOption} style={{ height: '200px' }} />
+                            <ReactECharts option={impactBubbleOption} style={{ height: '210px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
@@ -414,7 +417,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
                                         <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
-                                        <Bar dataKey="conversion" name="Conv %" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <Bar dataKey="conversion" name="Conv %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>

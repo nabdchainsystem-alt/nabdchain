@@ -83,7 +83,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 800); // Short delay for smooth transition
+        }, 1200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -181,96 +181,93 @@ export const CustomerOverviewDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Customers by Month (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Customer Growth" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Customer Growth</h3>
-                                <p className="text-xs text-gray-400">Total vs New</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={CUSTOMERS_BY_MONTH} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="Total" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
-                                        <Bar dataKey="New" fill="#dbeafe" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                {/* --- Row 2: Two Bar Charts Side by Side --- */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Customer Growth" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Customer Growth</h3>
+                            <p className="text-xs text-gray-400">Total vs New</p>
                         </div>
-                    )}
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={CUSTOMERS_BY_MONTH} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="Total" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
+                                    <Bar dataKey="New" fill="#dbeafe" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
 
-                    {/* ECharts: Distribution (Pie) */}
-                    {isLoading ? (
-                        <PieChartSkeleton title="Customer Segments" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Revenue by Segment" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Segment</h3>
+                            <p className="text-xs text-gray-400">Total Revenue ($)</p>
+                        </div>
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={REVENUE_BY_SEGMENT} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Row 3: Two Pie Charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <div className="col-span-2">
+                        <div className="grid grid-cols-2 gap-6">
+                            <PieChartSkeleton title="Customer Segments" />
+                            <PieChartSkeleton title="Engagement Status" />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Customer Segments</h3>
                                 <p className="text-xs text-gray-400">Distribution by status</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
-                    )}
-
-                    {/* Recharts: Revenue by Segment (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Revenue by Segment" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Segment</h3>
-                                <p className="text-xs text-gray-400">Total Revenue ($)</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={REVENUE_BY_SEGMENT} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={28} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ECharts: Engagement Status (Pie) */}
-                    {isLoading ? (
-                        <PieChartSkeleton title="Engagement Status" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Engagement Status</h3>
                                 <p className="text-xs text-gray-400">Activity Levels</p>
                             </div>
-                            <ReactECharts option={engagementPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={engagementPieOption} style={{ height: '180px' }} />
                         </div>
-                    )}
+                    </div>
+                )}
 
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
+                {/* 4 KPIs in 2x2 grid */}
+                <div className="col-span-1 md:col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
                     {SIDE_KPIS.map((kpi, index) => (
-                        <div key={kpi.id} className="flex-1" style={{ animationDelay: `${(index + 4) * 100}ms` }}>
+                        <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
@@ -281,13 +278,13 @@ export const CustomerOverviewDashboard: React.FC = () => {
                     ))}
                 </div>
 
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
-
-                {/* Table (2 cols) */}
+                {/* --- Row 4: Table + Companion Chart --- */}
                 {isLoading ? (
-                    <TableSkeleton rows={5} columns={5} />
+                    <div className="col-span-2">
+                        <TableSkeleton rows={5} columns={5} />
+                    </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Activity</h3>
                         </div>
@@ -330,11 +327,13 @@ export const CustomerOverviewDashboard: React.FC = () => {
                     </div>
                 )}
 
-                {/* Companion Chart: Sunburst (2 cols) */}
+                {/* Companion Chart: Sunburst */}
                 {isLoading ? (
-                    <PieChartSkeleton size={240} title="Customer Segments Sunburst" />
+                    <div className="col-span-2">
+                        <PieChartSkeleton size={240} title="Customer Segments Sunburst" />
+                    </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                         <ReactECharts option={sunburstOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}

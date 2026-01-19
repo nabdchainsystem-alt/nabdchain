@@ -214,99 +214,102 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area - 2x2 Grid */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Row 1, Col 1: Recharts - Request Volume Trend */}
+                {/* Request Volume Trend (Left) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Request Volume Trend" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Request Volume Trend</h3>
-                                <p className="text-xs text-gray-400">Monthly submission patterns</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Request Volume Trend</h3>
+                                <p className="text-xs text-gray-400 mt-1">Monthly submission patterns</p>
                             </div>
-                            <div className="h-[220px] w-full">
+                            <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={REQUEST_VOLUME_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <BarChart layout="vertical" data={REQUEST_VOLUME_TREND} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={12} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
+                                            cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 1, Col 2: Recharts - Avg Hours per Stage */}
+                {/* Avg Hours per Stage (Right) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title="Avg Hours per Stage" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Hours per Stage</h3>
-                                <p className="text-xs text-gray-400">Identifying bottlenecks</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-5">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Avg Hours per Stage</h3>
+                                <p className="text-xs text-gray-400 mt-1">Identifying bottlenecks</p>
                             </div>
-                            <div className="h-[220px] w-full">
+                            <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={DELAYS_PER_STAGE} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} interval={0} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <BarChart layout="vertical" data={DELAYS_PER_STAGE} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis type="number" fontSize={11} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={12} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
+                                            cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="count" name="Hours" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <Bar dataKey="count" name="Hours" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Row 2, Col 1: ECharts - Conversion Funnel */}
+                {/* --- Row 3: Two Charts + 4 Side KPIs --- */}
+
+                {/* Charts Inner Grid (Left Half) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* Conversion Funnel */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Conversion Funnel" />
+                        <ChartSkeleton height="h-[250px]" title="Conversion Funnel" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Funnel</h3>
-                                <p className="text-xs text-gray-400">Request progression</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Conversion Funnel</h3>
+                                <p className="text-xs text-gray-400 mt-1">Request progression</p>
                             </div>
-                            <ReactECharts option={funnelOption} style={{ height: '220px' }} />
+                            <ReactECharts option={funnelOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
-                    {/* Row 2, Col 2: ECharts - Stage Status Distribution */}
+                    {/* Stage Status Distribution */}
                     {isLoading ? (
                         <PieChartSkeleton title="Stage Status Distribution" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Stage Status Distribution</h3>
-                                <p className="text-xs text-gray-400">Request outcomes</p>
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
+                            <div className="flex flex-col gap-0.5 mb-4">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Stage Status Distribution</h3>
+                                <p className="text-xs text-gray-400 mt-1">Request outcomes</p>
                             </div>
-                            <ReactECharts option={stageStatusPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={stageStatusPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>

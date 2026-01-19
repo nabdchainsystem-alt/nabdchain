@@ -51,7 +51,7 @@ Go to https://render.com and sign up with GitHub
 | Name | `nabd-backend` |
 | Root Directory | `server` |
 | Runtime | `Node` |
-| Build Command | `npm install && npx prisma generate && npx prisma migrate deploy && npm run build` |
+| Build Command | `npm install && npx prisma generate && npx prisma db push && npm run build` |
 | Start Command | `npm start` |
 | Plan | **Free** |
 
@@ -63,7 +63,9 @@ Click **"Environment"** and add these:
 | `DATABASE_URL` | (paste the PostgreSQL URL from Step 2.2) |
 | `NODE_ENV` | `production` |
 | `CORS_ORIGIN` | `https://your-domain.com` (your Hostinger domain) |
+| `FRONTEND_URL` | `https://your-domain.com` (same as above) |
 | `CLERK_SECRET_KEY` | (get from Clerk dashboard - see Step 5) |
+| `ENCRYPTION_KEY` | (generate with: `openssl rand -hex 32`) |
 
 4. Click **"Create Web Service"**
 5. Wait 5-10 minutes for it to deploy
@@ -163,6 +165,23 @@ In Render, click **"Manual Deploy"** → **"Deploy latest commit"**
 Your app should now be live at:
 - `https://your-domain.com` (your Hostinger domain)
 - `https://nabd-xxx.vercel.app` (Vercel backup URL)
+
+---
+
+## Important Limitations (Free Tier)
+
+### File Uploads
+**WARNING:** File uploads (like images in boards/vault) will NOT persist on Render free tier!
+- Render's filesystem is "ephemeral" - files are deleted when server restarts
+- For 20 test users, this may be acceptable
+- For production, you'll need cloud storage (AWS S3, Cloudinary, etc.)
+
+### Email Integration
+- Google/Outlook OAuth requires configuring redirect URLs
+- Add these environment variables if you want email features:
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+  - `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`
+- Update redirect URLs in Google Cloud Console and Azure Portal
 
 ---
 

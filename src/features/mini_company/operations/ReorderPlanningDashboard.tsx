@@ -194,106 +194,113 @@ export const ReorderPlanningDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Reorder Qty by SKU */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[200px]" title="Reorder Amounts" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Reorder Amounts</h3>
-                                <p className="text-xs text-gray-400">Qty to order per SKU</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={REORDER_QTY_BY_SKU} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                {/* Recharts: Reorder Qty by SKU */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Reorder Amounts" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Reorder Amounts</h3>
+                            <p className="text-xs text-gray-400">Qty to order per SKU</p>
                         </div>
-                    )}
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={REORDER_QTY_BY_SKU} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
 
+                {/* Recharts: Lead Time by Supplier */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Lead Time by Supplier" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time by Supplier</h3>
+                            <p className="text-xs text-gray-400">Days to delivery</p>
+                        </div>
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={LEAD_TIME_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Row 3: Two Pie Charts + 4 Side KPIs in 2x2 Grid --- */}
+
+                {/* Left: Two Pie Charts in nested 2-col grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts: Stock Coverage */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Coverage Status" />
+                        <div className="col-span-1">
+                            <PieChartSkeleton title="Coverage Status" />
+                        </div>
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Coverage Status</h3>
                                 <p className="text-xs text-gray-400">Inventory health</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
-                        </div>
-                    )}
-
-                    {/* Recharts: Lead Time by Supplier */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Lead Time by Supplier" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time by Supplier</h3>
-                                <p className="text-xs text-gray-400">Days to delivery</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={LEAD_TIME_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
                     {/* ECharts: Urgency Level */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Urgency Level" />
+                        <div className="col-span-1">
+                            <PieChartSkeleton title="Urgency Level" />
+                        </div>
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Urgency Level</h3>
                                 <p className="text-xs text-gray-400">Reorder priority</p>
                             </div>
-                            <ReactECharts option={urgencyPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={urgencyPieOption} style={{ height: '180px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* Right: 4 Side KPIs in 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>
                     ))}
                 </div>
 
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                {/* --- Row 4: Final Section (Table + Companion) --- */}
 
                 {/* Table (2 cols) */}
                 {isLoading ? (
@@ -301,7 +308,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                         <TableSkeleton rows={5} columns={5} />
                     </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Suggested Reorders</h3>
                         </div>
@@ -338,7 +345,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                         <ChartSkeleton height="h-[300px]" title="Burn Rate vs Reorder Point" />
                     </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                         <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}

@@ -106,7 +106,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 800); // Short delay for smooth transition
+        }, 1200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -135,12 +135,14 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
     // Pie Chart: Defect Categories
     const defectPieOption: EChartsOption = {
         tooltip: { trigger: 'item' },
-        legend: { show: false }, // Hide legend to save space
+        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
         series: [{
             name: 'Defect Type',
             type: 'pie',
-            radius: '70%',
-            center: ['50%', '50%'],
+            radius: ['40%', '70%'],
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
             data: DEFECT_CATEGORIES,
             color: ['#3b82f6', '#8b5cf6', '#ef4444', '#f59e0b', '#6b7280']
         }]
@@ -222,123 +224,131 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
-
-                {/* Charts Area */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Recharts: Defects & Inspections (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Defects vs Inspections" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                {/* --- Row 2: Two bar charts side by side --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Defect Analysis" />
+                        </div>
+                        <div className="col-span-2">
+                            <ChartSkeleton height="h-[300px]" title="Quality Scores" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Recharts: Defects & Inspections (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Defect Analysis</h3>
                                 <p className="text-xs text-gray-400">By Supplier</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={DEFECTS_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 0, bottom: 0 }}>
+                                    <BarChart layout="vertical" data={DEFECTS_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis xAxisId="left" type="number" orientation="bottom" stroke="#8884d8" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis xAxisId="right" type="number" orientation="top" stroke="#82ca9d" fontSize={10} tick={{ fill: '#9ca3af' }} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar yAxisId="left" dataKey="Defects" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} name="Defects" />
-                                        <Bar yAxisId="right" dataKey="Inspections" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={20} name="Inspections" />
+                                        <Bar xAxisId="left" dataKey="Defects" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} name="Defects" animationDuration={1000} />
+                                        <Bar xAxisId="right" dataKey="Inspections" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} name="Inspections" animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                    )}
 
-                    {/* ECharts: Pie Charts Layered (Passed/Failed + Categories) */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {isLoading ? (
-                            <>
-                                <PieChartSkeleton title="Inspections" />
-                                <PieChartSkeleton title="Defect Types" />
-                            </>
-                        ) : (
-                            <>
-                                <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                                    <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Outcomes</h3>
-                                    <ReactECharts option={pieOption} style={{ height: '160px' }} />
-                                </div>
-                                <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                                    <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Defect Types</h3>
-                                    <ReactECharts option={defectPieOption} style={{ height: '160px' }} />
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Recharts: Quality by Supplier (Bar) */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Quality Scores" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        {/* Recharts: Quality by Supplier (Bar) */}
+                        <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Quality Scores</h3>
                                 <p className="text-xs text-gray-400">By Supplier</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={QUALITY_BY_SUPPLIER} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                    <BarChart layout="vertical" data={QUALITY_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} />
+                                        <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Score" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} />
+                                        <Bar dataKey="Score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={28} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                    )}
+                    </>
+                )}
 
-                    {/* ECharts: Compliance Status (Pie) */}
-                    {isLoading ? (
-                        <PieChartSkeleton title="Compliance Status" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Compliance Status</h3>
-                                <p className="text-xs text-gray-400">Overall Distribution</p>
+                {/* --- Row 3: Two pie charts (col-span-2) + 4 KPIs in 2x2 grid (col-span-2) --- */}
+                {isLoading ? (
+                    <>
+                        <div className="col-span-2">
+                            <div className="grid grid-cols-2 gap-6">
+                                <PieChartSkeleton title="Inspection Outcomes" />
+                                <PieChartSkeleton title="Compliance Status" />
                             </div>
-                            <ReactECharts option={compliancePieOption} style={{ height: '200px' }} />
                         </div>
-                    )}
-
-                </div>
-
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi, index) => (
-                        <div key={kpi.id} className="flex-1" style={{ animationDelay: `${(index + 4) * 100}ms` }}>
-                            <KPICard
-                                {...kpi}
-                                color="blue"
-                                className="h-full"
-                                loading={isLoading}
-                            />
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard {...kpi} color="blue" loading={true} />
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Two pie charts in nested 2-col grid */}
+                        <div className="col-span-2 grid grid-cols-2 gap-6">
+                            {/* ECharts: Inspection Outcomes (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Inspection Outcomes</h3>
+                                    <p className="text-xs text-gray-400">Pass/Fail Distribution</p>
+                                </div>
+                                <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            </div>
 
-                {/* --- Row 3: Final Section (Table + Companion) --- */}
+                            {/* ECharts: Compliance Status (Pie) */}
+                            <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Compliance Status</h3>
+                                    <p className="text-xs text-gray-400">Overall Distribution</p>
+                                </div>
+                                <ReactECharts option={compliancePieOption} style={{ height: '180px' }} />
+                            </div>
+                        </div>
+
+                        {/* 4 KPIs in 2x2 grid */}
+                        <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
+                            {SIDE_KPIS.map((kpi, index) => (
+                                <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
+                                    <KPICard
+                                        {...kpi}
+                                        color="blue"
+                                        loading={isLoading}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {/* --- Row 4: Table + Companion Chart --- */}
 
                 {/* Table (2 cols) */}
                 {isLoading ? (
-                    <TableSkeleton rows={5} columns={5} />
+                    <div className="col-span-2">
+                        <TableSkeleton rows={5} columns={5} />
+                    </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Compliance Registry</h3>
                         </div>
@@ -378,9 +388,11 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
 
                 {/* Companion Chart: Radar (2 cols) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[280px]" title="Performance Radar" />
+                    <div className="col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Performance Radar" />
+                    </div>
                 ) : (
-                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                    <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="mb-2">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Metrics Radar</h3>
                             <p className="text-xs text-gray-400">Quality vs Other KPIs</p>

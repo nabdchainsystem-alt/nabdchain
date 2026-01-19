@@ -95,7 +95,9 @@ const InventoryPage: React.FC = () => {
                     mergedViews.push(view);
                 }
             });
-            return { ...parsed, availableViews: mergedViews };
+            // Remove unwanted views (table, kanban) - keep only datatable
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
     });

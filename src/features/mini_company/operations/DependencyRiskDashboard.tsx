@@ -210,104 +210,107 @@ export const DependencyRiskDashboard: React.FC = () => {
                     </div>
                 ))}
 
-                {/* --- Row 2: Charts Section (3 cols) + Side KPIs (1 col) --- */}
+                {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Charts Area - 2x2 Grid */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Row 1, Col 1: Recharts - Dependency by Category */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Dependency by Category" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency by Category</h3>
-                                <p className="text-xs text-gray-400">Primary vs Secondary Share</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={DEPENDENCY_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f3f4f6" />
-                                        <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis dataKey="name" type="category" width={80} fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="primary" stackId="a" name="Primary" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12} />
-                                        <Bar dataKey="secondary" stackId="a" name="Backup" fill="#d1d5db" radius={[0, 4, 4, 0]} barSize={12} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                {/* Recharts - Dependency by Category */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Dependency by Category" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency by Category</h3>
+                            <p className="text-xs text-gray-400">Primary vs Secondary Share</p>
                         </div>
-                    )}
-
-                    {/* Row 1, Col 2: Recharts - Risk Trend */}
-                    {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Risk Trend" />
-                    ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Trend</h3>
-                                <p className="text-xs text-gray-400">Monthly risk distribution</p>
-                            </div>
-                            <div className="h-[220px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={RISK_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip
-                                            cursor={{ fill: '#f9fafb' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                        />
-                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="high" stackId="a" name="High" fill="#ef4444" radius={[0, 0, 0, 0]} barSize={20} />
-                                        <Bar dataKey="medium" stackId="a" name="Medium" fill="#f59e0b" radius={[0, 0, 0, 0]} barSize={20} />
-                                        <Bar dataKey="low" stackId="a" name="Low" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={DEPENDENCY_BY_CATEGORY} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis dataKey="name" type="category" width={80} fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                    <Bar dataKey="primary" stackId="a" name="Primary" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="secondary" stackId="a" name="Backup" fill="#d1d5db" radius={[0, 4, 4, 0]} barSize={12} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Row 2, Col 1: ECharts - Risk Distribution */}
+                {/* Recharts - Risk Trend */}
+                {isLoading ? (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                        <ChartSkeleton height="h-[300px]" title="Risk Trend" />
+                    </div>
+                ) : (
+                    <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Trend</h3>
+                            <p className="text-xs text-gray-400">Monthly risk distribution</p>
+                        </div>
+                        <div className="h-[220px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={RISK_TREND} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} stroke="#f3f4f6" />
+                                    <XAxis type="number" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <YAxis type="category" dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                    <Bar dataKey="high" stackId="a" name="High" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={20} animationDuration={1000} />
+                                    <Bar dataKey="medium" stackId="a" name="Medium" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={20} animationDuration={1000} />
+                                    <Bar dataKey="low" stackId="a" name="Low" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} animationDuration={1000} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Row 3: Two Charts + 4 Side KPIs in 2x2 Grid --- */}
+
+                {/* Left: Two Charts in Nested Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {/* ECharts - Risk Distribution */}
                     {isLoading ? (
                         <PieChartSkeleton title="Risk Distribution" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
                                 <p className="text-xs text-gray-400">Supplier classification</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
-                    {/* Row 2, Col 2: ECharts - Diversification Score */}
+                    {/* ECharts - Diversification Score */}
                     {isLoading ? (
                         <PieChartSkeleton title="Diversification Score" />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
+                        <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Diversification Score</h3>
                                 <p className="text-xs text-gray-400">By category coverage</p>
                             </div>
-                            <ReactECharts option={diversificationPieOption} style={{ height: '200px' }} />
+                            <ReactECharts option={diversificationPieOption} style={{ height: '180px' }} />
                         </div>
                     )}
-
                 </div>
 
-                {/* Right Column: Side KPIs (1 col) */}
-                <div className="col-span-1 flex flex-col gap-6">
-                    {SIDE_KPIS.map((kpi) => (
-                        <div key={kpi.id} className="flex-1">
+                {/* Right: Side KPIs in 2x2 Grid */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
+                    {SIDE_KPIS.map((kpi, index) => (
+                        <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
                                 color="blue"
-                                className="h-full"
                                 loading={isLoading}
                             />
                         </div>

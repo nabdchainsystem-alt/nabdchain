@@ -81,6 +81,9 @@ import SmartSheetView from '../tools/SpreadsheetView';
 import { TimelineView } from './views/Timeline/TimelineView';
 import SupplierInsights from '../mini_company/suppliers/SupplierInsights';
 import CustomerInsights from '../mini_company/customers/CustomerInsights';
+import PurchaseInsights from '../mini_company/operations/PurchaseInsights';
+import InventoryInsights from '../mini_company/operations/InventoryInsights';
+import ExpensesInsights from '../mini_company/finance/ExpensesInsights';
 
 
 import { useUI } from '../../contexts/UIContext';
@@ -832,6 +835,27 @@ export const BoardView: React.FC<BoardViewProps> = ({ board: initialBoard, onUpd
                     return (
                         <div className="w-full h-full overflow-hidden">
                             <CustomerInsights />
+                        </div>
+                    );
+                }
+                if (board.id === 'dept-purchases') {
+                    return (
+                        <div className="w-full h-full overflow-hidden">
+                            <PurchaseInsights />
+                        </div>
+                    );
+                }
+                if (board.id === 'dept-inventory') {
+                    return (
+                        <div className="w-full h-full overflow-hidden">
+                            <InventoryInsights />
+                        </div>
+                    );
+                }
+                if (board.id === 'dept-expenses') {
+                    return (
+                        <div className="w-full h-full overflow-hidden">
+                            <ExpensesInsights />
                         </div>
                     );
                 }
