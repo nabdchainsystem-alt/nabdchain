@@ -1053,6 +1053,20 @@ const AppRoutes: React.FC = () => {
   const isAppSubdomain = hostname.startsWith('app.') || hostname === 'localhost' || hostname === '127.0.0.1';
   const isMainDomain = !isAppSubdomain && (hostname.includes('nabdchain') || hostname.includes('vercel.app'));
 
+  // Check for dev_auth URL parameter (passed from landing page dev login)
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const devAuthToken = urlParams.get('dev_auth');
+    if (devAuthToken) {
+      // Set dev mode in localStorage
+      localStorage.setItem('nabd_dev_mode', 'true');
+      localStorage.setItem('mock_auth_token', devAuthToken);
+      // Clean URL and reload
+      window.history.replaceState({}, '', window.location.pathname);
+      window.location.reload();
+    }
+  }, []);
+
   // Redirect helper - navigates to app subdomain
   const redirectToApp = () => {
     if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
