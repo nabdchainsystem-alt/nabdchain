@@ -32,8 +32,22 @@ export const DeveloperLoginModal: React.FC<DeveloperLoginModalProps> = ({ isOpen
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (email === 'master@nabdchain.com' && password === '2450') {
-            await performLogin();
+
+        // Valid dev credentials
+        const validCredentials = [
+            { email: 'master@nabdchain.com', password: '2450', token: 'dev-token' },
+            { email: 'sam@nabdchain.com', password: '123', token: 'sam-token' },
+        ];
+
+        const match = validCredentials.find(c => c.email === email && c.password === password);
+
+        if (match) {
+            setLoading(true);
+            setError('');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            localStorage.setItem('nabd_dev_mode', 'true');
+            localStorage.setItem('mock_auth_token', match.token);
+            window.location.reload();
         } else {
             setError(t('invalid_dev_credentials'));
             setLoading(false);
