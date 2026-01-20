@@ -67,7 +67,7 @@ type SettingsTab = 'general' | 'views' | 'notifications';
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibilityChange }) => {
     const { user } = useUser();
-    const { signOut } = useClerk();
+    const { signOut, openUserProfile } = useClerk();
     const { theme, toggleTheme, language, toggleLanguage, t, userDisplayName, updateUserDisplayName, country, updateCountry } = useAppContext();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -358,6 +358,32 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 </option>
                             ))}
                         </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                    <Shield className="text-red-500" size={20} />
+                    {t('security')}
+                </h3>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover rounded-xl transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 dark:bg-monday-dark-bg rounded-lg">
+                                <Lock size={18} className="text-red-500" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-gray-900 dark:text-white">{t('change_password')}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{t('update_password_desc')}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => openUserProfile({ appearance: { variables: { colorPrimary: '#000000' } } })}
+                            className="px-4 py-2 bg-gray-100 dark:bg-monday-dark-hover text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            {t('manage')}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -52,7 +52,11 @@ export const useUser = () => {
 export const useClerk = () => {
     if (USE_MOCK_AUTH) {
         const { signOut } = useMockAuthContext();
-        return { signOut, openSignIn: () => { } };
+        return {
+            signOut,
+            openSignIn: () => { },
+            openUserProfile: () => { alert('Profile management is not available in Developer Mode. Please use Standard Mode for full account features.'); }
+        };
     }
     return useClerkOriginal();
 };

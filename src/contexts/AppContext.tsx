@@ -424,6 +424,16 @@ const translations: Translations = {
   preferences: { en: 'Preferences', ar: 'التفضيلات' },
   appearance: { en: 'Appearance', ar: 'المظهر' },
   switch_theme_desc: { en: 'Switch between light and dark mode', ar: 'التبديل بين الوضع الفاتح والداكن' },
+  change_language_desc: { en: 'Switch between English and Arabic', ar: 'التبديل بين الإنجليزية والعربية' },
+
+  // Security Section
+  security: { en: 'Security', ar: 'الأمان' },
+  change_password: { en: 'Change Password', ar: 'تغيير كلمة المرور' },
+  update_password_desc: { en: 'Update your account password', ar: 'تحديث كلمة مرور حسابك' },
+  manage: { en: 'Manage', ar: 'إدارة' },
+
+  // Developer Login
+  enter_dev_credentials: { en: 'Enter your developer credentials below', ar: 'أدخل بيانات المطور أدناه' },
 
   // Event Modal
   create_event: { en: 'Create Event', ar: 'إنشاء حدث' },
