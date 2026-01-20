@@ -2092,6 +2092,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 columns={columns}
                 activeCell={activeCell}
                 customStatuses={customStatuses}
+                boardId={roomId}
                 onUpdateRow={handleUpdateRow}
                 onTextChange={handleTextChange}
                 onToggleCell={toggleCell}

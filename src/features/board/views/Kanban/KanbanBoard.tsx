@@ -98,6 +98,7 @@ export const priorityConfig: Record<Priority, { color: string; label: string; do
 
 interface TaskCardProps {
     task: Task;
+    boardId?: string;
     onDragStart: (e: React.DragEvent, taskId: string) => void;
     onUpdateTask: (updatedTask: Task) => void;
     onDeleteTask: (taskId: string) => void;
@@ -107,7 +108,7 @@ interface TaskCardProps {
     statusColor: string;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
     const [activeMenu, setActiveMenu] = useState<'none' | 'priority' | 'tags' | 'context' | 'date' | 'assignee'>('none');
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameTitle, setRenameTitle] = useState(task.title);
@@ -278,7 +279,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
                 <PeoplePicker
                     current={assigneePerson || null}
                     onSelect={(person) => {
-                        // console.log('KanbanBoard: Selected person', person);
                         onUpdateTask({
                             ...task,
                             assignee: person?.id,
@@ -288,6 +288,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
                     }}
                     onClose={() => setActiveMenu('none')}
                     triggerRect={assigneeBtnRef.current?.getBoundingClientRect()}
+                    boardId={boardId}
+                    rowId={task.id}
+                    rowData={task as unknown as Record<string, unknown>}
                 />
             )}
 
@@ -405,6 +408,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onUpdateTask, on
 interface ColumnProps {
     column: ColumnType;
     tasks: Task[];
+    boardId?: string;
     onTaskMove: (taskId: string, newStatusId: string) => void;
     onAddTask: (statusId: string, title: string, overrides?: Partial<Task>) => void;
     onUpdateTask: (task: Task) => void;
@@ -570,7 +574,7 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
 };
 
 const Column: React.FC<ColumnProps> = ({
-    column, tasks, onTaskMove, onAddTask, onUpdateTask,
+    column, tasks, boardId, onTaskMove, onAddTask, onUpdateTask,
     onDeleteTask, onDuplicateTask, onClearColumn, onRenameColumn, onColorChange, onDeleteColumn, remindersByItem, onOpenReminder
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
@@ -805,6 +809,7 @@ const Column: React.FC<ColumnProps> = ({
                     <TaskCard
                         key={task.id}
                         task={task}
+                        boardId={boardId}
                         onDragStart={handleDragStart}
                         onUpdateTask={onUpdateTask}
                         onDeleteTask={onDeleteTask}
@@ -1312,6 +1317,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                             <Column
                                 key={col.id}
                                 column={col}
+                                boardId={boardId}
                                 tasks={filteredTasks.filter(t => {
                                     // Robust matching: ID match, Title match, or fuzzy text match
                                     if (t.statusId === col.id) return true;

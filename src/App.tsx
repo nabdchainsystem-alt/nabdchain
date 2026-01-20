@@ -122,6 +122,9 @@ const AppContent: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Track if we're still loading boards from API
+  const [isBoardsLoading, setIsBoardsLoading] = useState(true);
+
   // Track boards that haven't been synced to server yet
   const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('app-unsynced-boards');
@@ -147,7 +150,10 @@ const AppContent: React.FC = () => {
   // Fetch Boards from API
   useEffect(() => {
     const fetchBoards = async () => {
-      if (!isSignedIn) return;
+      if (!isSignedIn) {
+        setIsBoardsLoading(false);
+        return;
+      }
       try {
         const token = await getToken();
         if (token) {
@@ -223,8 +229,10 @@ const AppContent: React.FC = () => {
             }
           }
         }
+        setIsBoardsLoading(false);
       } catch (error) {
         appLogger.error("Failed to fetch boards", error);
+        setIsBoardsLoading(false);
       }
     };
     fetchBoards();
@@ -975,18 +983,26 @@ const AppContent: React.FC = () => {
                   onTaskCreated={handleCreateTaskOnBoard}
                 />
               </FeatureErrorBoundary>
-            ) : activeView === 'board' && activeBoard ? (
-              <FeatureErrorBoundary featureName="Board">
-                <BoardView
-                  key={activeBoard.id}
-                  board={activeBoard}
-                  onUpdateBoard={handleUpdateBoard}
-                  onUpdateTasks={handleUpdateTasks}
-                  dashboardSections={activeBoard.dashboardSections}
-                  onNavigate={handleNavigate}
-                  isDepartmentLayout={!!activeBoard.isDepartmentLayout} // Pass layout flag
-                />
-              </FeatureErrorBoundary>
+            ) : activeView === 'board' ? (
+              activeBoard ? (
+                <FeatureErrorBoundary featureName="Board">
+                  <BoardView
+                    key={activeBoard.id}
+                    board={activeBoard}
+                    onUpdateBoard={handleUpdateBoard}
+                    onUpdateTasks={handleUpdateTasks}
+                    dashboardSections={activeBoard.dashboardSections}
+                    onNavigate={handleNavigate}
+                    isDepartmentLayout={!!activeBoard.isDepartmentLayout} // Pass layout flag
+                  />
+                </FeatureErrorBoundary>
+              ) : isBoardsLoading ? (
+                <FullScreenLoader />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
+                  Board not found. <button onClick={() => handleNavigate('dashboard')} className="ml-2 text-blue-500 hover:underline">Go to Dashboard</button>
+                </div>
+              )
             ) : activeView === 'inbox' ? (
               <FeatureErrorBoundary featureName="Inbox">
                 <InboxView onNavigate={handleNavigate} />
@@ -1071,9 +1087,18 @@ const AppContent: React.FC = () => {
             ) : activeView === 'test' ? (
               <TestPage />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
-                {activeView === 'board' && !activeBoard && "No board selected"}
-              </div>
+              // Unknown view - redirect to dashboard
+              <FeatureErrorBoundary featureName="Dashboard">
+                <Dashboard
+                  onBoardCreated={handleBoardCreated}
+                  recentlyVisited={recentlyVisited}
+                  onNavigate={handleNavigate}
+                  boards={workspaceBoards}
+                  activeWorkspaceId={activeWorkspaceId}
+                  workspaces={workspaces}
+                  onTaskCreated={handleCreateTaskOnBoard}
+                />
+              </FeatureErrorBoundary>
             )}
           </React.Suspense>
         </main>

@@ -32,6 +32,7 @@ interface TableCellProps {
     columns: Column[];
     activeCell: ActiveCell | null;
     customStatuses: StatusOption[];
+    boardId?: string; // For assignment creation
     onUpdateRow: (id: string, updates: Partial<Row>, groupId?: string) => void;
     onTextChange: (id: string, colId: string, value: string, groupId?: string) => void;
     onToggleCell: (e: React.MouseEvent, rowId: string, colId: string) => void;
@@ -88,6 +89,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     columns,
     activeCell,
     customStatuses,
+    boardId,
     onUpdateRow,
     onTextChange,
     onToggleCell,
@@ -380,6 +382,9 @@ export const TableCell: React.FC<TableCellProps> = ({
                         onSelect={(selected) => onUpdateRow(row.id, { [col.id]: selected }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.trigger.getBoundingClientRect()}
+                        boardId={boardId}
+                        rowId={row.id}
+                        rowData={row as Record<string, unknown>}
                     />
                 )}
             </div>

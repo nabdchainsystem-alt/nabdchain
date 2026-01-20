@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Users, Check, User, SpinnerGap } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
 import { teamService, TeamMember } from '../../../../services/teamService';
+import { assignmentService } from '../../../../services/assignmentService';
 
 interface Person {
     id: string;
@@ -16,13 +17,54 @@ interface PeoplePickerProps {
     onClose: () => void;
     current: { id: string; name: string } | null;
     triggerRect?: DOMRect;
+    // Optional props for creating assignments
+    boardId?: string;
+    rowId?: string;
+    rowData?: Record<string, unknown>;
 }
 
-export const PeoplePicker: React.FC<PeoplePickerProps> = ({ onSelect, onClose, current, triggerRect }) => {
+export const PeoplePicker: React.FC<PeoplePickerProps> = ({
+    onSelect,
+    onClose,
+    current,
+    triggerRect,
+    boardId,
+    rowId,
+    rowData
+}) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const { getToken } = useAuth();
     const [teamMembers, setTeamMembers] = useState<Person[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    // Handle selecting a person and optionally creating assignment
+    const handleSelectPerson = async (person: Person) => {
+        // If we have board/row info, create an assignment
+        if (boardId && rowId && rowData) {
+            setIsAssigning(true);
+            try {
+                const token = await getToken();
+                if (token) {
+                    await assignmentService.assignTask(token, {
+                        sourceBoardId: boardId,
+                        sourceRowId: rowId,
+                        sourceTaskData: rowData,
+                        assignedToUserId: person.id
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to create assignment:', error);
+                // Still proceed with the visual selection even if assignment fails
+            } finally {
+                setIsAssigning(false);
+            }
+        }
+
+        // Always call onSelect to update the visual
+        onSelect(person);
+        onClose();
+    };
 
     // Fetch team members on mount
     useEffect(() => {
@@ -127,13 +169,13 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({ onSelect, onClose, c
                             return (
                                 <button
                                     key={person.id}
+                                    disabled={isAssigning}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        onSelect(person);
-                                        onClose();
+                                        handleSelectPerson(person);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-50 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                                 >
                                     {person.showUserIcon ? (
                                         <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
