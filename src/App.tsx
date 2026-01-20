@@ -23,6 +23,7 @@ import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
 import { API_URL } from './config/api';
 import { adminService } from './services/adminService';
 import { MobileApp } from './features/mobile/MobileApp';
+import { useUserPreferences } from './hooks/useUserPreferences';
 
 // Lazy load feature pages for better initial bundle size
 const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -44,17 +45,9 @@ const AppContent: React.FC = () => {
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useUI();
   const { updateUserDisplayName } = useAppContext();
 
-  // Sync authenticated user's name to AppContext ONLY on first login
-  // (when there's no saved display name in localStorage)
-  useEffect(() => {
-    if (user?.fullName) {
-      const savedName = localStorage.getItem('app-user-display-name');
-      // Only sync from auth if no custom name has been saved
-      if (!savedName) {
-        updateUserDisplayName(user.fullName);
-      }
-    }
-  }, [user?.fullName, updateUserDisplayName]);
+  // Sync user preferences (display name, etc.) with the server
+  // This hook handles fetching from server on login and syncing changes back
+  useUserPreferences();
 
   const [activeView, setActiveView] = useState<ViewState | string>(() => {
     // Try to restore view from URL first, then localStorage
@@ -682,8 +675,23 @@ const AppContent: React.FC = () => {
         setActiveView(view || 'dashboard');
         if (boardId) setActiveBoardId(boardId);
       } else {
-        // No state - default to dashboard
-        setActiveView('dashboard');
+        // No history state - read from URL instead of defaulting to dashboard
+        // This handles Chrome's behavior where history.state can be null after refresh
+        const path = window.location.pathname;
+        if (path.startsWith('/board/')) {
+          const boardIdFromPath = path.split('/board/')[1]?.split('/')[0];
+          setActiveView('board');
+          if (boardIdFromPath) setActiveBoardId(boardIdFromPath);
+        } else if (path !== '/' && path.length > 1) {
+          const viewFromPath = path.substring(1).split('/')[0];
+          if (viewFromPath) {
+            setActiveView(viewFromPath);
+          } else {
+            setActiveView('dashboard');
+          }
+        } else {
+          setActiveView('dashboard');
+        }
       }
     };
 
