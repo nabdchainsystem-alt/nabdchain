@@ -121,6 +121,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsSignedIn(false);
         setUserData(null);
         localStorage.removeItem('mock_auth_token');
+        // Navigate to signin page
+        window.history.pushState({}, '', '/signin');
+        window.dispatchEvent(new PopStateEvent('popstate'));
     };
 
     const getToken = async () => {
