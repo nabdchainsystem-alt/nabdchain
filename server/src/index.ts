@@ -12,6 +12,7 @@ import boardRoutes from './routes/boardRoutes';
 import vaultRoutes from './routes/vaultRoutes';
 import docRoutes from './routes/docRoutes';
 import talkRoutes from './routes/talkRoutes';
+import assignmentRoutes from './routes/assignmentRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
@@ -173,6 +174,7 @@ app.use('/api/boards', boardRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/docs', docRoutes);
 app.use('/api/talk', talkRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {

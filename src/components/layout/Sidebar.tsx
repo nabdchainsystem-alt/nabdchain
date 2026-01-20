@@ -756,10 +756,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
 
                             {/* Departments Section */}
+                            {pageVisibility['mini_company'] !== false && (
                             <div className="mb-3">
                                 {!isCollapsed && (
                                     <div className="flex items-center justify-between mb-2 px-3">
-                                        <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">Mini Company</span>
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('departments')}</span>
                                     </div>
                                 )}
 
@@ -998,6 +999,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     )}
                                 </div>
                             </div>
+                            )}
 
                             {/* Favorites Section */}
                             {!isCollapsed && favoriteBoards.length > 0 && (

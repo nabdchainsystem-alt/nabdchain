@@ -73,9 +73,10 @@ const MOCK_MAILS: MailItem[] = [
 
 interface InboxViewProps {
   logActivity?: (type: string, content: string, metadata?: any, workspaceId?: string, boardId?: string) => Promise<void>;
+  onNavigate?: (view: string, boardId?: string) => void;
 }
 
-export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
+export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate }) => {
   const [mails, setMails] = useState<MailItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccount, setHasAccount] = useState(false);
@@ -538,7 +539,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity }) => {
 
               <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
                 {activeTab === 'activity' ? (
-                  <ProductivitySidebar contentOnly={true} />
+                  <ProductivitySidebar contentOnly={true} onNavigate={onNavigate} />
                 ) : loading ? (
                   <div className="p-4 text-center text-gray-400 text-sm">{t('syncing_emails')}</div>
                 ) : mails.length === 0 ? (

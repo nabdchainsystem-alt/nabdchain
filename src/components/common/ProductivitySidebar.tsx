@@ -16,10 +16,11 @@ interface QuickTask {
 interface ProductivitySidebarProps {
     layout?: 'right' | 'bottom';
     contentOnly?: boolean;
+    onNavigate?: (view: string, boardId?: string) => void;
 }
 
-const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'right', contentOnly = false }) => {
-    const { t, setView, activeWorkspaceId } = useAppContext();
+const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'right', contentOnly = false, onNavigate }) => {
+    const { t, activeWorkspaceId } = useAppContext();
     const { getToken } = useAuth();
     const isRight = layout === 'right';
 
@@ -106,12 +107,12 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
 
     // Navigate to board
     const handleTaskClick = (boardId: string) => {
-        setView({ type: 'board', boardId });
+        onNavigate?.('board', boardId);
     };
 
     // Navigate to vault
     const handleViewFiles = () => {
-        setView({ type: 'vault' });
+        onNavigate?.('vault');
     };
 
     const content = (

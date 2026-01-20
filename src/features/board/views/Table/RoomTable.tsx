@@ -1402,7 +1402,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 metadata: item.metadata,
                 // Don't store previewUrl or content - they're too large for localStorage
             };
-            handleUpdateRow(activeUploadCell.rowId, { [activeUploadCell.colId]: fileReference });
+
+            // Find current files in the cell and append the new file
+            const currentRow = rows.find(r => r.id === activeUploadCell.rowId);
+            const currentValue = currentRow?.[activeUploadCell.colId];
+            const existingFiles = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
+            const updatedFiles = [...existingFiles, fileReference];
+
+            handleUpdateRow(activeUploadCell.rowId, { [activeUploadCell.colId]: updatedFiles });
         }
         setIsUploadModalOpen(false);
         setActiveUploadCell(null);
@@ -2090,7 +2097,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 onAddColumnOption={handleAddColumnOption}
                 onSetActiveColorMenu={setActiveColorMenu}
                 onSetActiveTextMenu={setActiveTextMenu}
-                onFileUploadRequest={handleImportClick}
+                onFileUploadRequest={(rowId, colId) => {
+                    setActiveUploadCell({ rowId, colId });
+                    hiddenFileInputRef.current?.click();
+                }}
             />
         );
     };
@@ -2589,18 +2599,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                             <button
                                 disabled={checkedRows.size === 0}
-                                onClick={handleExportTable}
-                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
-                                    ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
-                                    : 'cursor-default text-stone-300 dark:text-stone-700'
-                                    }`}
-                            >
-                                <Export size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
-                                <span className="text-[13px] font-medium">Export</span>
-                            </button>
-
-                            <button
-                                disabled={checkedRows.size === 0}
                                 className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
                                     ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
                                     : 'cursor-default text-stone-300 dark:text-stone-700'
@@ -2648,25 +2646,33 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <Trash size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
                                 <span className="text-[13px] font-medium">Delete</span>
                             </button>
+
+                            <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
+
+                            <button
+                                onClick={handleExportTable}
+                                className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600"
+                                title={checkedRows.size > 0 ? `Export ${checkedRows.size} selected rows` : 'Export all rows'}
+                            >
+                                <Export size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
+                                <span className="text-[13px] font-medium">Export</span>
+                            </button>
+
+                            <button
+                                onClick={handleImportClick}
+                                className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-green-600"
+                                title="Import from CSV or Excel file"
+                            >
+                                <UploadCloud size={16} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-[13px] font-medium">Import</span>
+                            </button>
                         </div>
                     </div>
 
                     <div className="flex-1" />
 
-
-
                     {/* Right: Custom Actions */}
                     <div className="flex items-center gap-4">
-                        {enableImport && (
-                            <button
-                                onClick={handleImportClick}
-                                className="flex items-center gap-1.5 px-2 py-1 text-stone-600 dark:text-stone-300 hover:text-blue-600 transition-colors group"
-                            >
-                                <UploadCloud size={16} className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Import</span>
-                            </button>
-                        )}
-
                         {renderCustomActions && renderCustomActions({
                             setRows,
                             setColumns,
@@ -2684,7 +2690,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         />
                     </div>
                 </div>
-
 
                 {/* Table Scrollable Area */}
                 <div
@@ -3111,6 +3116,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     isOpen={!!activeRowDetail}
                     onClose={() => setActiveRowDetail(null)}
                     row={activeRowDetail}
+                    boardId={roomId}
                 />
                 <input
                     type="file"

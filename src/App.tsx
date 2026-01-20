@@ -466,7 +466,7 @@ const AppContent: React.FC = () => {
     handleBoardCreated(newBoard);
   };
 
-  const handleNavigate = (view: ViewState | string, boardId?: string) => {
+  const handleNavigate = React.useCallback((view: ViewState | string, boardId?: string, skipHistoryPush?: boolean) => {
     setActiveView(view);
     if (boardId) {
       setActiveBoardId(boardId);
@@ -477,7 +477,37 @@ const AppContent: React.FC = () => {
     } else {
       addToHistory(view);
     }
-  };
+
+    // Push to browser history for back button support (unless restoring from popstate)
+    if (!skipHistoryPush) {
+      const url = boardId ? `/board/${boardId}` : `/${view}`;
+      window.history.pushState({ view, boardId }, '', url);
+    }
+  }, [boards]);
+
+  // Handle browser back/forward button
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        const { view, boardId } = event.state;
+        // Directly set state to avoid triggering another history push
+        setActiveView(view || 'dashboard');
+        if (boardId) setActiveBoardId(boardId);
+      } else {
+        // No state - default to dashboard
+        setActiveView('dashboard');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Initialize browser history state on mount
+  useEffect(() => {
+    const initialUrl = activeBoardId ? `/board/${activeBoardId}` : `/${activeView}`;
+    window.history.replaceState({ view: activeView, boardId: activeBoardId }, '', initialUrl);
+  }, []);
 
   const addToHistory = (view: ViewState | string, board?: Board) => {
     if (view === 'dashboard' || view === 'landing' || view === 'signup' || view === 'signin') return;
@@ -945,7 +975,7 @@ const AppContent: React.FC = () => {
               </FeatureErrorBoundary>
             ) : activeView === 'inbox' ? (
               <FeatureErrorBoundary featureName="Inbox">
-                <InboxView />
+                <InboxView onNavigate={handleNavigate} />
               </FeatureErrorBoundary>
             ) : activeView === 'my_work' ? (
               <FeatureErrorBoundary featureName="My Work">
@@ -1023,7 +1053,7 @@ const AppContent: React.FC = () => {
             ) : activeView === 'settings' ? (
               <SettingsPage visibility={pageVisibility} onVisibilityChange={setPageVisibility} />
             ) : activeView === 'talk' ? (
-              <TalkPage />
+              <TalkPage onNavigate={handleNavigate} />
             ) : activeView === 'test' ? (
               <TestPage />
             ) : (
@@ -1042,6 +1072,25 @@ const AppContent: React.FC = () => {
 
 
 import { SignUpPage } from './features/auth/SignUpPage';
+
+// Component to handle signed-in users - redirects to app subdomain if on main domain
+const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) => {
+  useEffect(() => {
+    if (isMainDomain) {
+      window.location.href = 'https://app.nabdchain.com';
+    }
+  }, [isMainDomain]);
+
+  if (isMainDomain) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return <AppContent />;
+};
 
 const AppRoutes: React.FC = () => {
   const { isLoaded, isSignedIn } = useUser();
@@ -1100,7 +1149,14 @@ const AppRoutes: React.FC = () => {
       <SignedOut>
         {/* Show landing page */}
         {authView === 'home' && (
-          <LandingPage onEnterSystem={() => setAuthView('signin')} />
+          <LandingPage onEnterSystem={() => {
+            // If on main domain, redirect to app subdomain for sign-in
+            if (isMainDomain) {
+              window.location.href = 'https://app.nabdchain.com';
+            } else {
+              setAuthView('signin');
+            }
+          }} />
         )}
 
         {authView === 'signin' && (
@@ -1158,7 +1214,7 @@ const AppRoutes: React.FC = () => {
         )}
       </SignedOut>
       <SignedIn>
-        <AppContent />
+        <SignedInContent isMainDomain={isMainDomain} />
       </SignedIn>
     </>
   );

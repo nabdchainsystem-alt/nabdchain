@@ -19,6 +19,7 @@ export const ALL_PAGES = {
     'inbox': { label: 'inbox', section: 'main', icon: Tray },
     'teams': { label: 'teams', section: 'main', icon: Users },
     'vault': { label: 'vault', section: 'main', icon: Lock },
+    'mini_company': { label: 'departments', section: 'main', icon: Buildings },
 
     // Marketplace
     'local_marketplace': { label: 'local_marketplace', section: 'marketplace', icon: ShoppingCart },

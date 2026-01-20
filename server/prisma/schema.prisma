@@ -35,6 +35,8 @@ model User {
   activities               Activity[]
   messages                 Message[]
   conversationParticipants ConversationParticipant[]
+  assignmentsReceived      Assignment[]             @relation("AssignmentTo")
+  assignmentsSent          Assignment[]             @relation("AssignmentFrom")
 
   @@index([workspaceId])
   @@index([lastActiveAt])
@@ -336,6 +338,28 @@ model TeamConnection {
   @@index([senderId])
   @@index([receiverId])
   @@index([status])
+}
+
+// Task Assignment System
+model Assignment {
+  id                 String    @id @default(uuid())
+  sourceBoardId      String    // Original board where task lives
+  sourceRowId        String    // Original row/task ID
+  sourceTaskData     String    // JSON copy of original task data
+  assignedFromUserId String    // User who assigned the task
+  assignedToUserId   String    // User receiving the assignment
+  isViewed           Boolean   @default(false)
+  viewedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  copiedBoardId      String?   // "Assigned to me" board ID
+  copiedRowId        String?   // Copied row ID in assigned board
+
+  assignedFromUser User @relation("AssignmentFrom", fields: [assignedFromUserId], references: [id], onDelete: Cascade)
+  assignedToUser   User @relation("AssignmentTo", fields: [assignedToUserId], references: [id], onDelete: Cascade)
+
+  @@index([assignedToUserId])
+  @@index([assignedToUserId, isViewed])
+  @@index([createdAt])
 }
 
 // Vault System

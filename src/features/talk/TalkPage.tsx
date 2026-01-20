@@ -6,7 +6,11 @@ import { talkService, Conversation, Message } from '../../services/talkService';
 import { teamService, TeamMember } from '../../services/teamService';
 import ProductivitySidebar from '../../components/common/ProductivitySidebar';
 
-const TalkPage: React.FC = () => {
+interface TalkPageProps {
+    onNavigate?: (view: string, boardId?: string) => void;
+}
+
+const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
     const { t } = useAppContext();
     const { getToken, user } = useAuth();
 
@@ -453,7 +457,7 @@ const TalkPage: React.FC = () => {
                 </div>
 
                 {/* Right Sidebar */}
-                <ProductivitySidebar />
+                <ProductivitySidebar onNavigate={onNavigate} />
             </main>
 
             {/* New DM Modal */}

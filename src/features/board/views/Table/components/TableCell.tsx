@@ -517,8 +517,8 @@ export const TableCell: React.FC<TableCellProps> = ({
                 >
                     {files.length > 0 ? (
                         <div className="flex items-center gap-1.5 truncate">
-                            <span className="text-base">{getFileIcon(files[0].name, files[0].type)}</span>
-                            <span className="text-sm text-stone-600 dark:text-stone-300 truncate">{getShortName(files[0].name)}</span>
+                            <span className="text-base">{getFileIcon(files[0].title || files[0].name, files[0].type)}</span>
+                            <span className="text-sm text-stone-600 dark:text-stone-300 truncate">{getShortName(files[0].title || files[0].name)}</span>
                             {files.length > 1 && (
                                 <span className="text-xs text-stone-400 shrink-0">+{files.length - 1}</span>
                             )}
@@ -530,6 +530,59 @@ export const TableCell: React.FC<TableCellProps> = ({
                         </div>
                     )}
                 </button>
+                {/* File picker popup when cell is active */}
+                {isActiveCell && activeCell?.trigger && files.length > 0 && (
+                    <PortalPopup
+                        triggerRect={activeCell.trigger.getBoundingClientRect()}
+                        onClose={() => onSetActiveCell(null)}
+                        align="center"
+                    >
+                        <div className="w-72 bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+                            <div className="p-3 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">Files ({files.length})</span>
+                                <button
+                                    onClick={() => {
+                                        onSetActiveCell(null);
+                                        if (onFileUploadRequest) onFileUploadRequest(row.id, col.id);
+                                    }}
+                                    className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                                >
+                                    <UploadCloud size={12} />
+                                    Add
+                                </button>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                                {files.map((file: any, idx: number) => (
+                                    <div key={file.id || idx} className="flex items-center gap-2 p-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 border-b border-stone-50 dark:border-stone-800/50 last:border-0">
+                                        <span className="text-lg shrink-0">{getFileIcon(file.title || file.name, file.type)}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-stone-700 dark:text-stone-300 truncate">{file.title || file.name}</p>
+                                            {file.metadata?.size && (
+                                                <p className="text-xs text-stone-400">{typeof file.metadata.size === 'number' ? (file.metadata.size / 1024).toFixed(1) + ' KB' : file.metadata.size}</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newFiles = files.filter((_: any, i: number) => i !== idx);
+                                                onUpdateRow(row.id, { [col.id]: newFiles.length > 0 ? newFiles : null }, row.groupId);
+                                                if (newFiles.length === 0) onSetActiveCell(null);
+                                            }}
+                                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-colors"
+                                            title="Remove file"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M3 6h18"></path>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </PortalPopup>
+                )}
             </div>
         );
     }
