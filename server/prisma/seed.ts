@@ -24,7 +24,8 @@ async function main() {
     await prisma.user.upsert({
         where: { email: 'master@nabd.com' },
         update: {
-            workspaceId: 'w1' // Enforce Main Workspace connection
+            workspaceId: 'w1', // Enforce Main Workspace connection
+            role: 'admin' // Ensure admin role
         },
         create: {
             id: masterId,
@@ -32,6 +33,7 @@ async function main() {
             name: 'Master Admin',
             avatarUrl: 'https://ui-avatars.com/api/?name=Master+Admin&background=0D8ABC&color=fff',
             workspaceId: 'w1', // Set default workspace
+            role: 'admin', // Set admin role
             workspace: {
                 connectOrCreate: {
                     where: { id: 'w1' },
@@ -53,7 +55,8 @@ async function main() {
     await prisma.user.upsert({
         where: { email: 'master@nabdchain.com' },
         update: {
-            workspaceId: 'w1' // Enforce Main Workspace connection
+            workspaceId: 'w1', // Enforce Main Workspace connection
+            role: 'admin' // Ensure admin role
         },
         create: {
             id: devId,
@@ -61,6 +64,7 @@ async function main() {
             name: 'Developer Admin',
             avatarUrl: 'https://ui-avatars.com/api/?name=Developer+Admin&background=000&color=fff',
             workspaceId: 'w1', // Set default workspace
+            role: 'admin', // Set admin role
             workspace: {
                 connect: { id: 'w1' } // Join existing main workspace
             }

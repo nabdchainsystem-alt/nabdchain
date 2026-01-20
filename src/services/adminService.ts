@@ -175,6 +175,21 @@ export const adminService = {
         if (!response.ok) {
             throw new Error('Failed to reset user permissions');
         }
+    },
+
+    // Bootstrap first admin (only works if no admins exist)
+    async bootstrap(token: string): Promise<{ success: boolean; message: string; user?: { id: string; email: string; name: string | null; role: string } }> {
+        const response = await fetch(`${API_URL}/admin/bootstrap`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to bootstrap admin');
+        }
+
+        return response.json();
     }
 };
 

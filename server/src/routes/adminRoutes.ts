@@ -325,4 +325,34 @@ router.delete('/users/:userId/permissions', requireAuth, requireAdmin, async (re
     }
 });
 
+// POST /bootstrap: Bootstrap first admin (only works if no admins exist)
+router.post('/bootstrap', requireAuth, async (req, res: Response) => {
+    try {
+        const userId = (req as AuthRequest).auth.userId;
+
+        // Check if any admin exists
+        const existingAdmin = await prisma.user.findFirst({
+            where: { role: 'admin' }
+        });
+
+        if (existingAdmin) {
+            return res.status(403).json({ error: 'Admin already exists. Bootstrap not allowed.' });
+        }
+
+        // Promote current user to admin
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { role: 'admin' },
+            select: { id: true, email: true, name: true, role: true }
+        });
+
+        console.log(`[Admin] Bootstrap: User ${userId} (${user.email}) promoted to admin`);
+
+        res.json({ success: true, message: 'You are now an admin', user });
+    } catch (error) {
+        console.error('Bootstrap Error:', error);
+        res.status(500).json({ error: 'Failed to bootstrap admin' });
+    }
+});
+
 export default router;

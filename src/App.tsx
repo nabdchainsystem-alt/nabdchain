@@ -367,13 +367,25 @@ const AppContent: React.FC = () => {
       const token = await getToken();
       if (!token) return;
 
-      // Fetch admin status and user's effective visibility in parallel
-      const [adminStatus, visibility] = await Promise.all([
-        adminService.getAdminStatus(token),
-        adminService.getMyVisibility(token)
-      ]);
+      // Fetch admin status first
+      let adminStatus = await adminService.getAdminStatus(token);
+
+      // If not admin, try to bootstrap (only works if no admins exist yet)
+      if (!adminStatus.isAdmin) {
+        try {
+          await adminService.bootstrap(token);
+          // Re-fetch admin status after successful bootstrap
+          adminStatus = await adminService.getAdminStatus(token);
+          appLogger.info('[App] Bootstrap successful - user is now admin');
+        } catch {
+          // Bootstrap failed (admin already exists) - this is expected for most users
+        }
+      }
 
       setIsAdmin(adminStatus.isAdmin);
+
+      // Fetch user's effective visibility
+      const visibility = await adminService.getMyVisibility(token);
 
       // Server returns merged visibility (global + user-specific overrides)
       setServerFeatureFlags(visibility);
