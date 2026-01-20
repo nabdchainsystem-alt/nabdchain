@@ -28,23 +28,21 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
     );
 
     const handleUserSign = () => {
-        const isMockMode = localStorage.getItem('nabd_dev_mode') === 'true' || import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+        // Clear mock mode if active, then open real sign-in
+        const isMockMode = localStorage.getItem('nabd_dev_mode') === 'true';
 
         if (isMockMode) {
-            if (window.confirm("Switch to Standard Mode? This will enable real Google authentication.")) {
-                localStorage.removeItem('nabd_dev_mode');
-                localStorage.removeItem('mock_auth_token');
-                window.location.reload();
-            }
-        } else {
-            openSignIn({
-                appearance: {
-                    variables: {
-                        colorPrimary: '#000000',
-                    }
-                }
-            });
+            localStorage.removeItem('nabd_dev_mode');
+            localStorage.removeItem('mock_auth_token');
         }
+
+        openSignIn({
+            appearance: {
+                variables: {
+                    colorPrimary: '#000000',
+                }
+            }
+        });
     };
 
     const navLinks = [

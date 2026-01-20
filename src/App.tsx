@@ -1131,11 +1131,12 @@ const AppRoutes: React.FC = () => {
                   card: "shadow-xl",
                   headerTitle: "text-black",
                   headerSubtitle: "text-zinc-500",
-                  socialButtonsBlockButton: "border-zinc-300 hover:bg-zinc-50",
+                  // Hide Google/social sign-in buttons
+                  socialButtons: "hidden",
+                  socialButtonsBlockButton: "hidden",
+                  dividerRow: "hidden",
                   formFieldLabel: "text-zinc-700",
                   formFieldInput: "border-zinc-300 focus:border-black focus:ring-black",
-                  dividerLine: "bg-zinc-200",
-                  dividerText: "text-zinc-400",
                   footerActionLink: "text-black hover:text-zinc-700",
                 }
               }}
