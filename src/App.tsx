@@ -1451,12 +1451,37 @@ const AppRoutes: React.FC = () => {
   const [authTimeout, setAuthTimeout] = useState(false);
 
   // View state for auth screens: 'home' (landing), 'signin', 'signup'
-  // On app subdomain, default to signin if not authenticated
-  const [authView, setAuthView] = useState<'home' | 'signin' | 'signup'>(() => {
-    // If on app subdomain, skip landing and go straight to signin
-    if (isAppSubdomain) return 'signin';
+  // Determine initial view from URL path
+  const [authView, setAuthViewState] = useState<'home' | 'signin' | 'signup'>(() => {
+    const path = window.location.pathname;
+    if (path === '/signin' || path === '/login') return 'signin';
+    if (path === '/signup' || path === '/register') return 'signup';
+    // Default to home (landing page)
     return 'home';
   });
+
+  // Wrapper to update both state and URL
+  const setAuthView = (view: 'home' | 'signin' | 'signup') => {
+    setAuthViewState(view);
+    const newPath = view === 'home' ? '/' : `/${view}`;
+    window.history.pushState({}, '', newPath);
+  };
+
+  // Handle browser back/forward for auth views
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/signin' || path === '/login') {
+        setAuthViewState('signin');
+      } else if (path === '/signup' || path === '/register') {
+        setAuthViewState('signup');
+      } else {
+        setAuthViewState('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Check for dev_auth URL parameter (passed from landing page dev login)
   React.useEffect(() => {
