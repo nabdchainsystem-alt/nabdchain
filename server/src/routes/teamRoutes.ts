@@ -46,13 +46,16 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
         if (!user) {
             try {
                 // Search for user in Clerk by email
+                console.log('[TeamSearch] Searching Clerk for:', searchEmail);
                 const clerkUsers = await clerkClient.users.getUserList({
                     emailAddress: [searchEmail]
                 });
+                console.log('[TeamSearch] Clerk returned:', clerkUsers.length, 'users');
 
                 const clerkUser = clerkUsers[0];
 
                 if (clerkUser && clerkUser.id !== userId) {
+                    console.log('[TeamSearch] Found user in Clerk:', clerkUser.id);
                     // Found in Clerk - create in our database
                     const name = clerkUser.firstName
                         ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim()
@@ -75,12 +78,13 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
                     };
                 }
             } catch (clerkErr) {
-                console.error('Clerk search error:', clerkErr);
+                console.error('[TeamSearch] Clerk search error:', clerkErr);
                 // Continue - user not found
             }
         }
 
         if (!user) {
+            console.log('[TeamSearch] User not found in DB or Clerk:', searchEmail);
             return res.status(404).json({ error: 'User not found' });
         }
 
