@@ -23,7 +23,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
     if (!publishableKey) {
-        throw new Error("Missing Publishable Key");
+        // Show error UI instead of throwing
+        return (
+            <div style={{
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'system-ui, sans-serif',
+                padding: '20px',
+                textAlign: 'center'
+            }}>
+                <h1 style={{ color: '#EF4444', marginBottom: '16px' }}>Configuration Error</h1>
+                <p style={{ color: '#6B7280', marginBottom: '16px' }}>
+                    Missing Clerk Publishable Key. Please check environment variables.
+                </p>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                        padding: '8px 16px',
+                        background: '#3B82F6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Reload Page
+                </button>
+            </div>
+        );
     }
 
     return (

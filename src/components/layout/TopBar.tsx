@@ -14,7 +14,7 @@ import { NabdSmartBar } from '../ui/NabdSmartBar';
 import { Board } from '../../types';
 
 interface TopBarProps {
-  onNavigate: (view: string) => void;
+  onNavigate: (view: string, boardId?: string) => void;
   boards?: Board[];
   onCreateTask?: (boardId: string, task: any) => void;
 }
@@ -76,7 +76,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
     (searchResults.boards.length > 0 || searchResults.tasks.length > 0);
 
   const handleSearchResultClick = (boardId: string) => {
-    onNavigate(`board-${boardId}`);
+    onNavigate('board', boardId);
     setSearchQuery('');
     setIsSearchFocused(false);
   };
@@ -124,15 +124,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
     return () => clearInterval(interval);
   }, [fetchNotificationCount]);
 
-  // Fetch assignments when notification panel opens
+  // Fetch ALL assignments when notification panel opens
   const handleOpenNotifications = async () => {
     setIsNotificationOpen(true);
     setIsLoadingNotifications(true);
     try {
       const token = await getToken();
       if (!token) return;
-      const pendingAssignments = await assignmentService.getPendingAssignments(token);
-      setAssignments(pendingAssignments);
+      // Fetch all assignments (both read and unread)
+      const allAssignments = await assignmentService.getAllAssignments(token);
+      setAssignments(allAssignments);
     } catch (error) {
       console.error('Failed to fetch assignments:', error);
     } finally {
@@ -146,19 +147,23 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       const token = await getToken();
       if (!token) return;
 
-      // Mark as viewed
-      await assignmentService.markAsViewed(token, assignment.id);
+      // Only mark as viewed if it's unread
+      if (!assignment.isViewed) {
+        await assignmentService.markAsViewed(token, assignment.id);
 
-      // Update local state
-      setAssignments(prev => prev.filter(a => a.id !== assignment.id));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+        // Update local state - mark as viewed instead of removing
+        setAssignments(prev => prev.map(a =>
+          a.id === assignment.id ? { ...a, isViewed: true, viewedAt: new Date().toISOString() } : a
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
 
       // Close panel and navigate to the "Assigned to me" board
       setIsNotificationOpen(false);
 
-      // Navigate to assigned board view with the board ID
+      // Navigate to "Assigned to me" board
       if (assignment.copiedBoardId) {
-        onNavigate(`board:${assignment.copiedBoardId}`);
+        onNavigate('board', assignment.copiedBoardId);
       }
     } catch (error) {
       console.error('Failed to view assignment:', error);
