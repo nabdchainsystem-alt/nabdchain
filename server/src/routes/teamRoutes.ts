@@ -1,5 +1,6 @@
 import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 
@@ -25,10 +26,12 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
             return res.status(400).json({ error: 'Email is required' });
         }
 
-        // Find user by email (not the current user)
-        const user = await prisma.user.findFirst({
+        const searchEmail = email.toLowerCase().trim();
+
+        // First, find user in our database
+        let user = await prisma.user.findFirst({
             where: {
-                email: email.toLowerCase(),
+                email: searchEmail,
                 NOT: { id: userId }
             },
             select: {
@@ -38,6 +41,44 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
                 avatarUrl: true
             }
         });
+
+        // If not in database, search in Clerk and sync
+        if (!user) {
+            try {
+                // Search for user in Clerk by email
+                const clerkUsers = await clerkClient.users.getUserList({
+                    emailAddress: [searchEmail]
+                });
+
+                const clerkUser = clerkUsers[0];
+
+                if (clerkUser && clerkUser.id !== userId) {
+                    // Found in Clerk - create in our database
+                    const name = clerkUser.firstName
+                        ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim()
+                        : null;
+
+                    const newUser = await prisma.user.create({
+                        data: {
+                            id: clerkUser.id,
+                            email: searchEmail,
+                            name,
+                            avatarUrl: clerkUser.imageUrl || null
+                        }
+                    });
+
+                    user = {
+                        id: newUser.id,
+                        email: newUser.email,
+                        name: newUser.name,
+                        avatarUrl: newUser.avatarUrl
+                    };
+                }
+            } catch (clerkErr) {
+                console.error('Clerk search error:', clerkErr);
+                // Continue - user not found
+            }
+        }
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
