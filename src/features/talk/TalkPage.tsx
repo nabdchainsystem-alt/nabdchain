@@ -458,10 +458,10 @@ const TalkPage: React.FC = () => {
 
             {/* New DM Modal */}
             {showNewDmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-xl shadow-2xl max-w-md w-full m-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-xl shadow-2xl max-w-md w-full m-4 border border-gray-200 dark:border-monday-dark-border">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold">{t('new_message') || 'New Message'}</h3>
+                            <h3 className="text-lg font-bold">New Message</h3>
                             <button
                                 onClick={() => setShowNewDmModal(false)}
                                 className="text-gray-400 hover:text-gray-600"
@@ -471,13 +471,13 @@ const TalkPage: React.FC = () => {
                         </div>
 
                         <p className="text-sm text-gray-500 mb-4">
-                            {t('select_team_member') || 'Select a team member to start a conversation'}
+                            Select a team member to start a conversation
                         </p>
 
                         <div className="max-h-64 overflow-y-auto">
                             {teamMembers.length === 0 ? (
                                 <p className="text-center text-gray-500 py-4">
-                                    {t('no_team_members') || 'No team members yet. Connect with team members first.'}
+                                    No team members yet. Connect with team members first.
                                 </p>
                             ) : (
                                 teamMembers.map((member) => (
@@ -505,9 +505,9 @@ const TalkPage: React.FC = () => {
                         <div className="mt-4 pt-4 border-t">
                             <button
                                 onClick={() => setShowNewDmModal(false)}
-                                className="w-full py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="w-full py-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
-                                {t('cancel') || 'Cancel'}
+                                Cancel
                             </button>
                         </div>
                     </div>
