@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 import authRoutes from './routes/authRoutes';
 import emailRoutes from './routes/emailRoutes';
 import inviteRoutes from './routes/inviteRoutes';
@@ -88,17 +89,57 @@ app.use(async (req: any, res, next) => {
             return res.status(401).json({ error: 'Unauthenticated' });
         }
 
-        // Sync User to DB
+        // Sync User to DB with real email from Clerk
         if (req.auth?.userId) {
             try {
-                await prisma.user.upsert({
-                    where: { id: req.auth.userId },
-                    update: {},
-                    create: {
-                        id: req.auth.userId,
-                        email: `${req.auth.userId}@placeholder.com`
-                    }
+                // Check if user exists with placeholder email and needs update
+                const existingUser = await prisma.user.findUnique({
+                    where: { id: req.auth.userId }
                 });
+
+                if (!existingUser) {
+                    // New user - fetch email from Clerk
+                    try {
+                        const clerkUser = await clerkClient.users.getUser(req.auth.userId);
+                        const email = clerkUser.emailAddresses?.[0]?.emailAddress || `${req.auth.userId}@placeholder.com`;
+                        const name = clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : null;
+
+                        await prisma.user.create({
+                            data: {
+                                id: req.auth.userId,
+                                email: email.toLowerCase(),
+                                name,
+                                avatarUrl: clerkUser.imageUrl || null
+                            }
+                        });
+                    } catch (clerkErr) {
+                        // Fallback if Clerk fetch fails
+                        await prisma.user.create({
+                            data: {
+                                id: req.auth.userId,
+                                email: `${req.auth.userId}@placeholder.com`
+                            }
+                        });
+                    }
+                } else if (existingUser.email.includes('@placeholder.com')) {
+                    // User exists with placeholder - update with real email
+                    try {
+                        const clerkUser = await clerkClient.users.getUser(req.auth.userId);
+                        const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+                        if (email) {
+                            await prisma.user.update({
+                                where: { id: req.auth.userId },
+                                data: {
+                                    email: email.toLowerCase(),
+                                    name: clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : existingUser.name,
+                                    avatarUrl: clerkUser.imageUrl || existingUser.avatarUrl
+                                }
+                            });
+                        }
+                    } catch (clerkErr) {
+                        // Ignore - keep placeholder for now
+                    }
+                }
             } catch (e) {
                 console.error("User Sync Error", e);
             }

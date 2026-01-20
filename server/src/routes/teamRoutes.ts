@@ -28,10 +28,7 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
         // Find user by email (not the current user)
         const user = await prisma.user.findFirst({
             where: {
-                email: {
-                    equals: email.toLowerCase(),
-                    mode: 'insensitive'
-                },
+                email: email.toLowerCase(),
                 NOT: { id: userId }
             },
             select: {
@@ -76,10 +73,7 @@ router.post('/request', requireAuth, async (req: any, res: Response) => {
         // Find the receiver by email
         const receiver = await prisma.user.findFirst({
             where: {
-                email: {
-                    equals: email.toLowerCase(),
-                    mode: 'insensitive'
-                }
+                email: email.toLowerCase()
             }
         });
 
