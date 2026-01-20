@@ -40,6 +40,17 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
             appearance: {
                 variables: {
                     colorPrimary: '#000000',
+                    colorText: '#000000',
+                    colorTextSecondary: '#71717a',
+                    colorBackground: '#ffffff',
+                },
+                elements: {
+                    // Hide Google/social sign-in buttons
+                    socialButtons: "hidden",
+                    socialButtonsBlockButton: "hidden",
+                    dividerRow: "hidden",
+                    footer: "hidden",
+                    formButtonPrimary: "bg-black hover:bg-zinc-800 text-white",
                 }
             }
         });
