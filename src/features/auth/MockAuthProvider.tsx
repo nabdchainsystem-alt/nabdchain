@@ -121,11 +121,14 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Clear token first
         localStorage.removeItem('mock_auth_token');
 
-        // Redirect IMMEDIATELY on app subdomain (before React re-renders)
+        // Redirect on app subdomain
         const hostname = window.location.hostname;
         if (hostname === 'app.nabdchain.com') {
-            window.location.replace('https://nabdchain.com');
-            return; // Stop execution - page is redirecting
+            // Use href (Safari-compatible) with setTimeout to ensure it runs
+            setTimeout(() => {
+                window.location.href = 'https://nabdchain.com';
+            }, 0);
+            return;
         }
 
         // Only for localhost - update state
