@@ -1046,15 +1046,19 @@ import { SignUpPage } from './features/auth/SignUpPage';
 const AppRoutes: React.FC = () => {
   const { isLoaded, isSignedIn } = useUser();
 
-  // Detect hostname - be specific about domains to avoid redirect loops
+  // Detect hostname
   const hostname = window.location.hostname;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
   const isAppSubdomain = hostname === 'app.nabdchain.com';
   const isMainDomain = hostname === 'nabdchain.com' || hostname === 'www.nabdchain.com';
-  // For Vercel previews or other domains, treat like localhost (no redirects)
 
   // View state for auth screens: 'home' (landing), 'signin', 'signup'
-  const [authView, setAuthView] = useState<'home' | 'signin' | 'signup'>('home');
+  // On app subdomain, default to signin if not authenticated
+  const [authView, setAuthView] = useState<'home' | 'signin' | 'signup'>(() => {
+    // If on app subdomain, skip landing and go straight to signin
+    if (isAppSubdomain) return 'signin';
+    return 'home';
+  });
 
   // Check for dev_auth URL parameter (passed from landing page dev login)
   React.useEffect(() => {
@@ -1076,33 +1080,19 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  // On app.nabdchain.com: if not signed in, redirect to nabdchain.com for auth
-  if (isAppSubdomain && !isSignedIn) {
-    window.location.href = 'https://nabdchain.com';
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // On nabdchain.com: if signed in, redirect to app.nabdchain.com
-  if (isMainDomain && isSignedIn) {
-    window.location.href = 'https://app.nabdchain.com';
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Handler for "Back to Home" - show landing page
+  // Handler for "Back to Home" - show landing page (or redirect to main domain on app subdomain)
   const handleBackToHome = () => {
-    setAuthView('home');
+    if (isAppSubdomain) {
+      // On app subdomain, redirect to main site for landing page
+      window.location.href = 'https://nabdchain.com';
+    } else {
+      setAuthView('home');
+    }
   };
 
-  // Redirect URL after sign-in: go to app subdomain
-  const signInRedirectUrl = isLocalhost ? '/dashboard' : 'https://app.nabdchain.com/dashboard';
+  // Redirect URL after sign-in: stay on current domain
+  // This avoids cross-domain cookie issues
+  const signInRedirectUrl = '/dashboard';
 
   // App subdomain (app.nabdchain.com or localhost) - Show app or auth
   return (
