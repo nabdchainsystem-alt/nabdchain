@@ -242,7 +242,7 @@ router.get('/me/visibility', requireAuth, async (req, res: Response) => {
 // GET /users/:userId/permissions: Get a user's page permissions (admin only)
 router.get('/users/:userId/permissions', requireAuth, requireAdmin, async (req, res: Response) => {
     try {
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
 
         // Get global feature flags
         const globalFlags = await prisma.featureFlag.findMany();
@@ -273,7 +273,7 @@ router.get('/users/:userId/permissions', requireAuth, requireAdmin, async (req, 
 router.put('/users/:userId/permissions', requireAuth, requireAdmin, async (req, res: Response) => {
     try {
         const adminUserId = (req as AuthRequest).auth.userId;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
         const { permissions } = req.body;
 
         if (!Array.isArray(permissions)) {
@@ -281,17 +281,18 @@ router.put('/users/:userId/permissions', requireAuth, requireAdmin, async (req, 
         }
 
         for (const perm of permissions) {
+            const pageKey = perm.pageKey as string;
             if (perm.enabled === null) {
                 // Delete - revert to global
                 await prisma.userPagePermission.deleteMany({
-                    where: { userId, pageKey: perm.pageKey }
+                    where: { userId, pageKey }
                 });
             } else {
                 // Upsert
                 await prisma.userPagePermission.upsert({
-                    where: { userId_pageKey: { userId, pageKey: perm.pageKey } },
+                    where: { userId_pageKey: { userId, pageKey } },
                     update: { enabled: perm.enabled, updatedBy: adminUserId },
-                    create: { userId, pageKey: perm.pageKey, enabled: perm.enabled, updatedBy: adminUserId }
+                    create: { userId, pageKey, enabled: perm.enabled, updatedBy: adminUserId }
                 });
             }
         }
@@ -309,7 +310,7 @@ router.put('/users/:userId/permissions', requireAuth, requireAdmin, async (req, 
 router.delete('/users/:userId/permissions', requireAuth, requireAdmin, async (req, res: Response) => {
     try {
         const adminUserId = (req as AuthRequest).auth.userId;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
 
         await prisma.userPagePermission.deleteMany({
             where: { userId }

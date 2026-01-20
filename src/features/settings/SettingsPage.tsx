@@ -142,6 +142,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     const [togglingFeature, setTogglingFeature] = useState<string | null>(null);
     const [changingRole, setChangingRole] = useState<string | null>(null);
 
+    // User permissions state
+    const [selectedUserForPerms, setSelectedUserForPerms] = useState<AdminUser | null>(null);
+    const [userPermissions, setUserPermissions] = useState<UserPagePermission[]>([]);
+    const [isLoadingUserPerms, setIsLoadingUserPerms] = useState(false);
+    const [savingUserPerm, setSavingUserPerm] = useState<string | null>(null);
+
     // Fetch admin data when admin tab is selected
     const fetchAdminData = useCallback(async () => {
         if (!isAdmin) return;
@@ -214,6 +220,119 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             alert(error instanceof Error ? error.message : 'Failed to change user role');
         } finally {
             setChangingRole(null);
+        }
+    };
+
+    // Load permissions for selected user
+    const handleSelectUserForPerms = async (userId: string) => {
+        const selectedUser = adminUsers.find(u => u.id === userId);
+        if (!selectedUser) {
+            setSelectedUserForPerms(null);
+            setUserPermissions([]);
+            return;
+        }
+
+        setSelectedUserForPerms(selectedUser);
+        setIsLoadingUserPerms(true);
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const response = await adminService.getUserPermissions(token, userId);
+            setUserPermissions(response.permissions);
+        } catch (error) {
+            console.error('Failed to load user permissions:', error);
+            alert('Failed to load user permissions');
+        } finally {
+            setIsLoadingUserPerms(false);
+        }
+    };
+
+    // Toggle a single permission for selected user
+    const handleToggleUserPermission = async (pageKey: string, currentEnabled: boolean, source: 'user' | 'global') => {
+        if (!selectedUserForPerms) return;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            setSavingUserPerm(pageKey);
+
+            // If currently using global, set to opposite of global
+            // If currently user override, toggle it
+            const newEnabled = !currentEnabled;
+
+            await adminService.updateUserPermissions(token, selectedUserForPerms.id, [
+                { pageKey, enabled: newEnabled }
+            ]);
+
+            // Update local state
+            setUserPermissions(prev => prev.map(p =>
+                p.pageKey === pageKey
+                    ? { ...p, enabled: newEnabled, source: 'user' }
+                    : p
+            ));
+        } catch (error) {
+            console.error('Failed to update user permission:', error);
+            alert('Failed to update permission');
+        } finally {
+            setSavingUserPerm(null);
+        }
+    };
+
+    // Reset permission to global default
+    const handleResetUserPermission = async (pageKey: string) => {
+        if (!selectedUserForPerms) return;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            setSavingUserPerm(pageKey);
+
+            await adminService.updateUserPermissions(token, selectedUserForPerms.id, [
+                { pageKey, enabled: null }
+            ]);
+
+            // Update local state - revert to global
+            setUserPermissions(prev => prev.map(p =>
+                p.pageKey === pageKey
+                    ? { ...p, enabled: p.globalEnabled, source: 'global' }
+                    : p
+            ));
+        } catch (error) {
+            console.error('Failed to reset user permission:', error);
+            alert('Failed to reset permission');
+        } finally {
+            setSavingUserPerm(null);
+        }
+    };
+
+    // Reset all permissions to global defaults
+    const handleResetAllUserPermissions = async () => {
+        if (!selectedUserForPerms) return;
+
+        if (!confirm('Reset all permissions to global defaults for this user?')) return;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            setIsLoadingUserPerms(true);
+            await adminService.resetUserPermissions(token, selectedUserForPerms.id);
+
+            // Update local state - revert all to global
+            setUserPermissions(prev => prev.map(p => ({
+                ...p,
+                enabled: p.globalEnabled,
+                source: 'global'
+            })));
+        } catch (error) {
+            console.error('Failed to reset user permissions:', error);
+            alert('Failed to reset permissions');
+        } finally {
+            setIsLoadingUserPerms(false);
         }
     };
 
@@ -738,6 +857,145 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* User Page Permissions Section */}
+                <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-2xl border border-gray-100 dark:border-monday-dark-border shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <Eye size={24} className="text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">User Page Permissions</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Control which pages each user can see</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* User Selector */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Select User
+                        </label>
+                        <select
+                            value={selectedUserForPerms?.id || ''}
+                            onChange={(e) => handleSelectUserForPerms(e.target.value)}
+                            className="w-full max-w-md px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        >
+                            <option value="">-- Select a user --</option>
+                            {adminUsers.filter(u => u.role !== 'admin').map(u => (
+                                <option key={u.id} value={u.id}>
+                                    {u.name || u.email} ({u.email})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Note: Admin users always see all pages
+                        </p>
+                    </div>
+
+                    {/* Permissions Grid */}
+                    {selectedUserForPerms && (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    {selectedUserForPerms.avatarUrl ? (
+                                        <img src={selectedUserForPerms.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                                            {(selectedUserForPerms.name || selectedUserForPerms.email).charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">
+                                        {selectedUserForPerms.name || selectedUserForPerms.email}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleResetAllUserPermissions}
+                                    disabled={isLoadingUserPerms}
+                                    className="text-sm px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    Reset All to Global
+                                </button>
+                            </div>
+
+                            {isLoadingUserPerms ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <SpinnerGap size={32} className="text-blue-500 animate-spin" />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(FEATURE_CATEGORIES).map(([category, keys]) => (
+                                        <div key={category} className="border border-gray-100 dark:border-monday-dark-border rounded-xl overflow-hidden">
+                                            <div className="px-4 py-3 bg-gray-50 dark:bg-monday-dark-hover/50 border-b border-gray-100 dark:border-monday-dark-border">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-200">{category}</span>
+                                            </div>
+                                            <div className="p-2 space-y-1">
+                                                {keys.map(key => {
+                                                    const perm = userPermissions.find(p => p.pageKey === key);
+                                                    const isEnabled = perm?.enabled ?? true;
+                                                    const isUserOverride = perm?.source === 'user';
+                                                    const isSaving = savingUserPerm === key;
+
+                                                    return (
+                                                        <div
+                                                            key={key}
+                                                            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover rounded-lg transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-sm ${isEnabled ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                                                                    {FEATURE_LABELS[key] || key}
+                                                                </span>
+                                                                {isUserOverride && (
+                                                                    <button
+                                                                        onClick={() => handleResetUserPermission(key)}
+                                                                        disabled={isSaving}
+                                                                        className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                                                        title="Reset to global"
+                                                                    >
+                                                                        custom
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleToggleUserPermission(key, isEnabled, perm?.source || 'global')}
+                                                                disabled={isSaving}
+                                                                className={`relative w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${isSaving ? 'opacity-50 cursor-wait' : 'cursor-pointer'
+                                                                    } ${isEnabled
+                                                                        ? isUserOverride ? 'bg-blue-500' : 'bg-green-500'
+                                                                        : 'bg-gray-300 dark:bg-gray-600'
+                                                                    }`}
+                                                            >
+                                                                <span
+                                                                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 ${isEnabled ? 'translate-x-5' : 'translate-x-0'
+                                                                        }`}
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-monday-dark-hover/30 rounded-lg">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-1"></span> Green = Using global setting
+                                    <span className="inline-block w-3 h-3 bg-blue-500 rounded-full ml-3 mr-1"></span> Blue = Custom override
+                                    <span className="inline-block w-3 h-3 bg-gray-300 rounded-full ml-3 mr-1"></span> Gray = Disabled
+                                </p>
+                            </div>
+                        </>
+                    )}
+
+                    {!selectedUserForPerms && (
+                        <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+                            Select a user above to manage their page permissions
                         </div>
                     )}
                 </div>

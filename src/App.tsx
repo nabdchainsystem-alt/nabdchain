@@ -21,7 +21,7 @@ import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage } from './utils/stor
 import { appLogger, boardLogger } from './utils/logger';
 import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
 import { API_URL } from './config/api';
-import { adminService, featureFlagsToPageVisibility } from './services/adminService';
+import { adminService } from './services/adminService';
 
 // Lazy load feature pages for better initial bundle size
 const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -360,26 +360,25 @@ const AppContent: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [serverFeatureFlags, setServerFeatureFlags] = useState<Record<string, boolean>>({});
 
-  // Fetch admin status and feature flags
+  // Fetch admin status and user-specific visibility
   const fetchAdminData = React.useCallback(async () => {
     if (!isSignedIn) return;
     try {
       const token = await getToken();
       if (!token) return;
 
-      // Fetch admin status and feature flags in parallel
-      const [adminStatus, flags] = await Promise.all([
+      // Fetch admin status and user's effective visibility in parallel
+      const [adminStatus, visibility] = await Promise.all([
         adminService.getAdminStatus(token),
-        adminService.getFeatureFlags(token)
+        adminService.getMyVisibility(token)
       ]);
 
       setIsAdmin(adminStatus.isAdmin);
 
-      // Convert feature flags to visibility format
-      const flagsVisibility = featureFlagsToPageVisibility(flags);
-      setServerFeatureFlags(flagsVisibility);
+      // Server returns merged visibility (global + user-specific overrides)
+      setServerFeatureFlags(visibility);
 
-      appLogger.info('[App] Admin status:', adminStatus.isAdmin, 'Feature flags loaded:', Object.keys(flagsVisibility).length);
+      appLogger.info('[App] Admin status:', adminStatus.isAdmin, 'Visibility loaded:', Object.keys(visibility).length);
     } catch (error) {
       console.error('Failed to fetch admin data:', error);
     }
