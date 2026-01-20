@@ -1501,14 +1501,9 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  // Handler for "Back to Home" - show landing page (or redirect to main domain on app subdomain)
+  // Handler for "Back to Home" - show landing page
   const handleBackToHome = () => {
-    if (isAppSubdomain) {
-      // On app subdomain, redirect to main site for landing page
-      window.location.href = 'https://nabdchain.com';
-    } else {
-      setAuthView('home');
-    }
+    setAuthView('home');
   };
 
   // Redirect URL after sign-in: stay on current domain

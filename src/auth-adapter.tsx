@@ -210,14 +210,6 @@ export const MockSignIn: React.FC = () => {
                     <span>Login as Master Admin</span>
                     <span className="text-xs opacity-75">→</span>
                 </button>
-
-                <button
-                    onClick={loginAsSam}
-                    className="w-full px-4 py-3 bg-indigo-500 text-white font-medium rounded hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2"
-                >
-                    <span>Login as Sam</span>
-                    <span className="text-xs opacity-75">→</span>
-                </button>
             </div>
         </div>
     );
