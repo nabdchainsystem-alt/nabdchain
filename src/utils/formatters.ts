@@ -112,26 +112,18 @@ export const formatNumber = (value: number): string => {
 /**
  * Format a number as currency
  * @param value - Amount to format
- * @param currencyCode - ISO currency code (e.g. USD, SAR)
+ * @param _currencyCode - ISO currency code (unused, kept for API compatibility)
  * @param currencySymbol - Symbol to display (e.g. $, ﷼)
  * @returns Formatted currency string
  */
-export const formatCurrency = (value: number, currencyCode: string = 'USD', currencySymbol: string = '$'): string => {
-    // Use standard Intl.NumberFormat for better localization support
-    // We use the currencyCode to get the right formatting rules, but we might want to force the symbol 
-    // if the system's default for that currency isn't what we want (though usually it is).
-
-    try {
-        return new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: currencyCode,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(value);
-    } catch (error) {
-        // Fallback if currency code is invalid
-        return `${currencySymbol}${value.toLocaleString()}`;
-    }
+export const formatCurrency = (value: number, _currencyCode: string = 'USD', currencySymbol: string = '$'): string => {
+    // Use the explicit symbol provided rather than relying on Intl.NumberFormat
+    // which may use different symbols depending on browser locale
+    const formattedNumber = value.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    });
+    return `${currencySymbol} ${formattedNumber}`;
 };
 
 /**

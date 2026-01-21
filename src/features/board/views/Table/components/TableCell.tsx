@@ -110,6 +110,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
     const { user: currentUser } = useUser();
+    const { currency: globalCurrency } = useAppContext();
 
     // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
     const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
@@ -250,7 +251,6 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Currency column
     if (col.type === 'currency') {
-        const { currency: globalCurrency } = useAppContext();
         // Use column-specific currency if available, otherwise fall back to global
         const currencyCode = col.currency?.code || globalCurrency.code;
         const currencySymbol = col.currency?.symbol || globalCurrency.symbol;

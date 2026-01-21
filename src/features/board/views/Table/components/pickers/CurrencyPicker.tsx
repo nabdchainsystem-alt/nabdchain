@@ -61,7 +61,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
     const [search, setSearch] = useState('');
     const [showCurrencyList, setShowCurrencyList] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const positionStyle = usePopupPosition({ triggerRect, menuHeight: 380 });
+    const positionStyle = usePopupPosition({ triggerRect, menuHeight: 380, menuWidth: 320 });
 
     const numericValue = parseFloat(amount) || 0;
 

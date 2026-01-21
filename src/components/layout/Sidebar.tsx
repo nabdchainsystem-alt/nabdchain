@@ -612,13 +612,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         } else {
             if (addButtonRef.current) {
                 const rect = addButtonRef.current.getBoundingClientRect();
-                const MENU_HEIGHT = 100; // Approximate height of the menu
+                const MENU_HEIGHT = 280; // Approximate height of the menu (input + layout grid + button + link)
                 let top = rect.top; // Align with top of button
                 const left = rect.right + 10; // Position to the right of the button with some gap
 
                 // Adjust vertical position if it overflows the bottom
                 if (top + MENU_HEIGHT > window.innerHeight) {
-                    top = window.innerHeight - MENU_HEIGHT - 10;
+                    top = Math.max(10, window.innerHeight - MENU_HEIGHT - 10);
                 }
 
                 setAddMenuPos({ top, left });
@@ -1113,7 +1113,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     {isAddMenuOpen && (
                                         <div
                                             ref={addMenuRef}
-                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 w-64 overflow-hidden"
+                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 min-w-[200px] w-auto overflow-hidden"
                                             style={{
                                                 top: addMenuPos.top,
                                                 left: addMenuPos.left
@@ -1331,9 +1331,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                         {/* Marketplace Section */}
                         {(pageVisibility['local_marketplace'] !== false || pageVisibility['foreign_marketplace'] !== false) && (
-                            <div className="mt-6">
+                            <div className="mt-6 pl-5 pr-3">
                                 {!isCollapsed && (
-                                    <div className="flex items-center mb-2 px-1">
+                                    <div className="flex items-center mb-2 px-3">
                                         <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('marketplace').toUpperCase()}</span>
                                     </div>
                                 )}
@@ -1342,20 +1342,20 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <button
                                             onClick={() => onNavigate('local_marketplace')}
                                             title={t('local_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
                                         >
-                                            <ShoppingCart size={16} weight="light" />
-                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('local_marketplace')}</span>
+                                            <ShoppingCart size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('local_marketplace')}</span>
                                         </button>
                                     )}
                                     {pageVisibility['foreign_marketplace'] !== false && (
                                         <button
                                             onClick={() => onNavigate('foreign_marketplace')}
                                             title={t('foreign_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-md transition-colors ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-white/40 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text'}`}
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
                                         >
-                                            <Globe size={16} weight="light" />
-                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start ${textBase} ${textVisibility}`}>{t('foreign_marketplace')}</span>
+                                            <Globe size={17} weight="light" className="flex-shrink-0" />
+                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('foreign_marketplace')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -1431,7 +1431,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                 {/* Quick Add Board Menu - Small dropdown from + button */}
                 {quickAddMenu && (
                     <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border w-60 z-[70]"
+                        className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border min-w-[200px] w-auto z-[70]"
                         style={{ top: quickAddMenu.y, left: quickAddMenu.x }}
                         onClick={(e) => e.stopPropagation()}
                     >

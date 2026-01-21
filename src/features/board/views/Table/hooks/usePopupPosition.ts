@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from 'react';
+import { useMemo } from 'react';
 
 interface UsePopupPositionProps {
     triggerRect?: DOMRect;
@@ -23,18 +23,19 @@ export function usePopupPosition({
     menuWidth = 256,
     offset = 4
 }: UsePopupPositionProps): PopupPositionStyle {
-    const [positionStyle, setPositionStyle] = useState<PopupPositionStyle>(() => {
-        if (!triggerRect) return { position: 'fixed', display: 'none' };
+    // Use useMemo with actual rect values as dependencies for reliable recalculation
+    return useMemo(() => {
+        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
         return calculatePosition(triggerRect, menuHeight, menuWidth, offset);
-    });
-
-    useLayoutEffect(() => {
-        if (triggerRect) {
-            setPositionStyle(calculatePosition(triggerRect, menuHeight, menuWidth, offset));
-        }
-    }, [triggerRect, menuHeight, menuWidth, offset]);
-
-    return positionStyle;
+    }, [
+        triggerRect?.top,
+        triggerRect?.bottom,
+        triggerRect?.left,
+        triggerRect?.right,
+        menuHeight,
+        menuWidth,
+        offset
+    ]);
 }
 
 function calculatePosition(
@@ -43,18 +44,32 @@ function calculatePosition(
     menuWidth: number,
     offset: number
 ): PopupPositionStyle {
-    const spaceBelow = window.innerHeight - triggerRect.bottom;
-    const spaceRight = window.innerWidth - triggerRect.left;
-    const openUp = spaceBelow < menuHeight && triggerRect.top > menuHeight;
-    const openLeft = spaceRight < menuWidth + 20;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    const spaceBelow = windowHeight - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+
+    // Check if menu would overflow on the right when positioned at trigger's left edge
+    const wouldOverflowRight = triggerRect.left + menuWidth > windowWidth - 10;
+
+    // Determine vertical position
+    const openUp = spaceBelow < menuHeight && spaceAbove > menuHeight;
 
     // Calculate horizontal position
     let left: number | undefined;
     let right: number | undefined;
 
-    if (openLeft) {
-        // Position from the right edge of the trigger, opening leftward
-        right = window.innerWidth - triggerRect.right;
+    if (wouldOverflowRight) {
+        // Position from the right - align popup's right edge with trigger's right edge
+        // But ensure it doesn't go off the left side
+        const rightOffset = windowWidth - triggerRect.right;
+        if (rightOffset + menuWidth > windowWidth - 10) {
+            // Menu would overflow left, just position from right edge of window
+            right = 10;
+        } else {
+            right = rightOffset;
+        }
     } else {
         left = triggerRect.left;
     }
@@ -62,10 +77,10 @@ function calculatePosition(
     if (openUp) {
         return {
             position: 'fixed',
-            bottom: window.innerHeight - triggerRect.top + offset,
+            bottom: windowHeight - triggerRect.top + offset,
             left,
             right,
-            maxHeight: triggerRect.top - 10
+            maxHeight: spaceAbove - 10
         };
     }
 
@@ -74,6 +89,6 @@ function calculatePosition(
         top: triggerRect.bottom + offset,
         left,
         right,
-        maxHeight: window.innerHeight - triggerRect.bottom - 10
+        maxHeight: spaceBelow - 10
     };
 }
