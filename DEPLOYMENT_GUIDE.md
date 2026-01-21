@@ -5,15 +5,17 @@
 ### What You Have Now
 | Component | Technology | Status |
 |-----------|------------|--------|
-| Frontend | React 19 + Vite + TypeScript | Deployed on Vercel |
-| Backend | Express 5 + Node.js | **Not deployed** (localhost:3001) |
-| Database | PostgreSQL (Prisma ORM) | **Not deployed** |
+| Frontend | React 19 + Vite + TypeScript | Vercel |
+| Backend | Express 5 + Node.js | Render |
+| Database | PostgreSQL (Prisma ORM) | Neon (free) |
 | Auth | Clerk | Configured |
 | AI | Google Gemini | Configured |
-| File Storage | None | **Missing** |
+| File Storage | None | **Needed for growth** |
 
-### Critical Issue
-Your Vault keeps loading because your backend is not deployed. The frontend tries to connect to `localhost:3001` which doesn't exist in production.
+### Checklist
+- [ ] `VITE_API_URL` set in Vercel to your Render URL
+- [ ] `CORS_ORIGIN` in Render set to your Vercel domain
+- [ ] Database `DATABASE_URL` configured in Render
 
 ---
 
@@ -124,47 +126,172 @@ Companies like Notion, Linear, Monday.com offer free tiers because:
 
 ## Recommended Stack for NABD
 
-### Free Tier Stack (Starting Out)
-```
-Frontend:     Vercel (free)
-Backend:      Railway ($5/month credit)
-Database:     Neon PostgreSQL (free)
-Storage:      Cloudflare R2 (free 10GB)
-Auth:         Clerk (free 10K MAU)
-AI:           Google Gemini (free)
-Email:        Resend (free 3K/month)
-Analytics:    Plausible/Umami (self-host free)
+## Scaling Path: From Free to Enterprise
 
-Estimated Cost: $0/month
+### Stage 1: Free Tier (0-100 users) - $0/month
 ```
+Frontend:     Vercel (free)           → Keep
+Backend:      Render (free)           → Keep
+Database:     Neon (free 0.5GB)       → Keep
+Storage:      Cloudflare R2 (10GB)    → Add this
+Auth:         Clerk (10K MAU)         → Keep
+AI:           Google Gemini (free)    → Keep
+Email:        Resend (3K/month)       → Add this
 
-### Growth Stack (100-1000 users)
-```
-Frontend:     Vercel Pro ($20/month)
-Backend:      Railway Hobby ($5/month)
-Database:     Neon Launch ($19/month)
-Storage:      Cloudflare R2 ($0.015/GB)
-Auth:         Clerk Pro ($25/month)
-AI:           Gemini + Groq ($10-50/month)
-Email:        Resend ($20/month)
-CDN:          Cloudflare (free)
-
-Estimated Cost: $100-150/month
+Total: $0/month
 ```
 
-### Scale Stack (1000+ users)
+### Stage 2: Early Growth (100-500 users) - $50-100/month
 ```
-Frontend:     Vercel Enterprise or self-host
-Backend:      Railway Team or AWS ECS
-Database:     Neon Scale or AWS RDS
-Storage:      Cloudflare R2
-Auth:         Clerk Business
-AI:           Custom routing (cheapest per request)
-Cache:        Upstash Redis
-Queue:        Upstash QStash
+Frontend:     Vercel (free)           → Still free
+Backend:      Render Starter ($7)     → Upgrade (no sleep)
+Database:     Neon Launch ($19)       → Upgrade (more storage)
+Storage:      Cloudflare R2 (~$5)     → Pay as you grow
+Auth:         Clerk (free)            → Still free under 10K
+AI:           Gemini (free)           → Still free
+Email:        Resend ($20)            → Upgrade for more sends
+Cache:        Upstash Redis (free)    → Add this
 
-Estimated Cost: $500-2000/month
+Total: ~$50-70/month
 ```
+
+### Stage 3: Growth (500-2000 users) - $150-300/month
+```
+Frontend:     Vercel Pro ($20)        → Upgrade (analytics, more bandwidth)
+Backend:      Render Standard ($25)   → Upgrade (more RAM, always on)
+Database:     Neon Scale ($69)        → Upgrade (autoscaling, more compute)
+Storage:      Cloudflare R2 (~$15)    → Scales automatically
+Auth:         Clerk Pro ($25)         → Upgrade (custom branding)
+AI:           Gemini + Groq (~$30)    → Add Groq for speed
+Email:        Resend Pro ($40)        → Upgrade
+Cache:        Upstash Pro ($10)       → Upgrade
+
+Total: ~$250/month
+```
+
+### Stage 4: Scale (2000-10000 users) - $500-1500/month
+```
+Frontend:     Vercel Pro ($20)        → Keep (or Cloudflare Pages)
+Backend:      Render Pro ($85) or     → OR migrate to:
+              AWS ECS (~$100-200)     → Better for high traffic
+Database:     Neon Business ($300) or → OR migrate to:
+              AWS RDS (~$150-300)     → More control
+Storage:      Cloudflare R2 (~$50)    → Scales beautifully
+Auth:         Clerk Business (~$100)  → Volume pricing
+AI:           OpenRouter (~$100-300)  → Route to cheapest provider
+Email:        Resend Scale ($100)     → Or AWS SES ($0.10/1K)
+Cache:        Upstash Pay-as-go       → Or Redis Cloud
+Queue:        Upstash QStash ($20)    → Add for background jobs
+
+Total: ~$800-1500/month
+```
+
+### Stage 5: Enterprise (10000+ users) - $2000+/month
+```
+Frontend:     Self-host on AWS/GCP or Vercel Enterprise
+Backend:      AWS ECS/EKS or GCP Cloud Run (auto-scaling)
+Database:     AWS RDS or GCP Cloud SQL (multi-region)
+Storage:      Cloudflare R2 or AWS S3
+Auth:         Clerk Enterprise or build custom with Auth0
+AI:           Self-host open models + API fallback
+Email:        AWS SES (cheapest at scale)
+Cache:        AWS ElastiCache or Redis Cloud
+Queue:        AWS SQS or BullMQ
+CDN:          Cloudflare Enterprise
+
+Total: $2000-10000/month (depends on usage)
+```
+
+---
+
+## When to Migrate Services
+
+| Trigger | Action |
+|---------|--------|
+| Render free tier sleeping causes issues | Upgrade to Render Starter ($7) |
+| Database >500MB | Upgrade Neon or move to Supabase |
+| >10K monthly active users | Upgrade Clerk |
+| Need file uploads | Add Cloudflare R2 |
+| API response slow | Add Upstash Redis cache |
+| >50 AI calls/user/month | Add usage limits or upgrade |
+| Need background jobs | Add Upstash QStash or BullMQ |
+| Global users, slow load | Add Cloudflare CDN |
+| >$500/month on Render | Consider AWS/GCP migration |
+
+---
+
+## Service Comparison by Category
+
+### Backend Hosting - Best Options
+
+| Service | Free Tier | Paid Starting | Best For | Migrate When |
+|---------|-----------|---------------|----------|--------------|
+| **Render** | 750 hrs/mo (sleeps) | $7/mo | Current setup | >$85/mo → AWS |
+| Railway | $5 credit/mo | $5/mo | Fast deploys | Similar to Render |
+| Fly.io | 3 VMs | $2/mo | Global edge | Need low latency worldwide |
+| AWS ECS | None | ~$30/mo | High scale | >2000 users |
+| GCP Cloud Run | 2M req/mo | Pay-per-use | Serverless | Variable traffic |
+| **Recommendation** | Render → AWS ECS at scale |
+
+### Database - Best Options
+
+| Service | Free Tier | Paid Starting | Best For | Migrate When |
+|---------|-----------|---------------|----------|--------------|
+| **Neon** | 0.5 GB, auto-suspend | $19/mo | Serverless Postgres | Best for most |
+| Supabase | 500 MB, 2 projects | $25/mo | Postgres + extras | Want built-in auth/storage |
+| PlanetScale | 5 GB (MySQL) | $29/mo | MySQL needed | MySQL-only apps |
+| AWS RDS | None | ~$15/mo | Full control | Enterprise needs |
+| **Recommendation** | Neon (best free) → Supabase (if want all-in-one) → AWS RDS (enterprise) |
+
+### File Storage - Best Options
+
+| Service | Free Tier | Pricing | Best For | Why |
+|---------|-----------|---------|----------|-----|
+| **Cloudflare R2** | 10 GB + 1M ops | $0.015/GB | **Best choice** | NO egress fees ever |
+| Supabase Storage | 1 GB | $0.021/GB | Integrated | If using Supabase |
+| AWS S3 | 5 GB (12 mo) | $0.023/GB + egress | Enterprise | Most features |
+| Uploadthing | 2 GB | $10/mo | Quick setup | Easiest integration |
+| **Recommendation** | Cloudflare R2 (no egress fees = huge savings at scale) |
+
+### AI/LLM - Best Options
+
+| Service | Free Tier | Cost per 1M tokens | Best For |
+|---------|-----------|-------------------|----------|
+| **Gemini** | 60 req/min | ~$0.25-1.00 | General use (current) |
+| **Groq** | Free tier | ~$0.27 | Speed (very fast) |
+| OpenAI GPT-4 | $5 credit | ~$30 | Best quality |
+| Claude | API access | ~$15 | Code/reasoning |
+| OpenRouter | Pay-per-use | Varies | Route to cheapest |
+| **Recommendation** | Gemini (free) → Add Groq (speed) → OpenRouter (smart routing at scale) |
+
+### Authentication - Best Options
+
+| Service | Free Tier | Paid Starting | Best For |
+|---------|-----------|---------------|----------|
+| **Clerk** | 10K MAU | $25/mo | Best DX (current) |
+| Supabase Auth | Unlimited | Included | If using Supabase |
+| Auth0 | 7.5K MAU | $23/mo | Enterprise features |
+| Firebase Auth | 50K MAU | Pay-per-use | Google ecosystem |
+| **Recommendation** | Keep Clerk - excellent DX, generous free tier |
+
+### Caching - Add When Slow
+
+| Service | Free Tier | Paid Starting | Best For |
+|---------|-----------|---------------|----------|
+| **Upstash Redis** | 10K cmd/day | $0.2/100K cmd | Serverless Redis |
+| Redis Cloud | 30 MB | $5/mo | Traditional Redis |
+| Cloudflare KV | 100K reads/day | $5/mo | Edge caching |
+| **Recommendation** | Upstash Redis (serverless, scales to zero) |
+
+### Email - Add for Notifications
+
+| Service | Free Tier | Paid Starting | Best For |
+|---------|-----------|---------------|----------|
+| **Resend** | 3K/month | $20/mo | Modern, great DX |
+| SendGrid | 100/day | $20/mo | Marketing emails |
+| AWS SES | None | $0.10/1K | Cheapest at scale |
+| Postmark | 100/month | $15/mo | Deliverability |
+| **Recommendation** | Resend (start) → AWS SES (>100K emails/mo) |
 
 ---
 

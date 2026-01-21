@@ -136,7 +136,7 @@ export const TeamsPage: React.FC = () => {
         <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text animate-fade-in overflow-hidden">
             {selectedMemberId ? (
                 <TeamMemberProfile
-                    member={MOCK_MEMBERS.find(m => m.id === selectedMemberId)!}
+                    member={allMembers.find(m => m.id === selectedMemberId)!}
                     onBack={() => setSelectedMemberId(null)}
                 />
             ) : (
