@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Clock, Layers, Circle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Activity, Clock, Stack as Layers, Circle, CheckCircle, WarningCircle as AlertCircle } from 'phosphor-react';
 import { FlowNode } from '../../visualLogic';
 
 interface Props {
@@ -56,7 +56,7 @@ export const LegendWidget: React.FC = () => {
                     <span>Pending</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                    <CheckCircle2 size={12} className="text-blue-500" />
+                    <CheckCircle size={12} className="text-blue-500" />
                     <span>Active</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">

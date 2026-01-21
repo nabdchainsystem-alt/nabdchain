@@ -1,4 +1,4 @@
-import { Key, FileText, StickyNote, Shield, Star, Trash2, Folder, Image, Globe, File } from 'lucide-react';
+import { Key, FileText, Note, Shield, Star, Trash, Folder, Image, Globe, File } from 'phosphor-react';
 
 export type VaultItemType = 'login' | 'note' | 'folder' | 'document' | 'image' | 'weblink';
 
@@ -49,6 +49,6 @@ export const MOCK_CATEGORIES = [
     { id: 'document', label: 'Documents', icon: FileText },
     { id: 'image', label: 'Images', icon: Image },
     { id: 'login', label: 'Logins', icon: Key },
-    { id: 'note', label: 'Secure Notes', icon: StickyNote },
-    { id: 'trash', label: 'Trash', icon: Trash2 },
+    { id: 'note', label: 'Secure Notes', icon: Note },
+    { id: 'trash', label: 'Trash', icon: Trash },
 ];

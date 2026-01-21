@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Activity, Wrench, Fuel } from 'lucide-react';
+import { Truck, Activity, Wrench, GasPump } from 'phosphor-react';
 import { StatCard } from '../../board/components/dashboard/StatCard';
 import { DashboardChart } from '../../board/components/dashboard/DashboardChart';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -15,7 +15,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({ viewId, title })
         { title: t('total_fleet'), value: '64', trend: t('active'), trendDirection: 'neutral' as const, icon: <Truck size={20} />, color: 'blue' },
         { title: t('in_maintenance'), value: '5', trend: t('scheduled'), trendDirection: 'neutral' as const, icon: <Wrench size={20} />, color: 'orange' },
         { title: t('distance_today'), value: '3,200 km', trend: 'Avg', trendDirection: 'neutral' as const, icon: <Activity size={20} />, color: 'green' },
-        { title: t('fuel_efficiency'), value: '92%', trend: '-1%', trendDirection: 'down' as const, icon: <Fuel size={20} />, color: 'indigo' },
+        { title: t('fuel_efficiency'), value: '92%', trend: '-1%', trendDirection: 'down' as const, icon: <GasPump size={20} />, color: 'indigo' },
     ];
 
     const chartOptions = {

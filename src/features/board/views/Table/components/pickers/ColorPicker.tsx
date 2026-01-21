@@ -54,7 +54,7 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
 
     const content = (
         <>
-            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}

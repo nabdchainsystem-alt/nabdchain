@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Pin } from 'lucide-react';
+import { PushPin } from 'phosphor-react';
 
 export interface SortableTabProps {
     viewId: string;
@@ -63,7 +63,7 @@ export const SortableTab: React.FC<SortableTabProps> = ({
                 <Icon size={16} />
                 {isPinned && (
                     <div className="absolute -top-1.5 -right-1.5 bg-white dark:bg-monday-dark-surface rounded-full p-0.5 shadow-sm">
-                        <Pin size={8} className="text-blue-500 fill-current" />
+                        <PushPin size={8} className="text-blue-500" weight="fill" />
                     </div>
                 )}
             </div>

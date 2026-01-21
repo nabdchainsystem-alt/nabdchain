@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { DollarSign, PieChart, TrendingDown, CreditCard, ShoppingBag, AlertCircle } from 'lucide-react';
+import { CurrencyDollar as DollarSign, ChartPie as PieChart, TrendDown as TrendingDown, CreditCard, ShoppingBag, WarningCircle as AlertCircle } from 'phosphor-react';
 
 export const SpendBudgetExposure: React.FC = () => {
     // R06: Spend & Budget Exposure

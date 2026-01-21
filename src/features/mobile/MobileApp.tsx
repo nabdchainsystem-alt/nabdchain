@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { SignedIn, SignedOut, useUser, useAuth } from '../../auth-adapter';
 import { useSignIn, useSignUp } from '@clerk/clerk-react';
-import { NotePencil, CheckSquare, Gear, SignOut, Eye, EyeSlash, ArrowLeft } from 'phosphor-react';
+import { NotePencil, CheckSquare, Gear, SignOut, Eye, EyeSlash, ArrowLeft, GameController } from 'phosphor-react';
 import { MobileNotes } from './MobileNotes';
 import { MobileTasks } from './MobileTasks';
 import { MobileSettings } from './MobileSettings';
 import { useClerk } from '@clerk/clerk-react';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 
-type MobileView = 'notes' | 'tasks' | 'settings';
+// Lazy load arcade
+const ArcadePage = React.lazy(() => import('../arcade/ArcadePage'));
+
+type MobileView = 'notes' | 'tasks' | 'settings' | 'arcade';
 type AuthView = 'landing' | 'signin' | 'signup';
 
 // ============ MOBILE CONTENT (After Sign In) ============
@@ -23,6 +26,7 @@ const MobileContent: React.FC = () => {
   const navItems: { id: MobileView; icon: React.ReactNode; label: string }[] = [
     { id: 'tasks', icon: <CheckSquare size={24} weight="fill" />, label: 'Tasks' },
     { id: 'notes', icon: <NotePencil size={24} weight="fill" />, label: 'Notes' },
+    { id: 'arcade', icon: <GameController size={24} weight="fill" />, label: 'Arcade' },
     { id: 'settings', icon: <Gear size={24} weight="fill" />, label: 'Settings' },
   ];
 
@@ -47,6 +51,15 @@ const MobileContent: React.FC = () => {
       <main className="flex-1 overflow-auto">
         {activeView === 'notes' && <MobileNotes />}
         {activeView === 'tasks' && <MobileTasks />}
+        {activeView === 'arcade' && (
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <ArcadePage />
+          </Suspense>
+        )}
         {activeView === 'settings' && <MobileSettings />}
       </main>
 

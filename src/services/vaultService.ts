@@ -3,6 +3,36 @@ import { API_URL as API_BASE } from '../config/api';
 
 const API_URL = `${API_BASE}/vault`;
 
+/**
+ * Check if an error is a network error (server unreachable, CORS, etc.)
+ */
+const isNetworkError = (error: unknown): boolean => {
+    if (error instanceof TypeError) {
+        const message = error.message.toLowerCase();
+        return (
+            message.includes('failed to fetch') || // Chrome
+            message.includes('load failed') || // Safari
+            message.includes('networkerror') || // Firefox
+            message.includes('network request failed') ||
+            message.includes('network error')
+        );
+    }
+    return false;
+};
+
+/**
+ * Get a user-friendly error message based on error type
+ */
+const getErrorMessage = (error: unknown, context: string): string => {
+    if (isNetworkError(error)) {
+        return `Unable to connect to server. Please ensure the backend server is running on port 3001.`;
+    }
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return `${context} failed`;
+};
+
 export interface VaultMetadata {
     // Folder metadata
     description?: string;
@@ -68,7 +98,8 @@ export const vaultService = {
             }));
         } catch (error) {
             storageLogger.error("VaultService getAll error:", error);
-            throw error;
+            const message = getErrorMessage(error, 'Load vault items');
+            throw new Error(message);
         }
     },
 
@@ -96,7 +127,8 @@ export const vaultService = {
             };
         } catch (error) {
             storageLogger.error("VaultService create error:", error);
-            throw error;
+            const message = getErrorMessage(error, 'Create vault item');
+            throw new Error(message);
         }
     },
 
@@ -124,7 +156,8 @@ export const vaultService = {
             };
         } catch (error) {
             storageLogger.error("VaultService update error:", error);
-            throw error;
+            const message = getErrorMessage(error, 'Update vault item');
+            throw new Error(message);
         }
     },
 
@@ -140,7 +173,8 @@ export const vaultService = {
             }
         } catch (error) {
             storageLogger.error("VaultService delete error:", error);
-            throw error;
+            const message = getErrorMessage(error, 'Delete vault item');
+            throw new Error(message);
         }
     },
 };

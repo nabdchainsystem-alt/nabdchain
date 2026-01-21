@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calculator, RefreshCw, DollarSign, TrendingUp, Package, Users, Zap, Truck, Layers } from 'lucide-react';
+import { X, Calculator, ArrowsClockwise as RefreshCw, CurrencyDollar as DollarSign, TrendUp as TrendingUp, Package, Users, Lightning as Zap, Truck, Stack as Layers } from 'phosphor-react';
 
 interface CostItem {
     id: string;

@@ -13,6 +13,9 @@ build
 .env
 .env.local
 .env.*.local
+server/.env
+server/.env.local
+server/.env.*.local
 
 # Database files (should not be committed)
 server/prisma/*.db

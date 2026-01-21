@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { CaretRight as ChevronRight } from 'phosphor-react';
 
 export interface MenuItemProps {
     icon: React.ComponentType<{ size?: number; className?: string }>;

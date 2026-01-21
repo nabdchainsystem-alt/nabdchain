@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { CheckCircle, Info, AlertCircle, X } from 'lucide-react';
+import { CheckCircle, Info, WarningCircle, X } from 'phosphor-react';
 
 interface ToastMessage {
     id: number;
@@ -32,7 +32,7 @@ const ToastItem: React.FC<ToastMessage & { onClose: (id: number) => void }> = ({
     const icons = {
         info: <Info size={18} />,
         success: <CheckCircle size={18} />,
-        error: <AlertCircle size={18} />
+        error: <WarningCircle size={18} />
     };
 
     return (

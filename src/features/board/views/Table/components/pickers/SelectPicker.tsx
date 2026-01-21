@@ -84,11 +84,11 @@ export const SelectPicker: React.FC<SelectPickerProps> = ({
     const content = (
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed w-[260px] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[100] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                className="fixed w-[260px] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
                 style={positionStyle}
             >
                 {/* Header */}

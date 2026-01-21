@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMarketplaceData } from './integration';
 import { PurchaseOrder, InventoryItem, Vendor } from './types';
-import { ShoppingCart, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, Warning as AlertTriangle } from 'phosphor-react';
 
 // --- Local Service Logic (Decoupled from global services) ---
 const checkReorderLevels = (inventory: InventoryItem[]): InventoryItem[] => {

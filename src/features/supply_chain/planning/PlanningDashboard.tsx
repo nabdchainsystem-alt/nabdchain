@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Target, TrendingUp, AlertCircle } from 'lucide-react';
+import { CalendarBlank, Target, TrendUp, WarningCircle } from 'phosphor-react';
 import { StatCard } from '../../board/components/dashboard/StatCard';
 import { DashboardChart } from '../../board/components/dashboard/DashboardChart';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -13,9 +13,9 @@ export const PlanningDashboard: React.FC<PlanningDashboardProps> = ({ viewId, ti
     const { t } = useAppContext();
     const kpis = [
         { title: t('forecast_accuracy'), value: '89%', trend: '+2%', trendDirection: 'up' as const, icon: <Target size={20} />, color: 'blue' },
-        { title: t('demand_growth'), value: '+12%', trend: 'YoY', trendDirection: 'up' as const, icon: <TrendingUp size={20} />, color: 'green' },
-        { title: t('planning_cycle'), value: t('weekly'), trend: t('active'), trendDirection: 'neutral' as const, icon: <Calendar size={20} />, color: 'indigo' },
-        { title: t('stockout_risks'), value: '4', trend: t('attention'), trendDirection: 'down' as const, icon: <AlertCircle size={20} />, color: 'red' },
+        { title: t('demand_growth'), value: '+12%', trend: 'YoY', trendDirection: 'up' as const, icon: <TrendUp size={20} />, color: 'green' },
+        { title: t('planning_cycle'), value: t('weekly'), trend: t('active'), trendDirection: 'neutral' as const, icon: <CalendarBlank size={20} />, color: 'indigo' },
+        { title: t('stockout_risks'), value: '4', trend: t('attention'), trendDirection: 'down' as const, icon: <WarningCircle size={20} />, color: 'red' },
     ];
 
     const chartOptions = {

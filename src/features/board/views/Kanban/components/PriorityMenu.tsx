@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus as PlusIcon } from 'lucide-react';
+import { Plus as PlusIcon } from 'phosphor-react';
 import { PRIORITY_LEVELS, normalizePriority } from '../../../../priorities/priorityUtils';
 
 export type Priority = 'urgent' | 'high' | 'medium' | 'low' | 'none';

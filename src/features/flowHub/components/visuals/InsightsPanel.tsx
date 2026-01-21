@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Circle, CheckCircle2, AlertCircle, Clock, Zap } from 'lucide-react';
+import { Activity, Circle, CheckCircle, WarningCircle as AlertCircle, Clock, Lightning as Zap } from 'phosphor-react';
 import { FlowNode } from '../../visualLogic';
 
 interface Props {
@@ -87,7 +87,7 @@ export const InsightsPanel: React.FC<Props> = ({ nodes }) => {
                             <span className="font-medium text-blue-600 dark:text-blue-400">Active Flow</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                            <CheckCircle2 size={14} className="text-gray-400" />
+                            <CheckCircle size={14} className="text-gray-400" />
                             <span>Completed</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">

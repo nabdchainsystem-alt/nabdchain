@@ -104,7 +104,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
     const content = (
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}

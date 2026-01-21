@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { Users, Truck, RotateCcw, MessageCircle, AlertTriangle, ShieldCheck, Clock, UserCheck } from 'lucide-react';
+import { Users, Truck, ArrowCounterClockwise as RotateCcw, ChatCircle as MessageCircle, Warning as AlertTriangle, ShieldCheck, Clock, UserCheck } from 'phosphor-react';
 
 export const CustomerVendorPerformance: React.FC = () => {
     // O04: Customer & Vendor Performance

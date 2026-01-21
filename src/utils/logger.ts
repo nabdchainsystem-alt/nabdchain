@@ -84,6 +84,4 @@ export function createLogger(context: string) {
 // Pre-configured loggers for common modules
 export const appLogger = createLogger('App');
 export const boardLogger = createLogger('Board');
-export const authLogger = createLogger('Auth');
-export const apiLogger = createLogger('API');
 export const storageLogger = createLogger('Storage');

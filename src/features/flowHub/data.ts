@@ -1,13 +1,13 @@
 import {
     Target,
-    Calendar,
-    Layers,
+    CalendarBlank as Calendar,
+    Stack as Layers,
     Lightbulb,
-    PenTool,
-    RotateCw,
-    Search,
-    Zap
-} from 'lucide-react';
+    PenNib as PenTool,
+    ArrowsClockwise as RotateCw,
+    MagnifyingGlass as Search,
+    Lightning as Zap
+} from 'phosphor-react';
 
 export const SYSTEMS = [
     { id: 'capture', label: 'Clear Mind', icon: PenTool, desc: 'Capture thoughts freely', type: 'Thinking' },

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ArrowRight, LayoutGrid, Search, StickyNote, ListTodo, Check, Pin, X, ChevronRight } from 'lucide-react';
-import { MagicWand } from 'phosphor-react';
+import { ArrowRight, SquaresFour, MagnifyingGlass, Note, ListChecks, Check, PushPin, X, CaretRight, MagicWand } from 'phosphor-react';
 import { Board } from '../../types';
 import { formatTimeAgo } from '../../utils/formatters';
 import { useAppContext } from '../../contexts/AppContext';
@@ -37,10 +36,10 @@ interface FlattenedBoard {
 }
 
 const getCommands = (t: (key: string) => string) => [
-  { id: 'task' as CommandType, label: t('new_task'), keyword: 'newtask', icon: ListTodo, hint: t('create_task_in_board'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
-  { id: 'note' as CommandType, label: t('quick_note'), keyword: 'note', icon: StickyNote, hint: t('save_a_quick_note'), color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
-  { id: 'search' as CommandType, label: t('search'), keyword: 'search', icon: Search, hint: t('search_tasks_boards'), color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400' },
-  { id: 'notes' as CommandType, label: t('view_notes'), keyword: 'notes', icon: StickyNote, hint: t('see_saved_notes'), color: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
+  { id: 'task' as CommandType, label: t('new_task'), keyword: 'newtask', icon: ListChecks, hint: t('create_task_in_board'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
+  { id: 'note' as CommandType, label: t('quick_note'), keyword: 'note', icon: Note, hint: t('save_a_quick_note'), color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
+  { id: 'search' as CommandType, label: t('search'), keyword: 'search', icon: MagnifyingGlass, hint: t('search_tasks_boards'), color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400' },
+  { id: 'notes' as CommandType, label: t('view_notes'), keyword: 'notes', icon: Note, hint: t('see_saved_notes'), color: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
 ];
 
 const TAG_COLORS: Record<string, string> = {
@@ -435,7 +434,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
               {/* Active Command Chip */}
               {activeCommand && !showBoardPicker && (
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${getCommandInfo(activeCommand)?.color}`}>
-                  {React.createElement(getCommandInfo(activeCommand)?.icon || ListTodo, { size: 12 })}
+                  {React.createElement(getCommandInfo(activeCommand)?.icon || ListChecks, { size: 12 })}
                   <span>{getCommandInfo(activeCommand)?.label}</span>
                   <button onClick={removeCommand} className="ml-0.5 hover:opacity-70">
                     <X size={12} />
@@ -446,7 +445,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
               {/* Selected Board Chip */}
               {selectedBoard && !showBoardPicker && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
-                  <LayoutGrid size={12} />
+                  <SquaresFour size={12} />
                   <span className="max-w-[200px] truncate">{selectedBoardPath || selectedBoard.name}</span>
                   <button onClick={removeBoard} className="ml-0.5 hover:opacity-70">
                     <X size={12} />
@@ -536,13 +535,13 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                           className={`w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
                         >
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-                            <LayoutGrid size={16} />
+                            <SquaresFour size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
                             {fb.depth > 0 ? (
                               <div className="flex items-center gap-1 text-sm">
                                 <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
-                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <CaretRight size={12} className="text-gray-300 shrink-0" />
                                 <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
                               </div>
                             ) : (
@@ -579,7 +578,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
-                              <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><Pin size={14} /></button>
+                              <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><PushPin size={14} /></button>
                               <button onClick={() => deleteNote(note.id)} className="p-1.5 rounded text-gray-300 hover:text-red-500"><X size={14} /></button>
                             </div>
                           </div>
@@ -608,7 +607,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                             result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
                               'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
                             }`}>
-                            {result.type === 'board' ? <LayoutGrid size={16} /> : result.type === 'task' ? <ListTodo size={16} /> : <StickyNote size={16} />}
+                            {result.type === 'board' ? <SquaresFour size={16} /> : result.type === 'task' ? <ListChecks size={16} /> : <Note size={16} />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>

@@ -7,7 +7,7 @@ import {
     EyeSlash,
     Export,
 } from 'phosphor-react';
-import { X, Plus, ChevronDown, Trash2 } from 'lucide-react';
+import { X, Plus, CaretDown as ChevronDown, Trash } from 'phosphor-react';
 import { Column, Row, FilterRule, SortRule } from '../types';
 import { getConditionsForType } from '../hooks/useTableFiltering';
 
@@ -321,7 +321,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                                             onClick={() => removeFilter(filter.id)}
                                             className="text-stone-400 hover:text-red-500 p-1"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash size={16} />
                                         </button>
                                     </div>
                                 ))}
@@ -386,7 +386,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                                             onClick={() => removeSortRule(rule.id)}
                                             className="text-stone-400 hover:text-red-500 p-1"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash size={16} />
                                         </button>
                                     </div>
                                 ))}

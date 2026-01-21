@@ -4,11 +4,11 @@ import { useFlowSimulation, FlowNode, FlowConnection, ProcessType } from '../../
 import { EventNode } from './EventNode';
 import { ConnectionPath } from './ConnectionPath';
 import {
-    Play, Pause, Zap,
-    ZoomIn, ZoomOut, RotateCcw,
-    ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    Calculator, Wrench, Calendar
-} from 'lucide-react';
+    Play, Pause, Lightning as Zap,
+    MagnifyingGlassPlus as ZoomIn, MagnifyingGlassMinus as ZoomOut, ArrowCounterClockwise as RotateCcw,
+    CaretUp as ChevronUp, CaretDown as ChevronDown, CaretLeft as ChevronLeft, CaretRight as ChevronRight,
+    Calculator, Wrench, CalendarBlank as Calendar
+} from 'phosphor-react';
 import { InsightsPanel } from './InsightsPanel';
 import { ProductCostCalculator } from './ProductCostCalculator';
 import { AnimatePresence } from 'framer-motion';

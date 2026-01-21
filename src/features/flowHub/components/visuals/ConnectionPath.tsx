@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    FileText, Send, MessageSquareQuote, ClipboardCheck, FileCheck, Truck, Receipt, CreditCard,
-    Droplets, Filter, Activity, Wind, FlaskConical, Disc, Tag, Package, Warehouse
-} from 'lucide-react';
+    FileText, PaperPlaneTilt as Send, Quotes as MessageSquareQuote, ClipboardText as ClipboardCheck, FileCheck, Truck, Receipt, CreditCard,
+    Drop as Droplets, Funnel as Filter, Activity, Wind, Flask as FlaskConical, Disc, Tag, Package, Warehouse
+} from 'phosphor-react';
 import { FlowConnection } from '../../visualLogic';
 
 interface ConnectionPathProps {

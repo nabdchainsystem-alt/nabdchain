@@ -638,10 +638,19 @@ export const VaultView: React.FC = () => {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         </div>
                     ) : error ? (
-                        <div className="flex flex-col items-center justify-center h-full text-red-500">
-                            <p className="text-lg font-semibold">{t('something_went_wrong')}</p>
-                            <p className="text-sm opacity-80">{error}</p>
-                            <button onClick={() => loadItems()} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        <div className="flex flex-col items-center justify-center h-full max-w-md mx-auto text-center px-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                                <File size={32} className="text-red-500" />
+                            </div>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('something_went_wrong')}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+                            {error.includes('connect to server') && (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4 text-left text-sm">
+                                    <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">Quick fix:</p>
+                                    <p className="text-amber-700 dark:text-amber-300">Run <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">cd server && pnpm dev</code> to start the backend server.</p>
+                                </div>
+                            )}
+                            <button onClick={() => loadItems()} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
                                 {t('retry')}
                             </button>
                         </div>

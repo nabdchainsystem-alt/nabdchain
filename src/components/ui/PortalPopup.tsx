@@ -133,7 +133,7 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
 
     return createPortal(
         <>
-            <div className="fixed inset-0 z-[2147483640] w-screen h-screen bg-transparent" onClick={(e) => {
+            <div className="fixed inset-0 z-[9998] w-screen h-screen bg-transparent" onClick={(e) => {
                 e.stopPropagation();
                 onClose();
             }} />
@@ -144,7 +144,7 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
                     top: coords?.top ?? 0,
                     left: coords?.left ?? 0,
                     opacity: coords ? 1 : 0,
-                    zIndex: 2147483647
+                    zIndex: 9999
                 }}
                 onClick={(e) => e.stopPropagation()}
             >

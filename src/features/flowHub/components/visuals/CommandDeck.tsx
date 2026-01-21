@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    Play, Pause, Zap,
-    ZoomIn, ZoomOut, RotateCcw,
-    ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    Maximize2
-} from 'lucide-react';
+    Play, Pause, Lightning as Zap,
+    MagnifyingGlassPlus as ZoomIn, MagnifyingGlassMinus as ZoomOut, ArrowCounterClockwise as RotateCcw,
+    CaretUp as ChevronUp, CaretDown as ChevronDown, CaretLeft as ChevronLeft, CaretRight as ChevronRight,
+    ArrowsOut as Maximize2
+} from 'phosphor-react';
 
 interface CommandDeckProps {
     zoom: number;

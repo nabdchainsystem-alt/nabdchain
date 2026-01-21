@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { WarningCircle, X } from 'phosphor-react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -26,17 +26,17 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
     const variantStyles = {
         danger: {
-            icon: <AlertCircle className="text-stone-900 dark:text-stone-100" size={26} strokeWidth={1.2} />,
+            icon: <WarningCircle className="text-stone-900 dark:text-stone-100" size={26} weight="light" />,
             button: 'bg-black dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_40px_-10px_rgba(255,255,255,0.1)]',
             glow: 'bg-stone-50 dark:bg-stone-900'
         },
         warning: {
-            icon: <AlertCircle className="text-stone-900 dark:text-stone-100" size={26} strokeWidth={1.2} />,
+            icon: <WarningCircle className="text-stone-900 dark:text-stone-100" size={26} weight="light" />,
             button: 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl',
             glow: 'bg-stone-50 dark:bg-stone-900'
         },
         info: {
-            icon: <AlertCircle className="text-stone-900 dark:text-stone-100" size={26} strokeWidth={1.2} />,
+            icon: <WarningCircle className="text-stone-900 dark:text-stone-100" size={26} weight="light" />,
             button: 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-800 hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl',
             glow: 'bg-stone-50 dark:bg-stone-800'
         }

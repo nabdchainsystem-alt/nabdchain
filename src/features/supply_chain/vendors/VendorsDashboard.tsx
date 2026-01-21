@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Star, Clock, DollarSign } from 'lucide-react';
+import { Users, Star, Clock, CurrencyDollar } from 'phosphor-react';
 import { StatCard } from '../../board/components/dashboard/StatCard';
 import { DashboardChart } from '../../board/components/dashboard/DashboardChart';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -15,7 +15,7 @@ export const VendorsDashboard: React.FC<VendorsDashboardProps> = ({ viewId, titl
         { title: t('active_vendors'), value: '128', trend: t('total'), trendDirection: 'neutral' as const, icon: <Users size={20} />, color: 'blue' },
         { title: t('top_rated'), value: '45', trend: 'Score > 90%', trendDirection: 'up' as const, icon: <Star size={20} />, color: 'yellow' },
         { title: t('avg_lead_time'), value: '14 Days', trend: '-2 Days', trendDirection: 'up' as const, icon: <Clock size={20} />, color: 'green' },
-        { title: t('monthly_spend'), value: '$1.2M', trend: '+5%', trendDirection: 'down' as const, icon: <DollarSign size={20} />, color: 'purple' },
+        { title: t('monthly_spend'), value: '$1.2M', trend: '+5%', trendDirection: 'down' as const, icon: <CurrencyDollar size={20} />, color: 'purple' },
     ];
 
     const chartOptions = {

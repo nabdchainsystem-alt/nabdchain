@@ -3,19 +3,19 @@ import { Vendor } from './types';
 import {
     ArrowLeft,
     CheckCircle,
-    Filter,
+    Funnel as Filter,
     Globe,
     Heart,
-    Mail,
+    Envelope as Mail,
     MapPin,
     Phone,
-    Search,
-    Share2,
+    MagnifyingGlass as Search,
+    ShareNetwork as Share2,
     ShieldCheck,
     ShoppingCart,
     Star,
-    Zap,
-} from 'lucide-react';
+    Lightning as Zap,
+} from 'phosphor-react';
 
 interface SupplierDetailsProps {
     vendor: Vendor;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, MapPin, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Truck, MapPin, Warning, CheckCircle } from 'phosphor-react';
 import { StatCard } from '../../board/components/dashboard/StatCard';
 import { DashboardChart } from '../../board/components/dashboard/DashboardChart';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -13,7 +13,7 @@ export const ShippingDashboard: React.FC<ShippingDashboardProps> = ({ viewId, ti
     const { t } = useAppContext();
     const kpis = [
         { title: t('active_shipments'), value: '45', trend: t('on_track'), trendDirection: 'neutral' as const, icon: <Truck size={20} />, color: 'blue' },
-        { title: t('delayed'), value: '3', trend: '+1 Today', trendDirection: 'down' as const, icon: <AlertTriangle size={20} />, color: 'red' },
+        { title: t('delayed'), value: '3', trend: '+1 Today', trendDirection: 'down' as const, icon: <Warning size={20} />, color: 'red' },
         { title: t('delivered_today'), value: '18', trend: t('target_met'), trendDirection: 'up' as const, icon: <CheckCircle size={20} />, color: 'green' },
         { title: t('in_transit'), value: '24', trend: t('normal'), trendDirection: 'neutral' as const, icon: <MapPin size={20} />, color: 'purple' },
     ];

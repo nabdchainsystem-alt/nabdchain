@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Link, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare } from 'phosphor-react';
+import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Link, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
@@ -304,6 +304,15 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
           >
             <EyeClosed size={21} weight="light" />
+          </button>
+
+          {/* Arcade Button */}
+          <button
+            onClick={() => onNavigate('arcade')}
+            title="Arcade"
+            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+          >
+            <GameController size={21} weight="light" />
           </button>
 
           <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>

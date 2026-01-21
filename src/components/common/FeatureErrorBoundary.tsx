@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Warning, ArrowsClockwise } from 'phosphor-react';
 
 interface Props {
     children: React.ReactNode;
@@ -35,7 +35,7 @@ export class FeatureErrorBoundary extends React.Component<Props, State> {
             return (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                     <div className="bg-amber-50 dark:bg-amber-900/20 rounded-full p-4 mb-4">
-                        <AlertTriangle size={32} className="text-amber-500" />
+                        <Warning size={32} className="text-amber-500" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                         {this.props.featureName} encountered an error
@@ -47,7 +47,7 @@ export class FeatureErrorBoundary extends React.Component<Props, State> {
                         onClick={this.handleRetry}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
                     >
-                        <RefreshCw size={16} />
+                        <ArrowsClockwise size={16} />
                         Try Again
                     </button>
                     {import.meta.env.DEV && this.state.error && (

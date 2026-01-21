@@ -1,5 +1,5 @@
 import React from 'react';
-import { Book, Target, TrendingUp, Users, Truck, Settings, DollarSign, ArrowRight } from 'lucide-react';
+import { Book, Target, TrendUp as TrendingUp, Users, Truck, Gear as Settings, CurrencyDollar as DollarSign, ArrowRight } from 'phosphor-react';
 
 const SalesWiki: React.FC = () => {
     return (

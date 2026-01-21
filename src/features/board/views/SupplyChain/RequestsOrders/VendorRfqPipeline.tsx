@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { Users, MessageSquare, Clock, FileText, CheckCircle, AlertCircle, DollarSign, ShieldAlert } from 'lucide-react';
+import { Users, ChatSquare as MessageSquare, Clock, FileText, CheckCircle, WarningCircle as AlertCircle, CurrencyDollar as DollarSign, ShieldWarning as ShieldAlert } from 'phosphor-react';
 
 export const VendorRfqPipeline: React.FC = () => {
     // R04: Vendor & RFQ Pipeline

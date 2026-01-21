@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { CheckCircle, Clock, Users, AlertCircle, AlertTriangle, FastForward } from 'lucide-react';
+import { CheckCircle, Clock, Users, WarningCircle as AlertCircle, Warning as AlertTriangle, FastForward } from 'phosphor-react';
 
 export const ApprovalsFlowDashboard: React.FC = () => {
     // R05: Approvals Flow & SLA

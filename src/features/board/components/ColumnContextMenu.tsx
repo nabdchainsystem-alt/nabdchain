@@ -49,9 +49,11 @@ export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({ x, y, onCl
     }, [onClose]);
 
     return createPortal(
+        <>
+        <div className="fixed inset-0 z-[9998]" onClick={onClose} />
         <div
             ref={menuRef}
-            className="fixed z-[10000] w-48 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 py-1.5 animate-in fade-in zoom-in-95 duration-75"
+            className="fixed z-[9999] w-48 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 py-1.5 animate-in fade-in zoom-in-95 duration-75"
             style={{ top: y, left: x }}
             onClick={(e) => e.stopPropagation()}
         >
@@ -104,7 +106,8 @@ export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({ x, y, onCl
                 <Trash2 size={16} />
                 <span>Delete</span>
             </button>
-        </div>,
+        </div>
+        </>,
         document.body
     );
 };

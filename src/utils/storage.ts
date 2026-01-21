@@ -87,57 +87,6 @@ export function removeStorageItem(key: StorageKey): boolean {
 }
 
 /**
- * Clear all app-related storage (useful for logout/reset)
- */
-export function clearAppStorage(): void {
-  const appKeys = [
-    'app-active-view',
-    'app-workspaces',
-    'app-boards',
-    'app-active-workspace',
-    'app-active-board',
-    'app-sidebar-width',
-    'app-sidebar-collapsed',
-    'app-page-visibility',
-    'app-recently-visited',
-    'app-unsynced-boards',
-    'app-deleted-boards',
-  ];
-
-  appKeys.forEach(key => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error(`[Storage] Failed to clear "${key}":`, error);
-    }
-  });
-}
-
-/**
- * Get storage item with a dynamic key suffix (for board-specific data)
- */
-export function getDynamicStorageItem<T>(
-  prefix: string,
-  suffix: string,
-  defaultValue: T
-): T {
-  const key = `${prefix}${suffix}` as StorageKey;
-  return getStorageItem(key, defaultValue);
-}
-
-/**
- * Set storage item with a dynamic key suffix (for board-specific data)
- */
-export function setDynamicStorageItem<T>(
-  prefix: string,
-  suffix: string,
-  value: T
-): boolean {
-  const key = `${prefix}${suffix}` as StorageKey;
-  return setStorageItem(key, value);
-}
-
-/**
  * Clean up all localStorage data associated with a specific board
  * This should be called when a board is deleted to prevent orphaned data
  */

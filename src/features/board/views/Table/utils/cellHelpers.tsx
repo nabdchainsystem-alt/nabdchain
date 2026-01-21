@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-    CheckCircle2,
+    CheckCircle,
     Clock,
     Circle,
     XCircle,
-    AlertCircle,
+    WarningCircle,
     CircleDashed,
     FileText
-} from 'lucide-react';
+} from 'phosphor-react';
 import { getPriorityClasses, normalizePriority, PriorityLevel } from '../../../../priorities/priorityUtils';
 
 /**
@@ -16,7 +16,7 @@ import { getPriorityClasses, normalizePriority, PriorityLevel } from '../../../.
 export const getStatusIcon = (status: string): React.ReactNode => {
     switch (status) {
         case 'Done':
-            return <CheckCircle2 size={14} className="text-emerald-600" />;
+            return <CheckCircle size={14} className="text-emerald-600" />;
         case 'In Progress':
             return <Clock size={14} className="text-blue-600" />;
         case 'To Do':
@@ -24,7 +24,7 @@ export const getStatusIcon = (status: string): React.ReactNode => {
         case 'Rejected':
             return <XCircle size={14} className="text-red-500" />;
         case 'Stuck':
-            return <AlertCircle size={14} className="text-orange-500" />;
+            return <WarningCircle size={14} className="text-orange-500" />;
         default:
             return <CircleDashed size={14} className="text-stone-400" />;
     }

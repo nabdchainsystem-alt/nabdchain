@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Package, TrendingUp, AlertCircle, Clock, Activity, Truck, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Package, TrendUp, WarningCircle, Clock, Activity, Truck, CheckCircle, Warning } from 'phosphor-react';
 import { StatCard } from '../../board/components/dashboard/StatCard';
 import { DashboardChart } from '../../board/components/dashboard/DashboardChart';
 import warehouseMaster from './warehouse_semantic_master.json';

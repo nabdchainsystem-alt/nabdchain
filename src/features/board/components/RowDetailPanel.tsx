@@ -101,7 +101,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
     if (!isVisible && !isOpen) return null;
 
     const content = (
-        <div className="fixed inset-0 z-[999999] overflow-hidden">
+        <div className="fixed inset-0 z-[10000] overflow-hidden">
             {/* Backdrop */}
             <div
                 className={`absolute inset-0 bg-stone-900/20 backdrop-blur-[1px] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}

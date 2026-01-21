@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from 'phosphor-react';
 
 export interface FolderItemProps {
     label: string;
@@ -31,7 +31,7 @@ export const FolderItem: React.FC<FolderItemProps> = ({
             }
         `}
     >
-        {hasChildren && <ChevronDown size={14} className="text-gray-400" />}
+        {hasChildren && <CaretDown size={14} className="text-gray-400" />}
         {!hasChildren && <div className="w-3"></div>}
         <span>{label}</span>
     </div>

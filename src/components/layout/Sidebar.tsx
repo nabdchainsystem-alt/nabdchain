@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
     House, Sparkle, Activity, SquaresFour, Tray, Users, Lock, Flask,
     Package, CaretDown, ShoppingCart, Truck, UsersThree, Layout, Factory, Wrench, ShieldCheck,
@@ -407,6 +408,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [addMenuPos, setAddMenuPos] = useState<{ top?: number, bottom?: number, left: number }>({ top: 0, left: 0 });
+    const [workspaceMenuPos, setWorkspaceMenuPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, boardId: string } | null>(null);
     const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number, y: number, workspaceId: string } | null>(null);
     const [isBoardHovered, setIsBoardHovered] = useState(false);
@@ -436,6 +438,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
     const addMenuRef = useRef<HTMLDivElement>(null);
     const addButtonRef = useRef<HTMLButtonElement>(null);
+    const workspaceButtonRef = useRef<HTMLDivElement>(null);
 
     // New Workspace State
     const [newWorkspaceName, setNewWorkspaceName] = useState('');
@@ -613,17 +616,37 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             if (addButtonRef.current) {
                 const rect = addButtonRef.current.getBoundingClientRect();
                 const MENU_HEIGHT = 280; // Approximate height of the menu (input + layout grid + button + link)
-                let top = rect.top; // Align with top of button
                 const left = rect.right + 10; // Position to the right of the button with some gap
+                const spaceBelow = window.innerHeight - rect.top;
+                const spaceAbove = rect.bottom;
 
-                // Adjust vertical position if it overflows the bottom
-                if (top + MENU_HEIGHT > window.innerHeight) {
-                    top = Math.max(10, window.innerHeight - MENU_HEIGHT - 10);
+                // Decide whether to open downward or upward
+                if (spaceBelow >= MENU_HEIGHT || spaceBelow >= spaceAbove) {
+                    // Open downward - align with top of button
+                    const top = Math.min(rect.top, window.innerHeight - MENU_HEIGHT - 10);
+                    setAddMenuPos({ top: Math.max(10, top), bottom: undefined, left });
+                } else {
+                    // Open upward - align with bottom of button
+                    const bottom = window.innerHeight - rect.bottom;
+                    setAddMenuPos({ top: undefined, bottom: Math.max(10, bottom), left });
                 }
-
-                setAddMenuPos({ top, left });
             }
             setIsAddMenuOpen(true);
+        }
+    };
+
+    const toggleWorkspaceMenu = () => {
+        if (isWorkspaceMenuOpen) {
+            setIsWorkspaceMenuOpen(false);
+        } else {
+            if (workspaceButtonRef.current) {
+                const rect = workspaceButtonRef.current.getBoundingClientRect();
+                // Position to the right of the sidebar
+                const left = rect.right + 8;
+                const top = rect.top;
+                setWorkspaceMenuPos({ top, left });
+            }
+            setIsWorkspaceMenuOpen(true);
         }
     };
 
@@ -1068,10 +1091,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 {/* Active Workspace Card */}
                                 <div className="relative group/workspace-card">
                                     <div
+                                        ref={workspaceButtonRef}
                                         onClick={(e) => {
                                             if (isCollapsed) return;
                                             e.stopPropagation();
-                                            setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+                                            toggleWorkspaceMenu();
                                         }}
                                         className={`relative border border-gray-200 dark:border-monday-dark-border bg-gray-50/50 dark:bg-monday-dark-surface hover:bg-gray-100/80 dark:hover:bg-monday-dark-hover rounded-md py-1.5 flex items-center cursor-pointer transition-all duration-300 ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
                                     >
@@ -1100,155 +1124,160 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     className="text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-pointer p-0.5 rounded hover:bg-gray-200"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+                                                        toggleWorkspaceMenu();
                                                     }}
                                                 >
-                                                    <CaretDown size={14} weight="light" className={`transition-transform duration-200 ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`} />
+                                                    <CaretRight size={14} weight="light" className="transition-transform duration-200" />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Add New Menu - Simple Board Creator */}
-                                    {isAddMenuOpen && (
-                                        <div
-                                            ref={addMenuRef}
-                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[100] animate-in fade-in zoom-in-95 duration-100 min-w-[200px] w-auto overflow-hidden"
-                                            style={{
-                                                top: addMenuPos.top,
-                                                left: addMenuPos.left
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault();
-                                                    if (newBoardName.trim()) {
-                                                        const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
-                                                        // Default to active workspace
-                                                        const workspaceId = activeWorkspaceId;
-                                                        // We can't easily pass workspaceId to onAddBoard if it doesn't accept it, 
-                                                        // but onAddBoard likely handles current workspace internally or we need to check its signature.
-                                                        // Looking at SidebarProps: onAddBoard: (name, icon, template, defaultView, parentId)
-                                                        // It doesn't take workspaceId. It assumes active workspace.
-
-                                                        onAddBoard(
-                                                            newBoardName.trim(),
-                                                            iconMap[selectedLayout] || 'Table',
-                                                            undefined,
-                                                            selectedLayout as any,
-                                                            undefined
-                                                        );
-
-                                                        setNewBoardName('');
-                                                        setSelectedLayout('table');
-                                                        setIsAddMenuOpen(false);
-                                                    }
+                                    {/* Add New Menu - Simple Board Creator - Rendered via Portal to escape stacking context */}
+                                    {isAddMenuOpen && createPortal(
+                                        <>
+                                            {/* Backdrop to close menu */}
+                                            <div className="fixed inset-0 z-[9998]" onClick={() => setIsAddMenuOpen(false)} />
+                                            <div
+                                                ref={addMenuRef}
+                                                className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[9999] animate-in fade-in zoom-in-95 duration-100 min-w-[200px] w-auto overflow-hidden max-h-[calc(100vh-20px)] overflow-y-auto"
+                                                style={{
+                                                    ...(addMenuPos.top !== undefined ? { top: addMenuPos.top } : {}),
+                                                    ...(addMenuPos.bottom !== undefined ? { bottom: addMenuPos.bottom } : {}),
+                                                    left: addMenuPos.left
                                                 }}
-                                                className="p-3"
+                                                onClick={(e) => e.stopPropagation()}
                                             >
-                                                <div className="mb-3">
-                                                    <input
-                                                        type="text"
-                                                        autoFocus
-                                                        value={newBoardName}
-                                                        onChange={(e) => setNewBoardName(e.target.value)}
-                                                        placeholder={t('board_name_placeholder')}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue transition-shadow"
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-1 mb-3">
-                                                    {[
-                                                        { id: 'table', label: t('table'), icon: Table },
-                                                        { id: 'datatable', label: t('data'), icon: Database },
-                                                        { id: 'kanban', label: t('kanban'), icon: Kanban },
-                                                        { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
-                                                    ].map((layout) => (
-                                                        <button
-                                                            key={layout.id}
-                                                            type="button"
-                                                            onClick={() => setSelectedLayout(layout.id as any)}
-                                                            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-[10px] font-medium transition-all ${selectedLayout === layout.id
-                                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-1 ring-blue-100 dark:ring-blue-800'
-                                                                : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:bg-gray-100'
-                                                                }`}
-                                                        >
-                                                            <layout.icon size={16} weight={selectedLayout === layout.id ? "fill" : "regular"} />
-                                                            <span>{layout.label}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-
-                                                <button
-                                                    type="submit"
-                                                    disabled={!newBoardName.trim()}
-                                                    className="w-full py-1.5 bg-monday-blue text-white text-xs font-semibold rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
-                                                >
-                                                    {t('create_board')}
-                                                </button>
-
-                                                {/* Small option to add workspace if needed, minimal footprint */}
-                                                <div className="mt-2 text-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setIsAddWorkspaceModalOpen(true);
+                                                <form
+                                                    onSubmit={(e) => {
+                                                        e.preventDefault();
+                                                        if (newBoardName.trim()) {
+                                                            const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
+                                                            onAddBoard(
+                                                                newBoardName.trim(),
+                                                                iconMap[selectedLayout] || 'Table',
+                                                                undefined,
+                                                                selectedLayout as any,
+                                                                undefined
+                                                            );
+                                                            setNewBoardName('');
+                                                            setSelectedLayout('table');
                                                             setIsAddMenuOpen(false);
-                                                        }}
-                                                        className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                        }
+                                                    }}
+                                                    className="p-3"
+                                                >
+                                                    <div className="mb-3">
+                                                        <input
+                                                            type="text"
+                                                            autoFocus
+                                                            value={newBoardName}
+                                                            onChange={(e) => setNewBoardName(e.target.value)}
+                                                            placeholder={t('board_name_placeholder')}
+                                                            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue transition-shadow"
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-1 mb-3">
+                                                        {[
+                                                            { id: 'table', label: t('table'), icon: Table },
+                                                            { id: 'datatable', label: t('data'), icon: Database },
+                                                            { id: 'kanban', label: t('kanban'), icon: Kanban },
+                                                            { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
+                                                        ].map((layout) => (
+                                                            <button
+                                                                key={layout.id}
+                                                                type="button"
+                                                                onClick={() => setSelectedLayout(layout.id as any)}
+                                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-[10px] font-medium transition-all ${selectedLayout === layout.id
+                                                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-1 ring-blue-100 dark:ring-blue-800'
+                                                                    : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:bg-gray-100'
+                                                                    }`}
+                                                            >
+                                                                <layout.icon size={16} weight={selectedLayout === layout.id ? "fill" : "regular"} />
+                                                                <span>{layout.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    <button
+                                                        type="submit"
+                                                        disabled={!newBoardName.trim()}
+                                                        className="w-full py-1.5 bg-monday-blue text-white text-xs font-semibold rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
                                                     >
-                                                        or create workspace
+                                                        {t('create_board')}
                                                     </button>
-                                                </div>
-                                            </form>
-                                        </div>
+
+                                                    <div className="mt-2 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setIsAddWorkspaceModalOpen(true);
+                                                                setIsAddMenuOpen(false);
+                                                            }}
+                                                            className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                        >
+                                                            or create workspace
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </>,
+                                        document.body
                                     )}
                                 </div>
 
-                                {/* Workspace Dropdown */}
-                                {isWorkspaceMenuOpen && !isCollapsed && (
-                                    <div className="absolute top-full start-0 w-full bg-white dark:bg-monday-dark-surface shadow-xl rounded-sm border border-gray-100 dark:border-monday-dark-border z-50 mt-1 py-1 max-h-64 overflow-y-auto">
-                                        {workspaces.map(ws => (
-                                            <div
-                                                key={ws.id}
-                                                className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
-                                                onClick={() => {
-                                                    onWorkspaceChange(ws.id);
-                                                    setIsWorkspaceMenuOpen(false);
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-2 truncate">
-                                                    <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>
-                                                        {(() => {
-                                                            const WorkspaceIcon = ICON_MAP[ws.icon];
-                                                            return WorkspaceIcon ? <WorkspaceIcon size={12} weight="bold" /> : ws.name.charAt(0);
-                                                        })()}
-                                                    </div>
-                                                    <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
-                                                        {ws.name}
-                                                    </span>
-                                                </div>
+                                {/* Workspace Dropdown - Rendered via Portal to escape stacking context */}
+                                {isWorkspaceMenuOpen && !isCollapsed && createPortal(
+                                    <>
+                                        <div className="fixed inset-0 z-[9998]" onClick={() => setIsWorkspaceMenuOpen(false)} />
+                                        <div
+                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-[9999] py-1 max-h-64 overflow-y-auto min-w-[200px] animate-in fade-in zoom-in-95 duration-100"
+                                            style={{ top: workspaceMenuPos.top, left: workspaceMenuPos.left }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {workspaces.map(ws => (
                                                 <div
-                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
-                                                    onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
+                                                    key={ws.id}
+                                                    className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
+                                                    onClick={() => {
+                                                        onWorkspaceChange(ws.id);
+                                                        setIsWorkspaceMenuOpen(false);
+                                                    }}
                                                 >
-                                                    <DotsThree size={12} weight="light" />
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <div className={`w-5 h-5 rounded-sm bg-gradient-to-tr ${ws.color} text-white flex items-center justify-center text-[10px]`}>
+                                                            {(() => {
+                                                                const WorkspaceIcon = ICON_MAP[ws.icon];
+                                                                return WorkspaceIcon ? <WorkspaceIcon size={12} weight="bold" /> : ws.name.charAt(0);
+                                                            })()}
+                                                        </div>
+                                                        <span className={`text-[14px] truncate ${ws.id === activeWorkspaceId ? 'font-medium text-monday-blue' : 'text-gray-600 dark:text-monday-dark-text'}`}>
+                                                            {ws.name}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
+                                                        onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
+                                                    >
+                                                        <DotsThree size={12} weight="light" />
+                                                    </div>
                                                 </div>
+                                            ))}
+                                            <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsAddWorkspaceModalOpen(true);
+                                                        setIsWorkspaceMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
+                                                >
+                                                    <Plus size={14} weight="light" /> {t('add_workspace')}
+                                                </button>
                                             </div>
-                                        ))}
-                                        <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
-                                            <button
-                                                onClick={() => {
-                                                    setIsAddWorkspaceModalOpen(true);
-                                                    setIsWorkspaceMenuOpen(false);
-                                                }}
-                                                className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
-                                            >
-                                                <Plus size={14} weight="light" /> {t('add_workspace')}
-                                            </button>
                                         </div>
-                                    </div>
+                                    </>,
+                                    document.body
                                 )}
                             </div>
 
@@ -1386,30 +1415,32 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={14} weight="light" /> : <CaretLeft size={14} weight="light" />}
                 </button>
 
-                {/* Board Context Menu */}
-                {contextMenu && (
-                    <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
-                        style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
-                    >
-                        <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
-                            <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
-                        </div>
-                        {/* ... other context items would be translated similarly, omitting for brevity ... */}
-                        <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
+                {/* Board Context Menu - Rendered via Portal */}
+                {contextMenu && createPortal(
+                    <>
+                        <div className="fixed inset-0 z-[9998]" onClick={() => setContextMenu(null)} />
                         <div
-                            className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
-                            onClick={() => {
-                                setBoardToDelete(contextMenu.boardId);
-                                setIsDeleteBoardModalOpen(true);
-                                setContextMenu(null);
-                            }}
+                            className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[9999] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                            style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
                         >
-                            <Trash size={14} weight="light" /> {t('delete')}
+                            <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
+                                <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
+                            </div>
+                            <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
+                            <div
+                                className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
+                                onClick={() => {
+                                    setBoardToDelete(contextMenu.boardId);
+                                    setIsDeleteBoardModalOpen(true);
+                                    setContextMenu(null);
+                                }}
+                            >
+                                <Trash size={14} weight="light" /> {t('delete')}
+                            </div>
                         </div>
-                    </div>
-                )
-                }
+                    </>,
+                    document.body
+                )}
 
                 <DeleteBoardModal
                     isOpen={isDeleteBoardModalOpen}
@@ -1428,94 +1459,100 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     hasSubBoards={boards.some(b => b.parentId === boardToDelete)}
                 />
 
-                {/* Quick Add Board Menu - Small dropdown from + button */}
-                {quickAddMenu && (
-                    <div
-                        className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border min-w-[200px] w-auto z-[70]"
-                        style={{ top: quickAddMenu.y, left: quickAddMenu.x }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                if (newBoardName.trim()) {
-                                    const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
-                                    const parentId = quickAddMenu.parentId;
-                                    onAddBoard(newBoardName.trim(), iconMap[selectedLayout] || 'Table', undefined, selectedLayout as any, parentId);
-
-                                    // Auto-expand the parent board to show the new sub-board
-                                    if (parentId) {
-                                        setExpandedBoards(prev => {
-                                            const next = new Set(prev);
-                                            next.add(parentId);
-                                            return next;
-                                        });
-                                    }
-
-                                    setNewBoardName('');
-                                    setSelectedLayout('table');
-                                    setQuickAddMenu(null);
-                                }
+                {/* Quick Add Board Menu - Rendered via Portal */}
+                {quickAddMenu && createPortal(
+                    <>
+                        <div
+                            className="fixed inset-0 z-[9998]"
+                            onClick={() => {
+                                setQuickAddMenu(null);
+                                setNewBoardName('');
                             }}
-                            className="p-3"
+                        />
+                        <div
+                            className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border min-w-[200px] w-auto z-[9999]"
+                            style={{ top: quickAddMenu.y, left: quickAddMenu.x }}
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <input
-                                type="text"
-                                autoFocus
-                                value={newBoardName}
-                                onChange={(e) => setNewBoardName(e.target.value)}
-                                placeholder={t('board_name_placeholder')}
-                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue"
-                            />
-
-                            {/* Layout Type Selection */}
-                            <div className="grid grid-cols-2 gap-1 mt-3">
-                                {[
-                                    { id: 'table', label: t('table'), icon: Table },
-                                    { id: 'datatable', label: t('data'), icon: Database },
-                                    { id: 'kanban', label: t('kanban'), icon: Kanban },
-                                    { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
-                                ].map((layout) => (
-                                    <button
-                                        key={layout.id}
-                                        type="button"
-                                        onClick={() => setSelectedLayout(layout.id as any)}
-                                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-xs transition-all ${selectedLayout === layout.id
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'bg-gray-100 dark:bg-monday-dark-hover text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        <layout.icon size={16} />
-                                        <span>{layout.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-2 mt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setQuickAddMenu(null);
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (newBoardName.trim()) {
+                                        const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
+                                        const parentId = quickAddMenu.parentId;
+                                        onAddBoard(newBoardName.trim(), iconMap[selectedLayout] || 'Table', undefined, selectedLayout as any, parentId);
+                                        if (parentId) {
+                                            setExpandedBoards(prev => {
+                                                const next = new Set(prev);
+                                                next.add(parentId);
+                                                return next;
+                                            });
+                                        }
                                         setNewBoardName('');
                                         setSelectedLayout('table');
-                                    }}
-                                    className="flex-1 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={!newBoardName.trim()}
-                                    className="flex-1 px-3 py-1.5 text-xs bg-monday-blue text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-                                >
-                                    Create
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                                        setQuickAddMenu(null);
+                                    }
+                                }}
+                                className="p-3"
+                            >
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    value={newBoardName}
+                                    onChange={(e) => setNewBoardName(e.target.value)}
+                                    placeholder={t('board_name_placeholder')}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue"
+                                />
+
+                                <div className="grid grid-cols-2 gap-1 mt-3">
+                                    {[
+                                        { id: 'table', label: t('table'), icon: Table },
+                                        { id: 'datatable', label: t('data'), icon: Database },
+                                        { id: 'kanban', label: t('kanban'), icon: Kanban },
+                                        { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
+                                    ].map((layout) => (
+                                        <button
+                                            key={layout.id}
+                                            type="button"
+                                            onClick={() => setSelectedLayout(layout.id as any)}
+                                            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-xs transition-all ${selectedLayout === layout.id
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'bg-gray-100 dark:bg-monday-dark-hover text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                                }`}
+                                        >
+                                            <layout.icon size={16} />
+                                            <span>{layout.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-2 mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setQuickAddMenu(null);
+                                            setNewBoardName('');
+                                            setSelectedLayout('table');
+                                        }}
+                                        className="flex-1 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!newBoardName.trim()}
+                                        className="flex-1 px-3 py-1.5 text-xs bg-monday-blue text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+                                    >
+                                        Create
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </>,
+                    document.body
                 )}
-                {/* Click outside to close quick add menu */}
-                {quickAddMenu && (
+                {/* Legacy backdrop removed - now included in portal above */}
+                {false && quickAddMenu && (
                     <div
                         className="fixed inset-0 z-[65]"
                         onClick={() => {
@@ -1525,11 +1562,12 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     />
                 )}
 
-                {/* Workspace Context Menu */}
-                {
-                    workspaceContextMenu && (
+                {/* Workspace Context Menu - Rendered via Portal */}
+                {workspaceContextMenu && createPortal(
+                    <>
+                        <div className="fixed inset-0 z-[9998]" onClick={() => setWorkspaceContextMenu(null)} />
                         <div
-                            className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[60] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
+                            className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[9999] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
                             style={{ top: Math.min(workspaceContextMenu.y, window.innerHeight - 150), left: dir === 'rtl' ? (workspaceContextMenu.x - 224) : (workspaceContextMenu.x + 10) }}
                         >
                             <div
@@ -1562,8 +1600,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 <Trash size={14} weight="light" /> {t('delete')}
                             </div>
                         </div>
-                    )
-                }
+                    </>,
+                    document.body
+                )}
 
 
 

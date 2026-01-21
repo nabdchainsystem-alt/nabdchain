@@ -1,4 +1,4 @@
-import { ZoomIn, ZoomOut, RotateCcw, Play, Pause, Zap, Eye, EyeOff } from 'lucide-react';
+import { MagnifyingGlassPlus as ZoomIn, MagnifyingGlassMinus as ZoomOut, ArrowCounterClockwise as RotateCcw, Play, Pause, Lightning as Zap, Eye, EyeSlash as EyeOff } from 'phosphor-react';
 import { motion } from 'framer-motion';
 
 interface ProcessMapControlsProps {

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from 'phosphor-react';
 
 interface Props {
     children: ReactNode;
@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
         if (this.state.hasError) {
             return (
                 <div className="flex flex-col items-center justify-center h-full p-6 text-center text-stone-500">
-                    <AlertTriangle size={48} className="mb-4 text-amber-500" />
+                    <Warning size={48} className="mb-4 text-amber-500" />
                     <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
                     <p className="text-sm mb-4 max-w-md">We encountered an error while rendering this view.</p>
                     <button

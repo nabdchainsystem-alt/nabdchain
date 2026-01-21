@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Filter,
-    LayoutGrid,
-    Map as MapIcon,
-    Package2,
-    Sparkles,
-    ZoomIn,
-    ZoomOut
-} from 'lucide-react';
+    Funnel as Filter,
+    SquaresFour as LayoutGrid,
+    MapTrifold as MapIcon,
+    Package as Package2,
+    Sparkle as Sparkles,
+    MagnifyingGlassPlus as ZoomIn,
+    MagnifyingGlassMinus as ZoomOut
+} from 'phosphor-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 enum OccupancyStatus {

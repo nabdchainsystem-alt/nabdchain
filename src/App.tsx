@@ -36,6 +36,7 @@ const MyWorkPage = lazyWithRetry(() => import('./features/myWork/MyWorkPage').th
 const TeamsPage = lazyWithRetry(() => import('./features/teams/TeamsPage'));
 const TalkPage = lazyWithRetry(() => import('./features/talk/TalkPage'));
 const TestPage = lazyWithRetry(() => import('./features/tools/TestPage').then(m => ({ default: m.TestPage })));
+const ArcadePage = lazyWithRetry(() => import('./features/arcade/ArcadePage'));
 
 const AppContent: React.FC = () => {
   // --- Persistent State Initialization ---
@@ -59,7 +60,12 @@ const AppContent: React.FC = () => {
       const viewFromPath = path.substring(1).split('/')[0];
       if (viewFromPath) return viewFromPath;
     }
+    // On root URL ('/'), check localStorage but don't restore 'board' view
+    // because there's no board ID in the URL - go to dashboard instead
     const saved = localStorage.getItem('app-active-view');
+    if (saved === 'board') {
+      return 'dashboard';
+    }
     return saved || 'dashboard';
   });
 
@@ -1411,6 +1417,8 @@ const AppContent: React.FC = () => {
               <TalkPage onNavigate={handleNavigate} />
             ) : activeView === 'test' ? (
               <TestPage />
+            ) : activeView === 'arcade' ? (
+              <ArcadePage />
             ) : (
               // Unknown view - redirect to dashboard
               <FeatureErrorBoundary featureName="Dashboard">

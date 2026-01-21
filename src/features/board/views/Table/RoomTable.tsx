@@ -20,32 +20,29 @@ import { useToast } from '../../../marketplace/components/Toast';
 import {
     Plus,
     Flag,
-    Calendar as CalendarIcon,
-    Link2,
-    Pin,
+    CalendarBlank as CalendarIcon,
+    Link as Link2,
+    PushPin as Pin,
     MapPin,
-    ChevronLeft,
-    ChevronRight,
-    ChevronDown,
-    GripVertical,
-    Trash2,
+    CaretLeft as ChevronLeft,
+    CaretRight as ChevronRight,
+    CaretDown as ChevronDown,
+    DotsSixVertical as GripVertical,
+    Trash,
     X,
-    ListTree,
+    TreeStructure as ListTree,
     Users,
     Bell,
-    Download,
-    BarChart3,
-    Sparkles,
-    LayoutGrid,
+    DownloadSimple as Download,
+    ChartBar as BarChart3,
+    Sparkle as Sparkles,
+    SquaresFour as LayoutGrid,
     FileText,
-    UploadCloud,
-    ExternalLink,
-    CalendarRange,
-    MoreHorizontal,
-    Maximize2,
-} from 'lucide-react';
-import { RowDetailPanel } from '../../components/RowDetailPanel';
-import {
+    UploadSimple as UploadCloud,
+    ArrowSquareOut as ExternalLink,
+    CalendarBlank as CalendarRange,
+    DotsThree as MoreHorizontal,
+    ArrowsOut as Maximize2,
     MagnifyingGlass,
     UserCircle,
     Funnel,
@@ -55,9 +52,8 @@ import {
     Copy,
     Export,
     Archive,
-    Trash,
-    CaretDown
 } from 'phosphor-react';
+import { RowDetailPanel } from '../../components/RowDetailPanel';
 import {
     DndContext,
     closestCenter,
@@ -2456,7 +2452,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             >
                                 <Funnel size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
                                 <span className="text-[13px] font-medium">Filter</span>
-                                <CaretDown size={12} weight="regular" className={`opacity-50 transition-transform ${isFilterPanelOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={12} weight="regular" className={`opacity-50 transition-transform ${isFilterPanelOpen ? 'rotate-180' : ''}`} />
                             </div>
                             {isFilterPanelOpen && (
                                 <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
@@ -2972,7 +2968,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                     }}
                                                                     className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                                                                 >
-                                                                    <Trash2 size={14} />
+                                                                    <Trash size={14} />
                                                                     Delete
                                                                 </button>
                                                             </div>

@@ -86,7 +86,7 @@ export interface Workspace {
   color: string;
 }
 
-export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'my_work' | 'flow_hub' | 'process_map' | 'procurement' | 'warehouse' | 'shipping' | 'fleet' | 'vendors' | 'planning' | 'maintenance' | 'production' | 'quality' | 'sales_factory' | 'sales_listing' | 'sales' | 'finance' | 'it_support' | 'hr' | 'marketing' | 'local_marketplace' | 'foreign_marketplace' | 'cornell_notes' | 'quick_notes' | 'settings' | 'test';
+export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'my_work' | 'flow_hub' | 'process_map' | 'procurement' | 'warehouse' | 'shipping' | 'fleet' | 'vendors' | 'planning' | 'maintenance' | 'production' | 'quality' | 'sales_factory' | 'sales_listing' | 'sales' | 'finance' | 'it_support' | 'hr' | 'marketing' | 'local_marketplace' | 'foreign_marketplace' | 'cornell_notes' | 'quick_notes' | 'settings' | 'test' | 'arcade';
 
 export interface RecentlyVisitedItem {
   id: string;

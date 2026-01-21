@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X, Wrench, RefreshCw, TrendingUp, AlertTriangle, Clock, Activity, Settings } from 'lucide-react';
+import { X, Wrench, ArrowsClockwise as RefreshCw, TrendUp as TrendingUp, Warning as AlertTriangle, Clock, Activity, Gear as Settings } from 'phosphor-react';
 
 interface CostItem {
     id: string;

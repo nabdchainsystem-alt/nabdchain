@@ -5,9 +5,9 @@ import { useUser } from '../../../../../auth-adapter';
 import {
     MapPin,
     FileText,
-    ExternalLink,
-    UploadCloud,
-} from 'lucide-react';
+    ArrowSquareOut as ExternalLink,
+    UploadSimple as UploadCloud,
+} from 'phosphor-react';
 import { Column, Row, StatusOption, PRIORITY_STYLES, formatDate } from '../types';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../../../components/ui/PortalPopup';

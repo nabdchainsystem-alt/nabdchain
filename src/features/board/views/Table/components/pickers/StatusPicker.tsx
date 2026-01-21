@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Trash } from 'lucide-react';
+import { Trash } from 'phosphor-react';
 import { STATUS_STYLES, StatusOption } from '../../types';
 import { usePopupPosition } from '../../hooks/usePopupPosition';
 
@@ -55,11 +55,11 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
     const content = (
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[100] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                className="fixed w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
                 style={positionStyle}
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
@@ -78,7 +78,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                             <div key={statusId} className="group relative flex items-center">
                                 <button
                                     onClick={() => { onSelect(statusTitle); onClose(); }}
-                                    className={`flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded shadow-sm transition-transform active:scale-95 ${statusStyle} ${isActive ? 'ring-2 ring-offset-1 ring-stone-400 dark:ring-stone-600' : ''}`}
+                                    className={`flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded shadow-sm transition-transform active:scale-95 ${statusStyle}`}
                                 >
                                     {statusTitle}
                                 </button>

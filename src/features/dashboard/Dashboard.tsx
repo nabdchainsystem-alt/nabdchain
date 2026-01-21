@@ -12,6 +12,7 @@ import {
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
 import { CreateEventModal } from './components/CreateEventModal';
 import { NewEmailModal } from './components/NewEmailModal';
+import { PaymentRequestPanel } from './components/PaymentRequestPanel';
 import { SaveToVaultModal } from './components/SaveToVaultModal';
 import { GlobalSearchDrawer } from './components/GlobalSearchDrawer';
 import { InviteMemberModal } from './components/InviteMemberModal';
@@ -54,6 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isPaymentRequestOpen, setIsPaymentRequestOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [urgentTasksPage, setUrgentTasksPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'overdue' | 'person'>('all');
@@ -664,7 +666,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
               {/* Quick Actions */}
               <div className="flex items-center gap-2">
                 {[
-                  { icon: Receipt, label: t('payment_request') },
+                  { icon: Receipt, label: t('payment_request'), onClick: () => setIsPaymentRequestOpen(true) },
                   { icon: EnvelopeSimple, label: t('new_email'), onClick: () => setIsEmailModalOpen(true) },
                   { icon: UserPlus, label: t('new_customer') },
                   { icon: Package, label: t('new_product') },
@@ -1233,6 +1235,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         onSend={handleEmailSend}
+      />
+
+      <PaymentRequestPanel
+        isOpen={isPaymentRequestOpen}
+        onClose={() => setIsPaymentRequestOpen(false)}
       />
 
       <GlobalSearchDrawer

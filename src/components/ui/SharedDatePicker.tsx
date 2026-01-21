@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, Calendar as CalendarIcon } from 'lucide-react';
+import { CaretLeft, CaretRight, CaretUp, CaretDown, X, CalendarBlank } from 'phosphor-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SharedDatePickerProps {
@@ -248,7 +248,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                                 readOnly
                                 className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
                             />
-                            <CalendarIcon size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+                            <CalendarBlank size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
                         </div>
                     </div>
                     {mode === 'range' && (
@@ -264,7 +264,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                                     readOnly
                                     className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
                                 />
-                                <CalendarIcon size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+                                <CalendarBlank size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
                             </div>
                         </div>
                     )}
@@ -275,8 +275,8 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                     <div className="flex items-center gap-2">
                         <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">Today</button>
                         <div className="flex flex-col">
-                            <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><ChevronUp size={14} /></button>
-                            <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><ChevronDown size={14} /></button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretUp size={14} /></button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretDown size={14} /></button>
                         </div>
                     </div>
                 </div>

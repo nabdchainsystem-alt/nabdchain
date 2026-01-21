@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calendar, RefreshCw, BarChart3, Users, Clock, Box } from 'lucide-react';
+import { X, CalendarBlank as Calendar, ArrowsClockwise as RefreshCw, ChartBar as BarChart3, Users, Clock, Cube as Box } from 'phosphor-react';
 
 export const PlanningTool: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     // --- State ---
