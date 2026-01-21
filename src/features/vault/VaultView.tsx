@@ -19,7 +19,7 @@ export const VaultView: React.FC = () => {
     const { t } = useAppContext();
     const { getToken, isSignedIn, isLoaded, userId } = useAuth();
     const [activeCategory, setActiveCategory] = useState<string>('all');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = useState<VaultItem | null>(null);
 

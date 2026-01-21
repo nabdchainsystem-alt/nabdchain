@@ -2,6 +2,30 @@ import { storageLogger } from '../utils/logger';
 import { API_URL as API_BASE } from '../config/api';
 
 const API_URL = `${API_BASE}/vault`;
+const REQUEST_TIMEOUT = 15000; // 15 second timeout
+
+/**
+ * Fetch with timeout to prevent infinite loading
+ */
+const fetchWithTimeout = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request timed out. Please check your connection and try again.');
+        }
+        throw error;
+    }
+};
 
 /**
  * Check if an error is a network error (server unreachable, CORS, etc.)
@@ -25,7 +49,7 @@ const isNetworkError = (error: unknown): boolean => {
  */
 const getErrorMessage = (error: unknown, context: string): string => {
     if (isNetworkError(error)) {
-        return `Unable to connect to server. Please ensure the backend server is running on port 3001.`;
+        return `Unable to connect to server. Please check your internet connection.`;
     }
     if (error instanceof Error) {
         return error.message;
@@ -77,7 +101,7 @@ interface RawVaultItem extends Omit<VaultItem, 'metadata'> {
 export const vaultService = {
     getAll: async (token: string, userId: string = "user-1"): Promise<VaultItem[]> => {
         try {
-            const response = await fetch(`${API_URL}?userId=${userId}`, {
+            const response = await fetchWithTimeout(`${API_URL}?userId=${userId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) {
@@ -105,7 +129,7 @@ export const vaultService = {
 
     create: async (token: string, data: Partial<VaultItem>): Promise<VaultItem> => {
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetchWithTimeout(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -134,7 +158,7 @@ export const vaultService = {
 
     update: async (token: string, id: string, data: Partial<VaultItem>): Promise<VaultItem> => {
         try {
-            const response = await fetch(`${API_URL}/${id}`, {
+            const response = await fetchWithTimeout(`${API_URL}/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -163,7 +187,7 @@ export const vaultService = {
 
     delete: async (token: string, id: string): Promise<void> => {
         try {
-            const response = await fetch(`${API_URL}/${id}`, {
+            const response = await fetchWithTimeout(`${API_URL}/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
