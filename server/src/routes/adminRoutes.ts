@@ -34,8 +34,8 @@ const DEFAULT_FEATURE_FLAGS = [
     { key: 'page_fleet', enabled: true },
     { key: 'page_vendors', enabled: true },
     { key: 'page_planning', enabled: true },
-    // Manufacturing
-    { key: 'page_manufacturing', enabled: true },
+    // Manufacturing (uses 'operations' key for legacy Sidebar compatibility)
+    { key: 'page_operations', enabled: true },
     { key: 'page_maintenance', enabled: true },
     { key: 'page_production', enabled: true },
     { key: 'page_quality', enabled: true },

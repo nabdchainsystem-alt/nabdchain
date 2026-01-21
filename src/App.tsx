@@ -308,14 +308,18 @@ const AppContent: React.FC = () => {
   }, [isSignedIn, getToken, activeWorkspaceId]);
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(() => {
-    // Try to restore board ID from URL first, then localStorage
+    // Only restore board ID if URL is a board URL
+    // Don't restore from localStorage if on a different page (e.g. /dashboard)
+    // This prevents stale board IDs from causing URL mismatches
     const path = window.location.pathname;
     if (path.startsWith('/board/')) {
       const boardIdFromPath = path.split('/board/')[1]?.split('/')[0];
       if (boardIdFromPath) return boardIdFromPath;
+      // Fallback to localStorage only if on a board URL but ID missing from path
+      const savedId = localStorage.getItem('app-active-board');
+      return savedId;
     }
-    const savedId = localStorage.getItem('app-active-board');
-    return savedId;
+    return null;
   });
 
   const lastLoggedUpdate = React.useRef<string>('');
