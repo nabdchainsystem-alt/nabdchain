@@ -67,6 +67,7 @@ interface SettingsPageProps {
     onVisibilityChange: (newVisibility: Record<string, boolean>) => void;
     isAdmin?: boolean;
     onFeatureFlagsChange?: () => void;
+    serverAllowedPages?: Record<string, boolean>; // Pages the admin has allowed for this user
 }
 
 type SettingsTab = 'general' | 'views' | 'notifications' | 'admin';
@@ -124,7 +125,7 @@ const FEATURE_LABELS: Record<string, string> = {
     page_foreign_marketplace: 'Foreign Marketplace',
 };
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibilityChange, isAdmin = false, onFeatureFlagsChange }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibilityChange, isAdmin = false, onFeatureFlagsChange, serverAllowedPages = {} }) => {
     const { user } = useUser();
     const { signOut, openUserProfile } = useClerk();
     const { getToken } = useAuth();
@@ -780,6 +781,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         <div className="p-2 space-y-1">
                             {Object.entries(ALL_PAGES)
                                 .filter(([_, config]) => config.section === section)
+                                .filter(([key]) => {
+                                    // For admins, show all pages
+                                    // For regular users, only show pages the admin has allowed
+                                    if (isAdmin) return true;
+                                    return serverAllowedPages[key] !== false;
+                                })
                                 .map(([key, config]) => {
                                     const Icon = config.icon;
                                     const isVisible = localVisibility[key] !== false;

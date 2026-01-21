@@ -402,6 +402,16 @@ const AppContent: React.FC = () => {
     fetchAdminData();
   }, [fetchAdminData]);
 
+  // Normalize server flags from "page_xxx" to "xxx" format (for Sidebar and Settings)
+  const normalizedServerFlags = React.useMemo(() => {
+    const normalized: Record<string, boolean> = {};
+    for (const [key, enabled] of Object.entries(serverFeatureFlags)) {
+      const normalizedKey = key.startsWith('page_') ? key.replace('page_', '') : key;
+      normalized[normalizedKey] = Boolean(enabled);
+    }
+    return normalized;
+  }, [serverFeatureFlags]);
+
   // Combine server feature flags with local visibility
   // Logic: Server can DISABLE pages (admin control), but user can also hide pages they don't want
   const effectivePageVisibility = React.useMemo(() => {
@@ -413,13 +423,6 @@ const AppContent: React.FC = () => {
         hidden[key] = false;
       }
       return hidden;
-    }
-
-    // Convert server flags from "page_xxx" to "xxx" format (Sidebar uses non-prefixed keys)
-    const normalizedServerFlags: Record<string, boolean> = {};
-    for (const [key, enabled] of Object.entries(serverFeatureFlags)) {
-      const normalizedKey = key.startsWith('page_') ? key.replace('page_', '') : key;
-      normalizedServerFlags[normalizedKey] = Boolean(enabled);
     }
 
     // Build combined visibility:
@@ -443,7 +446,7 @@ const AppContent: React.FC = () => {
     }
 
     return combined;
-  }, [pageVisibility, serverFeatureFlags, isAdmin, isPermissionsLoaded]);
+  }, [pageVisibility, normalizedServerFlags, isAdmin, isPermissionsLoaded]);
 
   const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() => {
     const saved = localStorage.getItem('app-recently-visited');
@@ -1402,6 +1405,7 @@ const AppContent: React.FC = () => {
                 onVisibilityChange={setPageVisibility}
                 isAdmin={isAdmin}
                 onFeatureFlagsChange={fetchAdminData}
+                serverAllowedPages={normalizedServerFlags}
               />
             ) : activeView === 'talk' ? (
               <TalkPage onNavigate={handleNavigate} />
