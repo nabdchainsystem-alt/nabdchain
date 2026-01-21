@@ -336,6 +336,68 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
         }
     };
 
+    // Enable all pages for user
+    const handleEnableAllUserPermissions = async () => {
+        if (!selectedUserForPerms) return;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            setIsLoadingUserPerms(true);
+
+            // Get all page keys and set them all to enabled
+            const allKeys = Object.values(FEATURE_CATEGORIES).flat();
+            const permissions = allKeys.map(key => ({ pageKey: key, enabled: true }));
+
+            await adminService.updateUserPermissions(token, selectedUserForPerms.id, permissions);
+
+            // Update local state
+            setUserPermissions(prev => prev.map(p => ({
+                ...p,
+                enabled: true,
+                source: 'user' as const
+            })));
+        } catch (error) {
+            console.error('Failed to enable all permissions:', error);
+            alert('Failed to enable all permissions');
+        } finally {
+            setIsLoadingUserPerms(false);
+        }
+    };
+
+    // Disable all pages for user
+    const handleDisableAllUserPermissions = async () => {
+        if (!selectedUserForPerms) return;
+
+        if (!confirm('Disable ALL pages for this user? They will see nothing.')) return;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            setIsLoadingUserPerms(true);
+
+            // Get all page keys and set them all to disabled
+            const allKeys = Object.values(FEATURE_CATEGORIES).flat();
+            const permissions = allKeys.map(key => ({ pageKey: key, enabled: false }));
+
+            await adminService.updateUserPermissions(token, selectedUserForPerms.id, permissions);
+
+            // Update local state
+            setUserPermissions(prev => prev.map(p => ({
+                ...p,
+                enabled: false,
+                source: 'user' as const
+            })));
+        } catch (error) {
+            console.error('Failed to disable all permissions:', error);
+            alert('Failed to disable all permissions');
+        } finally {
+            setIsLoadingUserPerms(false);
+        }
+    };
+
     // Keep newName in sync with userDisplayName when not editing
     useEffect(() => {
         if (!isEditingName) {
@@ -913,13 +975,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                         {selectedUserForPerms.name || selectedUserForPerms.email}
                                     </span>
                                 </div>
-                                <button
-                                    onClick={handleResetAllUserPermissions}
-                                    disabled={isLoadingUserPerms}
-                                    className="text-sm px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    Reset All to Global
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleEnableAllUserPermissions}
+                                        disabled={isLoadingUserPerms}
+                                        className="text-sm px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                    >
+                                        Enable All
+                                    </button>
+                                    <button
+                                        onClick={handleDisableAllUserPermissions}
+                                        disabled={isLoadingUserPerms}
+                                        className="text-sm px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                                    >
+                                        Disable All
+                                    </button>
+                                    <button
+                                        onClick={handleResetAllUserPermissions}
+                                        disabled={isLoadingUserPerms}
+                                        className="text-sm px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Reset to Global
+                                    </button>
+                                </div>
                             </div>
 
                             {isLoadingUserPerms ? (

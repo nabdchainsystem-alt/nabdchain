@@ -730,9 +730,10 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Initialize browser history state on mount
+  // Preserve the current URL path - don't override with stale localStorage values
   useEffect(() => {
-    const initialUrl = activeBoardId ? `/board/${activeBoardId}` : `/${activeView}`;
-    window.history.replaceState({ view: activeView, boardId: activeBoardId }, '', initialUrl);
+    const currentPath = window.location.pathname;
+    window.history.replaceState({ view: activeView, boardId: activeBoardId }, '', currentPath);
   }, []);
 
   const addToHistory = (view: ViewState | string, board?: Board) => {
