@@ -28,13 +28,47 @@ import {
     Tag as Tags,
     Plus,
     X,
-    Flag
+    Flag,
+    CurrencyDollar,
+    BookmarkSimple,
+    Trash,
+    FloppyDisk,
+    Check
 } from 'phosphor-react';
+
+const DROPDOWN_PRESETS_KEY = 'nabd-dropdown-presets';
+
+interface DropdownPreset {
+    id: string;
+    name: string;
+    options: { id: string; label: string; color: string }[];
+}
 
 const COLORS = [
     'bg-rose-500', 'bg-purple-500', 'bg-indigo-500', 'bg-blue-500',
     'bg-teal-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-400',
     'bg-stone-500', 'bg-pink-500'
+];
+
+const CURRENCIES = [
+    { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
+    { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
+    { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
+    { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', flag: '🇸🇦' },
+    { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', flag: '🇦🇪' },
+    { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵' },
+    { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', flag: '🇨🇳' },
+    { code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳' },
+    { code: 'KRW', symbol: '₩', name: 'South Korean Won', flag: '🇰🇷' },
+    { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷' },
+    { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', flag: '🇨🇦' },
+    { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', flag: '🇦🇺' },
+    { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', flag: '🇨🇭' },
+    { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso', flag: '🇲🇽' },
+    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', flag: '🇸🇬' },
+    { code: 'EGP', symbol: 'E£', name: 'Egyptian Pound', flag: '🇪🇬' },
+    { code: 'TRY', symbol: '₺', name: 'Turkish Lira', flag: '🇹🇷' },
+    { code: 'RUB', symbol: '₽', name: 'Russian Ruble', flag: '🇷🇺' },
 ];
 
 interface ColumnMenuProps {
@@ -65,6 +99,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'files', label: 'Files', icon: Paperclip, color: 'bg-rose-400', description: 'Attach files' },
         { id: 'people', label: 'People', icon: Users, color: 'bg-blue-400', description: 'Assign people' },
         { id: 'number', label: 'Numbers', icon: Hash, color: 'bg-yellow-400', description: 'Count things' },
+        { id: 'currency', label: 'Currency', icon: CurrencyDollar, color: 'bg-emerald-500', description: 'Money with conversion' },
     ];
 
     const superUseful: ColumnType[] = [
@@ -92,9 +127,19 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     const hasUseful = filteredUseful.length > 0;
     const hasPowerUps = filteredPowerUps.length > 0;
 
-    const [view, setView] = useState<'list' | 'custom_name' | 'custom_dropdown'>('list');
+    const [view, setView] = useState<'list' | 'custom_name' | 'custom_dropdown' | 'currency'>('list');
     const [customName, setCustomName] = useState('');
     const [dropdownName, setDropdownName] = useState('');
+
+    // Preset state
+    const [showPresets, setShowPresets] = useState(false);
+    const [presetName, setPresetName] = useState('');
+    const [presets, setPresets] = useState<DropdownPreset[]>(() => {
+        try {
+            const saved = localStorage.getItem(DROPDOWN_PRESETS_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
     const [dropdownOptions, setDropdownOptions] = useState<{ id: string, label: string, color: string }[]>([
         { id: 'opt1', label: 'Option 1', color: 'bg-rose-500' },
         { id: 'opt2', label: 'Option 2', color: 'bg-purple-500' }
@@ -103,12 +148,18 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownInputRef = useRef<HTMLInputElement>(null);
     const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
+    const [currencyName, setCurrencyName] = useState('');
+    const [selectedCurrency, setSelectedCurrency] = useState(CURRENCIES[0]);
+    const [currencySearch, setCurrencySearch] = useState('');
+    const currencyInputRef = useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (view === 'custom_name' && inputRef.current) {
             inputRef.current.focus();
         } else if (view === 'custom_dropdown' && dropdownInputRef.current) {
             dropdownInputRef.current.focus();
+        } else if (view === 'currency' && currencyInputRef.current) {
+            currencyInputRef.current.focus();
         }
     }, [view]);
 
@@ -119,6 +170,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         }
         if (type.id === 'dropdown') {
             setView('custom_dropdown');
+            return;
+        }
+        if (type.id === 'currency') {
+            setView('currency');
             return;
         }
 
@@ -138,11 +193,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         // Provide default priority options for priority columns
         if (type.id === 'priority') {
             options = [
-                { id: 'critical', label: 'Critical', color: 'bg-red-600' },
+                { id: 'urgent', label: 'Urgent', color: 'bg-red-500' },
                 { id: 'high', label: 'High', color: 'bg-orange-500' },
-                { id: 'medium', label: 'Medium', color: 'bg-amber-400' },
-                { id: 'low', label: 'Low', color: 'bg-blue-400' },
-                { id: 'none', label: 'None', color: 'bg-stone-400' },
+                { id: 'medium', label: 'Medium', color: 'bg-blue-500' },
+                { id: 'low', label: 'Low', color: 'bg-emerald-500' },
             ];
         }
 
@@ -171,13 +225,53 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         onSelect('dropdown', dropdownName, dropdownOptions);
     };
 
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
+    const handleSavePreset = () => {
+        if (!presetName.trim() || dropdownOptions.length === 0) return;
+        const newPreset: DropdownPreset = {
+            id: Date.now().toString(),
+            name: presetName.trim(),
+            options: dropdownOptions.map(o => ({ ...o }))
+        };
+        const updatedPresets = [...presets, newPreset];
+        setPresets(updatedPresets);
+        localStorage.setItem(DROPDOWN_PRESETS_KEY, JSON.stringify(updatedPresets));
+        setPresetName('');
+        // Show success feedback
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+    };
+
+    const handleLoadPreset = (preset: DropdownPreset) => {
+        setDropdownOptions(preset.options.map(o => ({ ...o, id: `${o.id}-${Date.now()}` })));
+        setShowPresets(false);
+    };
+
+    const handleDeletePreset = (presetId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const updatedPresets = presets.filter(p => p.id !== presetId);
+        setPresets(updatedPresets);
+        localStorage.setItem(DROPDOWN_PRESETS_KEY, JSON.stringify(updatedPresets));
+    };
+
+    const handleCreateCurrency = () => {
+        if (!currencyName.trim()) return;
+        onSelect('currency', currencyName, [], undefined, { currency: { code: selectedCurrency.code, symbol: selectedCurrency.symbol } });
+    };
+
+    const filteredCurrencies = CURRENCIES.filter(c =>
+        c.name.toLowerCase().includes(currencySearch.toLowerCase()) ||
+        c.code.toLowerCase().includes(currencySearch.toLowerCase())
+    );
+
     const RenderItem: React.FC<{ type: ColumnType, showPlus?: boolean }> = ({ type, showPlus = true }) => (
         <div
             className="flex items-center gap-3 w-full p-1.5 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors group text-left cursor-pointer"
             onClick={() => {
                 handleSelect(type);
-                // For direct actions (not custom/dropdown setup), close the menu
-                if (type.id !== 'custom' && type.id !== 'dropdown') {
+                // For direct actions (not custom/dropdown/currency setup), close the menu
+                if (type.id !== 'custom' && type.id !== 'dropdown' && type.id !== 'currency') {
                     onClose();
                 }
             }}
@@ -193,8 +287,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                     onClick={(e) => {
                         e.stopPropagation();
                         handleSelect(type);
-                        // Close menu for direct actions (not custom/dropdown setup)
-                        if (type.id !== 'custom' && type.id !== 'dropdown') {
+                        // Close menu for direct actions (not custom/dropdown/currency setup)
+                        if (type.id !== 'custom' && type.id !== 'dropdown' && type.id !== 'currency') {
                             onClose();
                         }
                     }}
@@ -299,9 +393,82 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                     </div>
 
                     <div className="mb-4">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-2">
                             <label className="text-xs font-semibold text-stone-500 dark:text-stone-400">Dropdown options <span className="text-red-500">*</span></label>
+                            <button
+                                onClick={() => setShowPresets(!showPresets)}
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            >
+                                <BookmarkSimple size={14} />
+                                {showPresets ? 'Hide Presets' : 'Presets'}
+                            </button>
                         </div>
+
+                        {/* Presets Section */}
+                        {showPresets && (
+                            <div className="mb-3 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+                                <div className="text-xs font-medium text-stone-600 dark:text-stone-300 mb-2">Saved Presets</div>
+                                {presets.length > 0 ? (
+                                    <div className="space-y-1 max-h-[120px] overflow-y-auto mb-2">
+                                        {presets.map(preset => (
+                                            <div
+                                                key={preset.id}
+                                                onClick={() => handleLoadPreset(preset)}
+                                                className="flex items-center justify-between p-2 bg-white dark:bg-stone-900 rounded border border-stone-100 dark:border-stone-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer group"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-medium text-stone-700 dark:text-stone-200 truncate">{preset.name}</div>
+                                                    <div className="flex gap-0.5 mt-1">
+                                                        {preset.options.slice(0, 4).map(opt => (
+                                                            <span key={opt.id} className={`w-3 h-3 rounded-full ${opt.color}`} />
+                                                        ))}
+                                                        {preset.options.length > 4 && (
+                                                            <span className="text-[10px] text-stone-400">+{preset.options.length - 4}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => handleDeletePreset(preset.id, e)}
+                                                    className="p-1 opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition-all"
+                                                >
+                                                    <Trash size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-xs text-stone-400 mb-2">No saved presets yet</div>
+                                )}
+                                {/* Save current as preset */}
+                                <div className="flex gap-1 pt-2 border-t border-stone-200 dark:border-stone-700">
+                                    <input
+                                        type="text"
+                                        placeholder="Preset name..."
+                                        value={presetName}
+                                        onChange={(e) => setPresetName(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSavePreset(); }}
+                                        className="flex-1 px-2 py-1 text-xs bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500"
+                                    />
+                                    <button
+                                        onClick={handleSavePreset}
+                                        disabled={!presetName.trim() || dropdownOptions.length === 0 || saveSuccess}
+                                        className={`px-2 py-1 text-xs text-white rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors ${saveSuccess ? 'bg-emerald-500' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                    >
+                                        {saveSuccess ? (
+                                            <>
+                                                <Check size={12} />
+                                                Saved!
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FloppyDisk size={12} />
+                                                Save
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="space-y-2 mb-2 max-h-[200px] overflow-y-auto pr-1">
                             {dropdownOptions.map(opt => (
@@ -382,6 +549,104 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                                 onClose();
                             }}
                             disabled={!dropdownName.trim() || dropdownOptions.length === 0}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Create Column
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (view === 'currency') {
+        return (
+            <div
+                className={`flex flex-col w-[340px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+            >
+                <div className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <button
+                            onClick={() => setView('list')}
+                            className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500"
+                        >
+                            <ArrowUpRight className="rotate-[-135deg]" size={16} />
+                        </button>
+                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Configure Currency Column</span>
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Column name <span className="text-red-500">*</span></label>
+                        <input
+                            ref={currencyInputRef}
+                            type="text"
+                            placeholder="e.g. Budget, Price, Cost..."
+                            value={currencyName}
+                            onChange={(e) => setCurrencyName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && currencyName.trim()) {
+                                    handleCreateCurrency();
+                                    onClose();
+                                }
+                                if (e.key === 'Escape') setView('list');
+                            }}
+                            className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">Select Currency</label>
+
+                        {/* Selected Currency Display */}
+                        <div className="flex items-center gap-2 p-2 mb-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                            <span className="text-lg">{selectedCurrency.flag}</span>
+                            <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{selectedCurrency.symbol}</span>
+                            <span className="text-sm text-stone-600 dark:text-stone-300">{selectedCurrency.name}</span>
+                            <span className="text-xs text-stone-400 ml-auto">{selectedCurrency.code}</span>
+                        </div>
+
+                        {/* Currency Search */}
+                        <div className="relative mb-2">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                            <input
+                                type="text"
+                                placeholder="Search currencies..."
+                                value={currencySearch}
+                                onChange={(e) => setCurrencySearch(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
+                            />
+                        </div>
+
+                        {/* Currency List */}
+                        <div className="max-h-[180px] overflow-y-auto border border-stone-200 dark:border-stone-700 rounded-lg">
+                            {filteredCurrencies.map(currency => (
+                                <button
+                                    key={currency.code}
+                                    onClick={() => setSelectedCurrency(currency)}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${selectedCurrency.code === currency.code ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                >
+                                    <span className="text-base">{currency.flag}</span>
+                                    <span className="text-sm font-medium text-stone-700 dark:text-stone-200 w-8">{currency.symbol}</span>
+                                    <span className="text-sm text-stone-600 dark:text-stone-300 flex-1 truncate">{currency.name}</span>
+                                    <span className="text-xs text-stone-400">{currency.code}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+                        <button
+                            onClick={() => setView('list')}
+                            className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
+                        >
+                            Back
+                        </button>
+                        <button
+                            onClick={() => {
+                                handleCreateCurrency();
+                                onClose();
+                            }}
+                            disabled={!currencyName.trim()}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Create Column

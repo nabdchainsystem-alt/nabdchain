@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../../../../../utils/formatters';
 import { useAppContext } from '../../../../../contexts/AppContext';
+import { useUser } from '../../../../../auth-adapter';
 import {
     MapPin,
     FileText,
@@ -13,7 +14,7 @@ import { PortalPopup } from '../../../../../components/ui/PortalPopup';
 import { PeoplePicker } from '../../../components/cells/PeoplePicker';
 import { UrlPicker } from '../../../components/cells/UrlPicker';
 import { DocPicker } from '../../../components/cells/DocPicker';
-import { StatusPicker, SelectPicker, PriorityPicker } from './pickers';
+import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker } from './pickers';
 import { formatPriorityLabel, DEFAULT_CHECKBOX_COLOR } from '../utils';
 
 // Constants - must match RoomTable.tsx
@@ -41,6 +42,8 @@ interface TableCellProps {
     onAddCustomStatus: (title: string, color: string) => void;
     onDeleteCustomStatus: (id: string) => void;
     onAddColumnOption: (colId: string, optionLabel: string) => void;
+    onEditColumnOption?: (colId: string, optionId: string, newLabel: string, newColor: string) => void;
+    onDeleteColumnOption?: (colId: string, optionId: string) => void;
     onSetActiveColorMenu: (menu: { rect: DOMRect; colId?: string; rowId?: string } | null) => void;
     onSetActiveTextMenu: (menu: { rowId: string; colId: string; position: { x: number; y: number } } | null) => void;
     onFileUploadRequest?: (rowId: string, colId: string) => void;
@@ -98,12 +101,26 @@ export const TableCell: React.FC<TableCellProps> = ({
     onAddCustomStatus,
     onDeleteCustomStatus,
     onAddColumnOption,
+    onEditColumnOption,
+    onDeleteColumnOption,
     onSetActiveColorMenu,
     onSetActiveTextMenu,
     onFileUploadRequest,
 }) => {
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
+    const { user: currentUser } = useUser();
+
+    // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
+    const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
+        if (currentUser && person.id === currentUser.id) {
+            // Use current user's live avatar from auth context
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const u = currentUser as any;
+            return u.imageUrl || u.avatarUrl || person.avatar;
+        }
+        return person.avatar;
+    };
 
     // Select/Checkbox column
     if (col.id === 'select') {
@@ -233,29 +250,10 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Currency column
     if (col.type === 'currency') {
-        const { currency } = useAppContext();
-
-        if (isActiveCell) {
-            return (
-                <div className="h-full w-full">
-                    <input
-                        type="number"
-                        autoFocus
-                        onBlur={() => onSetActiveCell(null)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                onNavigateToNextCell(row.id, col.id);
-                            }
-                            if (e.key === 'Escape') onSetActiveCell(null);
-                        }}
-                        value={value || ''}
-                        onChange={(e) => onUpdateRow(row.id, { [col.id]: e.target.value }, row.groupId)}
-                        className="w-full h-full bg-stone-50 dark:bg-stone-800 border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400"
-                    />
-                </div>
-            );
-        }
+        const { currency: globalCurrency } = useAppContext();
+        // Use column-specific currency if available, otherwise fall back to global
+        const currencyCode = col.currency?.code || globalCurrency.code;
+        const currencySymbol = col.currency?.symbol || globalCurrency.symbol;
 
         return (
             <div className="relative w-full h-full">
@@ -265,12 +263,25 @@ export const TableCell: React.FC<TableCellProps> = ({
                 >
                     {value ? (
                         <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">
-                            {formatCurrency(Number(value), currency.code, currency.symbol)}
+                            {formatCurrency(Number(value), currencyCode, currencySymbol)}
                         </span>
                     ) : (
-                        <span className="text-xs text-stone-400">Add value</span>
+                        <span className="text-xs text-stone-400">{currencySymbol} -</span>
                     )}
                 </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <CurrencyPicker
+                        value={value ? Number(value) : null}
+                        baseCurrency={{ code: currencyCode, symbol: currencySymbol }}
+                        onSelect={(newValue, newCurrency) => {
+                            onUpdateRow(row.id, { [col.id]: newValue }, row.groupId);
+                            // If currency changed, we could update the column config here
+                            // For now, we just update the value
+                        }}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
             </div>
         );
     }
@@ -300,6 +311,8 @@ export const TableCell: React.FC<TableCellProps> = ({
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
                         onAdd={(label) => onAddColumnOption(col.id, label)}
+                        onEdit={onEditColumnOption ? (optionId, newLabel, newColor) => onEditColumnOption(col.id, optionId, newLabel, newColor) : undefined}
+                        onDelete={onDeleteColumnOption ? (optionId) => onDeleteColumnOption(col.id, optionId) : undefined}
                     />
                 )}
             </div>
@@ -351,19 +364,22 @@ export const TableCell: React.FC<TableCellProps> = ({
                 >
                     {people.length > 0 ? (
                         <div className="flex -space-x-2">
-                            {people.slice(0, 3).map((person: { id?: string; name?: string; avatar?: string }, i: number) => (
-                                <div
-                                    key={person.id || i}
-                                    className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-stone-900"
-                                    title={person.name || 'User'}
-                                >
-                                    {person.avatar ? (
-                                        <img src={person.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                                    ) : (
-                                        (person.name || 'U').charAt(0).toUpperCase()
-                                    )}
-                                </div>
-                            ))}
+                            {people.slice(0, 3).map((person: { id?: string; name?: string; avatar?: string }, i: number) => {
+                                const avatar = getPersonAvatar(person);
+                                return (
+                                    <div
+                                        key={person.id || i}
+                                        className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-stone-900"
+                                        title={person.name || 'User'}
+                                    >
+                                        {avatar ? (
+                                            <img src={avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                                        ) : (
+                                            (person.name || 'U').charAt(0).toUpperCase()
+                                        )}
+                                    </div>
+                                );
+                            })}
                             {people.length > 3 && (
                                 <div className="w-7 h-7 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center text-xs font-medium border-2 border-white dark:border-stone-900">
                                     +{people.length - 3}
@@ -644,8 +660,8 @@ export const TableCell: React.FC<TableCellProps> = ({
                         position: { x: e.clientX, y: e.clientY }
                     });
                 }}
-                style={cellStyle}
-                className={`w-full h-full bg-transparent border-none outline-none px-3 text-sm ${isCreationRow ? 'text-start' : 'text-center'} text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors`}
+                style={{ ...cellStyle, textAlign: 'left' }}
+                className="w-full h-full bg-transparent border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors"
             />
         </div>
     );

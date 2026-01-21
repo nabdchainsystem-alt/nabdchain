@@ -253,7 +253,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             boardLogger.warn('Failed to load saved groups from localStorage', e);
         }
 
-        // If external source exists, sync with it
+        // If external source exists with tasks, sync with it
+        // Note: We check length > 0 to differentiate from empty array (controlled mode with no tasks yet)
         if (externalTasks && externalTasks.length > 0) {
             const tasksByGroup: Record<string, Row[]> = {};
             // Keep track of order found in tasks if possible, or just unique IDs
@@ -320,14 +321,38 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             } catch (e) {
                 boardLogger.error("Failed to load generic table data", e);
             }
+            // Standalone mode default - use 'group-1' for local-only tables
+            return [{
+                id: 'group-1',
+                name: 'Group 1',
+                rows: [],
+                isCollapsed: false,
+                color: GROUP_COLORS[0]
+            }];
+        }
+
+        // CONTROLLED MODE with empty tasks: externalTasks is defined but empty
+        // Use 'default-group' to match what the parent hook expects for orphan tasks
+        // Also try to load saved view state (colors, collapsed state) from localStorage
+        let savedViewState: Partial<TableGroup> = {};
+        try {
+            const savedGroupsStr = localStorage.getItem(storageKeyGroups);
+            if (savedGroupsStr) {
+                const parsed = JSON.parse(savedGroupsStr);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    savedViewState = parsed[0];
+                }
+            }
+        } catch (e) {
+            // Ignore errors, use defaults
         }
 
         return [{
-            id: 'group-1',
-            name: 'Group 1',
+            id: 'default-group',
+            name: savedViewState.name || 'Tasks',
             rows: [],
-            isCollapsed: false,
-            color: GROUP_COLORS[0]
+            isCollapsed: savedViewState.isCollapsed || false,
+            color: savedViewState.color || GROUP_COLORS[0]
         }];
     });
 
@@ -412,9 +437,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const newIds = Object.keys(tasksByGroup).filter(id => !existingIds.has(id));
 
             if (newIds.length > 0) {
-                // If we have a single 'group-1' that is empty or local-only, and we receive EXACTLY one new group ID,
-                // we assume it's the initial "conversion" from local Group 1 to Server Group ID.
-                if (updatedGroups.length === 1 && updatedGroups[0].id === 'group-1' &&
+                // If we have a single placeholder group ('group-1' or 'default-group') that is empty,
+                // and we receive EXACTLY one new group ID, we assume it's the initial "conversion"
+                // from local placeholder to the actual group ID from the parent.
+                const isPlaceholderGroup = updatedGroups[0].id === 'group-1' || updatedGroups[0].id === 'default-group';
+                if (updatedGroups.length === 1 && isPlaceholderGroup &&
                     (!updatedGroups[0].rows || updatedGroups[0].rows.length === 0) &&
                     newIds.length === 1) {
                     const gid = newIds[0];
@@ -1700,7 +1727,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         const nextCol = editableColumns[nextIndex];
 
         // Picker-based column types that should NOT auto-open when navigating via keyboard
-        const pickerColumnTypes = ['date', 'status', 'priority', 'dropdown', 'people', 'url', 'link', 'location', 'doc', 'files', 'file', 'timeline', 'dueDate'];
+        const pickerColumnTypes = ['date', 'status', 'priority', 'dropdown', 'people', 'url', 'link', 'location', 'doc', 'files', 'file', 'timeline', 'dueDate', 'currency'];
         const isPickerColumn = pickerColumnTypes.includes(nextCol.type);
 
         // Find the cell element for the next column
@@ -1731,15 +1758,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }, 10);
     };
 
-    const handleAddColumn = (type: string, label: string, options?: any[]) => {
+    const handleAddColumn = (type: string, label: string, options?: any[], _currency?: string, config?: { currency?: { code: string; symbol: string } }) => {
         const newCol: Column = {
             id: label.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString().slice(-4),
             label: label,
             type: type,
-            width: 150,
+            width: type === 'currency' ? 140 : 150,
             minWidth: 100,
             resizable: true,
-            options: options
+            options: options,
+            ...(config?.currency && { currency: config.currency })
         };
         setColumns([...columns, newCol]);
 
@@ -1780,6 +1808,54 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         if (activeCell?.rowId && activeCell?.colId === colId) {
             handleUpdateRow(activeCell.rowId, { [colId]: optionLabel }, activeCell.rowId === CREATION_ROW_ID ? 'group-1' : undefined); // Group ID handling might need check but usually undefined works for standard rows if we find them
         }
+    };
+
+    const handleEditColumnOption = (colId: string, optionId: string, newLabel: string, newColor: string) => {
+        setColumns(prevCols => {
+            return prevCols.map(col => {
+                if (col.id === colId) {
+                    const existingOptions = col.options || [];
+                    const oldOption = existingOptions.find(o => o.id === optionId);
+                    const oldLabel = oldOption?.label;
+
+                    const updatedOptions = existingOptions.map(opt =>
+                        opt.id === optionId ? { ...opt, label: newLabel, color: newColor } : opt
+                    );
+
+                    // Update any rows that had the old label
+                    if (oldLabel && oldLabel !== newLabel) {
+                        setRows(prevRows => prevRows.map(row =>
+                            row[colId] === oldLabel ? { ...row, [colId]: newLabel } : row
+                        ));
+                    }
+
+                    return { ...col, options: updatedOptions };
+                }
+                return col;
+            });
+        });
+    };
+
+    const handleDeleteColumnOption = (colId: string, optionId: string) => {
+        setColumns(prevCols => {
+            return prevCols.map(col => {
+                if (col.id === colId) {
+                    const existingOptions = col.options || [];
+                    const optionToDelete = existingOptions.find(o => o.id === optionId);
+                    const labelToDelete = optionToDelete?.label;
+
+                    // Clear any rows that had this option
+                    if (labelToDelete) {
+                        setRows(prevRows => prevRows.map(row =>
+                            row[colId] === labelToDelete ? { ...row, [colId]: '' } : row
+                        ));
+                    }
+
+                    return { ...col, options: existingOptions.filter(opt => opt.id !== optionId) };
+                }
+                return col;
+            });
+        });
     };
 
     // Drag & Drop Handlers (Rows)
@@ -2180,6 +2256,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 onAddCustomStatus={handleAddCustomStatus}
                 onDeleteCustomStatus={handleDeleteCustomStatus}
                 onAddColumnOption={handleAddColumnOption}
+                onEditColumnOption={handleEditColumnOption}
+                onDeleteColumnOption={handleDeleteColumnOption}
                 onSetActiveColorMenu={setActiveColorMenu}
                 onSetActiveTextMenu={setActiveTextMenu}
                 onFileUploadRequest={(rowId, colId) => {

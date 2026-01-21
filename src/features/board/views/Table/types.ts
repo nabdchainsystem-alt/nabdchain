@@ -11,6 +11,10 @@ export interface Column {
     color?: string;
     headerColor?: string;
     backgroundColor?: string;
+    currency?: {
+        code: string;
+        symbol: string;
+    };
 }
 
 export interface Row {
