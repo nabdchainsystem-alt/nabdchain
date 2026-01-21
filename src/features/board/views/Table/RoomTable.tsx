@@ -1699,6 +1699,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         const nextIndex = (currentIndex + 1) % editableColumns.length;
         const nextCol = editableColumns[nextIndex];
 
+        // Picker-based column types that should NOT auto-open when navigating via keyboard
+        const pickerColumnTypes = ['date', 'status', 'priority', 'dropdown', 'people', 'url', 'link', 'location', 'doc', 'files', 'file', 'timeline', 'dueDate'];
+        const isPickerColumn = pickerColumnTypes.includes(nextCol.type);
+
         // Find the cell element for the next column
         setTimeout(() => {
             const cellSelector = `[data-row-id="${currentRowId}"][data-col-id="${nextCol.id}"]`;
@@ -1706,7 +1710,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
             if (nextCellElement) {
                 const rect = nextCellElement.getBoundingClientRect();
-                setActiveCell({ rowId: currentRowId, colId: nextCol.id, trigger: nextCellElement, rect });
+
+                // For picker columns, don't set trigger to prevent auto-opening the picker
+                // User must click to open the picker
+                if (isPickerColumn) {
+                    setActiveCell({ rowId: currentRowId, colId: nextCol.id });
+                } else {
+                    setActiveCell({ rowId: currentRowId, colId: nextCol.id, trigger: nextCellElement, rect });
+                }
 
                 // For text/number inputs, focus the input after a brief delay
                 setTimeout(() => {

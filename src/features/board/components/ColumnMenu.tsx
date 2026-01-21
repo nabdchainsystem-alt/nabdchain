@@ -27,7 +27,8 @@ import {
     Globe,
     Tag as Tags,
     Plus,
-    X
+    X,
+    Flag
 } from 'phosphor-react';
 
 const COLORS = [
@@ -57,6 +58,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     const essentials: ColumnType[] = [
         { id: 'custom', label: 'Custom', icon: CircleDashed, color: 'bg-gray-400', description: 'Custom column' },
         { id: 'status', label: 'Status', icon: CheckSquare, color: 'bg-emerald-500', description: 'Track task status' },
+        { id: 'priority', label: 'Priority', icon: Flag, color: 'bg-orange-500', description: 'Set task priority' },
         { id: 'dropdown', label: 'Dropdown', icon: List, color: 'bg-emerald-500', description: 'Select options' },
         { id: 'text', label: 'Text', icon: Type, color: 'bg-yellow-400', description: 'Free text' },
         { id: 'date', label: 'Date', icon: Calendar, color: 'bg-purple-500', description: 'Dates' },
@@ -130,6 +132,17 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                 { id: 'done', label: 'Done', color: 'bg-emerald-500' },
                 { id: 'stuck', label: 'Stuck', color: 'bg-red-500' },
                 { id: 'pending', label: 'Pending', color: 'bg-orange-400' },
+            ];
+        }
+
+        // Provide default priority options for priority columns
+        if (type.id === 'priority') {
+            options = [
+                { id: 'critical', label: 'Critical', color: 'bg-red-600' },
+                { id: 'high', label: 'High', color: 'bg-orange-500' },
+                { id: 'medium', label: 'Medium', color: 'bg-amber-400' },
+                { id: 'low', label: 'Low', color: 'bg-blue-400' },
+                { id: 'none', label: 'None', color: 'bg-stone-400' },
             ];
         }
 
