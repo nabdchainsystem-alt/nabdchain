@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { cacheService, cacheKeys, TTL } from '../services/cacheService';
 
 const router = express.Router();
 
@@ -87,18 +88,25 @@ router.get('/', requireAuth, async (req, res: Response) => {
             return res.status(403).json({ error: "Access denied to this workspace" });
         }
 
-        const boards = await prisma.board.findMany({
-            where: { workspaceId: targetWorkspaceId },
-            orderBy: { updatedAt: 'desc' }
-        });
+        // Try cache first
+        const cacheKey = cacheKeys.boards(targetWorkspaceId);
+        const parsedBoards = await cacheService.getOrSet(
+            cacheKey,
+            async () => {
+                const boards = await prisma.board.findMany({
+                    where: { workspaceId: targetWorkspaceId },
+                    orderBy: { updatedAt: 'desc' }
+                });
 
-        // Parse JSON fields
-        const parsedBoards = boards.map(b => ({
-            ...b,
-            columns: b.columns ? JSON.parse(b.columns) : [],
-            tasks: b.tasks ? JSON.parse(b.tasks) : [],
-            availableViews: b.availableViews ? JSON.parse(b.availableViews) : [],
-        }));
+                return boards.map(b => ({
+                    ...b,
+                    columns: b.columns ? JSON.parse(b.columns) : [],
+                    tasks: b.tasks ? JSON.parse(b.tasks) : [],
+                    availableViews: b.availableViews ? JSON.parse(b.availableViews) : [],
+                }));
+            },
+            TTL.SHORT // 1 minute cache for board lists
+        );
 
         res.json(parsedBoards);
     } catch (error) {
@@ -123,12 +131,18 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
             return res.status(403).json({ error: "Access denied" });
         }
 
-        const parsedBoard = {
-            ...board,
-            columns: board.columns ? JSON.parse(board.columns) : [],
-            tasks: board.tasks ? JSON.parse(board.tasks) : [],
-            availableViews: board.availableViews ? JSON.parse(board.availableViews) : [],
-        };
+        // Try cache first for parsed board
+        const cacheKey = cacheKeys.board(id);
+        const parsedBoard = await cacheService.getOrSet(
+            cacheKey,
+            async () => ({
+                ...board,
+                columns: board.columns ? JSON.parse(board.columns) : [],
+                tasks: board.tasks ? JSON.parse(board.tasks) : [],
+                availableViews: board.availableViews ? JSON.parse(board.availableViews) : [],
+            }),
+            TTL.SHORT
+        );
 
         res.json(parsedBoard);
     } catch (error) {
@@ -183,6 +197,9 @@ router.post('/', requireAuth, async (req, res: Response) => {
             }
         });
 
+        // Invalidate boards list cache
+        await cacheService.delete(cacheKeys.boards(targetWorkspaceId));
+
         res.json({
             ...board,
             columns: data.columns || [],
@@ -232,6 +249,12 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
             data: updateData
         });
 
+        // Invalidate caches
+        await cacheService.invalidateBoard(id);
+        if (board.workspaceId) {
+            await cacheService.delete(cacheKeys.boards(board.workspaceId));
+        }
+
         res.json({
             ...board,
             columns: board.columns ? JSON.parse(board.columns) : [],
@@ -270,6 +293,12 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
 
         // Delete the board
         await prisma.board.delete({ where: { id } });
+
+        // Invalidate caches
+        await cacheService.invalidateBoard(id);
+        if (workspaceId) {
+            await cacheService.delete(cacheKeys.boards(workspaceId));
+        }
 
         // Log Activity
         await prisma.activity.create({

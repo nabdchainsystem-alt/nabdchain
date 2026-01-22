@@ -535,13 +535,1151 @@ npx prisma db seed
 
 ---
 
+---
+
+# Implementation Guides
+
+## 1. Cloudflare R2 - File Storage
+
+Cloudflare R2 provides S3-compatible object storage with **zero egress fees** - meaning you don't pay when users download files.
+
+### Step 1: Create R2 Bucket
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. Click **R2** in the sidebar
+3. Click **Create bucket**
+4. Name it `nabd-files` (or your preferred name)
+5. Select your preferred location (Auto is fine)
+6. Click **Create bucket**
+
+### Step 2: Create API Token
+
+1. In R2 dashboard, click **Manage R2 API Tokens**
+2. Click **Create API token**
+3. Give it a name like `nabd-server`
+4. Permissions: **Object Read & Write**
+5. Specify bucket: `nabd-files`
+6. Click **Create API Token**
+7. **SAVE THESE VALUES** (shown only once):
+   - Access Key ID
+   - Secret Access Key
+8. Also note your **Account ID** from the R2 dashboard URL
+
+### Step 3: Install Dependencies
+
+```bash
+cd server
+pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+```
+
+### Step 4: Add Environment Variables
+
+Add to your `.env` file and Render/Railway:
+
+```env
+# Cloudflare R2
+R2_ACCOUNT_ID=your_account_id_here
+R2_ACCESS_KEY_ID=your_access_key_here
+R2_SECRET_ACCESS_KEY=your_secret_key_here
+R2_BUCKET_NAME=nabd-files
+R2_PUBLIC_URL=https://your-bucket.r2.cloudflarestorage.com
+```
+
+### Step 5: Create Storage Service
+
+Create `server/src/services/storageService.ts`:
+
+```typescript
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+// Initialize R2 client (S3-compatible)
+const r2Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
+
+const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+
+export const storageService = {
+  /**
+   * Upload a file to R2
+   * @param key - The file path/name in the bucket (e.g., "users/123/avatar.jpg")
+   * @param body - The file buffer or stream
+   * @param contentType - MIME type (e.g., "image/jpeg")
+   */
+  async uploadFile(
+    key: string,
+    body: Buffer | Uint8Array,
+    contentType: string
+  ): Promise<{ key: string; url: string }> {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    });
+
+    await r2Client.send(command);
+
+    return {
+      key,
+      url: `${process.env.R2_PUBLIC_URL}/${key}`,
+    };
+  },
+
+  /**
+   * Get a signed URL for temporary access (1 hour default)
+   */
+  async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    });
+
+    return getSignedUrl(r2Client, command, { expiresIn });
+  },
+
+  /**
+   * Get a signed URL for uploading (client-side upload)
+   */
+  async getUploadUrl(
+    key: string,
+    contentType: string,
+    expiresIn = 3600
+  ): Promise<string> {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    return getSignedUrl(r2Client, command, { expiresIn });
+  },
+
+  /**
+   * Delete a file from R2
+   */
+  async deleteFile(key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    });
+
+    await r2Client.send(command);
+  },
+
+  /**
+   * List files in a directory
+   */
+  async listFiles(prefix: string): Promise<string[]> {
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+    });
+
+    const response = await r2Client.send(command);
+    return response.Contents?.map((item) => item.Key!) || [];
+  },
+
+  /**
+   * Generate a unique file key
+   */
+  generateKey(userId: string, filename: string, folder = 'uploads'): string {
+    const timestamp = Date.now();
+    const sanitizedName = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    return `${folder}/${userId}/${timestamp}-${sanitizedName}`;
+  },
+};
+```
+
+### Step 6: Create Upload Route
+
+Create `server/src/routes/upload.ts`:
+
+```typescript
+import { Router, Request, Response } from 'express';
+import { storageService } from '../services/storageService';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+
+const router = Router();
+
+// Get presigned URL for client-side upload
+router.post('/presigned-url', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { filename, contentType, folder = 'uploads' } = req.body;
+    const userId = req.auth!.userId;
+
+    if (!filename || !contentType) {
+      return res.status(400).json({ error: 'filename and contentType required' });
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+
+    if (!allowedTypes.includes(contentType)) {
+      return res.status(400).json({ error: 'File type not allowed' });
+    }
+
+    const key = storageService.generateKey(userId, filename, folder);
+    const uploadUrl = await storageService.getUploadUrl(key, contentType);
+
+    res.json({
+      uploadUrl,
+      key,
+      publicUrl: `${process.env.R2_PUBLIC_URL}/${key}`,
+    });
+  } catch (error) {
+    console.error('Error generating presigned URL:', error);
+    res.status(500).json({ error: 'Failed to generate upload URL' });
+  }
+});
+
+// Get signed URL for viewing private files
+router.get('/signed-url/:key(*)', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { key } = req.params;
+    const url = await storageService.getSignedUrl(key);
+    res.json({ url });
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    res.status(500).json({ error: 'Failed to generate signed URL' });
+  }
+});
+
+// Delete a file
+router.delete('/:key(*)', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { key } = req.params;
+    const userId = req.auth!.userId;
+
+    // Security: Only allow deleting own files
+    if (!key.includes(`/${userId}/`)) {
+      return res.status(403).json({ error: 'Not authorized to delete this file' });
+    }
+
+    await storageService.deleteFile(key);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
+export default router;
+```
+
+### Step 7: Register Route in Server
+
+Update `server/src/index.ts`:
+
+```typescript
+import uploadRoutes from './routes/upload';
+
+// Add after other routes
+app.use('/api/upload', uploadRoutes);
+```
+
+### Step 8: Frontend Upload Service
+
+Create `src/services/uploadService.ts`:
+
+```typescript
+import { API_URL } from '../config/api';
+
+export const uploadService = {
+  /**
+   * Upload a file using presigned URL (recommended for large files)
+   */
+  async uploadFile(
+    token: string,
+    file: File,
+    folder = 'uploads',
+    onProgress?: (percent: number) => void
+  ): Promise<{ key: string; url: string }> {
+    // 1. Get presigned URL from server
+    const response = await fetch(`${API_URL}/upload/presigned-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        folder,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get upload URL');
+    }
+
+    const { uploadUrl, key, publicUrl } = await response.json();
+
+    // 2. Upload directly to R2
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload file');
+    }
+
+    return { key, url: publicUrl };
+  },
+
+  /**
+   * Delete a file
+   */
+  async deleteFile(token: string, key: string): Promise<void> {
+    const response = await fetch(`${API_URL}/upload/${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete file');
+    }
+  },
+
+  /**
+   * Get a signed URL for private file access
+   */
+  async getSignedUrl(token: string, key: string): Promise<string> {
+    const response = await fetch(`${API_URL}/upload/signed-url/${encodeURIComponent(key)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get file URL');
+    }
+
+    const { url } = await response.json();
+    return url;
+  },
+};
+```
+
+### Step 9: Example Usage in React Component
+
+```tsx
+import { useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { uploadService } from '../services/uploadService';
+
+function FileUploader() {
+  const { getToken } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const token = await getToken();
+      const { url } = await uploadService.uploadFile(token!, file, 'vault');
+      setUploadedUrl(url);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input type="file" onChange={handleUpload} disabled={uploading} />
+      {uploading && <p>Uploading...</p>}
+      {uploadedUrl && <img src={uploadedUrl} alt="Uploaded" />}
+    </div>
+  );
+}
+```
+
+### Optional: Enable Public Access for Bucket
+
+If you want files to be publicly accessible without signed URLs:
+
+1. In Cloudflare Dashboard → R2 → Your bucket
+2. Click **Settings**
+3. Under **Public access**, enable **Allow Access**
+4. You'll get a public URL like `https://pub-xxx.r2.dev`
+
+---
+
+## 2. Upstash Redis - Caching
+
+Upstash provides serverless Redis with a generous free tier (10K commands/day). Perfect for:
+- Caching expensive database queries
+- Rate limiting
+- Session storage
+- Real-time features
+
+### Step 1: Create Upstash Account
+
+1. Go to [upstash.com](https://upstash.com)
+2. Sign up with GitHub or email
+3. Click **Create Database**
+4. Choose **Regional** (lower latency)
+5. Select region closest to your server (e.g., US-East-1 if on Render US)
+6. Name it `nabd-cache`
+7. Click **Create**
+
+### Step 2: Get Credentials
+
+1. Click on your database
+2. Copy the **REST URL** and **REST Token** (under REST API section)
+3. These look like:
+   - URL: `https://xxx.upstash.io`
+   - Token: `AXxxxxxxxxxxxx`
+
+### Step 3: Install Dependencies
+
+```bash
+cd server
+pnpm add @upstash/redis
+```
+
+### Step 4: Add Environment Variables
+
+```env
+# Upstash Redis
+UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=AXxxxxxxxxxxxx
+```
+
+### Step 5: Create Cache Service
+
+Create `server/src/services/cacheService.ts`:
+
+```typescript
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis client
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+// Default cache TTL (5 minutes)
+const DEFAULT_TTL = 300;
+
+export const cacheService = {
+  /**
+   * Get a cached value
+   */
+  async get<T>(key: string): Promise<T | null> {
+    try {
+      const value = await redis.get<T>(key);
+      return value;
+    } catch (error) {
+      console.error('Cache get error:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Set a cached value with optional TTL
+   */
+  async set<T>(key: string, value: T, ttlSeconds = DEFAULT_TTL): Promise<void> {
+    try {
+      await redis.set(key, value, { ex: ttlSeconds });
+    } catch (error) {
+      console.error('Cache set error:', error);
+    }
+  },
+
+  /**
+   * Delete a cached value
+   */
+  async delete(key: string): Promise<void> {
+    try {
+      await redis.del(key);
+    } catch (error) {
+      console.error('Cache delete error:', error);
+    }
+  },
+
+  /**
+   * Delete all keys matching a pattern
+   */
+  async deletePattern(pattern: string): Promise<void> {
+    try {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch (error) {
+      console.error('Cache delete pattern error:', error);
+    }
+  },
+
+  /**
+   * Get or set - returns cached value or fetches and caches
+   */
+  async getOrSet<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    ttlSeconds = DEFAULT_TTL
+  ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const value = await fetcher();
+    await this.set(key, value, ttlSeconds);
+    return value;
+  },
+
+  /**
+   * Increment a counter (useful for rate limiting)
+   */
+  async increment(key: string, ttlSeconds?: number): Promise<number> {
+    try {
+      const count = await redis.incr(key);
+      if (ttlSeconds && count === 1) {
+        await redis.expire(key, ttlSeconds);
+      }
+      return count;
+    } catch (error) {
+      console.error('Cache increment error:', error);
+      return 0;
+    }
+  },
+
+  /**
+   * Check rate limit
+   * Returns true if within limit, false if exceeded
+   */
+  async checkRateLimit(
+    identifier: string,
+    limit: number,
+    windowSeconds: number
+  ): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
+    const key = `ratelimit:${identifier}`;
+    const count = await this.increment(key, windowSeconds);
+    const ttl = await redis.ttl(key);
+
+    return {
+      allowed: count <= limit,
+      remaining: Math.max(0, limit - count),
+      resetIn: ttl > 0 ? ttl : windowSeconds,
+    };
+  },
+};
+
+// Cache key generators for consistency
+export const cacheKeys = {
+  userBoards: (userId: string) => `boards:user:${userId}`,
+  board: (boardId: string) => `board:${boardId}`,
+  boardRooms: (boardId: string) => `rooms:board:${boardId}`,
+  userWorkspaces: (userId: string) => `workspaces:user:${userId}`,
+  vaultItems: (userId: string) => `vault:user:${userId}`,
+};
+```
+
+### Step 6: Usage in Routes
+
+Example: Caching boards in `server/src/routes/boards.ts`:
+
+```typescript
+import { cacheService, cacheKeys } from '../services/cacheService';
+
+// GET /api/boards - with caching
+router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.auth!.userId;
+    const workspaceId = req.query.workspaceId as string;
+
+    const cacheKey = cacheKeys.userBoards(userId);
+
+    // Try cache first, otherwise fetch from DB
+    const boards = await cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        return prisma.board.findMany({
+          where: { workspaceId, userId },
+          orderBy: { createdAt: 'desc' },
+        });
+      },
+      300 // Cache for 5 minutes
+    );
+
+    res.json(boards);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch boards' });
+  }
+});
+
+// POST /api/boards - invalidate cache on create
+router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.auth!.userId;
+
+    const board = await prisma.board.create({
+      data: { ...req.body, userId },
+    });
+
+    // Invalidate user's boards cache
+    await cacheService.delete(cacheKeys.userBoards(userId));
+
+    res.status(201).json(board);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create board' });
+  }
+});
+
+// DELETE /api/boards/:id - invalidate cache on delete
+router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.auth!.userId;
+    const { id } = req.params;
+
+    await prisma.board.delete({ where: { id } });
+
+    // Invalidate caches
+    await cacheService.delete(cacheKeys.userBoards(userId));
+    await cacheService.delete(cacheKeys.board(id));
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete board' });
+  }
+});
+```
+
+### Step 7: Rate Limiting Middleware
+
+Create `server/src/middleware/rateLimit.ts`:
+
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import { cacheService } from '../services/cacheService';
+import { AuthRequest } from './auth';
+
+interface RateLimitOptions {
+  limit: number;
+  windowSeconds: number;
+  keyGenerator?: (req: Request) => string;
+}
+
+export const rateLimit = (options: RateLimitOptions) => {
+  const { limit, windowSeconds, keyGenerator } = options;
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Generate key based on IP or user
+    const identifier = keyGenerator
+      ? keyGenerator(req)
+      : (req as AuthRequest).auth?.userId || req.ip || 'anonymous';
+
+    const { allowed, remaining, resetIn } = await cacheService.checkRateLimit(
+      identifier,
+      limit,
+      windowSeconds
+    );
+
+    // Set rate limit headers
+    res.setHeader('X-RateLimit-Limit', limit);
+    res.setHeader('X-RateLimit-Remaining', remaining);
+    res.setHeader('X-RateLimit-Reset', Math.ceil(Date.now() / 1000) + resetIn);
+
+    if (!allowed) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        retryAfter: resetIn,
+      });
+    }
+
+    next();
+  };
+};
+
+// Pre-configured rate limiters
+export const rateLimiters = {
+  // General API: 100 requests per minute
+  api: rateLimit({ limit: 100, windowSeconds: 60 }),
+
+  // AI endpoints: 10 requests per minute
+  ai: rateLimit({ limit: 10, windowSeconds: 60 }),
+
+  // Auth endpoints: 5 requests per minute
+  auth: rateLimit({ limit: 5, windowSeconds: 60 }),
+
+  // Upload endpoints: 20 requests per minute
+  upload: rateLimit({ limit: 20, windowSeconds: 60 }),
+};
+```
+
+### Step 8: Apply Rate Limiting
+
+In `server/src/index.ts`:
+
+```typescript
+import { rateLimiters } from './middleware/rateLimit';
+
+// Apply to all API routes
+app.use('/api', rateLimiters.api);
+
+// Apply stricter limits to specific routes
+app.use('/api/ai', rateLimiters.ai);
+app.use('/api/upload', rateLimiters.upload);
+```
+
+---
+
+## 3. Resend - Email Notifications
+
+Resend provides a modern email API with 3,000 free emails/month. Perfect for:
+- Welcome emails
+- Password reset
+- Notifications
+- Digests
+
+### Step 1: Create Resend Account
+
+1. Go to [resend.com](https://resend.com)
+2. Sign up with GitHub or email
+3. Verify your email
+
+### Step 2: Add Domain (Optional but Recommended)
+
+1. Go to **Domains** → **Add Domain**
+2. Enter your domain (e.g., `nabd.app`)
+3. Add the DNS records shown to your domain registrar
+4. Wait for verification (usually 5-30 minutes)
+
+**Without a custom domain**: You can still send emails from `onboarding@resend.dev` for testing.
+
+### Step 3: Get API Key
+
+1. Go to **API Keys**
+2. Click **Create API Key**
+3. Name it `nabd-server`
+4. Select permissions: **Sending access** → **Full access** (or specific domain)
+5. Copy the API key (starts with `re_`)
+
+### Step 4: Install Dependencies
+
+```bash
+cd server
+pnpm add resend
+```
+
+### Step 5: Add Environment Variables
+
+```env
+# Resend Email
+RESEND_API_KEY=re_xxxxxxxxxxxx
+EMAIL_FROM=NABD <notifications@yourdomain.com>
+# Or for testing without custom domain:
+# EMAIL_FROM=NABD <onboarding@resend.dev>
+```
+
+### Step 6: Create Email Service
+
+Create `server/src/services/emailService.ts`:
+
+```typescript
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.EMAIL_FROM || 'NABD <onboarding@resend.dev>';
+
+interface SendEmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+}
+
+export const emailService = {
+  /**
+   * Send an email
+   */
+  async send(options: SendEmailOptions): Promise<{ id: string } | null> {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        reply_to: options.replyTo,
+      });
+
+      if (error) {
+        console.error('Email send error:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Email service error:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Send welcome email
+   */
+  async sendWelcome(to: string, userName: string): Promise<boolean> {
+    const result = await this.send({
+      to,
+      subject: 'Welcome to NABD! 🎉',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { text-align: center; padding: 20px 0; }
+            .button { display: inline-block; padding: 12px 24px; background: #4F46E5; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0; }
+            .footer { text-align: center; color: #666; font-size: 14px; margin-top: 40px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Welcome to NABD!</h1>
+            </div>
+            <p>Hi ${userName},</p>
+            <p>Thanks for joining NABD! We're excited to have you on board.</p>
+            <p>With NABD, you can:</p>
+            <ul>
+              <li>Manage projects with customizable boards</li>
+              <li>Track your supply chain operations</li>
+              <li>Collaborate with your team in real-time</li>
+              <li>Store and organize documents in the Vault</li>
+            </ul>
+            <p style="text-align: center;">
+              <a href="${process.env.FRONTEND_URL || 'https://nabd.app'}" class="button">
+                Get Started
+              </a>
+            </p>
+            <p>If you have any questions, just reply to this email!</p>
+            <p>Best,<br>The NABD Team</p>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} NABD. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `Welcome to NABD!\n\nHi ${userName},\n\nThanks for joining! Get started at ${process.env.FRONTEND_URL || 'https://nabd.app'}\n\nBest,\nThe NABD Team`,
+    });
+
+    return result !== null;
+  },
+
+  /**
+   * Send task notification
+   */
+  async sendTaskNotification(
+    to: string,
+    taskTitle: string,
+    boardName: string,
+    action: 'assigned' | 'completed' | 'due_soon'
+  ): Promise<boolean> {
+    const subjects = {
+      assigned: `You've been assigned: ${taskTitle}`,
+      completed: `Task completed: ${taskTitle}`,
+      due_soon: `Due soon: ${taskTitle}`,
+    };
+
+    const messages = {
+      assigned: 'A task has been assigned to you',
+      completed: 'A task you were following has been completed',
+      due_soon: 'A task is due soon and needs your attention',
+    };
+
+    const result = await this.send({
+      to,
+      subject: subjects[action],
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .task-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 20px 0; }
+            .task-title { font-size: 18px; font-weight: 600; margin: 0 0 8px 0; }
+            .task-board { color: #6b7280; font-size: 14px; }
+            .button { display: inline-block; padding: 12px 24px; background: #4F46E5; color: white; text-decoration: none; border-radius: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <p>${messages[action]}:</p>
+            <div class="task-card">
+              <p class="task-title">${taskTitle}</p>
+              <p class="task-board">Board: ${boardName}</p>
+            </div>
+            <p>
+              <a href="${process.env.FRONTEND_URL || 'https://nabd.app'}" class="button">
+                View Task
+              </a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    return result !== null;
+  },
+
+  /**
+   * Send weekly digest
+   */
+  async sendWeeklyDigest(
+    to: string,
+    userName: string,
+    stats: {
+      tasksCompleted: number;
+      tasksCreated: number;
+      boardsActive: number;
+    }
+  ): Promise<boolean> {
+    const result = await this.send({
+      to,
+      subject: `Your NABD Weekly Summary`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .stats { display: flex; justify-content: space-around; margin: 30px 0; }
+            .stat { text-align: center; }
+            .stat-number { font-size: 32px; font-weight: 700; color: #4F46E5; }
+            .stat-label { font-size: 14px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Your Week in Review</h2>
+            <p>Hi ${userName}, here's what you accomplished this week:</p>
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-number">${stats.tasksCompleted}</div>
+                <div class="stat-label">Tasks Completed</div>
+              </div>
+              <div class="stat">
+                <div class="stat-number">${stats.tasksCreated}</div>
+                <div class="stat-label">Tasks Created</div>
+              </div>
+              <div class="stat">
+                <div class="stat-number">${stats.boardsActive}</div>
+                <div class="stat-label">Active Boards</div>
+              </div>
+            </div>
+            <p>Keep up the great work! 💪</p>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    return result !== null;
+  },
+};
+```
+
+### Step 7: Create Email Routes
+
+Create `server/src/routes/email.ts`:
+
+```typescript
+import { Router, Response } from 'express';
+import { emailService } from '../services/emailService';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+import { rateLimiters } from '../middleware/rateLimit';
+
+const router = Router();
+
+// Send test email (for development)
+router.post('/test', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { to } = req.body;
+
+    if (!to) {
+      return res.status(400).json({ error: 'Email address required' });
+    }
+
+    const result = await emailService.send({
+      to,
+      subject: 'NABD Test Email',
+      html: '<h1>Test Email</h1><p>If you received this, email is working!</p>',
+    });
+
+    if (result) {
+      res.json({ success: true, id: result.id });
+    } else {
+      res.status(500).json({ error: 'Failed to send email' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Email service error' });
+  }
+});
+
+// Invite team member
+router.post('/invite', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { email, workspaceName, inviterName } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email address required' });
+    }
+
+    const result = await emailService.send({
+      to: email,
+      subject: `${inviterName} invited you to ${workspaceName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2>You're invited!</h2>
+          <p>${inviterName} has invited you to join <strong>${workspaceName}</strong> on NABD.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'https://nabd.app'}/invite"
+               style="display: inline-block; padding: 12px 24px; background: #4F46E5; color: white; text-decoration: none; border-radius: 8px;">
+              Accept Invitation
+            </a>
+          </p>
+        </div>
+      `,
+    });
+
+    res.json({ success: result !== null });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send invitation' });
+  }
+});
+
+export default router;
+```
+
+### Step 8: Register Route
+
+Update `server/src/index.ts`:
+
+```typescript
+import emailRoutes from './routes/email';
+
+app.use('/api/email', emailRoutes);
+```
+
+### Step 9: Trigger Emails on Events
+
+Example: Send welcome email when user signs up (in a webhook handler):
+
+```typescript
+// In your Clerk webhook handler or user creation logic
+import { emailService } from '../services/emailService';
+
+// When a new user is created
+const handleUserCreated = async (user: { email: string; firstName: string }) => {
+  await emailService.sendWelcome(user.email, user.firstName || 'there');
+};
+
+// When a task is assigned
+const handleTaskAssigned = async (
+  assigneeEmail: string,
+  taskTitle: string,
+  boardName: string
+) => {
+  await emailService.sendTaskNotification(
+    assigneeEmail,
+    taskTitle,
+    boardName,
+    'assigned'
+  );
+};
+```
+
+---
+
+## Environment Variables Summary
+
+Add all these to your `.env` file and deployment platform:
+
+```env
+# === EXISTING ===
+DATABASE_URL=postgresql://...
+CLERK_SECRET_KEY=sk_...
+CORS_ORIGIN=https://your-app.vercel.app
+NODE_ENV=production
+
+# === NEW: Cloudflare R2 ===
+R2_ACCOUNT_ID=your_account_id
+R2_ACCESS_KEY_ID=your_access_key
+R2_SECRET_ACCESS_KEY=your_secret_key
+R2_BUCKET_NAME=nabd-files
+R2_PUBLIC_URL=https://pub-xxx.r2.dev
+
+# === NEW: Upstash Redis ===
+UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=AXxxxxxxxxxxxx
+
+# === NEW: Resend Email ===
+RESEND_API_KEY=re_xxxxxxxxxxxx
+EMAIL_FROM=NABD <notifications@yourdomain.com>
+FRONTEND_URL=https://your-app.vercel.app
+```
+
+---
+
+## Checklist
+
+After implementation, verify:
+
+- [ ] **R2**: Upload a test file and verify it's accessible
+- [ ] **Redis**: Check Upstash dashboard for commands being logged
+- [ ] **Resend**: Send a test email and check it arrives
+- [ ] **Rate Limiting**: Test that 429 errors occur after limit exceeded
+- [ ] **Environment Variables**: All set in Render/Vercel
+
+---
+
 ## Useful Links
 
 - [Neon PostgreSQL](https://neon.tech) - Serverless Postgres
 - [Railway](https://railway.app) - Backend hosting
-- [Cloudflare R2](https://developers.cloudflare.com/r2) - Object storage
-- [Upstash](https://upstash.com) - Serverless Redis
-- [Resend](https://resend.com) - Email API
+- [Cloudflare R2 Docs](https://developers.cloudflare.com/r2) - Object storage
+- [Upstash Docs](https://docs.upstash.com/redis) - Serverless Redis
+- [Resend Docs](https://resend.com/docs) - Email API
 
 ---
 
