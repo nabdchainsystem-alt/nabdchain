@@ -2,11 +2,11 @@ import React, { useMemo, useState, useRef } from 'react';
 import {
     CaretLeft as ChevronLeft,
     CaretRight as ChevronRight,
-    MagnifyingGlass as Search,
     Plus,
     CaretDown as ChevronDown,
     X,
-    CalendarBlank as CalendarIcon
+    CalendarBlank as CalendarIcon,
+    Check
 } from 'phosphor-react';
 import { PortalPopup } from '../../../../components/ui/PortalPopup';
 import {
@@ -17,7 +17,6 @@ import {
     useSensor,
     useSensors,
     DragOverlay,
-    defaultDropAnimationSideEffects,
     DragEndEvent,
     useDraggable,
     useDroppable
@@ -27,29 +26,117 @@ import { ITask, Status, PEOPLE, IBoard, STATUS_COLORS } from '../../types/boardT
 import { useRoomBoardData } from '../../hooks/useRoomBoardData';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { CalendarEventModal } from './components/CalendarEventModal';
-import { motion } from 'framer-motion';
-import { User, UserCircle as UserCheck } from 'phosphor-react';
 
-type CalendarViewMode = 'daily' | '5days' | 'weekly' | 'monthly' | 'yearly';
+type CalendarViewMode = 'day' | '2days' | '3days' | 'workweek' | 'week' | 'month';
 
 const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 1); // 1 PM to 12 AM (simplified)
+const HOUR_LABELS = ['1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM', '12 AM'];
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const formatKey = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-const startOfWeek = (date: Date) => {
-    const day = (date.getDay() + 6) % 7; // Monday start
+const startOfWeek = (date: Date, mondayStart = false) => {
+    const day = mondayStart ? (date.getDay() + 6) % 7 : date.getDay();
     return addDays(date, -day);
 };
+const isSameDay = (d1: Date, d2: Date) => formatKey(d1) === formatKey(d2);
 
-// --- DND Components ---
+// --- Mini Calendar Component ---
+const MiniCalendar: React.FC<{
+    currentDate: Date;
+    selectedDate: Date;
+    onDateSelect: (date: Date) => void;
+    onMonthChange: (date: Date) => void;
+}> = ({ currentDate, selectedDate, onDateSelect, onMonthChange }) => {
+    const [viewDate, setViewDate] = useState(currentDate);
 
-const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => void }> = ({ task, onClick }) => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < startOffset; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+    while (cells.length < 42) cells.push(null);
+
+    const prevMonth = () => {
+        const newDate = new Date(year, month - 1, 1);
+        setViewDate(newDate);
+    };
+
+    const nextMonth = () => {
+        const newDate = new Date(year, month + 1, 1);
+        setViewDate(newDate);
+    };
+
+    return (
+        <div className="w-full">
+            {/* Mini Calendar Header */}
+            <div className="flex items-center justify-between mb-2">
+                <button onClick={prevMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
+                    <ChevronLeft size={14} className="text-stone-500" />
+                </button>
+                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                    {viewDate.toLocaleString('default', { year: 'numeric', month: 'long' })}
+                </span>
+                <button onClick={nextMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
+                    <ChevronRight size={14} className="text-stone-500" />
+                </button>
+            </div>
+
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 mb-1">
+                {WEEKDAY_SHORT.map((d, i) => (
+                    <div key={i} className="text-center text-[10px] font-medium text-stone-400 py-1">
+                        {d}
+                    </div>
+                ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-0.5">
+                {cells.map((date, i) => {
+                    if (!date) return <div key={i} className="w-6 h-6" />;
+
+                    const isToday = isSameDay(date, today);
+                    const isSelected = isSameDay(date, selectedDate);
+
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => {
+                                onDateSelect(date);
+                                onMonthChange(date);
+                            }}
+                            className={`
+                                w-6 h-6 text-[11px] rounded-full flex items-center justify-center transition-colors
+                                ${isToday ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900 font-semibold' : ''}
+                                ${isSelected && !isToday ? 'ring-1 ring-stone-400' : ''}
+                                ${!isToday && !isSelected ? 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400' : ''}
+                            `}
+                        >
+                            {date.getDate()}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// --- Draggable Task ---
+const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => void; compact?: boolean }> = ({ task, onClick, compact }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: task.id,
         data: { task }
@@ -61,8 +148,6 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
         touchAction: 'none' as const
     };
 
-    // New "Dot + Text" style
-    // Use STATUS_COLORS for dynamic coloring
     const dotColor = STATUS_COLORS[task.status] || '#c4c4c4';
 
     return (
@@ -72,135 +157,179 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
             {...listeners}
             {...attributes}
             onClick={onClick}
-            className="group flex items-center gap-2 px-2 py-1 bg-white dark:bg-monday-dark-elevated border border-gray-100 dark:border-gray-800 rounded shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-grab active:cursor-grabbing select-none mb-1 overflow-hidden"
+            className={`
+                group flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-stone-800
+                border border-stone-200 dark:border-stone-700 rounded
+                hover:border-stone-400 transition-all cursor-grab active:cursor-grabbing select-none
+                ${compact ? 'text-[10px]' : 'text-xs'}
+            `}
         >
             <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
-            <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate leading-tight">
-                {task.name}
-            </span>
+            <span className="font-medium text-stone-700 dark:text-stone-300 truncate">{task.name}</span>
         </div>
     );
 };
 
-interface DroppableDayProps {
+// --- Droppable Day Cell (Month View) ---
+const DroppableDayCell: React.FC<{
     date: Date;
     dateKey: string;
-    tasks: { task: ITask, groupId: string }[];
+    tasks: { task: ITask; groupId: string }[];
     isToday: boolean;
     isCurrentMonth: boolean;
     onClick: () => void;
     onTaskClick: (task: ITask, groupId: string) => void;
-    isMonthView: boolean;
-}
-
-const DroppableDay: React.FC<DroppableDayProps> = ({ date, dateKey, tasks, isToday, isCurrentMonth, onClick, onTaskClick, isMonthView }) => {
-    const { setNodeRef, isOver } = useDroppable({
-        id: dateKey,
-        data: { dateKey, date }
-    });
-
-    const [isMoreOpen, setIsMoreOpen] = useState(false);
-    const moreTriggerRef = useRef<HTMLButtonElement>(null);
-
-    const MAX_VISIBLE = isMonthView ? 3 : 9999;
-
-    let visibleTasks = tasks;
-    let hiddenCount = 0;
-
-    if (tasks.length > MAX_VISIBLE) {
-        visibleTasks = tasks.slice(0, MAX_VISIBLE - 1);
-        hiddenCount = tasks.length - (MAX_VISIBLE - 1);
-    }
+}> = ({ date, dateKey, tasks, isToday, isCurrentMonth, onClick, onTaskClick }) => {
+    const { setNodeRef, isOver } = useDroppable({ id: dateKey, data: { dateKey, date } });
 
     return (
         <div
             ref={setNodeRef}
             onClick={onClick}
             className={`
-                relative flex flex-col transition-all cursor-pointer h-full min-h-[120px]
-                border-b border-r border-gray-100 dark:border-gray-800
-                bg-white dark:bg-monday-dark-surface
-                ${isOver ? 'ring-inset ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'}
-                ${isToday ? 'ring-inset ring-1 ring-black dark:ring-white z-10' : ''}
-                group
+                relative flex flex-col min-h-[100px] border-r border-b border-stone-200 dark:border-stone-700
+                cursor-pointer transition-colors
+                ${isOver ? 'bg-stone-100 dark:bg-stone-800' : 'hover:bg-stone-50 dark:hover:bg-stone-800/50'}
+                ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
             `}
         >
-            <div className="flex-1 px-1.5 pt-2 pb-8 overflow-y-auto space-y-0.5 no-scrollbar">
-                {visibleTasks.map(({ task, groupId }) => (
+            {/* Date Number */}
+            <div className="p-1.5">
+                <span className={`
+                    inline-flex items-center justify-center w-6 h-6 text-xs rounded-sm
+                    ${isToday ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900 font-semibold' : ''}
+                    ${!isToday && isCurrentMonth ? 'text-stone-700 dark:text-stone-300' : ''}
+                    ${!isCurrentMonth ? 'text-stone-300 dark:text-stone-600' : ''}
+                `}>
+                    {date.getDate()}
+                </span>
+            </div>
+
+            {/* Tasks */}
+            <div className="flex-1 px-1 pb-1 space-y-0.5 overflow-hidden">
+                {tasks.slice(0, 3).map(({ task, groupId }) => (
                     <DraggableTask
                         key={task.id}
                         task={task}
+                        compact
                         onClick={(e) => {
                             e.stopPropagation();
                             onTaskClick(task, groupId);
                         }}
                     />
                 ))}
+                {tasks.length > 3 && (
+                    <div className="text-[10px] text-stone-500 px-1">+{tasks.length - 3} more</div>
+                )}
+            </div>
+        </div>
+    );
+};
 
-                {hiddenCount > 0 && (
-                    <>
-                        <button
-                            ref={moreTriggerRef}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsMoreOpen(true);
-                            }}
-                            className="w-full text-left text-[10px] font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 px-1 py-0.5 rounded transition-colors"
+// --- Time Grid View (Day/Week) ---
+const TimeGridView: React.FC<{
+    days: Date[];
+    tasksByDate: Record<string, { task: ITask; groupId: string }[]>;
+    onDateClick: (date: Date) => void;
+    onTaskClick: (task: ITask, groupId: string) => void;
+}> = ({ days, tasksByDate, onDateClick, onTaskClick }) => {
+    const today = new Date();
+
+    return (
+        <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Day Headers */}
+            <div className="flex border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
+                {/* Time Column Spacer */}
+                <div className="w-16 flex-shrink-0 border-r border-stone-200 dark:border-stone-700" />
+
+                {/* Day Columns */}
+                {days.map((day, i) => {
+                    const isToday = isSameDay(day, today);
+                    return (
+                        <div
+                            key={i}
+                            className={`flex-1 p-3 text-center border-r border-stone-200 dark:border-stone-700 ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                         >
-                            + {hiddenCount} more
-                        </button>
+                            <div className={`text-2xl font-light ${isToday ? 'text-stone-900 dark:text-white' : 'text-stone-400'}`}>
+                                {day.getDate()}
+                            </div>
+                            <div className={`text-xs ${isToday ? 'text-stone-700 dark:text-stone-300 font-medium' : 'text-stone-400'}`}>
+                                {WEEKDAY_LABELS[day.getDay()]}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
 
-                        {isMoreOpen && (
-                            <PortalPopup
-                                triggerRef={moreTriggerRef}
-                                onClose={() => setIsMoreOpen(false)}
-                                align="start"
-                                side="bottom"
+            {/* Time Grid */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="flex">
+                    {/* Time Labels Column */}
+                    <div className="w-16 flex-shrink-0">
+                        {HOUR_LABELS.map((label, i) => (
+                            <div key={i} className="h-14 border-b border-stone-100 dark:border-stone-800 flex items-start justify-end pr-2 pt-0">
+                                <span className="text-[11px] text-stone-400 -mt-2">{label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Day Columns Grid */}
+                    {days.map((day, dayIdx) => {
+                        const dateKey = formatKey(day);
+                        const dayTasks = tasksByDate[dateKey] || [];
+                        const isToday = isSameDay(day, today);
+
+                        return (
+                            <div
+                                key={dayIdx}
+                                onClick={() => onDateClick(day)}
+                                className={`flex-1 border-r border-stone-200 dark:border-stone-700 cursor-pointer relative ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/5' : ''}`}
                             >
-                                <div className="w-64 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2 max-h-80 overflow-y-auto z-50">
-                                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-                                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                                            {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                                        </span>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setIsMoreOpen(false); }}
-                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                                        >
-                                            <X size={14} />
-                                        </button>
+                                {/* Hour Rows */}
+                                {HOUR_LABELS.map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="h-14 border-b border-dashed border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/30"
+                                    />
+                                ))}
+
+                                {/* Current Time Indicator */}
+                                {isToday && (
+                                    <div
+                                        className="absolute left-0 right-0 border-t-2 border-blue-500 z-10"
+                                        style={{
+                                            top: `${((new Date().getHours() - 13) * 56) + (new Date().getMinutes() / 60 * 56)}px`
+                                        }}
+                                    >
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full -mt-1 -ml-1" />
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        {tasks.map(({ task, groupId }) => (
+                                )}
+
+                                {/* Tasks Overlay */}
+                                <div className="absolute inset-0 p-1 pointer-events-none">
+                                    <div className="space-y-1 pointer-events-auto">
+                                        {dayTasks.map(({ task, groupId }) => (
                                             <DraggableTask
-                                                key={`popup-${task.id}`}
+                                                key={task.id}
                                                 task={task}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onTaskClick(task, groupId);
-                                                    setIsMoreOpen(false);
                                                 }}
                                             />
                                         ))}
                                     </div>
                                 </div>
-                            </PortalPopup>
-                        )}
-                    </>
-                )}
-            </div>
-
-            <div className={`
-                absolute bottom-2 right-3 text-xs font-normal
-                ${isToday ? 'text-black dark:text-white font-medium' : isCurrentMonth ? 'text-gray-400 dark:text-gray-500' : 'text-gray-200 dark:text-gray-700'}
-            `}>
-                {date.getDate()}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
 };
 
 // --- Main Component ---
-
 interface CalendarViewProps {
     roomId?: string;
     storageKey?: string;
@@ -212,9 +341,6 @@ interface CalendarViewProps {
 export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     const { roomId, storageKey, board: propBoard, onUpdateTask, onAddTask } = props;
 
-    // If we are receiving properties from a parent (BoardView), we use a dummy key for the hook
-    // to prevent it from overwriting the shared localStorage with potentially stale state.
-    // If we are standalone, we use the roomId/storageKey to load data.
     const effectiveKey = propBoard
         ? `shadow-${roomId || 'calendar'}`
         : (storageKey || roomId || 'demo-board');
@@ -226,74 +352,63 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     const updateTask = onUpdateTask || hookUpdateTask;
 
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [calendarView, setCalendarView] = useState<CalendarViewMode>('monthly');
-
-    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
-    const viewMenuRef = useRef<HTMLDivElement>(null);
-    useClickOutside(viewMenuRef, () => setIsViewMenuOpen(false));
-
-    // Filter States
-    const [isFilterActive, setIsFilterActive] = useState(false);
-    const [filterText, setFilterText] = useState('');
-    const [isClosedFilterActive, setIsClosedFilterActive] = useState(false);
-    const [isAssignedToMeActive, setIsAssignedToMeActive] = useState(false);
-    const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
-    const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
-    const peopleMenuRef = useRef<HTMLDivElement>(null);
-    useClickOutside(peopleMenuRef, () => setIsAssigneeMenuOpen(false));
+    const [calendarView, setCalendarView] = useState<CalendarViewMode>('month');
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalDate, setModalDate] = useState(new Date());
-    const [editingTask, setEditingTask] = useState<{ task: ITask, groupId: string } | null>(null);
+    const [editingTask, setEditingTask] = useState<{ task: ITask; groupId: string } | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
         useSensor(KeyboardSensor)
     );
 
-    const isScheduleView = calendarView === '5days' || calendarView === 'weekly' || calendarView === 'daily';
+    const getDaysCount = () => {
+        switch (calendarView) {
+            case 'day': return 1;
+            case '2days': return 2;
+            case '3days': return 3;
+            case 'workweek': return 5;
+            case 'week': return 7;
+            default: return 0;
+        }
+    };
+
+    const isTimeView = calendarView !== 'month';
 
     const prev = () => {
-        if (calendarView === 'daily') setCurrentDate(addDays(currentDate, -1));
-        else if (calendarView === '5days' || calendarView === 'weekly') setCurrentDate(addDays(currentDate, -7));
-        else if (calendarView === 'yearly') setCurrentDate(new Date(currentDate.getFullYear() - 1, 0, 1));
-        else setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+        const days = getDaysCount();
+        if (calendarView === 'month') {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+        } else if (calendarView === 'week' || calendarView === 'workweek') {
+            setCurrentDate(addDays(currentDate, -7));
+        } else {
+            setCurrentDate(addDays(currentDate, -days));
+        }
     };
 
     const next = () => {
-        if (calendarView === 'daily') setCurrentDate(addDays(currentDate, 1));
-        else if (calendarView === '5days') setCurrentDate(addDays(currentDate, 5));
-        else if (calendarView === 'weekly') setCurrentDate(addDays(currentDate, 7));
-        else if (calendarView === 'yearly') setCurrentDate(new Date(currentDate.getFullYear() + 1, 0, 1));
-        else setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+        const days = getDaysCount();
+        if (calendarView === 'month') {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+        } else if (calendarView === 'week' || calendarView === 'workweek') {
+            setCurrentDate(addDays(currentDate, 7));
+        } else {
+            setCurrentDate(addDays(currentDate, days));
+        }
     };
 
     const goToToday = () => setCurrentDate(new Date());
 
     const tasksByDate = useMemo(() => {
-        const map: Record<string, { task: ITask, groupId: string }[]> = {};
+        const map: Record<string, { task: ITask; groupId: string }[]> = {};
         if (board && board.groups) {
             board.groups.forEach(group => {
                 group.tasks.forEach(task => {
                     const dateStr = task.dueDate || task.date;
                     if (!dateStr) return;
-
-                    // Filters
-                    if (isClosedFilterActive) {
-                        // If closed filter is ON, show ONLY Done tasks
-                        if (task.status !== Status.Done) return;
-                    }
-                    if (filterText) {
-                        if (!task.name.toLowerCase().includes(filterText.toLowerCase())) return;
-                    }
-
-                    // Assignment Filter Logic
-                    if (isAssignedToMeActive) {
-                        if (task.personId !== '1') return;
-                    } else if (selectedAssigneeId) {
-                        if (task.personId !== selectedAssigneeId) return;
-                    }
 
                     const dateObj = new Date(dateStr);
                     const key = formatKey(dateObj);
@@ -303,16 +418,16 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
             });
         }
         return map;
-    }, [board, isClosedFilterActive, filterText, isAssignedToMeActive, selectedAssigneeId]);
+    }, [board]);
 
     const monthGrid = useMemo(() => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const firstDay = new Date(year, month, 1);
-        const startOffset = (firstDay.getDay() + 6) % 7;
+        const startOffset = firstDay.getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        const cells: { date: Date, isCurrentMonth: boolean }[] = [];
+        const cells: { date: Date; isCurrentMonth: boolean }[] = [];
 
         // Previous month filler
         for (let i = startOffset - 1; i >= 0; i--) {
@@ -323,7 +438,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
             cells.push({ date: new Date(year, month, d), isCurrentMonth: true });
         }
         // Next month filler
-        const remaining = 42 - cells.length; // 6 rows * 7 cols
+        const remaining = 42 - cells.length;
         for (let i = 1; i <= remaining; i++) {
             cells.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
         }
@@ -331,10 +446,18 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
         return cells;
     }, [currentDate]);
 
-    const weekDays = useMemo(() => {
-        if (calendarView === 'daily') return [currentDate];
-        const start = startOfWeek(currentDate);
-        return Array.from({ length: calendarView === '5days' ? 5 : 7 }, (_, i) => addDays(start, i));
+    const viewDays = useMemo(() => {
+        if (calendarView === 'month') return [];
+        const count = getDaysCount();
+        if (calendarView === 'week') {
+            const start = startOfWeek(currentDate, false);
+            return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+        }
+        if (calendarView === 'workweek') {
+            const start = startOfWeek(currentDate, true);
+            return Array.from({ length: 5 }, (_, i) => addDays(start, i));
+        }
+        return Array.from({ length: count }, (_, i) => addDays(currentDate, i));
     }, [currentDate, calendarView]);
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -344,9 +467,8 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
         const taskId = active.id as string;
         const newDateKey = over.id as string;
         const [y, m, d] = newDateKey.split('-').map(Number);
-        const newDate = new Date(y, m - 1, d); // Construct date safely
+        const newDate = new Date(y, m - 1, d);
 
-        // Find the task's group
         let groupId = '';
         let task: ITask | undefined;
 
@@ -361,10 +483,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
 
         if (groupId && task) {
             const dateStr = newDate.toISOString();
-            updateTask(groupId, taskId, {
-                dueDate: dateStr,
-                date: dateStr // Sync both fields for compatibility
-            });
+            updateTask(groupId, taskId, { dueDate: dateStr, date: dateStr });
         }
     };
 
@@ -381,7 +500,6 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     };
 
     const handleSaveTask = (updates: Partial<ITask>) => {
-        // Sync date field if dueDate is present
         const finalUpdates = { ...updates };
         if (finalUpdates.dueDate) {
             finalUpdates.date = finalUpdates.dueDate;
@@ -390,292 +508,175 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
         if (editingTask) {
             updateTask(editingTask.groupId, editingTask.task.id, finalUpdates);
         } else {
-            // New task - add to first group or a default "Inbox" group if distinct
             const targetGroupId = board.groups[0]?.id;
             if (targetGroupId) {
-                addTask(targetGroupId, finalUpdates.name || 'New Event', {
-                    ...finalUpdates,
-                    dueDate: finalUpdates.dueDate // Ensure date is passed
-                });
+                addTask(targetGroupId, finalUpdates.name || 'New Event', { ...finalUpdates, dueDate: finalUpdates.dueDate });
             }
         }
         setIsModalOpen(false);
     };
 
+    const getHeaderTitle = () => {
+        if (calendarView === 'month') {
+            return currentDate.toLocaleString('default', { year: 'numeric', month: 'long' });
+        }
+        if (viewDays.length === 1) {
+            return viewDays[0].toLocaleDateString('default', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        const first = viewDays[0];
+        const last = viewDays[viewDays.length - 1];
+        if (first.getMonth() === last.getMonth()) {
+            return `${first.toLocaleString('default', { year: 'numeric', month: 'long' })} ${first.getDate()}-${last.getDate()}`;
+        }
+        return `${first.toLocaleString('default', { month: 'short', day: 'numeric' })} - ${last.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    };
+
+    const viewOptions: { label: string; value: CalendarViewMode }[] = [
+        { label: 'Day', value: 'day' },
+        { label: 'Work week', value: 'workweek' },
+        { label: 'Week', value: 'week' },
+        { label: 'Month', value: 'month' },
+    ];
+
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface">
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                {/* --- Header Section --- */}
-                <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-                    {/* Top Row: Title, Nav, Actions */}
-                    <div className="flex items-center justify-start gap-4 pl-[24px] pr-[20px] py-3">
-                        <div className="flex items-center gap-3">
-                            {/* Today Button */}
-                            <button
-                                onClick={goToToday}
-                                className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                            >
-                                Today
-                            </button>
-
-                            {/* Month Dropdown Stub (Visual) */}
-                            {/* Month Dropdown / View Switcher */}
-                            <div className="relative" ref={viewMenuRef}>
-                                <button
-                                    onClick={() => setIsViewMenuOpen(!isViewMenuOpen)}
-                                    className="flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded transition-colors"
-                                >
-                                    <span>
-                                        {calendarView === 'daily' ? 'Day' :
-                                            calendarView === '5days' ? '4 Days' :
-                                                calendarView === 'weekly' ? 'Week' :
-                                                    'Month'}
-                                    </span>
-                                    <ChevronDown size={12} className="text-gray-400" />
-                                </button>
-
-                                {isViewMenuOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
-                                        {[
-                                            { label: 'Day', value: 'daily' },
-                                            { label: '4 Days', value: '5days' },
-                                            { label: 'Week', value: 'weekly' },
-                                            { label: 'Month', value: 'monthly' },
-                                        ].map((option) => (
-                                            <button
-                                                key={option.value}
-                                                onClick={() => {
-                                                    setCalendarView(option.value as CalendarViewMode);
-                                                    setIsViewMenuOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
-                                                    ${calendarView === option.value ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}
-                                                `}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-
-                            {/* Navigation & Title */}
-                            {/* Navigation & Title */}
-                            <div className="flex items-center gap-1">
-                                <button onClick={prev} className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 transition-colors"><ChevronLeft size={16} /></button>
-                                <button onClick={next} className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 transition-colors"><ChevronRight size={16} /></button>
-                                <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-2">
-                                    {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                </h1>
-                            </div>
-
-
-                            <div className="flex items-center gap-2">
-                                {/* Filter Button & Input */}
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => {
-                                            const newState = !isFilterActive;
-                                            setIsFilterActive(newState);
-                                            if (!newState) setFilterText('');
-                                        }}
-                                        className={`flex items-center gap-1 px-2 py-0.5 border rounded-full text-[11px] font-medium transition-colors
-                                        ${isFilterActive ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                    `}
-                                    >
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                                        Filter
-                                    </button>
-                                    {isFilterActive && (
-                                        <motion.input
-                                            initial={{ opacity: 0, width: 0 }}
-                                            animate={{ opacity: 1, width: 120 }}
-                                            type="text"
-                                            placeholder="Search..."
-                                            value={filterText}
-                                            onChange={(e) => setFilterText(e.target.value)}
-                                            className="text-xs px-2 py-1 bg-gray-50 dark:bg-monday-dark-elevated border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            autoFocus
-                                        />
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={() => setIsClosedFilterActive(!isClosedFilterActive)}
-                                    className={`flex items-center gap-1 px-2 py-0.5 border rounded-full text-[11px] font-medium transition-colors
-                                    ${isClosedFilterActive ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                `}
-                                >
-                                    Closed
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        const newState = !isAssignedToMeActive;
-                                        setIsAssignedToMeActive(newState);
-                                        if (newState) setSelectedAssigneeId(null); // Clear specific person if "Me" is active
-                                    }}
-                                    className={`flex items-center gap-1 px-2 py-0.5 border rounded-full text-[11px] font-medium transition-colors
-                                    ${isAssignedToMeActive ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                `}
-                                >
-                                    <UserCheck size={10} />
-                                    Assigned to me
-                                </button>
-
-                                {/* People Filter */}
-                                <div className="relative" ref={peopleMenuRef}>
-                                    <button
-                                        onClick={() => setIsAssigneeMenuOpen(!isAssigneeMenuOpen)}
-                                        className={`flex items-center gap-1 px-2 py-0.5 border rounded-full text-[11px] font-medium transition-colors
-                                        ${selectedAssigneeId ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                    `}
-                                    >
-                                        <User size={10} />
-                                        People
-                                    </button>
-                                    {isAssigneeMenuOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
-                                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-800">
-                                                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">All Users</span>
-                                                {selectedAssigneeId && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedAssigneeId(null);
-                                                            setIsAssigneeMenuOpen(false);
-                                                        }}
-                                                        className="text-[10px] text-red-500 hover:text-red-700 font-medium bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded"
-                                                    >
-                                                        Clear
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {PEOPLE.map(person => (
-                                                <button
-                                                    key={person.id}
-                                                    onClick={() => {
-                                                        setSelectedAssigneeId(person.id);
-                                                        setIsAssignedToMeActive(false); // Clear "Assigned to me" when picking a person
-                                                        setIsAssigneeMenuOpen(false);
-                                                    }}
-                                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2
-                                                    ${selectedAssigneeId === person.id ? 'font-semibold text-blue-600' : 'text-gray-700 dark:text-gray-300'}
-                                                `}
-                                                >
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: person.color }} />
-                                                    {person.name}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
+        <div className="flex h-full bg-white dark:bg-stone-900">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                {/* Left Sidebar */}
+                <div className={`${sidebarCollapsed ? 'w-0' : 'w-52'} flex-shrink-0 border-r border-stone-200 dark:border-stone-700 flex flex-col transition-all overflow-hidden`}>
+                    <div className="p-4">
+                        {/* New Event Button */}
                         <button
                             onClick={() => {
                                 setModalDate(new Date());
                                 setEditingTask(null);
                                 setIsModalOpen(true);
                             }}
-                            className="flex items-center gap-1.5 ml-auto hover:text-gray-800 dark:hover:text-gray-200 transition-colors text-xs font-medium"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 rounded-md hover:bg-stone-700 dark:hover:bg-stone-300 transition-colors text-sm font-medium"
                         >
-                            <Plus size={14} />
-                            <span>Add Task</span>
+                            <Plus size={16} />
+                            New event
                         </button>
                     </div>
 
-                    {/* Right: Search, Customization, Add Task */}
+                    {/* Mini Calendar */}
+                    <div className="px-4 pb-4">
+                        <MiniCalendar
+                            currentDate={currentDate}
+                            selectedDate={currentDate}
+                            onDateSelect={(date) => setCurrentDate(date)}
+                            onMonthChange={(date) => setCurrentDate(date)}
+                        />
+                    </div>
 
+                    <div className="border-t border-stone-200 dark:border-stone-700" />
 
-
-
-
-
-                </div>
-
-                {/* --- Grid Section --- */}
-                {/* Weekday Header */}
-                <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-monday-dark-surface">
-                    {(!isScheduleView ? WEEKDAY_LABELS : weekDays.map(d => d.toLocaleDateString('default', { weekday: 'short' }))).map((day, i) => (
-                        <div key={i} className="px-2 py-2 text-[11px] font-semibold text-gray-500 dark:text-gray-500 uppercase">
-                            {day}
+                    {/* My Calendars */}
+                    <div className="p-4 flex-1">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide">My calendars</span>
+                            <ChevronDown size={14} className="text-stone-400" />
                         </div>
-                    ))}
+                        <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer">
+                            <div className="w-3 h-3 rounded-sm bg-blue-500" />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">Calendar</span>
+                            <Check size={14} className="text-stone-400 ml-auto" />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Calendar Grid Container */}
-                <div className="flex-1 overflow-hidden relative bg-white dark:bg-monday-dark-surface">
-                    <motion.div
-                        key={calendarView + currentDate.toISOString()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                        className={`
-                            h-full bg-white dark:bg-monday-dark-surface
-                            grid
-                            ${isScheduleView
-                                ? `grid-cols-${calendarView === '5days' ? '5' : '7'}`
-                                : 'grid-cols-7 grid-rows-6'
-                            }
-                            sm:border-l sm:border-t border-[#E5E7EB] dark:border-gray-800
-                        `}
-                    >
-                        {isScheduleView ? (
-                            weekDays.map((day) => {
-                                const key = formatKey(day);
-                                const dayTasks = tasksByDate[key] || [];
-                                const isToday = key === formatKey(new Date());
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
+                        {/* Today Button */}
+                        <button
+                            onClick={goToToday}
+                            className="flex items-center gap-1.5 px-3 py-1.5 border border-stone-300 dark:border-stone-600 rounded text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+                        >
+                            <CalendarIcon size={14} />
+                            Today
+                        </button>
 
-                                return (
-                                    <DroppableDay
-                                        key={key}
-                                        date={day}
-                                        dateKey={key}
-                                        tasks={dayTasks}
-                                        isToday={isToday}
-                                        isCurrentMonth={true}
-                                        onClick={() => onDateClick(day)}
-                                        onTaskClick={onTaskClick}
-                                        isMonthView={false}
-                                    />
-                                );
-                            })
-                        ) : (
-                            monthGrid.map((cell, idx) => {
-                                const key = formatKey(cell.date);
-                                const cellTasks = tasksByDate[key] || [];
-                                const isToday = key === formatKey(new Date());
+                        {/* Navigation */}
+                        <div className="flex items-center gap-1">
+                            <button onClick={prev} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 transition-colors">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button onClick={next} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 transition-colors">
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
 
-                                return (
-                                    <DroppableDay
-                                        key={idx}
-                                        date={cell.date}
-                                        dateKey={key}
-                                        tasks={cellTasks}
-                                        isToday={isToday}
-                                        isCurrentMonth={cell.isCurrentMonth}
-                                        onClick={() => onDateClick(cell.date)}
-                                        onTaskClick={onTaskClick}
-                                        isMonthView={true}
-                                    />
-                                );
-                            })
-                        )}
-                    </motion.div>
+                        {/* Title */}
+                        <h1 className="text-lg font-medium text-stone-900 dark:text-white">
+                            {getHeaderTitle()}
+                        </h1>
+
+                        {/* View Switcher */}
+                        <div className="flex items-center gap-1 ml-auto border border-stone-200 dark:border-stone-700 rounded-md p-0.5">
+                            {viewOptions.map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => setCalendarView(opt.value)}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors
+                                        ${calendarView === opt.value
+                                            ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900'
+                                            : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                        }
+                                    `}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Calendar Grid */}
+                    {isTimeView ? (
+                        <TimeGridView
+                            days={viewDays}
+                            tasksByDate={tasksByDate}
+                            onDateClick={onDateClick}
+                            onTaskClick={onTaskClick}
+                        />
+                    ) : (
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {/* Weekday Headers */}
+                            <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
+                                {WEEKDAY_LABELS.map((day, i) => (
+                                    <div key={i} className="px-2 py-2 text-xs font-medium text-stone-500 dark:text-stone-400 border-r border-stone-200 dark:border-stone-700 last:border-r-0">
+                                        {day}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Month Grid */}
+                            <div className="flex-1 grid grid-cols-7 grid-rows-6 overflow-hidden">
+                                {monthGrid.map((cell, idx) => {
+                                    const key = formatKey(cell.date);
+                                    const cellTasks = tasksByDate[key] || [];
+                                    const isToday = key === formatKey(new Date());
+
+                                    return (
+                                        <DroppableDayCell
+                                            key={idx}
+                                            date={cell.date}
+                                            dateKey={key}
+                                            tasks={cellTasks}
+                                            isToday={isToday}
+                                            isCurrentMonth={cell.isCurrentMonth}
+                                            onClick={() => onDateClick(cell.date)}
+                                            onTaskClick={onTaskClick}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <DragOverlay>
-                    {/* Optional: Custom Drag Preview */}
-                </DragOverlay>
-            </DndContext >
+                <DragOverlay />
+            </DndContext>
 
             <CalendarEventModal
                 isOpen={isModalOpen}
@@ -684,7 +685,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                 initialDate={modalDate}
                 existingTask={editingTask?.task}
             />
-        </div >
+        </div>
     );
 };
 
