@@ -5,11 +5,12 @@ import {
     X, Check, ChartBar as BarChart3, ChartLine as LineChart, ChartPie as PieChart,
     GearSix as Settings2, Database, WarningCircle as AlertCircle,
     SquaresFour as LayoutDashboard, Funnel as Filter, Gauge, GridFour as LayoutGrid,
-    Plus, Trash as Trash2
+    Plus, Trash as Trash2, Sparkle, CircleNotch, Lightning, Brain
 } from 'phosphor-react';
 import { Column, Row } from '../../views/Table/RoomTable';
 import { ChartBuilderConfig, ChartCategory, ChartType, CHART_CATEGORIES } from './types';
 import { ChartDataTransformer } from './services/ChartDataTransformer';
+import { useAI } from '../../../../contexts/AIContext';
 
 interface ChartBuilderModalProps {
     isOpen: boolean;
@@ -29,6 +30,12 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
     const [selectedRowIds, setSelectedRowIds] = useState<string[]>(initialConfig?.includedRowIds || rows.map(r => r.id));
     const [filterSearch, setFilterSearch] = useState('');
     const [filters, setFilters] = useState<{ columnId: string; operator: string; value: any }[]>(initialConfig?.filter || []);
+
+    // AI Generation State
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiGeneratedOption, setAiGeneratedOption] = useState<Record<string, unknown> | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const { generateChart, isProcessing, credits, deepModeEnabled, toggleDeepMode } = useAI();
 
     // Auto-select smart defaults if not provided - REMOVED per user request
     // const defaultX = columns.find(c => c.type === 'status' || c.type === 'select')?.id || columns[0]?.id || '';
@@ -55,10 +62,56 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
     }, [config, columns, xAxisColId, selectedRowIds]);
 
     const chartOption = useMemo(() => {
+        // If we have an AI-generated option, use that instead
+        if (aiGeneratedOption) return aiGeneratedOption;
         if (!validation.isValid) return null;
         const data = ChartDataTransformer.transformData(rows, config);
         return ChartDataTransformer.generateOption(data, config);
-    }, [rows, config, validation]);
+    }, [rows, config, validation, aiGeneratedOption]);
+
+    // --- AI Generation Handler ---
+    const handleAIGenerate = async () => {
+        if (!aiPrompt.trim() || isProcessing) return;
+
+        setAiError(null);
+        setAiGeneratedOption(null);
+
+        // Prepare row data for AI
+        const rowData = rows.map(row => {
+            const rowObj: Record<string, unknown> = {};
+            columns.forEach(col => {
+                if (col.id !== 'select') {
+                    rowObj[col.label] = row[col.id];
+                }
+            });
+            return rowObj;
+        });
+
+        const result = await generateChart(aiPrompt, rowData);
+
+        if (result.success && result.chartConfig) {
+            setAiGeneratedOption(result.chartConfig);
+            // Extract chart type from response if available
+            const detectedType = result.chartType;
+            if (detectedType && ['bar', 'line', 'pie', 'area', 'doughnut', 'scatter', 'radar', 'funnel', 'gauge', 'treemap'].includes(detectedType)) {
+                setChartType(detectedType as ChartType);
+            }
+            // Set a title based on prompt if not set
+            if (!title || title === 'New Analysis') {
+                setTitle(aiPrompt.slice(0, 40) + (aiPrompt.length > 40 ? '...' : ''));
+            }
+        } else {
+            setAiError(result.error || 'Failed to generate chart');
+        }
+    };
+
+    // Clear AI-generated chart when manual config changes
+    useEffect(() => {
+        if (aiGeneratedOption && (xAxisColId || filters.length > 0)) {
+            // User is manually configuring, clear AI chart
+            setAiGeneratedOption(null);
+        }
+    }, [xAxisColId, filters]);
 
     // --- Helpers ---
     // --- Constants & Helpers ---
@@ -94,12 +147,19 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
                         <h2 className="text-xl font-bold text-[#323338] dark:text-gray-100 tracking-tight">Add Widget</h2>
                         <p className="text-[13px] text-[#676879] dark:text-gray-400">Transform your board data into insights</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors text-[#676879]"
-                    >
-                        <X size={20} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {/* AI Credits Badge */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300">
+                            <Sparkle size={14} className="text-amber-500" weight="fill" />
+                            <span>{credits} credits</span>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors text-[#676879]"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body - Split View */}
@@ -107,6 +167,60 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
 
                     {/* Left Pane: Configuration (The Settings Panel) */}
                     <div className="w-[380px] flex-shrink-0 border-r border-stone-200 dark:border-stone-700 bg-white dark:bg-monday-dark-elevated flex flex-col overflow-hidden">
+
+                        {/* AI Generation Section */}
+                        <div className="p-5 border-b border-stone-100 dark:border-stone-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Sparkle size={16} className="text-purple-500" weight="fill" />
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">AI Chart Generator</label>
+                                <button
+                                    onClick={toggleDeepMode}
+                                    className={`ml-auto flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-all ${deepModeEnabled
+                                        ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300'
+                                        : 'bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400'
+                                        }`}
+                                    title={deepModeEnabled ? 'Deep Mode (5 credits)' : 'Fast Mode (1 credit)'}
+                                >
+                                    {deepModeEnabled ? <Brain size={12} /> : <Lightning size={12} />}
+                                    {deepModeEnabled ? 'Deep' : 'Fast'}
+                                </button>
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={aiPrompt}
+                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                    placeholder="Describe the chart you want..."
+                                    className="flex-1 h-9 px-3 bg-white dark:bg-stone-800 border border-purple-200 dark:border-purple-800 rounded-md text-[13px] text-[#323338] dark:text-gray-100 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-stone-400"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && aiPrompt.trim() && !isProcessing) {
+                                            handleAIGenerate();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    onClick={handleAIGenerate}
+                                    disabled={isProcessing || !aiPrompt.trim() || credits < 1}
+                                    className={`px-4 h-9 rounded-md text-[13px] font-medium flex items-center gap-2 transition-all ${isProcessing || !aiPrompt.trim() || credits < 1
+                                        ? 'bg-stone-200 dark:bg-stone-700 text-stone-400 cursor-not-allowed'
+                                        : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+                                        }`}
+                                >
+                                    {isProcessing ? (
+                                        <CircleNotch size={14} className="animate-spin" />
+                                    ) : (
+                                        <Sparkle size={14} />
+                                    )}
+                                    Generate
+                                </button>
+                            </div>
+                            {aiError && (
+                                <p className="mt-2 text-[11px] text-red-500">{aiError}</p>
+                            )}
+                            {aiGeneratedOption && (
+                                <p className="mt-2 text-[11px] text-green-600 dark:text-green-400">✓ AI chart generated! View in preview.</p>
+                            )}
+                        </div>
 
                         {/* Top: Title & Chart Type */}
                         <div className="p-5 border-b border-stone-100 dark:border-stone-800 space-y-4 shrink-0">
@@ -316,9 +430,9 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
 
                                 {/* Main Chart Render */}
                                 <div className="flex-1 p-6 relative">
-                                    {validation.isValid && chartOption ? (
+                                    {(aiGeneratedOption || (validation.isValid && chartOption)) ? (
                                         <ReactECharts
-                                            option={{ ...chartOption, title: { show: false }, grid: { top: 10, bottom: 20, left: 20, right: 20, containLabel: true } }}
+                                            option={{ ...(aiGeneratedOption || chartOption), title: { show: false }, grid: { top: 10, bottom: 20, left: 20, right: 20, containLabel: true } }}
                                             style={{ height: '100%', width: '100%' }}
                                             theme="macarons"
                                         />

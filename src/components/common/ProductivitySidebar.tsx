@@ -126,8 +126,8 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                         ${isRight ? 'p-4' : 'py-1.5 px-3'}
                         flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30
                     `}>
-                    <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
-                        <CheckCircle className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="bold" />
+                    <h3 className={`font-normal uppercase tracking-wider text-stone-500/90 dark:text-stone-400/90 flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
+                        <CheckCircle className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="light" />
                         Tasks
                     </h3>
                     <button
@@ -135,7 +135,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                         className="text-primary hover:text-primary-dark"
                         title="Create Board"
                     >
-                        <Plus size={18} weight="bold" />
+                        <Plus size={18} weight="light" />
                     </button>
                 </div>
                 <div className={`
@@ -165,14 +165,13 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                                 className="w-full text-left p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                             >
                                 <div className="flex items-start gap-2">
-                                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                                        task.status === 'In Progress' ? 'bg-blue-500' :
+                                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${task.status === 'In Progress' ? 'bg-blue-500' :
                                         task.status === 'Stuck' ? 'bg-red-500' :
-                                        'bg-gray-300'
-                                    }`} />
+                                            'bg-gray-300'
+                                        }`} />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{task.name}</p>
-                                        <p className="text-xs text-gray-500 truncate">{task.boardName}</p>
+                                        <p className="text-sm font-light truncate">{task.name}</p>
+                                        <p className="text-xs text-stone-400/90 truncate">{task.boardName}</p>
                                     </div>
                                     <CaretRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 mt-1" />
                                 </div>
@@ -191,12 +190,12 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                         ${isRight ? 'p-4' : 'py-1.5 px-3'}
                         flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30
                     `}>
-                    <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
-                        <Bell className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="bold" />
+                    <h3 className={`font-normal uppercase tracking-wider text-stone-500/90 dark:text-stone-400/90 flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
+                        <Bell className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="light" />
                         Reminders
                     </h3>
-                    <button className="text-primary hover:text-primary-dark">
-                        <Plus size={18} weight="bold" />
+                    <button className="text-primary/80 hover:text-primary">
+                        <Plus size={18} weight="light" />
                     </button>
                 </div>
                 <div className={`
@@ -216,8 +215,8 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
                         ${isRight ? 'p-4' : 'py-1.5 px-3'}
                         flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30
                     `}>
-                    <h3 className={`font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
-                        <Folder className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="bold" />
+                    <h3 className={`font-normal uppercase tracking-wider text-stone-500/90 dark:text-stone-400/90 flex items-center ${isRight ? 'text-sm' : 'text-[11px]'}`}>
+                        <Folder className={`mr-2 ${isRight ? 'text-base' : 'text-sm'}`} weight="light" />
                         Files
                     </h3>
                     <button
@@ -284,7 +283,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
 
     if (contentOnly) {
         return (
-            <div className="flex flex-col flex-1 h-full min-h-0 bg-surface-light dark:bg-surface-dark transition-all">
+            <div className="font-outfit flex flex-col flex-1 h-full min-h-0 bg-surface-light dark:bg-surface-dark transition-all">
                 {content}
             </div>
         );
@@ -292,7 +291,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
 
     return (
         <>
-            <aside className={`
+            <aside className={`font-outfit
                 ${isRight ? 'w-80 border-l flex-col h-full' : 'w-full border-t flex-row h-32'}
                 bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark flex shrink-0 transition-all
             `}>

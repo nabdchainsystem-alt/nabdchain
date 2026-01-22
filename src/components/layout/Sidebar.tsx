@@ -75,9 +75,65 @@ const ALL_QUICK_NAV_ITEMS: QuickNavItem[] = [
     { id: 'foreign_marketplace', icon: Globe, label: 'foreign_marketplace', view: 'foreign_marketplace' },
 ];
 
-const ACTIVE_SUB_NAV_STYLE = 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10';
+const ACTIVE_SUB_NAV_STYLE = 'font-almarai bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10';
 
 const DEFAULT_QUICK_NAV = ['dashboard', 'my_work', 'inbox', 'vault'];
+
+const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode }> = ({ content, children }) => {
+    const [visible, setVisible] = useState(false);
+    const [position, setPosition] = useState<{ top: number, left?: number, right?: number }>({ top: 0 });
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const { dir } = useAppContext();
+
+    const handleMouseEnter = () => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            let top = rect.top + rect.height / 2;
+
+            // Smart vertical positioning for tooltips
+            const tooltipHeight = 24; // approx
+            if (top + tooltipHeight / 2 > window.innerHeight - 10) {
+                top = window.innerHeight - tooltipHeight / 2 - 10;
+            } else if (top - tooltipHeight / 2 < 10) {
+                top = tooltipHeight / 2 + 10;
+            }
+
+            const newPos: any = { top };
+            if (dir === 'rtl') {
+                newPos.right = window.innerWidth - rect.left + 8;
+            } else {
+                newPos.left = rect.right + 8;
+            }
+            setPosition(newPos);
+            setVisible(true);
+        }
+    };
+
+    return (
+        <div
+            ref={triggerRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={() => setVisible(false)}
+            className="group relative"
+        >
+            {children}
+            {visible && createPortal(
+                <div
+                    className="fixed z-[9999] px-2 py-1 rounded-md bg-gray-900 dark:bg-gray-700 text-white text-[10px] font-medium whitespace-nowrap shadow-lg pointer-events-none"
+                    style={{
+                        top: position.top,
+                        transform: 'translateY(-50%)',
+                        left: position.left,
+                        right: position.right
+                    }}
+                >
+                    {content}
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
 
 // Quick Navigation Icons Component (shown beside sidebar when collapsed)
 const QuickNavIcons: React.FC<{
@@ -93,7 +149,9 @@ const QuickNavIcons: React.FC<{
         return saved ? JSON.parse(saved) : DEFAULT_QUICK_NAV;
     });
     const [showSettings, setShowSettings] = useState(false);
+    const [settingsPos, setSettingsPos] = useState({ top: 0, left: 0, right: 0 });
     const settingsRef = useRef<HTMLDivElement>(null);
+    const { dir } = useAppContext();
 
     // Listen for settings changes from external sources
     useEffect(() => {
@@ -145,13 +203,13 @@ const QuickNavIcons: React.FC<{
     };
 
     return (
-        <div className="flex flex-col items-center gap-3 relative">
+        <div className="flex flex-col items-center gap-3 relative w-full">
             {/* Page navigation items */}
             {visiblePageItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeView === item.view;
                 return (
-                    <div key={item.id} className="group relative">
+                    <SidebarTooltip key={item.id} content={t(item.label)}>
                         <button
                             onClick={(e) => handleNavClick(e, item.view)}
                             className={`
@@ -159,33 +217,18 @@ const QuickNavIcons: React.FC<{
                                 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
                                 shadow-sm hover:shadow-md
                                 transition-all duration-300 ease-out
-                                ${isActive ? 'ring-2 ring-blue-400/50 shadow-blue-100' : ''}
                             `}
                         >
                             <Icon
-                                size={13}
+                                size={12}
                                 weight={isActive ? 'fill' : 'regular'}
                                 className={isActive
-                                    ? 'text-blue-500 dark:text-blue-400'
+                                    ? 'text-gray-900 dark:text-gray-100'
                                     : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                                 }
                             />
                         </button>
-                        {/* Tooltip on the right */}
-                        <span className={`
-                            absolute left-full top-1/2 -translate-y-1/2 ml-2
-                            rtl:left-auto rtl:right-full rtl:ml-0 rtl:mr-2
-                            px-2 py-1 rounded-md
-                            bg-blue-500 dark:bg-blue-600 text-white
-                            text-[10px] font-medium whitespace-nowrap
-                            opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                            transition-all duration-200 ease-out
-                            z-[9999] pointer-events-none
-                            shadow-lg
-                        `}>
-                            {t(item.label)}
-                        </span>
-                    </div>
+                    </SidebarTooltip>
                 );
             })}
 
@@ -194,7 +237,7 @@ const QuickNavIcons: React.FC<{
                 const BoardIcon = getBoardIcon(board.icon);
                 const isActive = activeView === 'board' && activeBoardId === board.id;
                 return (
-                    <div key={`board-${board.id}`} className="group relative">
+                    <SidebarTooltip key={`board-${board.id}`} content={board.name}>
                         <button
                             onClick={(e) => handleNavClick(e, 'board', board.id)}
                             className={`
@@ -202,73 +245,67 @@ const QuickNavIcons: React.FC<{
                                 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
                                 shadow-sm hover:shadow-md
                                 transition-all duration-300 ease-out
-                                ${isActive ? 'ring-2 ring-blue-400/50 shadow-blue-100' : ''}
                             `}
                         >
                             <BoardIcon
-                                size={13}
+                                size={12}
                                 weight={isActive ? 'fill' : 'regular'}
                                 className={isActive
-                                    ? 'text-blue-500 dark:text-blue-400'
+                                    ? 'text-gray-900 dark:text-gray-100'
                                     : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                                 }
                             />
                         </button>
-                        {/* Tooltip on the right */}
-                        <span className={`
-                            absolute left-full top-1/2 -translate-y-1/2 ml-2
-                            rtl:left-auto rtl:right-full rtl:ml-0 rtl:mr-2
-                            px-2 py-1 rounded-md
-                            bg-blue-500 dark:bg-blue-600 text-white
-                            text-[10px] font-medium whitespace-nowrap
-                            opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                            transition-all duration-200 ease-out
-                            z-[9999] pointer-events-none
-                            shadow-lg max-w-[120px] truncate
-                        `}>
-                            {board.name}
-                        </span>
-                    </div>
+                    </SidebarTooltip>
                 );
             })}
 
             {/* Settings button */}
-            <div className="group relative mt-1">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setShowSettings(!showSettings);
-                    }}
-                    title="Customize quick nav"
-                    className="w-7 h-7 rounded-full flex items-center justify-center
-                        bg-white/70 dark:bg-gray-800/70
-                        hover:bg-white dark:hover:bg-gray-800
-                        hover:shadow-sm
-                        transition-all duration-300 ease-out"
-                >
-                    <Gauge size={13} weight="regular" className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
-                </button>
-                {/* Tooltip on the right */}
-                <span className="
-                    absolute left-full top-1/2 -translate-y-1/2 ml-2
-                    rtl:left-auto rtl:right-full rtl:ml-0 rtl:mr-2
-                    px-2 py-1 rounded-md
-                    bg-blue-500 dark:bg-blue-600 text-white
-                    text-[10px] font-medium whitespace-nowrap
-                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                    transition-all duration-200 ease-out
-                    z-[9999] pointer-events-none
-                    shadow-lg
-                ">
-                    {t('edit')}
-                </span>
-            </div>
+            <SidebarTooltip content={t('edit')}>
+                <div className="group relative mt-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            let top = rect.top;
+
+                            // Smart vertical positioning: if popup would go off screen, align it to bottom
+                            const estimatedHeight = Math.min(400, window.innerHeight - 40);
+                            if (top + estimatedHeight > window.innerHeight) {
+                                top = Math.max(10, window.innerHeight - estimatedHeight - 10);
+                            }
+
+                            const pos: any = { top };
+                            if (dir === 'rtl') {
+                                pos.right = window.innerWidth - rect.left + 12;
+                            } else {
+                                pos.left = rect.right + 12;
+                            }
+                            setSettingsPos(pos);
+                            setShowSettings(!showSettings);
+                        }}
+                        title="Customize quick nav"
+                        className="w-7 h-7 rounded-full flex items-center justify-center
+                            bg-white/70 dark:bg-gray-800/70
+                            hover:bg-white dark:hover:bg-gray-800
+                            hover:shadow-sm
+                            transition-all duration-300 ease-out"
+                    >
+                        <Gauge size={12} weight="regular" className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                    </button>
+                </div>
+            </SidebarTooltip>
 
             {/* Settings Popup */}
-            {showSettings && (
+            {showSettings && createPortal(
                 <div
                     ref={settingsRef}
-                    className="absolute left-full rtl:left-auto rtl:right-full ml-2 rtl:ml-0 rtl:mr-2 top-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 z-50 min-w-[200px] max-h-[400px] overflow-y-auto"
+                    className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 min-w-[200px] max-h-[400px] overflow-y-auto no-scrollbar"
+                    style={{
+                        top: settingsPos.top,
+                        left: settingsPos.left || 'auto',
+                        right: settingsPos.right || 'auto'
+                    }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Pages Section */}
@@ -283,13 +320,13 @@ const QuickNavIcons: React.FC<{
                                     onClick={() => toggleQuickNavItem(item.id)}
                                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150
                                         ${isEnabled
-                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100'
                                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                         }`}
                                 >
-                                    <Icon size={14} weight={isEnabled ? 'fill' : 'regular'} />
+                                    <Icon size={13} weight={isEnabled ? 'fill' : 'regular'} />
                                     <span className="flex-1 text-left truncate">{t(item.label)}</span>
-                                    {isEnabled && <CheckSquare size={12} weight="fill" className="text-blue-500 shrink-0" />}
+                                    {isEnabled && <CheckSquare size={12} weight="fill" className="text-gray-900 dark:text-white shrink-0" />}
                                 </button>
                             );
                         })}
@@ -309,52 +346,41 @@ const QuickNavIcons: React.FC<{
                                             onClick={() => toggleQuickNavItem(`board-${board.id}`)}
                                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150
                                                 ${isEnabled
-                                                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                                    ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100'
                                                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                                 }`}
                                         >
-                                            <BoardIcon size={14} weight={isEnabled ? 'fill' : 'regular'} />
+                                            <BoardIcon size={13} weight={isEnabled ? 'fill' : 'regular'} />
                                             <span className="flex-1 text-left truncate">{board.name}</span>
-                                            {isEnabled && <CheckSquare size={12} weight="fill" className="text-purple-500 shrink-0" />}
+                                            {isEnabled && <CheckSquare size={12} weight="fill" className="text-gray-900 dark:text-white shrink-0" />}
                                         </button>
                                     );
                                 })}
                             </div>
                         </>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Expand button at bottom */}
-            <div className="group relative mt-2">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onExpandSidebar();
-                    }}
-                    title={t('expand_sidebar')}
-                    className="w-7 h-7 rounded-full flex items-center justify-center
-                        bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700
-                        text-gray-400 hover:text-gray-500 dark:hover:text-gray-300
-                        transition-all duration-200 hover:shadow-sm"
-                >
-                    <CaretRight size={13} weight="bold" />
-                </button>
-                {/* Tooltip on the right */}
-                <span className="
-                    absolute left-full top-1/2 -translate-y-1/2 ml-2
-                    rtl:left-auto rtl:right-full rtl:ml-0 rtl:mr-2
-                    px-2 py-1 rounded-md
-                    bg-blue-500 dark:bg-blue-600 text-white
-                    text-[10px] font-medium whitespace-nowrap
-                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                    transition-all duration-200 ease-out
-                    z-[9999] pointer-events-none
-                    shadow-lg
-                ">
-                    {t('open')}
-                </span>
-            </div>
+            <SidebarTooltip content={t('open')}>
+                <div className="group relative mt-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onExpandSidebar();
+                        }}
+                        title={t('expand_sidebar')}
+                        className="w-7 h-7 rounded-full flex items-center justify-center
+                            bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700
+                            text-gray-400 hover:text-gray-500 dark:hover:text-gray-300
+                            transition-all duration-200 hover:shadow-sm"
+                    >
+                        <CaretRight size={12} weight="bold" />
+                    </button>
+                </div>
+            </SidebarTooltip>
         </div>
     );
 };
@@ -658,7 +684,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         <>
             {/* Main Sidebar Container */}
             <div
-                className={`flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-transparent rounded-r-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out will-change-[width]'}`}
+                className={`font-outfit flex flex-col h-full min-h-0 flex-shrink-0 relative group/sidebar select-none bg-transparent ltr:rounded-r-3xl rtl:rounded-l-3xl ltr:shadow-[4px_0_24px_rgba(0,0,0,0.02)] rtl:shadow-[-4px_0_24px_rgba(0,0,0,0.02)] z-20 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out will-change-[width]'}`}
                 style={{
                     width: `${displayedWidth}px`
                 }}
@@ -667,14 +693,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     {/* Content wrapper - hidden when collapsed */}
                     <div className={`h-full min-h-0 flex flex-col transition-opacity duration-300 ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                         {/* 1. Top Navigation */}
-                        <div className={`pt-3 pb-3 space-y-0.5 pl-5 pr-3 transition-[padding] duration-300`}>
+                        <div className={`pt-3 pb-3 space-y-0.5 ltr:pl-5 ltr:pr-3 rtl:pr-5 rtl:pl-3 transition-[padding] duration-300`}>
                             <button
                                 onClick={() => onNavigate('dashboard')}
                                 title={t('home')}
                                 className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                         ${activeView === 'dashboard'
                                         ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                         `}
                             >
                                 <House size={17} weight="light" className="flex-shrink-0" />
@@ -687,7 +713,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'flow_hub'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <Sparkle size={17} weight="light" className="flex-shrink-0" />
@@ -701,7 +727,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'process_map'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <Activity size={17} weight="light" className="flex-shrink-0" />
@@ -715,7 +741,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'my_work'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <SquaresFour size={17} weight="light" className="flex-shrink-0" />
@@ -731,11 +757,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'inbox'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <Tray size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                                    <span className={`font-light text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
                                 </button>
                             )}
                             {pageVisibility['talk'] !== false && (
@@ -745,11 +771,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'talk'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <ChatCircleText size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
+                                    <span className={`font-light text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
                                 </button>
                             )}
 
@@ -760,11 +786,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'teams'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <Users size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                                    <span className={`font-light text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
                                 </button>
                             )}
                             {pageVisibility['vault'] !== false && (
@@ -774,11 +800,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
                             ${activeView === 'vault'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'} 
                             `}
                                 >
                                     <Lock size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                                    <span className={`font-light text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
                                 </button>
                             )}
                             {pageVisibility['test_tools'] !== false && (
@@ -788,11 +814,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300
                             ${activeView === 'test'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'}
                             `}
                                 >
                                     <Flask size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('test_tools')}</span>
+                                    <span className={`font-light text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('test_tools')}</span>
                                 </button>
                             )}
                         </div>
@@ -818,21 +844,21 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Overview */}
                                         <div className="mb-1">
                                             <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                 onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
                                                 title={t('overview')}
                                             >
                                                 <Layout size={17} weight="light" className="flex-shrink-0" />
                                                 <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('overview')}</span>
-                                                <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                             </div>
                                             {expandedDepartments.has('mini_overview') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Layout size={14} weight="light" /> <span>{t('dashboards')}</span>
+                                                        <Layout size={13} weight="light" /> <span>{t('dashboards')}</span>
                                                     </button>
                                                     <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <FileText size={14} weight="light" /> <span>{t('reports')}</span>
+                                                        <FileText size={13} weight="light" /> <span>{t('reports')}</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -841,24 +867,24 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Operations */}
                                         <div className="mb-1">
                                             <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                 onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
                                                 title={t('operations')}
                                             >
                                                 <Factory size={17} weight="light" className="flex-shrink-0" />
                                                 <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('operations')}</span>
-                                                <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                             </div>
                                             {expandedDepartments.has('mini_operations') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Megaphone size={14} weight="light" /> <span>{t('sales')}</span>
+                                                        <Megaphone size={13} weight="light" /> <span>{t('sales')}</span>
                                                     </button>
                                                     <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <ShoppingCart size={14} weight="light" /> <span>{t('purchases')}</span>
+                                                        <ShoppingCart size={13} weight="light" /> <span>{t('purchases')}</span>
                                                     </button>
                                                     <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Package size={14} weight="light" /> <span>{t('stock_inventory')}</span>
+                                                        <Package size={13} weight="light" /> <span>{t('stock_inventory')}</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -867,18 +893,18 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Finance */}
                                         <div className="mb-1">
                                             <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                 onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
                                                 title={t('finance')}
                                             >
                                                 <Money size={17} weight="light" className="flex-shrink-0" />
                                                 <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('finance')}</span>
-                                                <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                             </div>
                                             {expandedDepartments.has('mini_finance') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Money size={14} weight="light" /> <span>{t('expenses')}</span>
+                                                        <Money size={13} weight="light" /> <span>{t('expenses')}</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -887,21 +913,21 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* People */}
                                         <div className="mb-1">
                                             <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                 onClick={() => !isCollapsed && toggleDepartment('mini_people')}
                                                 title={t('people')}
                                             >
                                                 <UsersThree size={17} weight="light" className="flex-shrink-0" />
                                                 <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('people')}</span>
-                                                <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                             </div>
                                             {expandedDepartments.has('mini_people') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Users size={14} weight="light" /> <span>{t('customers')}</span>
+                                                        <Users size={13} weight="light" /> <span>{t('customers')}</span>
                                                     </button>
                                                     <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Truck size={14} weight="light" /> <span>{t('suppliers')}</span>
+                                                        <Truck size={13} weight="light" /> <span>{t('suppliers')}</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -911,39 +937,39 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {pageVisibility['supply_chain'] !== false && (
                                             <div className="mb-1">
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                     onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
                                                     title={t('supply_chain')}
                                                 >
                                                     <Package size={17} weight="light" className="flex-shrink-0" />
                                                     <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('supply_chain')}</span>
-                                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                                 {expandedDepartments.has('supply_chain') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['procurement'] !== false && (
                                                             <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <ShoppingCart size={14} weight="light" /> <span>{t('procurement')}</span>
+                                                                <ShoppingCart size={13} weight="light" /> <span>{t('procurement')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['warehouse'] !== false && (
                                                             <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <House size={14} weight="light" /> <span>{t('warehouse')}</span>
+                                                                <House size={13} weight="light" /> <span>{t('warehouse')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['fleet'] !== false && (
                                                             <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Truck size={14} weight="light" /> <span>{t('fleet')}</span>
+                                                                <Truck size={13} weight="light" /> <span>{t('fleet')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['vendors'] !== false && (
                                                             <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <UsersThree size={14} weight="light" /> <span>{t('vendors')}</span>
+                                                                <UsersThree size={13} weight="light" /> <span>{t('vendors')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['planning'] !== false && (
                                                             <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Gauge size={14} weight="light" /> <span>{t('planning')}</span>
+                                                                <Gauge size={13} weight="light" /> <span>{t('planning')}</span>
                                                             </button>
                                                         )}
                                                     </div>
@@ -955,29 +981,29 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {pageVisibility['operations'] !== false && (
                                             <div className="mb-1">
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                     onClick={() => !isCollapsed && toggleDepartment('operations')}
                                                     title={t('manufacturing')}
                                                 >
                                                     <Factory size={17} weight="light" className="flex-shrink-0" />
                                                     <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('manufacturing')}</span>
-                                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                                 {expandedDepartments.has('operations') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['maintenance'] !== false && (
                                                             <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Wrench size={14} /> <span>{t('maintenance')}</span>
+                                                                <Wrench size={13} /> <span>{t('maintenance')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['production'] !== false && (
                                                             <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Factory size={14} /> <span>{t('production')}</span>
+                                                                <Factory size={13} /> <span>{t('production')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['quality'] !== false && (
                                                             <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <ShieldCheck size={14} weight="light" /> <span>{t('quality')}</span>
+                                                                <ShieldCheck size={13} weight="light" /> <span>{t('quality')}</span>
                                                             </button>
                                                         )}
                                                     </div>
@@ -989,24 +1015,24 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {pageVisibility['business'] !== false && (
                                             <div className="mb-1">
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                     onClick={() => !isCollapsed && toggleDepartment('business')}
                                                     title={t('business')}
                                                 >
                                                     <Buildings size={17} weight="light" className="flex-shrink-0" />
                                                     <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business')}</span>
-                                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                                 {expandedDepartments.has('business') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['sales_listing'] !== false && (
                                                             <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Table size={14} weight="light" /> <span>{t('sales_listings')}</span>
+                                                                <Table size={13} weight="light" /> <span>{t('sales_listings')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['sales_factory'] !== false && (
                                                             <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Factory size={14} /> <span>{t('sales_factory')}</span>
+                                                                <Factory size={13} /> <span>{t('sales_factory')}</span>
                                                             </button>
                                                         )}
                                                     </div>
@@ -1018,29 +1044,29 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {pageVisibility['business_support'] !== false && (
                                             <div className="mb-1">
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90 transition-all duration-300`}
                                                     onClick={() => !isCollapsed && toggleDepartment('business_support')}
                                                     title={t('business_support')}
                                                 >
                                                     <Users size={17} weight="light" className="flex-shrink-0" />
                                                     <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business_support')}</span>
-                                                    <CaretDown size={14} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                                 {expandedDepartments.has('business_support') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['it_support'] !== false && (
                                                             <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Monitor size={14} /> <span>{t('it')}</span>
+                                                                <Monitor size={13} /> <span>{t('it')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['hr'] !== false && (
                                                             <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <UsersThree size={14} weight="light" /> <span>{t('hr')}</span>
+                                                                <UsersThree size={13} weight="light" /> <span>{t('hr')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['marketing'] !== false && (
                                                             <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                                <Megaphone size={14} /> <span>{t('marketing')}</span>
+                                                                <Megaphone size={13} /> <span>{t('marketing')}</span>
                                                             </button>
                                                         )}
                                                     </div>
@@ -1056,7 +1082,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 <div className="mb-6 mt-6">
                                     <div className="flex items-center mb-2 px-3 group cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-sm py-1">
                                         <span className="text-[14px] font-bold text-gray-700 dark:text-monday-dark-text-secondary flex items-center gap-1.5 w-full">
-                                            {t('favorites')} <CaretRight size={14} weight="light" className="text-gray-400" />
+                                            {t('favorites')} <CaretRight size={13} weight="light" className="text-gray-400" />
                                         </span>
                                     </div>
                                     <div className="space-y-1">
@@ -1083,7 +1109,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     <div className="flex items-center justify-between mb-2 px-3">
                                         <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
                                         <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
-                                            <MagnifyingGlass size={14} weight="light" className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
+                                            <MagnifyingGlass size={13} weight="light" className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
                                         </div>
                                     </div>
                                 )}
@@ -1097,15 +1123,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             e.stopPropagation();
                                             toggleWorkspaceMenu();
                                         }}
-                                        className={`relative border border-gray-200 dark:border-monday-dark-border bg-gray-50/50 dark:bg-monday-dark-surface hover:bg-gray-100/80 dark:hover:bg-monday-dark-hover rounded-md py-1.5 flex items-center cursor-pointer transition-all duration-300 ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
+                                        className={`font-almarai relative border border-gray-200 dark:border-monday-dark-border bg-gray-50/50 dark:bg-monday-dark-surface hover:bg-gray-100/80 dark:hover:bg-monday-dark-hover rounded-md py-1.5 flex items-center cursor-pointer transition-all duration-300 ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'}`}
                                     >
                                         <div className={`w-6 h-6 rounded-md bg-gradient-to-tr ${activeWorkspace.color} text-white flex items-center justify-center text-xs font-bold flex-shrink-0`}>
                                             {(() => {
                                                 const WorkspaceIcon = ICON_MAP[activeWorkspace.icon];
-                                                return WorkspaceIcon ? <WorkspaceIcon size={14} weight="bold" /> : activeWorkspace.name.charAt(0);
+                                                return WorkspaceIcon ? <WorkspaceIcon size={13} weight="bold" /> : activeWorkspace.name.charAt(0);
                                             })()}
                                         </div>
-                                        <span className={`font-medium text-[14px] text-[#323338] dark:text-[#dcdde2] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
+                                        <span className={`font-light text-[14px] text-stone-500/90 dark:text-stone-400/90 truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{activeWorkspace.name}</span>
 
                                         {!isCollapsed && (
                                             <div className="flex items-center gap-1">
@@ -1118,7 +1144,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     title={t('add_new')}
                                                     className="p-1 rounded hover:bg-monday-blue hover:text-white text-gray-400 transition-all duration-200"
                                                 >
-                                                    <Plus size={14} weight="bold" />
+                                                    <Plus size={13} weight="bold" />
                                                 </button>
                                                 <div
                                                     className="text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-pointer p-0.5 rounded hover:bg-gray-200"
@@ -1127,7 +1153,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         toggleWorkspaceMenu();
                                                     }}
                                                 >
-                                                    <CaretRight size={14} weight="light" className="transition-transform duration-200" />
+                                                    <CaretRight size={13} weight="light" className="transition-transform duration-200" />
                                                 </div>
                                             </div>
                                         )}
@@ -1194,7 +1220,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                     : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:bg-gray-100'
                                                                     }`}
                                                             >
-                                                                <layout.icon size={16} weight={selectedLayout === layout.id ? "fill" : "regular"} />
+                                                                <layout.icon size={17} weight={selectedLayout === layout.id ? "fill" : "regular"} />
                                                                 <span>{layout.label}</span>
                                                             </button>
                                                         ))}
@@ -1272,7 +1298,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     }}
                                                     className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
                                                 >
-                                                    <Plus size={14} weight="light" /> {t('add_workspace')}
+                                                    <Plus size={13} weight="light" /> {t('add_workspace')}
                                                 </button>
                                             </div>
                                         </div>
@@ -1294,8 +1320,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         return (
                                             <div key={board.id} className="relative">
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} py-1.5 rounded-sm cursor-pointer group transition-all duration-300 select-none
-                                                ${isActive ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-white/40 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
+                                                    className={`font-almarai flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} py-1.5 rounded-sm cursor-pointer group transition-all duration-300 select-none
+                                                ${isActive ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-white/40 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'}
                                                 ${isChild ? 'ml-3' : ''}
                                             `}
                                                     onClick={() => onNavigate('board', board.id)}
@@ -1315,7 +1341,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         size: isChild ? 14 : 17,
                                                         className: `${isActive ? 'text-monday-blue' : ''} flex-shrink-0`
                                                     })}
-                                                    <span className={`font-normal text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{board.name}</span>
+                                                    <span className={`font-light text-[13px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{board.name}</span>
 
                                                     {/* Action buttons - absolutely positioned on right */}
                                                     {!isCollapsed && (
@@ -1329,14 +1355,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                 className={`p-1 rounded-sm hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border text-gray-400 invisible group-hover:visible`}
                                                                 title={t('add_sub_board')}
                                                             >
-                                                                <Plus size={14} weight="light" />
+                                                                <Plus size={13} weight="light" />
                                                             </div>
                                                             <div
                                                                 onClick={(e) => handleContextMenu(e, board.id)}
                                                                 className={`p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-monday-dark-border text-gray-400 ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
                                                                 title={t('more_options')}
                                                             >
-                                                                <DotsThree size={14} weight="bold" />
+                                                                <DotsThree size={13} weight="bold" />
                                                             </div>
                                                         </div>
                                                     )}
@@ -1371,7 +1397,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <button
                                             onClick={() => onNavigate('local_marketplace')}
                                             title={t('local_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'}`}
                                         >
                                             <ShoppingCart size={17} weight="light" className="flex-shrink-0" />
                                             <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('local_marketplace')}</span>
@@ -1381,7 +1407,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <button
                                             onClick={() => onNavigate('foreign_marketplace')}
                                             title={t('foreign_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
+                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-500/90 dark:text-stone-400/90'}`}
                                         >
                                             <Globe size={17} weight="light" className="flex-shrink-0" />
                                             <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('foreign_marketplace')}</span>
@@ -1412,7 +1438,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     onClick={onToggleCollapse}
                     className={`absolute top-8 -right-3 rtl:right-auto rtl:-left-3 w-6 h-6 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-full flex items-center justify-center text-gray-400 hover:text-monday-blue shadow-md z-50 transition-all duration-300 ${isCollapsed ? 'opacity-100' : 'opacity-0 group-hover/sidebar:opacity-100'}`}
                 >
-                    {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={14} weight="light" /> : <CaretLeft size={14} weight="light" />}
+                    {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={13} weight="light" /> : <CaretLeft size={13} weight="light" />}
                 </button>
 
                 {/* Board Context Menu - Rendered via Portal */}
@@ -1424,7 +1450,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
                         >
                             <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
-                                <ArrowSquareOut size={14} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
+                                <ArrowSquareOut size={13} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
                             </div>
                             <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
                             <div
@@ -1435,7 +1461,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     setContextMenu(null);
                                 }}
                             >
-                                <Trash size={14} weight="light" /> {t('delete')}
+                                <Trash size={13} weight="light" /> {t('delete')}
                             </div>
                         </div>
                     </>,
@@ -1520,7 +1546,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 : 'bg-gray-100 dark:bg-monday-dark-hover text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                                                 }`}
                                         >
-                                            <layout.icon size={16} />
+                                            <layout.icon size={17} />
                                             <span>{layout.label}</span>
                                         </button>
                                     ))}
@@ -1583,7 +1609,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     setWorkspaceContextMenu(null);
                                 }}
                             >
-                                <Pencil size={14} weight="light" className="text-gray-500" /> Rename
+                                <Pencil size={13} weight="light" className="text-gray-500" /> Rename
                             </div>
                             <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
                             <div
@@ -1597,7 +1623,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     setWorkspaceContextMenu(null);
                                 }}
                             >
-                                <Trash size={14} weight="light" /> {t('delete')}
+                                <Trash size={13} weight="light" /> {t('delete')}
                             </div>
                         </div>
                     </>,
@@ -1650,7 +1676,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     </div>
                                                     <span className="font-medium text-gray-700 dark:text-gray-200">{newWorkspaceIcon}</span>
                                                 </div>
-                                                <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isWorkspaceIconPickerOpen ? 'rotate-180' : ''}`} />
+                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-transform duration-300 ${isWorkspaceIconPickerOpen ? 'rotate-180' : ''}`} />
                                             </button>
 
                                             {isWorkspaceIconPickerOpen && (
@@ -1826,7 +1852,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         w-8 h-8 rounded-sm flex items-center justify-center transition-colors
                                                         ${selectedLayout === tool.id ? 'bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500'}
                                                     `}>
-                                                                <tool.icon size={16} />
+                                                                <tool.icon size={17} />
                                                             </div>
                                                             <div>
                                                                 <h4 className={`font-bold text-[14px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
@@ -1838,7 +1864,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                             </div>
                                                             {selectedLayout === tool.id && (
                                                                 <div className="absolute top-2 right-2 text-monday-blue">
-                                                                    <CheckSquare size={14} weight="fill" className="fill-current" />
+                                                                    <CheckSquare size={13} weight="fill" className="fill-current" />
                                                                 </div>
                                                             )}
                                                         </button>
@@ -1877,7 +1903,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                 <div className="text-xs text-gray-400">Click to change icon</div>
                                                             </div>
                                                         </div>
-                                                        <CaretDown size={18} weight="light" className={`text-gray-400 transition-transform duration-300 ${isIconPickerOpen ? 'rotate-180' : ''}`} />
+                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-transform duration-300 ${isIconPickerOpen ? 'rotate-180' : ''}`} />
                                                     </button>
 
                                                     {isIconPickerOpen && (
@@ -1959,7 +1985,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                 {/* Quick Navigation Icons - Shown inside sidebar when collapsed */}
                 {isCollapsed && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 flex flex-col items-center overflow-y-auto no-scrollbar py-4 px-1">
+                        <div className="flex-1" />
                         <QuickNavIcons
                             activeView={activeView}
                             activeBoardId={activeBoardId}
@@ -1967,9 +1994,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             onExpandSidebar={onToggleCollapse}
                             boards={boards}
                         />
+                        <div className="flex-1" />
                     </div>
                 )}
-            </div>
+            </div >
         </>
     );
 });

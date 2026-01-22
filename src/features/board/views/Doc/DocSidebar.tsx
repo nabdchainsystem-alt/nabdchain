@@ -43,10 +43,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, level = 0, activeId, on
             <div
                 className={`
           group flex items-center gap-2 px-3 py-1.5 min-h-[32px]
-          text-sm font-medium
+          text-sm font-light
           ${isActive
                         ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100'
-                        : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800/50 hover:text-stone-900 dark:hover:text-stone-200'}
+                        : 'text-stone-500/90 dark:text-stone-400/90 hover:bg-stone-100 dark:hover:bg-stone-800/50 hover:text-stone-900 dark:hover:text-stone-200'}
           cursor-pointer rounded-md transition-colors mx-2
         `}
                 style={{ paddingInlineStart: `${level * 12 + 12}px` }}
@@ -91,14 +91,14 @@ interface DocSidebarProps {
 
 export const DocSidebar: React.FC<DocSidebarProps> = ({ activeId, onSelect }) => {
     return (
-        <div className="flex flex-col h-full py-4">
+        <div className="font-outfit flex flex-col h-full py-4">
             {/* Workspace Switcher / Profile */}
             <div className="px-4 mb-4 flex items-center justify-between group cursor-pointer">
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-stone-200 dark:bg-stone-700 flex items-center justify-center text-xs font-serif font-bold text-stone-600 dark:text-stone-300">
+                    <div className="w-6 h-6 rounded bg-stone-200 dark:bg-stone-700 flex items-center justify-center text-xs font-serif font-normal text-stone-500/90 dark:text-stone-300">
                         M
                     </div>
-                    <span className="font-semibold text-sm text-stone-700 dark:text-stone-200">maxxx</span>
+                    <span className="font-normal text-sm text-stone-700/80 dark:text-stone-200/80">maxxx</span>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <Settings size={14} className="text-stone-400" />
@@ -107,10 +107,10 @@ export const DocSidebar: React.FC<DocSidebarProps> = ({ activeId, onSelect }) =>
 
             {/* Action Buttons */}
             <div className="px-3 mb-2">
-                <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors border border-transparent hover:border-stone-200 dark:hover:border-stone-700">
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm font-light text-stone-500/90 dark:text-stone-400/90 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors border border-transparent hover:border-stone-200 dark:hover:border-stone-700">
                     <Search size={14} />
                     <span>Search</span>
-                    <span className="ms-auto text-xs text-stone-400 font-mono">⌘K</span>
+                    <span className="ms-auto text-xs text-stone-400/60 font-mono">⌘K</span>
                 </button>
             </div>
 
@@ -128,7 +128,7 @@ export const DocSidebar: React.FC<DocSidebarProps> = ({ activeId, onSelect }) =>
                 </div>
                 {/* Example hardcoded favorites */}
                 <div className="mb-4">
-                    <div className="group flex items-center gap-2 px-3 py-1.5 mx-2 rounded-md text-sm text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer">
+                    <div className="group flex items-center gap-2 px-3 py-1.5 mx-2 rounded-md text-sm font-light text-stone-500/90 dark:text-stone-400/90 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer">
                         <FileText size={14} className="text-stone-400" />
                         <span>Quarterly Goals</span>
                     </div>

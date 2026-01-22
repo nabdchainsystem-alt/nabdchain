@@ -3,32 +3,35 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>NABD Chain System</title>
-  
+
   <!-- Favicon (Browser Tab Icon) -->
   <link rel="icon" type="image/png" href="/NABDLogo.png" />
   <link rel="apple-touch-icon" href="/NABDLogo.png" />
-  
+
   <!-- SEO Meta Tags -->
-  <meta name="description" content="NABD Chain System - Advanced AI-powered business management platform for procurement, operations, and team collaboration." />
+  <meta name="description"
+    content="NABD Chain System - Advanced AI-powered business management platform for procurement, operations, and team collaboration." />
   <meta name="keywords" content="NABD, business management, procurement, AI, operations, team collaboration" />
   <meta name="author" content="NABD Chain" />
-  
+
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://nabdchain.com" />
   <meta property="og:title" content="NABD Chain System" />
-  <meta property="og:description" content="Advanced AI-powered business management platform for procurement, operations, and team collaboration." />
+  <meta property="og:description"
+    content="Advanced AI-powered business management platform for procurement, operations, and team collaboration." />
   <meta property="og:image" content="https://nabdchain.com/NABDLogo.png" />
   <meta property="og:site_name" content="NABD Chain" />
-  
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="NABD Chain System" />
   <meta name="twitter:description" content="Advanced AI-powered business management platform." />
   <meta name="twitter:image" content="https://nabdchain.com/NABDLogo.png" />
-  
+
   <!-- Theme Color (Mobile browser bar color) -->
   <meta name="theme-color" content="#0073ea" />
 
@@ -36,15 +39,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Figtree:ital,wght@0,300..900;1,300..900&family=Noto+Kufi+Arabic:wght@100..900&family=Outfit:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Almarai:wght@300;400;700;800&display=swap"
+    rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -99,7 +103,9 @@
             'glow-sm': '0 0 8px rgba(43, 108, 238, 0.3)'
           },
           fontFamily: {
-            sans: ['Figtree', 'Inter', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            sans: ['Figtree', 'Noto Kufi Arabic', 'Inter', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            almarai: ['Almarai', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
             poppins: ['Poppins', 'sans-serif'],
             display: ['Space Grotesk', 'sans-serif']
           }
@@ -151,6 +157,10 @@
     .dark ::-webkit-scrollbar-thumb:hover {
       background: #616161;
     }
+
+    .font-outfit {
+      font-family: 'Outfit', sans-serif !important;
+    }
   </style>
   <script type="importmap">
 {
@@ -171,21 +181,26 @@
   class="bg-monday-bg dark:bg-monday-dark-bg text-monday-text dark:text-monday-dark-text transition-colors duration-200">
   <div id="root">
     <!-- Fallback loading state shown until React mounts -->
-    <div id="initial-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column;">
-      <div style="width: 32px; height: 32px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <div id="initial-loader"
+      style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column;">
+      <div
+        style="width: 32px; height: 32px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;">
+      </div>
       <p style="margin-top: 16px; color: #6B7280; font-size: 14px;">Loading NABD...</p>
     </div>
     <style>
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
     // Remove initial loader once React mounts (timeout fallback for debugging)
-    window.addEventListener('load', function() {
-      setTimeout(function() {
+    window.addEventListener('load', function () {
+      setTimeout(function () {
         var loader = document.getElementById('initial-loader');
         if (loader && loader.parentElement.children.length > 2) {
           loader.remove();
@@ -193,7 +208,7 @@
       }, 100);
     });
     // Show error message if React fails to mount after 15 seconds
-    setTimeout(function() {
+    setTimeout(function () {
       var loader = document.getElementById('initial-loader');
       if (loader) {
         loader.innerHTML = '<div style="text-align: center; padding: 20px;"><h2 style="color: #EF4444; margin-bottom: 10px;">Failed to load application</h2><p style="color: #6B7280; margin-bottom: 15px;">The app took too long to load. This may be a network issue.</p><button onclick="window.location.reload()" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 6px; cursor: pointer;">Reload Page</button></div>';

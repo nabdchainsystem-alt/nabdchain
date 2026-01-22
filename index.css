@@ -186,6 +186,19 @@
     animation: pulse-subtle 2s ease-in-out infinite;
 }
 
+@keyframes border-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-border-rotate {
+    animation: border-rotate 4s linear infinite;
+}
+
 @layer base {
 
     html {

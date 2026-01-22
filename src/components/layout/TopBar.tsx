@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Link, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController } from 'phosphor-react';
+import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Link, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
@@ -11,7 +11,9 @@ import { NotificationPanel } from './NotificationPanel';
 import { assignmentService, Assignment } from '../../services/assignmentService';
 
 import { NabdSmartBar } from '../ui/NabdSmartBar';
+import { QuickNotesPanel } from './QuickNotesPanel';
 import { Board } from '../../types';
+import { AICreditsDisplay } from '../AICreditsDisplay';
 
 interface TopBarProps {
   onNavigate: (view: string, boardId?: string) => void;
@@ -43,6 +45,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Quick Notes state
+  const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
+  const quickNotesRef = useRef<HTMLDivElement>(null);
 
   // Search results
   const searchResults = React.useMemo(() => {
@@ -99,6 +105,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       }
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchFocused(false);
+      }
+      if (quickNotesRef.current && !quickNotesRef.current.contains(event.target as Node)) {
+        setIsQuickNotesOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -339,6 +348,24 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             />
           </div>
 
+          {/* Quick Notes */}
+          <div className="relative" ref={quickNotesRef}>
+            <button
+              onClick={() => setIsQuickNotesOpen(!isQuickNotesOpen)}
+              title={t('quick_notes')}
+              className={`text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center ${isQuickNotesOpen ? 'bg-gray-100 dark:bg-monday-dark-hover text-[#323338] dark:text-monday-dark-text' : ''}`}
+            >
+              <Note size={21} weight="light" />
+            </button>
+            <QuickNotesPanel
+              isOpen={isQuickNotesOpen}
+              onClose={() => setIsQuickNotesOpen(false)}
+            />
+          </div>
+
+          {/* AI Credits Display */}
+          <AICreditsDisplay showMode={true} />
+
           {/* NABD AI Assistant */}
           <div className="relative">
             <NabdSmartBar boards={boards} onCreateTask={onCreateTask} onNavigate={onNavigate} />
@@ -356,13 +383,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           </button>
 
           {/* Theme Toggle */}
-          <button
+          {/* <button
             onClick={toggleTheme}
             title={theme === 'light' ? t('dark_mode') : t('light_mode')}
             className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
           >
             {theme === 'light' ? <Moon size={21} weight="light" /> : <Sun size={21} weight="light" />}
-          </button>
+          </button> */}
 
           <div className="relative" ref={profileRef}>
             <div

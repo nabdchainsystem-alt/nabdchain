@@ -15,19 +15,19 @@ export const formatTimeAgo = (input: number | string, language: 'en' | 'ar' = 'e
 
     if (language === 'ar') {
         if (mins < 1) return 'الآن';
-        if (mins < 60) return `منذ ${mins} د`;
+        if (mins < 60) return `منذ ${mins} دقيقة`;
 
         const hours = Math.floor(mins / 60);
-        if (hours < 24) return `منذ ${hours} س`;
+        if (hours < 24) return `منذ ${hours} ساعة`;
 
         const days = Math.floor(hours / 24);
-        if (days < 7) return `منذ ${days} ي`;
+        if (days < 7) return `منذ ${days} يوم`;
 
         const weeks = Math.floor(days / 7);
-        if (days < 30) return `منذ ${weeks} أسابيع`;
+        if (days < 30) return `منذ ${weeks} أسبوع`;
 
         const months = Math.floor(days / 30);
-        return `منذ ${months} أشهر`;
+        return `منذ ${months} شهر`;
     }
 
     if (mins < 1) return 'Just now';
@@ -88,13 +88,14 @@ export const getPersonName = (person: unknown): string => {
  */
 export const formatDate = (
     dateStr: string | Date | null | undefined,
-    options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+    options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' },
+    locale: string | undefined = undefined
 ): string => {
     if (!dateStr) return '';
 
     try {
         const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-        return date.toLocaleDateString(undefined, options);
+        return date.toLocaleDateString(locale, options);
     } catch {
         return '';
     }

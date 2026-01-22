@@ -275,7 +275,7 @@ export const NewTaskModal: React.FC<NewTaskModalProps> = ({
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5"
+                                    className="px-5 py-2.5 text-sm font-bold text-white bg-black hover:bg-gray-800 rounded-xl shadow-lg shadow-gray-200 transition-all hover:-translate-y-0.5"
                                 >
                                     {t('create_task')}
                                 </button>

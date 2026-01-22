@@ -20,6 +20,9 @@ importers:
       '@clerk/clerk-sdk-node':
         specifier: ^4.13.23
         version: 4.13.23(react@18.3.1)
+      '@google/generative-ai':
+        specifier: ^0.24.1
+        version: 0.24.1
       '@microsoft/microsoft-graph-client':
         specifier: ^3.0.7
         version: 3.0.7
@@ -451,6 +454,10 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
 
   '@hapi/boom@10.0.1':
     resolution: {integrity: sha512-ERcCZaEjdH3OgSJlyjVk8pHIFeus91CjKP3v+MpgBNp5IvGzP2l/bRiD78nqYcKPaZdbKkK5vDBVPd2ohHBlsA==}
@@ -2340,6 +2347,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.2':
     optional: true
+
+  '@google/generative-ai@0.24.1': {}
 
   '@hapi/boom@10.0.1':
     dependencies:

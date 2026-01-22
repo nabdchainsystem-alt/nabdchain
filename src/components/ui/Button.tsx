@@ -51,7 +51,7 @@ export const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyle = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyle = 'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed';
     const appliedSize = variant === 'icon' ? '' : sizeStyles[size];
 
     return (
@@ -61,12 +61,12 @@ export const Button: React.FC<ButtonProps> = ({
             {...props}
         >
             {isLoading ? (
-                <span className="mr-2 inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             ) : leftIcon ? (
-                <span className="mr-2">{leftIcon}</span>
+                <span>{leftIcon}</span>
             ) : null}
             {children}
-            {rightIcon && <span className="ml-2">{rightIcon}</span>}
+            {rightIcon && <span>{rightIcon}</span>}
         </button>
     );
 };

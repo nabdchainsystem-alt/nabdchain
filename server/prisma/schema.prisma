@@ -12,6 +12,7 @@ model User {
   email                    String                    @unique
   name                     String?
   avatarUrl                String?
+  aiCreditsBalance         Int                       @default(100)
   lastActiveAt             DateTime?
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
@@ -31,6 +32,8 @@ model User {
   workspace                Workspace?                @relation(fields: [workspaceId], references: [id])
   vaultItems               VaultItem[]
   pagePermissions          UserPagePermission[]
+  fileMappings             FileMapping[]
+  aiUsageLogs              AIUsageLog[]
 
   @@index([workspaceId])
   @@index([lastActiveAt])
@@ -422,4 +425,32 @@ model UserPagePermission {
 
   @@unique([userId, pageKey])
   @@index([userId])
+}
+
+model FileMapping {
+  id             String   @id @default(uuid())
+  userId         String
+  fileName       String
+  originalSchema String   // Raw headers/columns from file
+  mappedSchema   String   // AI-generated normalized mapping JSON
+  dataTypes      String   // Detected data types JSON
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AIUsageLog {
+  id          String   @id @default(uuid())
+  userId      String
+  tier        String   // 'cleaner' | 'worker' | 'thinker'
+  creditsUsed Int
+  promptType  String   // 'chart' | 'gtd' | 'analysis' | 'upload' | 'general'
+  success     Boolean
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }

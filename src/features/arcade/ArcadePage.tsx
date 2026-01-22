@@ -21,6 +21,7 @@ import {
   Target,
   GridFour,
 } from 'phosphor-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 // Lazy load game components to avoid loading game code until needed
 const SpaceShooterGame = React.lazy(() => import('./SpaceShooter/SpaceShooterGame'));
@@ -133,6 +134,7 @@ const GAMES: GameInfo[] = [
     available: true,
     category: 'action',
   },
+
   // Puzzle games
   {
     id: 'memory-match',
@@ -164,6 +166,7 @@ const GAMES: GameInfo[] = [
 ];
 
 const ArcadePage: React.FC = () => {
+  const { t } = useAppContext();
   const [activeGame, setActiveGame] = useState<GameId>('menu');
   const [highScores] = useState(() => {
     return {
@@ -191,8 +194,8 @@ const ArcadePage: React.FC = () => {
             <GameController size={28} weight="fill" className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Arcade</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Take a break and have some fun • {GAMES.length} games</p>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t('arcade')}</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('take_break') || 'Take a break and have some fun'} • {GAMES.length} {t('games') || 'games'}</p>
           </div>
         </div>
       </div>
@@ -231,30 +234,30 @@ const ArcadePage: React.FC = () => {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{game.title}</h3>
+                <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-1">{t(game.id) || game.title}</h3>
 
                 {/* Description */}
-                <p className="text-gray-500 dark:text-gray-400 text-xs mb-3 line-clamp-2">{game.description}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mb-3 line-clamp-2">{t(`desc_${game.id}`) || game.description}</p>
 
                 {/* High Score */}
                 {highScores[game.id as keyof typeof highScores] > 0 && (
                   <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-xs">
                     <Trophy size={14} weight="fill" />
-                    <span>Best: {highScores[game.id as keyof typeof highScores].toLocaleString()}</span>
+                    <span>{t('high_score')}: {highScores[game.id as keyof typeof highScores].toLocaleString()}</span>
                   </div>
                 )}
 
                 {/* Coming Soon badge */}
                 {!game.available && (
                   <div className="absolute top-3 right-3 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-500 dark:text-gray-400">
-                    Coming Soon
+                    {t('coming_soon') || 'Coming Soon'}
                   </div>
                 )}
 
                 {/* Play indicator */}
                 {game.available && (
                   <div className="mt-3 flex items-center gap-2 text-blue-600 dark:text-cyan-400 group-hover:text-blue-700 dark:group-hover:text-cyan-300 transition-colors">
-                    <span className="text-xs font-medium">Play Now</span>
+                    <span className="text-xs font-medium">{t('play_now')}</span>
                     <ArrowLeft size={14} className="rotate-180 group-hover:translate-x-1 transition-transform" />
                   </div>
                 )}
@@ -332,6 +335,7 @@ const ArcadePage: React.FC = () => {
           {activeGame === 'whack-a-mole' && (
             <WhackAMoleGame onBack={() => setActiveGame('menu')} />
           )}
+
         </Suspense>
       </div>
     );

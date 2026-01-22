@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Board, Task, ViewState } from '../../../types';
 import {
     X, MagnifyingGlass, Kanban, CheckCircle,
-    CaretRight, SquareHalf, ArrowSquareOut, Funnel, CalendarBlank, WarningCircle
+    CaretRight, SquareHalf, ArrowSquareOut, Funnel, CalendarBlank, WarningCircle,
+    SquaresFour, Clock, User, CaretDown, CaretUp
 } from 'phosphor-react';
 import { useAppContext } from '../../../contexts/AppContext';
 
@@ -28,6 +29,11 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
     const [selectedPriority, setSelectedPriority] = useState<'any' | 'High' | 'Medium' | 'Low'>('any');
     const [selectedTime, setSelectedTime] = useState<'any' | 'week' | 'overdue'>('any');
 
+    // Advanced Filters State
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+    const [selectedPersons, setSelectedPersons] = useState<string[]>([]);
+
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Focus input on open
@@ -41,13 +47,46 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
             setSelectedType('all');
             setSelectedPriority('any');
             setSelectedTime('any');
+            // Reset advanced filters
+            setIsFiltersOpen(false);
+            setSelectedStatuses([]);
+            setSelectedPersons([]);
         }
     }, [isOpen]);
+
+    // Extract Unique Options
+    const filterOptions = useMemo(() => {
+        const statuses = new Set<string>();
+        const people = new Map<string, { id: string, name: string, avatar?: string }>();
+
+        boards.forEach(board => {
+            board.tasks?.forEach(task => {
+                // Statuses
+                if (task.status) statuses.add(task.status);
+
+                // People
+                if (task.person) {
+                    if (typeof task.person === 'string') {
+                        // Skip simple strings if we want rich objects, or mock them
+                        // people.set(task.person, { id: task.person, name: task.person }); 
+                    } else if (typeof task.person === 'object' && task.person.id) {
+                        people.set(task.person.id, task.person);
+                    }
+                }
+            });
+        });
+
+        return {
+            statuses: Array.from(statuses),
+            people: Array.from(people.values())
+        };
+    }, [boards]);
 
     // Search Logic
     const results = useMemo(() => {
         // If no query and no filters, return empty
-        if (!searchQuery.trim() && selectedType === 'all' && selectedPriority === 'any' && selectedTime === 'any') {
+        if (!searchQuery.trim() && selectedType === 'all' && selectedPriority === 'any'
+            && selectedTime === 'any' && selectedStatuses.length === 0 && selectedPersons.length === 0) {
             return { boards: [], tasks: [] };
         }
 
@@ -90,7 +129,18 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                             const now = new Date();
                             const nextWeek = new Date();
                             nextWeek.setDate(now.getDate() + 7);
-                            return taskDate >= now && taskDate <= nextWeek;
+                            if (!(taskDate >= now && taskDate <= nextWeek)) return false;
+                        }
+
+                        // Advanced Status Filter
+                        if (selectedStatuses.length > 0) {
+                            if (!selectedStatuses.includes(task.status)) return false;
+                        }
+
+                        // Advanced Person Filter
+                        if (selectedPersons.length > 0) {
+                            const personId = typeof task.person === 'object' ? task.person.id : task.person;
+                            if (!personId || !selectedPersons.includes(personId)) return false;
                         }
 
                         return true;
@@ -106,7 +156,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
             boards: matchedBoards.slice(0, 5),
             tasks: matchedTasks.slice(0, 50)
         };
-    }, [searchQuery, boards, selectedType, selectedPriority, selectedTime]);
+    }, [searchQuery, boards, selectedType, selectedPriority, selectedTime, selectedStatuses, selectedPersons]);
 
 
 
@@ -163,20 +213,23 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                 <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
                                     <button
                                         onClick={() => setSelectedType('all')}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'all' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${selectedType === 'all' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
+                                        <SquaresFour size={14} weight={selectedType === 'all' ? 'fill' : 'regular'} />
                                         {t('all')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedType('boards')}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'boards' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${selectedType === 'boards' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
+                                        <Kanban size={14} weight={selectedType === 'boards' ? 'fill' : 'regular'} />
                                         {t('boards')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedType('tasks')}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'tasks' ? 'bg-white shadow-sm text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${selectedType === 'tasks' ? 'bg-white shadow-sm text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
+                                        <CheckCircle size={14} weight={selectedType === 'tasks' ? 'fill' : 'regular'} />
                                         {t('tasks')}
                                     </button>
                                 </div>
@@ -207,18 +260,107 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
                                 <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
                                     <button
                                         onClick={() => setSelectedTime(prev => prev === 'week' ? 'any' : 'week')}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedTime === 'week' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${selectedTime === 'week' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
+                                        <CalendarBlank size={14} weight={selectedTime === 'week' ? 'fill' : 'regular'} />
                                         {t('this_week')}
                                     </button>
                                     <button
                                         onClick={() => setSelectedTime(prev => prev === 'overdue' ? 'any' : 'overdue')}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedTime === 'overdue' ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${selectedTime === 'overdue' ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
+                                        <WarningCircle size={14} weight={selectedTime === 'overdue' ? 'fill' : 'regular'} />
                                         {t('overdue')}
                                     </button>
                                 </div>
+
+                                <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+                                {/* Advanced Filters Toggle */}
+                                <button
+                                    onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                                    className={`p-1.5 rounded-md transition-all flex items-center gap-1 ${isFiltersOpen ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                    title={t('more_filters')}
+                                >
+                                    <Funnel size={16} weight={isFiltersOpen ? 'fill' : 'regular'} />
+                                    {isFiltersOpen ? <CaretUp size={12} /> : <CaretDown size={12} />}
+                                </button>
                             </div>
+
+                            {/* Advanced Filters Panel */}
+                            <AnimatePresence>
+                                {isFiltersOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="pt-4 pb-2 border-t border-gray-100 flex flex-col gap-4">
+                                            {/* Statuses */}
+                                            {filterOptions.statuses.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('status')}</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {filterOptions.statuses.map(status => (
+                                                            <button
+                                                                key={status}
+                                                                onClick={() => {
+                                                                    setSelectedStatuses(prev =>
+                                                                        prev.includes(status)
+                                                                            ? prev.filter(s => s !== status)
+                                                                            : [...prev, status]
+                                                                    );
+                                                                }}
+                                                                className={`px-2 py-1 rounded text-xs transition-colors border ${selectedStatuses.includes(status)
+                                                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                                                        : 'bg-white border-gray-100 text-gray-600 hover:border-gray-200'
+                                                                    }`}
+                                                            >
+                                                                {status}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* People */}
+                                            {filterOptions.people.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('person')}</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {filterOptions.people.map(person => (
+                                                            <button
+                                                                key={person.id}
+                                                                onClick={() => {
+                                                                    setSelectedPersons(prev =>
+                                                                        prev.includes(person.id)
+                                                                            ? prev.filter(id => id !== person.id)
+                                                                            : [...prev, person.id]
+                                                                    );
+                                                                }}
+                                                                className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs transition-colors border ${selectedPersons.includes(person.id)
+                                                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                                                        : 'bg-white border-gray-100 text-gray-600 hover:border-gray-200'
+                                                                    }`}
+                                                            >
+                                                                {person.avatar ? (
+                                                                    <img src={person.avatar} alt={person.name} className="w-4 h-4 rounded-full" />
+                                                                ) : (
+                                                                    <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold">
+                                                                        {person.name.charAt(0)}
+                                                                    </div>
+                                                                )}
+                                                                {person.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Results Area */}

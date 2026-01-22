@@ -16,6 +16,7 @@ import assignmentRoutes from './routes/assignmentRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import aiRoutes from './routes/aiRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
@@ -182,6 +183,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/ai', aiRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {

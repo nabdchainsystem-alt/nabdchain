@@ -15,6 +15,7 @@ import { NavigationProvider } from './contexts/NavigationContext';
 import { FocusProvider } from './contexts/FocusContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import { ToastProvider } from './features/marketplace/components/Toast';
+import { AIProvider } from './contexts/AIContext';
 import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
 import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage } from './utils/storage';
@@ -1687,10 +1688,10 @@ const App: React.FC = () => {
   // Check for mobile subdomain
   const hostname = window.location.hostname;
   const isMobileSubdomain = hostname === 'mobile.nabdchain.com' ||
-                            hostname === 'mobile.app.nabdchain.com' ||
-                            hostname.startsWith('mobile.localhost') ||
-                            // For local testing: use ?mobile=true query param
-                            new URLSearchParams(window.location.search).get('mobile') === 'true';
+    hostname === 'mobile.app.nabdchain.com' ||
+    hostname.startsWith('mobile.localhost') ||
+    // For local testing: use ?mobile=true query param
+    new URLSearchParams(window.location.search).get('mobile') === 'true';
 
   // Render mobile app for mobile subdomain
   if (isMobileSubdomain) {
@@ -1708,26 +1709,28 @@ const App: React.FC = () => {
           <NavigationProvider>
             <FocusProvider>
               <ToastProvider>
-                {/* Invitation Route */}
-                <Router>
-                  <Routes>
-                    <Route
-                      path="/invite/accept"
-                      element={
-                        <>
-                          <SignedIn>
-                            <AcceptInvitePage />
-                          </SignedIn>
-                          <SignedOut>
-                            <RedirectToSignIn />
-                          </SignedOut>
-                        </>
-                      }
-                    />
-                    {/* Dashboard & Main App Routes */}
-                    <Route path="*" element={<AppRoutes />} />
-                  </Routes>
-                </Router>
+                <AIProvider>
+                  {/* Invitation Route */}
+                  <Router>
+                    <Routes>
+                      <Route
+                        path="/invite/accept"
+                        element={
+                          <>
+                            <SignedIn>
+                              <AcceptInvitePage />
+                            </SignedIn>
+                            <SignedOut>
+                              <RedirectToSignIn />
+                            </SignedOut>
+                          </>
+                        }
+                      />
+                      {/* Dashboard & Main App Routes */}
+                      <Route path="*" element={<AppRoutes />} />
+                    </Routes>
+                  </Router>
+                </AIProvider>
               </ToastProvider>
             </FocusProvider>
           </NavigationProvider>

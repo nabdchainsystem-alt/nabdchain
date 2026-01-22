@@ -15,6 +15,7 @@ interface LanguageContextType {
     language: Language;
     setLanguage: (lang: Language) => void;
     t: (key: string) => string;
+    dir: 'ltr' | 'rtl';
 }
 
 const translations: TranslationMap = {
@@ -32,10 +33,18 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const [language, setLanguage] = useState<Language>('en');
     const t = (key: string): string => translations[language]?.[key] || key;
 
+    // Update document direction and language capability
+    React.useEffect(() => {
+        const dir = language === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.dir = dir;
+        document.documentElement.lang = language;
+    }, [language]);
+
     const value: LanguageContextType = {
         language,
         setLanguage,
-        t
+        t,
+        dir: language === 'ar' ? 'rtl' : 'ltr'
     };
 
     return (
@@ -50,8 +59,9 @@ export const useLanguage = (): LanguageContextType => {
     if (!context) {
         return {
             language: 'en',
-            setLanguage: () => {},
-            t: (k: string) => k
+            setLanguage: () => { },
+            t: (k: string) => k,
+            dir: 'ltr'
         };
     }
     return context;

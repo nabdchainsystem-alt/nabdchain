@@ -36,6 +36,7 @@ const generateRainDrops = (count: number) => {
 export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
     const [timeLeft, setTimeLeft] = useState(300);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const rainAudioRef = useRef<HTMLAudioElement | null>(null);
     const [isExiting, setIsExiting] = useState(false);
     const [lightning, setLightning] = useState(false);
     const [sceneIndex, setSceneIndex] = useState(0);
@@ -108,12 +109,20 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
 
     // Audio with smooth fade-in
     useEffect(() => {
+        // Thunder audio
         const audio = new Audio('/sounds/dry-thunder-364468.mp3');
         audio.loop = true;
         audio.volume = 0;
         audioRef.current = audio;
 
-        audio.play().catch(e => console.log('Audio play failed:', e));
+        // Rain audio
+        const rainAudio = new Audio('/sounds/calming-rain-257596.mp3');
+        rainAudio.loop = true;
+        rainAudio.volume = 0;
+        rainAudioRef.current = rainAudio;
+
+        audio.play().catch(e => console.log('Thunder audio play failed:', e));
+        rainAudio.play().catch(e => console.log('Rain audio play failed:', e));
 
         let volume = 0;
         const fadeIn = setInterval(() => {
@@ -123,6 +132,7 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
                 clearInterval(fadeIn);
             }
             audio.volume = volume;
+            rainAudio.volume = volume * 0.7; // Rain slightly quieter than thunder
         }, 60);
 
         return () => {
@@ -130,6 +140,10 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
+            }
+            if (rainAudioRef.current) {
+                rainAudioRef.current.pause();
+                rainAudioRef.current.currentTime = 0;
             }
         };
     }, []);
@@ -174,17 +188,26 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
         setIsExiting(true);
 
         const audio = audioRef.current;
-        if (audio) {
-            let volume = audio.volume;
+        const rainAudio = rainAudioRef.current;
+
+        if (audio || rainAudio) {
+            let volume = audio?.volume || rainAudio?.volume || 0.6;
             const fadeOut = setInterval(() => {
                 volume -= 0.02;
                 if (volume <= 0) {
                     clearInterval(fadeOut);
-                    audio.pause();
-                    audio.currentTime = 0;
+                    if (audio) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                    if (rainAudio) {
+                        rainAudio.pause();
+                        rainAudio.currentTime = 0;
+                    }
                     onCheck();
                 }
-                audio.volume = Math.max(0, volume);
+                if (audio) audio.volume = Math.max(0, volume);
+                if (rainAudio) rainAudio.volume = Math.max(0, volume * 0.7);
             }, 30);
         } else {
             onCheck();

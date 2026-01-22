@@ -687,8 +687,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                 <Globe size={18} className="text-purple-500" />
                             </div>
                             <div>
-                                <p className="font-medium text-gray-900 dark:text-white">Region & Currency</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Select your country to update currency ({country.currency.symbol})</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{t('region_currency') || 'Region & Currency'}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? `اختر دولتك لتحديث العملة (${country.currency.symbol})` : `Select your country to update currency (${country.currency.symbol})`}</p>
                             </div>
                         </div>
                         <select
@@ -1134,8 +1134,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                             </td>
                                             <td className="py-3 px-4">
                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${adminUser.role === 'admin'
-                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                                     }`}>
                                                     {adminUser.role === 'admin' && <Crown size={12} />}
                                                     {adminUser.role}
@@ -1150,10 +1150,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                                         )}
                                                         disabled={changingRole === adminUser.id}
                                                         className={`text-sm px-3 py-1 rounded-lg transition-colors ${changingRole === adminUser.id
-                                                                ? 'bg-gray-100 text-gray-400 cursor-wait'
-                                                                : adminUser.role === 'admin'
-                                                                    ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
-                                                                    : 'bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400'
+                                                            ? 'bg-gray-100 text-gray-400 cursor-wait'
+                                                            : adminUser.role === 'admin'
+                                                                ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
+                                                                : 'bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400'
                                                             }`}
                                                     >
                                                         {changingRole === adminUser.id

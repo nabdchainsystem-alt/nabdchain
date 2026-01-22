@@ -23,6 +23,10 @@ const translations: Translations = {
   workspaces: { en: 'Workspaces', ar: 'مساحات العمل' },
   search: { en: 'Search', ar: 'بحث' },
   add_workspace: { en: 'Add Workspace', ar: 'إضافة مساحة عمل' },
+  notifications: { en: 'Notifications', ar: 'الإشعارات' },
+  mark_all_read: { en: 'Mark all as read', ar: 'تحديد الكل كمقروء' },
+  no_notifications: { en: 'No notifications', ar: 'لا توجد إشعارات' },
+  view_assignment: { en: 'View Assignment', ar: 'عرض المهمة' },
 
   // Greetings
   good_morning: { en: 'Good morning', ar: 'صباح الخير' },
@@ -445,6 +449,41 @@ const translations: Translations = {
   attendees: { en: 'Attendees', ar: 'الحضور' },
   add_people: { en: 'Add people...', ar: 'إضافة أشخاص...' },
 
+  // Settings Page
+  account_settings: { en: 'Account Settings', ar: 'إعدادات الحساب' },
+  notification_settings: { en: 'Notification Settings', ar: 'إعدادات الإشعارات' },
+  control_notifications_desc: { en: 'Control how you receive notifications.', ar: 'تحكم في كيفية تلقي الإشعارات.' },
+  manage_notifications_desc: { en: 'Manage your notification preferences.', ar: 'إدارة تفضيلات الإشعارات الخاصة بك.' },
+  email_digest: { en: 'Email Digest', ar: 'ملخص البريد الإلكتروني' },
+  realtime_alerts: { en: 'Real-time Alerts', ar: 'تنبيهات فورية' },
+  mobile_push: { en: 'Mobile Push', ar: 'إشعارات الجوال' },
+  slack_integration: { en: 'Slack Integration', ar: 'تكامل Slack' },
+  coming_soon: { en: 'Coming Soon', ar: 'قريباً' },
+  general: { en: 'General', ar: 'عام' },
+  user_profile: { en: 'User Profile', ar: 'الملف الشخصي' },
+  email_notifications: { en: 'Email Notifications', ar: 'إشعارات البريد الإلكتروني' },
+  push_notifications: { en: 'Push Notifications', ar: 'الإشعارات الفورية' },
+  privacy_security: { en: 'Privacy & Security', ar: 'الخصوصية والأمان' },
+
+  // Dashboard & Home
+  arcade: { en: 'Arcade', ar: 'الأركيد' },
+
+  // Arcade Games
+  snake: { en: 'Snake', ar: 'الثعبان' },
+  tetris: { en: 'Tetris', ar: 'تتريس' },
+  breakout: { en: 'Breakout', ar: 'تحطيم الطوب' },
+  pong: { en: 'Pong', ar: 'بونغ' },
+  space_invaders: { en: 'Space Invaders', ar: 'غزاة الفضاء' },
+  minesweeper: { en: 'Minesweeper', ar: 'كاسحة الألغام' },
+  memory_match: { en: 'Memory Match', ar: 'تطابق الذاكرة' },
+  wordle: { en: 'Wordle', ar: 'وردل' },
+  sudoku: { en: 'Sudoku', ar: 'سودوكو' },
+  chess: { en: 'Chess', ar: 'الشطرنج' },
+  solitaire: { en: 'Solitaire', ar: 'سوليتير' },
+  play_now: { en: 'Play Now', ar: 'العب الآن' },
+  high_score: { en: 'High Score', ar: 'أعلى نتيجة' },
+
+
   // TopBar - Focus Timer
   pause: { en: 'Pause', ar: 'إيقاف مؤقت' },
   resume: { en: 'Resume', ar: 'استئناف' },
@@ -606,7 +645,39 @@ const translations: Translations = {
   shipping_dashboard: { en: 'Shipping Dashboard', ar: 'لوحة الشحن' },
   logistics_tracking_desc: { en: 'Logistics tracking, delivery performance, and route optimization.', ar: 'تتبع الخدمات اللوجستية وأداء التسليم وتحسين المسارات.' },
   active_shipments: { en: 'Active Shipments', ar: 'الشحنات النشطة' },
+  // Activity Patterns
+  activity_created_board: { en: 'Created board: {name}', ar: 'تم إنشاء اللوحة: {name}' },
+  activity_created_task: { en: 'Created task "{task}" in {board}', ar: 'تم إنشاء المهمة "{task}" في {board}' },
+  activity_updated_status: { en: 'Updated "{task}" status to {status} in {board}', ar: 'تم تحديث حالة "{task}" إلى {status} في {board}' },
+  activity_sent_email: { en: 'Sent email to {email}', ar: 'تم إرسال بريد إلى {email}' },
+
+  // Arcade Descriptions
+  desc_space_shooter: { en: 'Classic vertical scrolling shooter. Destroy enemies, collect power-ups, survive waves!', ar: 'لعبة إطلاق نار كلاسيكية. دمر الأعداء، واجمع القوة، وابق على قيد الحياة!' },
+  desc_space_invaders: { en: 'Defend Earth from descending alien invaders. Classic arcade action!', ar: 'دافع عن الأرض من الغزاة الفضائيين. أكشن أركيد كلاسيكي!' },
+  desc_asteroids: { en: 'Navigate your ship through space and destroy asteroids to survive!', ar: 'قُد سفينتك عبر الفضاء ودمر الكويكبات للبقاء على قيد الحياة!' },
+  desc_snake: { en: 'Classic snake game with power-ups. Eat food to grow, collect abilities!', ar: 'لعبة الثعبان الكلاسيكية. كل الطعام لتكبر، واجمع القدرات!' },
+  desc_tetris: { en: 'Stack falling blocks to clear lines. How long can you survive?', ar: 'رتب الكتل المتساقطة لمسح الخطوط. إلى متى يمكنك الصمود؟' },
+  desc_breakout: { en: 'Bounce the ball and break all the bricks. Collect power-ups!', ar: 'ارتد الكرة وحطم كل الطوب. اجمع التعزيزات!' },
+  desc_pong: { en: 'Classic paddle game against AI. First to 7 points wins!', ar: 'لعبة المضرب الكلاسيكية ضد الذكاء الاصطناعي. الفائز من يصل لـ 7 نقاط!' },
+  desc_flappy_bird: { en: 'Tap to fly through pipes. Simple but addictive!', ar: 'اضغط للطيران عبر الأنابيب. بسيطة لكن مسببة للإدمان!' },
+  desc_whack_a_mole: { en: 'Hit the moles as they pop up! Golden moles worth more points!', ar: 'اضرب الشامات وخي تظهر! الشامات الذهبية تستحق نقاطًا أكثر!' },
+  desc_memory_match: { en: 'Find matching pairs. Test your memory skills!', ar: 'اعثر على الأزواج المتطابقة. اختبر مهارات ذاكرتك!' },
+  desc_sudoku: { en: 'Fill the grid so every row, column, and 3x3 box has 1-9!', ar: 'املأ الشبكة بحيث يحتوي كل صف وعمود ومربع 3x3 على 1-9!' },
+  desc_simon_says: { en: 'Remember and repeat the color sequence. Test your memory!', ar: 'تذكر وكرر تسلسل الألوان. اختبر ذاكرتك!' },
+
+  // Settings
+  views_visibility: { en: 'Views Visibility', ar: 'رؤية الصفحات' },
+  search_people: { en: 'Search people...', ar: 'بحث عن أشخاص...' },
+  add_more: { en: 'Add more...', ar: 'إضافة المزيد...' },
+  clear_and_close: { en: 'Clear and close', ar: 'مسح وإغلاق' },
+  team: { en: 'Team', ar: 'فريق' },
+  no_matches: { en: 'No matches found', ar: 'لا توجد نتائج' },
+  filter_by_person: { en: 'Filter by person', ar: 'تصفية حسب الشخص' },
+  no_date: { en: 'No Date', ar: 'بلا تاريخ' },
+  open_in_board: { en: 'Open in board', ar: 'فتح في اللوحة' },
+
   on_track: { en: 'On Track', ar: 'على المسار' },
+  use_quick_notes_hint: { en: 'If you want to write a quick note use NABD Bar', ar: 'إذا أردت كتابة ملاحظة سريعة استخدم شريط نبض' },
 
   // Team Profile
   back_to_team: { en: 'Back to Team', ar: 'العودة للفريق' },
@@ -981,7 +1052,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
     return 'light';
   });
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('app-language') as Language) || 'en';
+  });
   const [userDisplayName, setUserDisplayName] = useState<string>(() => {
     return localStorage.getItem('app-user-display-name') || 'Alex';
   });
@@ -1010,6 +1083,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const root = window.document.documentElement;
     root.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
     root.setAttribute('lang', language);
+    localStorage.setItem('app-language', language);
   }, [language]);
 
   useEffect(() => {

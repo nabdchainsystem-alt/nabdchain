@@ -142,6 +142,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
   // Scroll Container Ref
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [initialScrollLeft, setInitialScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    if (scrollContainerRef.current) {
+      setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+      setInitialScrollLeft(scrollContainerRef.current.scrollLeft);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // scroll-fast
+    scrollContainerRef.current.scrollLeft = initialScrollLeft - walk;
+  };
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -629,7 +656,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
             {/* Date Widget */}
             <div className="px-5 py-2 bg-white dark:bg-monday-dark-surface rounded-full shadow-sm border border-gray-100 dark:border-monday-dark-border dark:border-monday-dark-border">
               <span className="text-sm font-medium text-gray-600 dark:text-monday-dark-text-secondary">
-                {currentTime.toLocaleDateString('en-US', { weekday: 'long' })}, {currentTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                {currentTime.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long' })}, {currentTime.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', day: 'numeric' })}
               </span>
             </div>
           </div>
@@ -691,8 +718,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
           {/* Scrollable Container */}
           <div
             ref={scrollContainerRef}
-            className="flex gap-6 overflow-x-auto snap-x scroll-smooth pb-4 -mx-1 px-1 no-scrollbar"
+            className={`flex gap-6 overflow-x-auto pb-4 -mx-1 px-1 no-scrollbar cursor-grab ${isDragging ? 'cursor-grabbing scroll-auto select-none' : 'snap-x scroll-smooth'}`}
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
           >
             {recentlyVisited.length > 0 ? (
               recentlyVisited
@@ -739,7 +770,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       {/* Content */}
                       <div className="p-4 cursor-pointer flex-1 flex flex-col justify-between" onClick={() => onNavigate(item.type, item.boardId)}>
                         <div>
-                          <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-blue-600 transition-colors">{item.title}</h3>
+                          <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">{item.title}</h3>
                           <p className="text-xs text-gray-500 dark:text-monday-dark-text-secondary mb-2 truncate">
                             {item.boardId ? t('project_board') : t('application_module')}
                           </p>
@@ -759,7 +790,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">{t('open')}</span>
+                            <span className="text-xs text-black font-medium opacity-0 group-hover:opacity-100 transition-opacity">{t('open')}</span>
                           )}
                           <span className="text-[10px] text-gray-300 font-medium">{formatTimeAgo(item.timestamp, language)}</span>
                         </div>
@@ -800,7 +831,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onNavigate('my_work')}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline mr-1"
+                        className="text-xs font-medium text-gray-600 hover:text-gray-900 hover:underline mr-1 dark:text-gray-400 dark:hover:text-gray-200"
                       >
                         {t('show_all')}
                       </button>
@@ -815,7 +846,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       <div className="flex items-center">
                         <button
                           onClick={() => setActiveFilter('all')}
-                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
+                          className={`p-1.5 rounded-md transition-all ${activeFilter === 'all' ? 'bg-gray-200 dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                           title={t('all_tasks')}
                         >
                           <SquaresFour size={16} weight={activeFilter === 'all' ? 'fill' : 'regular'} />
@@ -957,7 +988,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                               setActiveFilter('person');
                               setHighlightedIndex(0);
                             }}
-                            className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
+                            className={`w-full h-full p-1.5 flex items-center justify-center rounded-md transition-all ${activeFilter === 'person' ? 'bg-gray-200 dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-400 dark:text-monday-dark-text-muted hover:text-gray-600 dark:text-monday-dark-text-secondary hover:bg-gray-100 dark:hover:bg-monday-dark-elevated'}`}
                             title={t('filter_by_person')}
                           >
                             <User size={16} weight={activeFilter === 'person' ? 'fill' : 'regular'} />
@@ -976,7 +1007,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                             <p className="text-sm font-medium text-gray-900 truncate">{task.name}</p>
                             <p className="text-xs text-gray-500 dark:text-monday-dark-text-secondary mt-1 flex items-center gap-1">
                               <CalendarBlank size={12} weight="light" />
-                              {task.date ? formatDate(task.date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('no_date')}
+                              {task.date ? formatDate(task.date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, language === 'ar' ? 'ar-EG' : 'en-US') : t('no_date')}
                               <span className="mx-1">•</span>
                               <Folder size={12} weight="light" />
                               {task.boardName}
@@ -1118,37 +1149,72 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                 <div className="flow-root flex-1 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
                   <ul className="-mb-8" role="list">
                     {activities.length > 0 ? (
-                      activities.slice(0, 5).map((activity, idx) => (
-                        <li key={activity.id}>
-                          <div className="relative pb-8">
-                            {idx !== activities.length - 1 && (
-                              <span aria-hidden="true" className={`absolute top-4 h-full w-0.5 bg-gray-200 ${language === 'ar' ? 'right-4 -mr-px' : 'left-4 -ml-px'}`}></span>
-                            )}
-                            <div className="relative flex gap-3">
-                              <div>
-                                {(() => {
-                                  const styles = getActivityStyles(activity.type);
-                                  return (
-                                    <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${styles.bg}`}>
-                                      <styles.icon size={16} weight="light" className={styles.color} />
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                              <div className="min-w-0 flex-1 pt-1.5 flex justify-between gap-4">
+                      activities.slice(0, 5).map((activity, idx) => {
+                        // Translation Helper for Activities
+                        let content = activity.content;
+                        if (language === 'ar') {
+                          // Try to match specific patterns
+                          // 1. Created board
+                          const createdBoardMatch = content.match(/Created board: (.*)/i);
+                          if (createdBoardMatch) {
+                            content = (t('activity_created_board') || 'Created board: {name}').replace('{name}', createdBoardMatch[1]);
+                          }
+                          // 2. Created task
+                          const createdTaskMatch = content.match(/Created task "(.*)" in (.*)/i);
+                          if (createdTaskMatch) {
+                            const [_, taskName, boardName] = createdTaskMatch;
+                            content = (t('activity_created_task') || 'Created task "{task}" in {board}')
+                              .replace('{task}', taskName)
+                              .replace('{board}', boardName);
+                          }
+                          // 3. Updated status
+                          const updatedStatusMatch = content.match(/Updated "(.*)" status to (.*) in (.*)/i);
+                          if (updatedStatusMatch) {
+                            const [_, taskName, status, boardName] = updatedStatusMatch;
+                            content = (t('activity_updated_status') || 'Updated "{task}" status to {status} in {board}')
+                              .replace('{task}', taskName)
+                              .replace('{status}', status)
+                              .replace('{board}', boardName);
+                          }
+                          // 4. Sent email
+                          const sentEmailMatch = content.match(/Sent email to (.*)/i);
+                          if (sentEmailMatch) {
+                            content = (t('activity_sent_email') || 'Sent email to {email}').replace('{email}', sentEmailMatch[1]);
+                          }
+                        }
+
+                        return (
+                          <li key={activity.id}>
+                            <div className="relative pb-8">
+                              {idx !== activities.length - 1 && (
+                                <span aria-hidden="true" className={`absolute top-4 h-full w-0.5 bg-gray-200 ${language === 'ar' ? 'right-4 -mr-px' : 'left-4 -ml-px'}`}></span>
+                              )}
+                              <div className="relative flex gap-3">
                                 <div>
-                                  <p className="text-sm text-gray-500 dark:text-monday-dark-text-secondary">
-                                    {activity.content}
-                                  </p>
+                                  {(() => {
+                                    const styles = getActivityStyles(activity.type);
+                                    return (
+                                      <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${styles.bg}`}>
+                                        <styles.icon size={16} weight="light" className={styles.color} />
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
-                                <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-monday-dark-text-secondary">
-                                  {formatTimeAgo(new Date(activity.createdAt).getTime(), language)}
+                                <div className="min-w-0 flex-1 pt-1.5 flex justify-between gap-4">
+                                  <div>
+                                    <p className="text-sm text-gray-500 dark:text-monday-dark-text-secondary">
+                                      {content}
+                                    </p>
+                                  </div>
+                                  <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-monday-dark-text-secondary">
+                                    {formatTimeAgo(new Date(activity.createdAt).getTime(), language)}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </li>
-                      ))
+                          </li>
+                        );
+                      })
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-gray-400 dark:text-monday-dark-text-muted">
                         <Clock size={32} weight="light" className="text-gray-300 mb-1" />
@@ -1162,13 +1228,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
             {/* Quick Notes (Row 1, Col 3) */}
             <section className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-sm border border-gray-200 dark:border-monday-dark-border dark:border-monday-dark-border p-6 lg:col-span-1">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-lg font-bold text-gray-800 dark:text-monday-dark-text flex items-center gap-2">
                   <NotePencil size={24} weight="light" className="text-yellow-500" />
                   {t('quick_notes')}
                 </h2>
                 <span className="text-xs text-gray-400 dark:text-monday-dark-text-muted">{t('auto_saved')}</span>
               </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{t('use_quick_notes_hint')}</p>
               <textarea
                 className="w-full h-32 p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-gray-800 dark:text-monday-dark-text placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-yellow-300 resize-none"
                 placeholder={t('jot_down')}
