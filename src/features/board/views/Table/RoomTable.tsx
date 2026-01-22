@@ -897,15 +897,42 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const worksheet = workbook.Sheets[sheetName];
 
             // Get raw data (array of arrays)
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+            const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-            if (jsonData.length === 0) {
-                boardLogger.warn('Empty file imported');
+            if (!rawData || rawData.length === 0) {
+                showToast('The file appears to be empty.', 'error');
                 return;
             }
 
-            // 1. Process Columns from First Row
-            const headerRow = jsonData[0];
+            // Smart header row detection - scan first 20 rows for the best candidate
+            let headerRowIndex = 0;
+            let maxNonEmptyCells = 0;
+
+            for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                const row = rawData[i];
+                if (!Array.isArray(row)) continue;
+
+                // Count non-empty string cells (headers are usually strings)
+                const nonEmptyCells = row.filter((cell: any) =>
+                    cell != null &&
+                    String(cell).trim() !== '' &&
+                    typeof cell === 'string'
+                ).length;
+
+                // Prefer rows with more non-empty string cells
+                if (nonEmptyCells > maxNonEmptyCells) {
+                    maxNonEmptyCells = nonEmptyCells;
+                    headerRowIndex = i;
+                }
+            }
+
+            const headerRow = rawData[headerRowIndex] || [];
+            const dataRows = rawData.slice(headerRowIndex + 1);
+
+            if (dataRows.length === 0) {
+                showToast(`Found headers at row ${headerRowIndex + 1}, but no data rows.`, 'error');
+                return;
+            }
 
             // Helper to detect column type from header name
             const detectColumnType = (headerName: string): string => {
@@ -917,11 +944,25 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 return 'text';
             };
 
+            // Track used IDs to handle duplicates
+            const usedIds = new Set<string>();
+
             const newColumns: Column[] = headerRow.map((header: any, index: number) => {
                 const headerStr = header != null ? String(header).trim() : '';
                 const colType = detectColumnType(headerStr);
+
+                // Generate unique ID - handle duplicates by appending index
+                let baseId = headerStr.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '') || `col_${index}`;
+                let id = baseId;
+                let suffix = 1;
+                while (usedIds.has(id)) {
+                    id = `${baseId}_${suffix}`;
+                    suffix++;
+                }
+                usedIds.add(id);
+
                 return {
-                    id: headerStr.toLowerCase().replace(/\s+/g, '_') || `col_${index}`,
+                    id,
                     label: headerStr || `Column ${index + 1}`,
                     type: colType,
                     width: colType === 'status' || colType === 'priority' ? 140 : 150,
@@ -931,82 +972,59 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 };
             });
 
-            // Ensure we keep 'select' column if it's special
-            const hasSelect = newColumns.find(c => c.id === 'select');
-            if (!hasSelect) {
-                // Add select column at start if not present (unlikely from excel)
-                newColumns.unshift({ id: 'select', label: '', type: 'text', width: 40, pinned: true, minWidth: 40, resizable: false });
-            }
+            // Add select column at start
+            newColumns.unshift({ id: 'select', label: '', type: 'text', width: 40, pinned: true, minWidth: 40, resizable: false });
 
-            // 2. Process Rows
-            // Assuming first column in Excel becomes the 'name' / primary column? 
-            // Or just map by index?
-            // Let's try to map 'name' to the first actual data column.
+            // Find or create 'name' column - required for table functionality
+            let nameColIndex = newColumns.findIndex(c =>
+                c.id === 'name' ||
+                c.label.toLowerCase() === 'name' ||
+                c.label.toLowerCase() === 'title' ||
+                c.label.toLowerCase() === 'task' ||
+                c.label.toLowerCase() === 'item'
+            );
 
-            // Refine Name Column: 
-            // If we have a column named 'name' or 'title', use that as ID 'name'.
-            // Otherwise, set the first non-select column as 'name'.
-
-            // Let's look at the generated IDs.
-            let nameColIndex = newColumns.findIndex(c => c.id === 'name' || c.label.toLowerCase() === 'name' || c.label.toLowerCase() === 'title');
             if (nameColIndex === -1) {
-                // No explicit name column found, use the first non-select column
+                // Use first non-select column as name
                 nameColIndex = newColumns.findIndex(c => c.id !== 'select');
             }
 
-            if (nameColIndex !== -1) {
-                // Force ID to be 'name' for the primary column implementation
-                // Actually, our table relies on 'name' col ID? 
-                // Yes, `col.id === 'name'` is checked in many places.
-                // So we MUST have a column with id 'name'.
-
-                // Update the ID of that column to 'name'
+            if (nameColIndex !== -1 && newColumns[nameColIndex].id !== 'name') {
                 newColumns[nameColIndex] = { ...newColumns[nameColIndex], id: 'name', pinned: true };
             }
 
-            const newRows: Row[] = jsonData.slice(1).map((rowArray: any[], rowIndex: number) => {
+            // Get data columns (excluding select) - these map 1:1 with Excel columns
+            const dataColumns = newColumns.filter(c => c.id !== 'select');
+
+            // Helper to normalize status values
+            const normalizeStatus = (value: any): string => {
+                if (!value) return 'To Do';
+                const lower = String(value).toLowerCase().trim();
+                if (lower === 'done' || lower === 'completed' || lower === 'complete') return 'Done';
+                if (lower === 'in progress' || lower === 'in-progress' || lower === 'inprogress' || lower === 'working' || lower === 'working on it') return 'In Progress';
+                if (lower === 'stuck' || lower === 'blocked') return 'Stuck';
+                if (lower === 'rejected' || lower === 'cancelled' || lower === 'canceled') return 'Rejected';
+                if (lower === 'to do' || lower === 'todo' || lower === 'pending' || lower === 'not started') return 'To Do';
+                return String(value).trim();
+            };
+
+            const newRows: Row[] = [];
+            const baseTimestamp = Date.now();
+
+            dataRows.forEach((rowArray: any[], rowIndex: number) => {
+                // Skip empty rows
+                if (!rowArray || rowArray.length === 0) return;
+                if (rowArray.every((cell: any) => cell == null || cell === '')) return;
+
                 const rowData: any = {
-                    id: Date.now().toString() + rowIndex,
-                    groupId: tableGroups[0]?.id || 'group_1', // Add to first group by default
-                    status: 'To Do', // Defaults
+                    id: `${baseTimestamp}_${rowIndex}`,
+                    groupId: tableGroups[0]?.id || 'group-1',
+                    status: 'To Do',
                     priority: null,
                 };
 
-                // Map array values to column IDs
-                // Note: newColumns includes 'select' at index 0 probably. 
-                // headerRow might NOT have 'select'.
-                // Need to align indexes.
-
-                // headerRow index i corresponds to data row index i.
-                // We constructed newColumns from headerRow.
-                // BUT we might have unshifted 'select'.
-
-                // Let's reconstruct cleanly.
-                // Headers: [A, B, C] -> Cols: [Select, A, B, C] (if we added select)
-                // Data: [1, 2, 3]
-                // A -> 1, B -> 2, C -> 3
-
-                // Re-find the mapped columns excluding 'select' if it wasn't in file.
-                // Actually, I set IDs based on header content.
-                // Let's check if 'select' was added artificially.
-
-                const dataColumns = newColumns.filter(c => c.id !== 'select'); // These correspond to the file columns in order
-
-                // Helper to normalize status values
-                const normalizeStatus = (value: any): string => {
-                    if (!value) return 'To Do';
-                    const lower = String(value).toLowerCase().trim();
-                    if (lower === 'done' || lower === 'completed' || lower === 'complete') return 'Done';
-                    if (lower === 'in progress' || lower === 'in-progress' || lower === 'inprogress' || lower === 'working' || lower === 'working on it') return 'In Progress';
-                    if (lower === 'stuck' || lower === 'blocked') return 'Stuck';
-                    if (lower === 'rejected' || lower === 'cancelled' || lower === 'canceled') return 'Rejected';
-                    if (lower === 'to do' || lower === 'todo' || lower === 'pending' || lower === 'not started') return 'To Do';
-                    // If no match, capitalize first letter of each word
-                    return String(value).trim();
-                };
-
                 rowArray.forEach((cellValue, idx) => {
-                    if (dataColumns[idx]) {
+                    if (idx < dataColumns.length) {
                         const col = dataColumns[idx];
                         let normalizedValue = cellValue;
 
@@ -1016,7 +1034,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         } else if (col.type === 'priority' || col.id === 'priority') {
                             normalizedValue = normalizePriority(cellValue != null ? String(cellValue) : null);
                         } else if (col.type === 'date' && cellValue) {
-                            // Try to parse date values
                             const dateVal = new Date(cellValue);
                             normalizedValue = !isNaN(dateVal.getTime()) ? dateVal.toISOString() : cellValue;
                         }
@@ -1025,28 +1042,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     }
                 });
 
-                // Ensure status has a value if column exists
-                if (!rowData.status && dataColumns.some(c => c.id === 'status' || c.type === 'status')) {
-                    rowData.status = 'To Do';
-                }
-
-                return rowData as Row;
+                newRows.push(rowData as Row);
             });
 
-            // 3. Update State
+            if (newRows.length === 0) {
+                showToast('No valid data rows found in the file.', 'error');
+                return;
+            }
+
+            // Update state
             setColumns(newColumns);
 
-            // Replace rows in first group? Or append?
-            // User implies "importing" -> might replace or add.
-            // Usually "Import" to a fresh table means replace. 
-            // "Import" to existing might mean append.
-            // Let's APPEND to the first group, or REPLACE if empty?
-            // "data table will read... meaning 100% correct importing".
-            // If I replace columns, I should probably replace rows too to match the schema.
-            // Retaining old rows with new schema might break if IDs don't match.
-            // Warning: This is a destructive operation for existing columns structure.
-
-            // Let's REPLACE for now as it maps schema.
             const baseGroup = tableGroups[0] || {
                 id: 'group-1',
                 name: 'Group 1',
@@ -1060,14 +1066,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             setSortRules([]);
             setSortConfig(null);
 
-            // Show success feedback
-            showToast(`Successfully imported ${newRows.length} rows`, 'success');
+            showToast(`Successfully imported ${newRows.length} rows from ${headerRow.length} columns`, 'success');
 
         } catch (error) {
             boardLogger.error("Import failed:", error);
             showToast('Import failed. Please check the file format.', 'error');
         } finally {
-            // Reset input
             if (e.target) e.target.value = '';
         }
     };
@@ -1981,222 +1985,6 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
         // Fallback / legacy support update
         setSortRules([{ id: 'sort-' + Date.now(), column: colId, direction: 'asc' }]);
-    };
-
-    const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = new Uint8Array(event.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-
-                // 1. Get ALL data as an array of arrays.
-                const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-
-                if (!rawData || rawData.length === 0) {
-                    alert("The file appears to be empty.");
-                    return;
-                }
-
-                // 2. Scan for the Header Row
-                let headerRowIndex = -1;
-                let maxMatches = 0;
-
-                // Scan first 20 rows
-                for (let i = 0; i < Math.min(20, rawData.length); i++) {
-                    const row = rawData[i];
-                    if (!Array.isArray(row)) continue;
-
-                    let matches = 0;
-                    row.forEach((cell: any) => {
-                        if (cell && typeof cell === 'string') {
-                            const cellVal = cell.trim().toLowerCase();
-                            if (columns.some(col =>
-                                col.id.toLowerCase() === cellVal ||
-                                col.label.toLowerCase() === cellVal
-                            )) {
-                                matches++;
-                            }
-                        }
-                    });
-
-                    if (matches > maxMatches) {
-                        maxMatches = matches;
-                        headerRowIndex = i;
-                    }
-                }
-
-                // If no strong match found, default to 0
-                if (headerRowIndex === -1) headerRowIndex = 0;
-
-                // 3. Extract Headers and Data
-                const headerRow = rawData[headerRowIndex] || [];
-                const dataRows = rawData.slice(headerRowIndex + 1);
-
-                if (dataRows.length === 0) {
-                    alert(`Found header at row ${headerRowIndex + 1}, but no data rows followed it.`);
-                    return;
-                }
-
-                // 4. Build Column Mapping (Try to match logic)
-                const columnMapping: Record<string, number> = {};
-                const unmatchedHeaderIndices: number[] = [];
-
-                // Track which existing columns have been matched
-                const matchedColIds = new Set<string>();
-
-                headerRow.forEach((headerVal: any, index: number) => {
-                    let matchedColId: string | null = null;
-                    const hStr = String(headerVal).trim();
-                    const hLower = hStr.toLowerCase();
-
-                    // Match against existing columns
-                    for (const col of columns) {
-                        if (col.id === 'select') continue;
-                        if (col.id.toLowerCase() === hLower || col.label.toLowerCase() === hLower) {
-                            matchedColId = col.id;
-                            break;
-                        }
-                    }
-
-                    if (matchedColId) {
-                        columnMapping[matchedColId] = index;
-                        matchedColIds.add(matchedColId);
-                    } else {
-                        unmatchedHeaderIndices.push(index);
-                    }
-                });
-
-
-                let newColumns = [...columns];
-                let isBlindImport = false;
-
-                // If FEW matches were found (blind-ish import), or user requested "expand/rename mode" behavior (implicit)
-                // We will reuse existing columns in order, RENAMING them if they weren't strictly matched.
-
-                if (matchedColIds.size === 0 && headerRow.length > 0) {
-                    isBlindImport = true;
-                    // Reset mapping for blind import
-                    const blindMapping: Record<string, number> = {};
-
-                    // Filter out 'select' from consideration for mapping
-                    const visualColumns = columns.filter(c => c.id !== 'select');
-
-                    headerRow.forEach((hVal: any, i: number) => {
-                        const headerLabel = String(hVal || `Column ${i + 1}`).trim();
-
-                        if (i < visualColumns.length) {
-                            // Map to EXISTING column, and RENAME it
-                            const existingCol = visualColumns[i];
-                            blindMapping[existingCol.id] = i;
-
-                            // Update the column definition to have the new label
-                            newColumns = newColumns.map(c =>
-                                c.id === existingCol.id
-                                    ? { ...c, label: headerLabel }
-                                    : c
-                            );
-                        } else {
-                            // Create NEW column
-                            const newId = headerLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '') + '_' + Date.now() + '_' + i;
-                            const newCol: Column = {
-                                id: newId,
-                                label: headerLabel,
-                                type: 'text',
-                                width: 150,
-                                minWidth: 100,
-                                resizable: true
-                            };
-                            newColumns.push(newCol);
-                            blindMapping[newId] = i;
-                        }
-                    });
-
-                    // Use the blind mapping
-                    Object.assign(columnMapping, blindMapping);
-                } else {
-                    // Standard Import with potential Expansion
-                    // For any file header that didn't match an existing column, create a NEW column
-                    unmatchedHeaderIndices.forEach(idx => {
-                        const headerLabel = String(headerRow[idx] || `Column ${idx + 1}`).trim();
-                        // Skip empty headers unless they have data?
-                        if (!headerLabel) return;
-
-                        const newId = headerLabel.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '') + '_' + Date.now() + '_' + idx;
-                        const newCol: Column = {
-                            id: newId,
-                            label: headerLabel,
-                            type: 'text',
-                            width: 150,
-                            minWidth: 100,
-                            resizable: true
-                        };
-                        newColumns.push(newCol);
-                        columnMapping[newId] = idx;
-                    });
-                }
-
-                // 5. Create Rows
-                const newRows: Row[] = [];
-                dataRows.forEach((rowArray, index) => {
-                    if (!rowArray || rowArray.length === 0) return;
-                    if (rowArray.every((cell: any) => cell == null || cell === '')) return;
-
-                    const row: Row = { id: (Date.now() + index).toString() };
-                    let hasData = false;
-
-                    newColumns.forEach(col => {
-                        if (col.id === 'select') return;
-
-                        const colIndex = columnMapping[col.id];
-                        if (colIndex !== undefined && rowArray[colIndex] !== undefined) {
-                            row[col.id] = rowArray[colIndex];
-                            hasData = true;
-                        } else {
-                            row[col.id] = null;
-                        }
-                    });
-
-                    if (hasData) {
-                        newRows.push(row);
-                    }
-                });
-
-                if (newRows.length > 0) {
-                    if (isBlindImport) {
-                        const confirmBlind = window.confirm(
-                            `We couldn't match valid columns, so we renamed your existing columns and added new ones to match the file.\n\n` +
-                            `Detected Headers: ${headerRow.join(', ')}\n\n` +
-                            `Proceed?`
-                        );
-                        if (!confirmBlind) return;
-                    }
-
-                    setColumns(newColumns); // Update columns first
-                    const updatedRows = [...rows, ...newRows];
-                    setRows(updatedRows);
-                    if (onUpdateTasks) onUpdateTasks(updatedRows);
-                    alert(`Successfully imported ${newRows.length} rows and updated columns.`);
-                } else {
-                    alert("No valid data rows found.");
-                }
-
-            } catch (error) {
-                boardLogger.error("Import failed:", error);
-                alert("Failed to parse file. Please ensure it is a valid Excel or CSV file.");
-            }
-        };
-        reader.onerror = () => {
-            alert("Error reading file.");
-        };
-        reader.readAsArrayBuffer(file);
-        // Reset input
-        e.target.value = '';
     };
 
     const onMouseMove = useCallback((e: MouseEvent) => {
