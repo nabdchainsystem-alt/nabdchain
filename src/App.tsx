@@ -26,6 +26,8 @@ import { adminService } from './services/adminService';
 import { MobileApp } from './features/mobile/MobileApp';
 import { useUserPreferences } from './hooks/useUserPreferences';
 
+
+
 // Lazy load feature pages for better initial bundle size
 const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
 const BoardView = lazyWithRetry(() => import('./features/board/BoardView').then(m => ({ default: m.BoardView })));

@@ -1,1 +1,0 @@
-// This file is intentionally left empty to support the single-file index.html structure.

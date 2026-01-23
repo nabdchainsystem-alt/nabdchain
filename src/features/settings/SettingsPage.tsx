@@ -564,7 +564,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                                         {!isEditingName && (
                                             <button
                                                 onClick={() => { setIsEditingName(true); setNewName(userDisplayName); }}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+                                                className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
                                             >
                                                 <span className="material-symbols-outlined text-sm">edit</span>
                                             </button>

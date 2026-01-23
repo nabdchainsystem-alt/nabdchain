@@ -134,7 +134,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   }, [fetchNotificationCount]);
 
   // Fetch ALL assignments when notification panel opens
-  const handleOpenNotifications = async () => {
+  const handleToggleNotifications = async () => {
+    if (isNotificationOpen) {
+      setIsNotificationOpen(false);
+      return;
+    }
+
     setIsNotificationOpen(true);
     setIsLoadingNotifications(true);
     try {
@@ -196,7 +201,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
 
         {/* Start: Logo Section */}
         <div className="flex items-center min-w-[200px]">
-          <div className="flex items-center cursor-pointer group">
+          <div
+            className="flex items-center cursor-pointer group"
+            onClick={() => onNavigate('dashboard')}
+          >
             <div className="w-8 h-8 bg-[#2b2c33] dark:bg-monday-blue rounded-md flex items-center justify-center me-2 shadow-sm transition-all group-hover:scale-105 group-hover:bg-monday-blue dark:group-hover:bg-monday-blue-hover">
               <Link size={16} weight="bold" className="text-white transform -rotate-45" />
             </div>
@@ -301,7 +309,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
         </div>
 
         {/* End: Icons Section */}
-        <div className="flex items-center space-x-2 space-x-reverse min-w-[200px] justify-end">
+        <div className="flex items-center gap-2 min-w-[200px] justify-end">
 
           {/* Focus Mode (Expanding) */}
           <FocusMode />
@@ -328,7 +336,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
 
           <div className="relative" ref={notificationRef}>
             <button
-              onClick={handleOpenNotifications}
+              onClick={handleToggleNotifications}
               className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text relative transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"
             >
               <Bell size={21} weight="light" />

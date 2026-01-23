@@ -195,7 +195,7 @@ const ArcadePage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t('arcade')}</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('take_break') || 'Take a break and have some fun'} • {GAMES.length} {t('games') || 'games'}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('take_break') || 'Take a break and have some fun'} • {GAMES.length} {t('games_suffix') || 'games'}</p>
           </div>
         </div>
       </div>
@@ -213,7 +213,7 @@ const ArcadePage: React.FC = () => {
                 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50
                 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800
                 shadow-sm hover:shadow-md
-                transition-all duration-300 text-left
+                transition-all duration-300 text-left rtl:text-right
                 ${!game.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >

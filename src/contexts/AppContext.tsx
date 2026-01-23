@@ -256,6 +256,9 @@ const translations: Translations = {
   dark_mode: { en: 'Dark Mode', ar: 'الوضع الداكن' },
   light_mode: { en: 'Light Mode', ar: 'الوضع الفاتح' },
   language: { en: 'Language', ar: 'اللغة' },
+  english: { en: 'English', ar: 'إنجليزي' },
+  arabic: { en: 'Arabic', ar: 'عربي' },
+  region_currency: { en: 'Region & Currency', ar: 'المنطقة والعملة' },
   edit: { en: 'Edit', ar: 'تعديل' },
   pages: { en: 'Pages', ar: 'الصفحات' },
 
@@ -516,6 +519,8 @@ const translations: Translations = {
   job_title: { en: 'Job Title', ar: 'المسمى الوظيفي' },
   bio: { en: 'Bio', ar: 'نبذة' },
   save_profile: { en: 'Save Profile', ar: 'حفظ الملف الشخصي' },
+  placeholder_job_title: { en: 'Product Manager', ar: 'مدير منتج' },
+  placeholder_department: { en: 'Engineering', ar: 'الهندسة' },
   preferences: { en: 'Preferences', ar: 'التفضيلات' },
   appearance: { en: 'Appearance', ar: 'المظهر' },
   switch_theme_desc: { en: 'Switch between light and dark mode', ar: 'التبديل بين الوضع الفاتح والداكن' },
@@ -560,14 +565,42 @@ const translations: Translations = {
 
 
   // Arcade Games
-  breakout: { en: 'Breakout', ar: 'تحطيم الطوب' },
-  space_invaders: { en: 'Space Invaders', ar: 'غزاة الفضاء' },
-  minesweeper: { en: 'Minesweeper', ar: 'كاسحة الألغام' },
-  memory_match: { en: 'Memory Match', ar: 'تطابق الذاكرة' },
-  wordle: { en: 'Wordle', ar: 'وردل' },
-  sudoku: { en: 'Sudoku', ar: 'سودوكو' },
-  chess: { en: 'Chess', ar: 'الشطرنج' },
-  solitaire: { en: 'Solitaire', ar: 'سوليتير' },
+  games_suffix: { en: 'games', ar: 'لعبة' },
+  'space-shooter': { en: 'Space Shooter', ar: 'مهاجم الفضاء' },
+  desc_space_shooter: { en: 'Classic vertical scrolling shooter. Destroy enemies, collect power-ups, survive waves!', ar: 'لعبة إطلاق نار كلاسيكية. دمر الأعداء واجمع القوة!' },
+
+  'space-invaders': { en: 'Space Invaders', ar: 'غزاة الفضاء' },
+  desc_space_invaders: { en: 'Defend Earth from descending alien invaders. Classic arcade action!', ar: 'دافع عن الأرض من الغزاة الفضائيين. أكشن كلاسيكي!' },
+
+  'asteroids': { en: 'Asteroids', ar: 'الكويكبات' },
+  desc_asteroids: { en: 'Navigate your ship through space and destroy asteroids to survive!', ar: 'قُد سفينتك عبر الفضاء ودمر الكويكبات للبقاء على قيد الحياة!' },
+
+  'snake': { en: 'Snake', ar: 'الثعبان' },
+  desc_snake: { en: 'Classic snake game. Eat food to grow!', ar: 'لعبة الثعبان الكلاسيكية. كل الطعام لتكبر!' },
+
+  'tetris': { en: 'Tetris', ar: 'تتريس' },
+  desc_tetris: { en: 'Stack falling blocks to clear lines.', ar: 'رتب الكتل المتساقطة لتحطيم الخطوط.' },
+
+  'breakout': { en: 'Breakout', ar: 'تحطيم الطوب' },
+  desc_breakout: { en: 'Bounce the ball and break all the bricks. Collect power-ups!', ar: 'اكسر الطوب بالكرة. اجمع القوة!' },
+
+  'pong': { en: 'Pong', ar: 'بونغ' },
+  desc_pong: { en: 'Classic paddle game against AI. First to 7 points wins!', ar: 'لعبة المضرب الكلاسيكية. أول من يصل 7 نقاط يفوز!' },
+
+  'flappy-bird': { en: 'Flappy Bird', ar: 'الطائر المحلق' },
+  desc_flappy_bird: { en: 'Tap to fly through pipes. Simple but addictive!', ar: 'انقر للطيران عبر الأنابيب. بسيطة لكن ممتعة!' },
+
+  'whack-a-mole': { en: 'Whack-a-Mole', ar: 'اضرب الخلد' },
+  desc_whack_a_mole: { en: 'Hit the moles as they pop up! Golden moles worth more points!', ar: 'اضرب حيوان الخلد عندما يظهر! الخلد الذهبي يساوي نقاط أكثر!' },
+
+  'memory-match': { en: 'Memory Match', ar: 'تطابق الذاكرة' },
+  desc_memory_match: { en: 'Find matching pairs. Test your memory skills!', ar: 'جد الأزواج المتطابقة. اختبر مهارات ذاكرتك!' },
+
+  'sudoku': { en: 'Sudoku', ar: 'سودوكو' },
+  desc_sudoku: { en: 'Fill the grid so every row, column, and 3x3 box has 1-9!', ar: 'املأ الشبكة بحيث يحتوي كل صف وعمود ومربع على 1-9!' },
+
+  'simon-says': { en: 'Simon Says', ar: 'سايمون يقول' },
+  desc_simon_says: { en: 'Remember and repeat the color sequence. Test your memory!', ar: 'تذكر وكرر تسلسل الألوان. اختبر ذاكرتك!' },
 
 
 
@@ -736,15 +769,50 @@ const translations: Translations = {
   activity_deleted_board: { en: 'Deleted board: {name}', ar: 'تم حذف اللوحة: {name}' },
 
   // Arcade Descriptions
-  desc_space_shooter: { en: 'Classic vertical scrolling shooter. Destroy enemies, collect power-ups, survive waves!', ar: 'لعبة إطلاق نار كلاسيكية. دمر الأعداء، واجمع القوة، وابق على قيد الحياة!' },
-  desc_space_invaders: { en: 'Defend Earth from descending alien invaders. Classic arcade action!', ar: 'دافع عن الأرض من الغزاة الفضائيين. أكشن أركيد كلاسيكي!' },
-  desc_asteroids: { en: 'Navigate your ship through space and destroy asteroids to survive!', ar: 'قُد سفينتك عبر الفضاء ودمر الكويكبات للبقاء على قيد الحياة!' },
-  desc_memory_match: { en: 'Find matching pairs. Test your memory skills!', ar: 'اعثر على الأزواج المتطابقة. اختبر مهارات ذاكرتك!' },
-  desc_sudoku: { en: 'Fill the grid so every row, column, and 3x3 box has 1-9!', ar: 'املأ الشبكة بحيث يحتوي كل صف وعمود ومربع 3x3 على 1-9!' },
-  desc_simon_says: { en: 'Remember and repeat the color sequence. Test your memory!', ar: 'تذكر وكرر تسلسل الألوان. اختبر ذاكرتك!' },
 
-  // Settings
-  views_visibility: { en: 'Views Visibility', ar: 'رؤية الصفحات' },
+  // Arcade Games
+  games_suffix: { en: 'games', ar: 'لعبة' },
+  press_esc_to_pause: { en: 'Press ESC while playing to pause the game', ar: 'اضغط ESC أثناء اللعب لإيقاف اللعبة مؤقتاً' },
+  'space-shooter': { en: 'Space Shooter', ar: 'مهاجم الفضاء' },
+  'desc_space-shooter': { en: 'Classic vertical scrolling shooter. Destroy enemies, collect power-ups, survive waves!', ar: 'لعبة إطلاق نار كلاسيكية. دمر الأعداء واجمع القوة!' },
+
+  'space-invaders': { en: 'Space Invaders', ar: 'غزاة الفضاء' },
+  'desc_space-invaders': { en: 'Defend Earth from descending alien invaders. Classic arcade action!', ar: 'دافع عن الأرض من الغزاة الفضائيين. أكشن كلاسيكي!' },
+
+  'asteroids': { en: 'Asteroids', ar: 'الكويكبات' },
+  'desc_asteroids': { en: 'Navigate your ship through space and destroy asteroids to survive!', ar: 'قُد سفينتك عبر الفضاء ودمر الكويكبات للبقاء على قيد الحياة!' },
+
+  'snake': { en: 'Snake', ar: 'الثعبان' },
+  'desc_snake': { en: 'Classic snake game. Eat food to grow!', ar: 'لعبة الثعبان الكلاسيكية. كل الطعام لتكبر!' },
+
+  'tetris': { en: 'Tetris', ar: 'تتريس' },
+  'desc_tetris': { en: 'Stack falling blocks to clear lines.', ar: 'رتب الكتل المتساقطة لتحطيم الخطوط.' },
+
+  'breakout': { en: 'Breakout', ar: 'تحطيم الطوب' },
+  'desc_breakout': { en: 'Bounce the ball and break all the bricks. Collect power-ups!', ar: 'اكسر الطوب بالكرة. اجمع القوة!' },
+
+  'pong': { en: 'Pong', ar: 'بونغ' },
+  'desc_pong': { en: 'Classic paddle game against AI. First to 7 points wins!', ar: 'لعبة المضرب الكلاسيكية. أول من يصل 7 نقاط يفوز!' },
+
+  'flappy-bird': { en: 'Flappy Bird', ar: 'الطائر المحلق' },
+  'desc_flappy-bird': { en: 'Tap to fly through pipes. Simple but addictive!', ar: 'انقر للطيران عبر الأنابيب. بسيطة لكن ممتعة!' },
+
+  'whack-a-mole': { en: 'Whack-a-Mole', ar: 'اضرب الخلد' },
+  'desc_whack-a-mole': { en: 'Hit the moles as they pop up! Golden moles worth more points!', ar: 'اضرب حيوان الخلد عندما يظهر! الخلد الذهبي يساوي نقاط أكثر!' },
+
+  'memory-match': { en: 'Memory Match', ar: 'تطابق الذاكرة' },
+  'desc_memory-match': { en: 'Find matching pairs. Test your memory skills!', ar: 'جد الأزواج المتطابقة. اختبر مهارات ذاكرتك!' },
+
+  'sudoku': { en: 'Sudoku', ar: 'سودوكو' },
+  'desc_sudoku': { en: 'Fill the grid so every row, column, and 3x3 box has 1-9!', ar: 'املأ الشبكة بحيث يحتوي كل صف وعمود ومربع على 1-9!' },
+
+  'simon-says': { en: 'Simon Says', ar: 'سايمون يقول' },
+  'desc_simon-says': { en: 'Remember and repeat the color sequence. Test your memory!', ar: 'تذكر وكرر تسلسل الألوان. اختبر ذاكرتك!' },
+  page_visibility: { en: 'Page Visibility', ar: 'إعدادات الصفحات' },
+  customize_sidebar_desc: { en: 'Customize which pages appear in your sidebar.', ar: 'تخصيص الصفحات التي تظهر في الشريط الجانبي.' },
+  visibility_control: { en: 'Visibility Control', ar: 'التحكم في الرؤية' },
+  toggle_pages_desc: { en: 'Toggle pages on or off to customize your experience.', ar: 'شغّل أو عطّل الصفحات لتخصيص تجربتك.' },
+
 
 
 
@@ -1099,6 +1167,17 @@ const translations: Translations = {
   priority_mix: { en: 'Priority mix', ar: 'مزيج الأولويات' },
   based_on_tasks: { en: 'Based on existing tasks', ar: 'بناءً على المهام الموجودة' },
   no_priority_data: { en: 'No priority data yet.', ar: 'لا توجد بيانات أولوية بعد.' },
+
+  // Sleep Mode
+  increasing_volume: { en: 'Increasing volume...', ar: 'جاري رفع الصوت...' },
+  relax_breathe: { en: 'Relax and breathe deeply', ar: 'استرخِ وتنفس بعمق' },
+  rest_eyes: { en: 'Time to rest your eyes', ar: 'حان الوقت لراحة عينيك' },
+  sleep_exit_instruction: { en: 'Click anywhere to exit • ← → to switch', ar: 'انقر في أي مكان للخروج • ← → للتبديل' },
+  anim_rain: { en: 'Animated Rain', ar: 'مطر متحرك' },
+  gentle_rain: { en: 'Gentle Rain', ar: 'مطر خفيف' },
+  starry_night: { en: 'Starry Night', ar: 'ليلة مليئة بالنجوم' },
+  heavy_storm: { en: 'Heavy Storm', ar: 'عاصفة قوية' },
+  midnight_rain: { en: 'Midnight Rain', ar: 'مطر منتصف الليل' },
 };
 
 interface AppContextType {

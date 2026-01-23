@@ -7,19 +7,22 @@ interface SleepOverlayProps {
 
 type Scene = 'rain' | 'video1' | 'video2' | 'video3' | 'video4';
 
+import { useAppContext } from '../../contexts/AppContext';
+
 interface SceneConfig {
     id: Scene;
-    label: string;
+    labelKey: string;
+    icon: string;
     textColor: string;
     subTextColor: string;
 }
 
 const SCENES: SceneConfig[] = [
-    { id: 'rain', label: '🌧️ Animated Rain', textColor: 'text-gray-300', subTextColor: 'text-gray-500' },
-    { id: 'video1', label: '🌧️ Gentle Rain', textColor: 'text-gray-200', subTextColor: 'text-gray-400' },
-    { id: 'video2', label: '🌌 Starry Night', textColor: 'text-blue-300', subTextColor: 'text-blue-400/70' },
-    { id: 'video3', label: '⛈️ Heavy Storm', textColor: 'text-slate-200', subTextColor: 'text-slate-400' },
-    { id: 'video4', label: '🌧️ Midnight Rain', textColor: 'text-indigo-200', subTextColor: 'text-indigo-400' },
+    { id: 'rain', labelKey: 'anim_rain', icon: '🌧️', textColor: 'text-gray-300', subTextColor: 'text-gray-500' },
+    { id: 'video1', labelKey: 'gentle_rain', icon: '🌧️', textColor: 'text-gray-200', subTextColor: 'text-gray-400' },
+    { id: 'video2', labelKey: 'starry_night', icon: '🌌', textColor: 'text-blue-300', subTextColor: 'text-blue-400/70' },
+    { id: 'video3', labelKey: 'heavy_storm', icon: '⛈️', textColor: 'text-slate-200', subTextColor: 'text-slate-400' },
+    { id: 'video4', labelKey: 'midnight_rain', icon: '🌧️', textColor: 'text-indigo-200', subTextColor: 'text-indigo-400' },
 ];
 
 // Generate subtle rain drops
@@ -34,6 +37,7 @@ const generateRainDrops = (count: number) => {
 };
 
 export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
+    const { t } = useAppContext();
     const [timeLeft, setTimeLeft] = useState(300);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const rainAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -126,14 +130,14 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
 
         let volume = 0;
         const fadeIn = setInterval(() => {
-            volume += 0.02;
+            volume += 0.002;
             if (volume >= 0.6) {
                 volume = 0.6;
                 clearInterval(fadeIn);
             }
-            audio.volume = volume;
-            rainAudio.volume = volume * 0.7; // Rain slightly quieter than thunder
-        }, 60);
+            if (audioRef.current) audioRef.current.volume = volume;
+            if (rainAudioRef.current) rainAudioRef.current.volume = volume * 0.49; // Rain 30% quieter than before (0.7 * 0.7 = 0.49)
+        }, 50);
 
         return () => {
             clearInterval(fadeIn);
@@ -258,10 +262,10 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
                         <div className="text-center space-y-6">
                             <p className={`intro-text text-gray-400 text-lg ${introStep >= 1 ? 'visible' : ''}`}>
-                                🔊 Increasing volume...
+                                🔊 {t('increasing_volume')}
                             </p>
                             <p className={`intro-text text-gray-300 text-xl ${introStep >= 2 ? 'visible' : ''}`} style={{ transitionDelay: '0.3s' }}>
-                                Relax and breathe deeply
+                                {t('relax_breathe')}
                             </p>
                         </div>
                     </div>
@@ -338,7 +342,7 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
                 <div className="relative z-20 h-full flex flex-col items-center justify-center text-white">
                     <div className="text-center space-y-6">
                         <h2 className="text-3xl font-light tracking-wide text-gray-400">
-                            Time to rest your eyes
+                            {t('rest_eyes')}
                         </h2>
 
                         <div className="text-8xl font-mono font-bold tracking-wider tabular-nums text-white">
@@ -346,11 +350,11 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
                         </div>
 
                         <p className={`text-sm mt-6 transition-colors duration-500 ${currentScene.textColor}`}>
-                            {currentScene.label}
+                            {currentScene.icon} {t(currentScene.labelKey)}
                         </p>
 
                         <p className={`text-sm mt-6 transition-colors duration-500 ${currentScene.subTextColor}`}>
-                            Click anywhere to exit • ← → to switch
+                            {t('sleep_exit_instruction')}
                         </p>
                     </div>
                 </div>

@@ -428,6 +428,139 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] w-[600px] rounded-2xl animate-in slide-in-from-bottom-4 duration-300 group shadow-2xl">
             {/* Main Content */}
             <div className="relative w-full bg-white/95 dark:bg-monday-dark-surface/95 backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden ring-1 ring-gray-200/50 dark:ring-gray-700/50">
+              {/* Dropdown Content Area */}
+              {(showCommandMenu || showBoardPicker || (activeCommand === 'notes') || (activeCommand === 'search' && inputValue.trim())) && (
+                <div className="py-2 max-h-[400px] overflow-y-auto border-b border-gray-100 dark:border-gray-800">
+                  {/* Command Menu */}
+                  {showCommandMenu && (
+                    <div>
+                      {filteredCommands.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_commands_found')}</div>
+                      ) : (
+                        filteredCommands.map((cmd, index) => (
+                          <button
+                            key={cmd.id}
+                            onClick={() => selectCommand(cmd)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cmd.color}`}>
+                              <cmd.icon size={16} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {cmd.label}
+                                <span className="ml-1.5 rtl:ml-0 rtl:mr-1.5 text-gray-400 font-normal">@{cmd.keyword}</span>
+                              </p>
+                              <p className="text-xs text-gray-500">{cmd.hint}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Board Picker */}
+                  {showBoardPicker && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
+                      </div>
+                      {filteredBoards.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_boards_found')}</div>
+                      ) : (
+                        filteredBoards.map((fb, index) => (
+                          <button
+                            key={fb.board.id}
+                            onClick={() => selectBoard(fb)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+                              <SquaresFour size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {fb.depth > 0 ? (
+                                <div className="flex items-center gap-1 text-sm">
+                                  <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
+                                  <CaretRight size={12} className="text-gray-300 shrink-0" />
+                                  <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
+                              )}
+                              <span className="text-xs text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes List */}
+                  {activeCommand === 'notes' && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
+                        {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
+                      </div>
+                      {recentNotes.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_notes_yet')}</div>
+                      ) : (
+                        recentNotes.map((note, index) => (
+                          <div key={note.id} className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 last:border-0 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-[10px] text-gray-400 font-datetime">{formatTimeAgo(note.createdAt, language)}</span>
+                                  {note.tags.map(tag => (
+                                    <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><PushPin size={14} /></button>
+                                <button onClick={() => deleteNote(note.id)} className="p-1.5 rounded text-gray-300 hover:text-red-500"><X size={14} /></button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Search Results */}
+                  {activeCommand === 'search' && inputValue.trim() && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                        <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
+                      </div>
+                      {searchResults.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_matches_found')}</div>
+                      ) : (
+                        searchResults.map((result, index) => (
+                          <button
+                            key={result.id}
+                            onClick={() => handleSearchResultClick(result)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.type === 'board' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20' :
+                              result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
+                                'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
+                              }`}>
+                              {result.type === 'board' ? <SquaresFour size={16} /> : result.type === 'task' ? <ListChecks size={16} /> : <Note size={16} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
+                              <p className="text-xs text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              )}
               <div className="flex items-center h-14 px-4 gap-3">
                 {/* Active Command Chip */}
                 {activeCommand && !showBoardPicker && (
@@ -494,139 +627,140 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                   <PushPin size={16} weight={isPinned ? "fill" : "regular"} />
                 </button>
                 {/* Dropdown Content Area */}
-                {(showCommandMenu || showBoardPicker || (activeCommand === 'notes') || (activeCommand === 'search' && inputValue.trim())) && (
-                  <div className="py-2 max-h-[400px] overflow-y-auto border-t border-gray-100 dark:border-gray-800">
-                    {/* Command Menu */}
-                    {showCommandMenu && (
-                      <div>
-                        {filteredCommands.length === 0 ? (
-                          <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_commands_found')}</div>
-                        ) : (
-                          filteredCommands.map((cmd, index) => (
-                            <button
-                              key={cmd.id}
-                              onClick={() => selectCommand(cmd)}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cmd.color}`}>
-                                <cmd.icon size={16} />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {cmd.label}
-                                  <span className="ml-1.5 rtl:ml-0 rtl:mr-1.5 text-gray-400 font-normal">@{cmd.keyword}</span>
-                                </p>
-                                <p className="text-xs text-gray-500">{cmd.hint}</p>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    )}
+              </div>
+              {(showCommandMenu || showBoardPicker || (activeCommand === 'notes') || (activeCommand === 'search' && inputValue.trim())) && (
+                <div className="py-2 max-h-[400px] overflow-y-auto border-t border-gray-100 dark:border-gray-800">
+                  {/* Command Menu */}
+                  {showCommandMenu && (
+                    <div>
+                      {filteredCommands.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_commands_found')}</div>
+                      ) : (
+                        filteredCommands.map((cmd, index) => (
+                          <button
+                            key={cmd.id}
+                            onClick={() => selectCommand(cmd)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cmd.color}`}>
+                              <cmd.icon size={16} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {cmd.label}
+                                <span className="ml-1.5 rtl:ml-0 rtl:mr-1.5 text-gray-400 font-normal">@{cmd.keyword}</span>
+                              </p>
+                              <p className="text-xs text-gray-500">{cmd.hint}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
 
-                    {/* Board Picker */}
-                    {showBoardPicker && (
-                      <div>
-                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
-                          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
-                        </div>
-                        {filteredBoards.length === 0 ? (
-                          <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_boards_found')}</div>
-                        ) : (
-                          filteredBoards.map((fb, index) => (
-                            <button
-                              key={fb.board.id}
-                              onClick={() => selectBoard(fb)}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-                                <SquaresFour size={16} />
-                              </div>
+                  {/* Board Picker */}
+                  {showBoardPicker && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{t('select_board')}</span>
+                      </div>
+                      {filteredBoards.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_boards_found')}</div>
+                      ) : (
+                        filteredBoards.map((fb, index) => (
+                          <button
+                            key={fb.board.id}
+                            onClick={() => selectBoard(fb)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${index === selectedIndex ? 'bg-violet-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+                              <SquaresFour size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {fb.depth > 0 ? (
+                                <div className="flex items-center gap-1 text-sm">
+                                  <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
+                                  <CaretRight size={12} className="text-gray-300 shrink-0" />
+                                  <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
+                              )}
+                              <span className="text-xs text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes List */}
+                  {activeCommand === 'notes' && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
+                        {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
+                      </div>
+                      {recentNotes.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_notes_yet')}</div>
+                      ) : (
+                        recentNotes.map((note, index) => (
+                          <div key={note.id} className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 last:border-0 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                            <div className="flex items-start gap-3">
                               <div className="flex-1 min-w-0">
-                                {fb.depth > 0 ? (
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <span className="text-gray-400 truncate">{fb.path.split(' › ').slice(0, -1).join(' › ')}</span>
-                                    <CaretRight size={12} className="text-gray-300 shrink-0" />
-                                    <span className="font-medium text-gray-900 dark:text-white truncate">{fb.board.name}</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{fb.board.name}</span>
-                                )}
-                                <span className="text-xs text-gray-400">{fb.board.tasks?.length || 0} {t('tasks')}</span>
+                                <p className="text-sm text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-[10px] text-gray-400 font-datetime">{formatTimeAgo(note.createdAt, language)}</span>
+                                  {note.tags.map(tag => (
+                                    <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
+                                  ))}
+                                </div>
                               </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-                    {/* Notes List */}
-                    {activeCommand === 'notes' && (
-                      <div>
-                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-medium text-gray-400 uppercase">{t('recent_notes')}</span>
-                          {onNavigate && <button onClick={() => onNavigate('quick_notes')} className="text-[10px] text-violet-600 hover:underline">{t('view_all')}</button>}
-                        </div>
-                        {recentNotes.length === 0 ? (
-                          <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_notes_yet')}</div>
-                        ) : (
-                          recentNotes.map((note, index) => (
-                            <div key={note.id} className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 last:border-0 ${index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
-                              <div className="flex items-start gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
-                                  <div className="flex items-center gap-2 mt-1.5">
-                                    <span className="text-[10px] text-gray-400 font-datetime">{formatTimeAgo(note.createdAt, language)}</span>
-                                    {note.tags.map(tag => (
-                                      <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><PushPin size={14} /></button>
-                                  <button onClick={() => deleteNote(note.id)} className="p-1.5 rounded text-gray-300 hover:text-red-500"><X size={14} /></button>
-                                </div>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => togglePinNote(note.id)} className={`p-1.5 rounded ${note.pinned ? 'text-amber-500' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-400'}`}><PushPin size={14} /></button>
+                                <button onClick={() => deleteNote(note.id)} className="p-1.5 rounded text-gray-300 hover:text-red-500"><X size={14} /></button>
                               </div>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
 
-                    {/* Search Results */}
-                    {activeCommand === 'search' && inputValue.trim() && (
-                      <div>
-                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
-                          <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
-                        </div>
-                        {searchResults.length === 0 ? (
-                          <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_matches_found')}</div>
-                        ) : (
-                          searchResults.map((result, index) => (
-                            <button
-                              key={result.id}
-                              onClick={() => handleSearchResultClick(result)}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.type === 'board' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20' :
-                                result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
-                                  'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
-                                }`}>
-                                {result.type === 'board' ? <SquaresFour size={16} /> : result.type === 'task' ? <ListChecks size={16} /> : <Note size={16} />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
-                                <p className="text-xs text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
-                              </div>
-                            </button>
-                          ))
-                        )}
+                  {/* Search Results */}
+                  {activeCommand === 'search' && inputValue.trim() && (
+                    <div>
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 mb-1">
+                        <span className="text-[10px] font-medium text-gray-400">{searchResults.length} {t('results')}</span>
                       </div>
-                    )}
+                      {searchResults.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-400 text-sm">{t('no_matches_found')}</div>
+                      ) : (
+                        searchResults.map((result, index) => (
+                          <button
+                            key={result.id}
+                            onClick={() => handleSearchResultClick(result)}
+                            className={`w-full px-4 py-2.5 flex items-center gap-3 text-left rtl:text-right transition-colors ${index === selectedIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${result.type === 'board' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20' :
+                              result.type === 'task' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20' :
+                                'bg-amber-100 text-amber-600 dark:bg-amber-500/20'
+                              }`}>
+                              {result.type === 'board' ? <SquaresFour size={16} /> : result.type === 'task' ? <ListChecks size={16} /> : <Note size={16} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
+                              <p className="text-xs text-gray-500 truncate">{result.boardName ? `${t('in_board')} ${result.boardName}` : result.subtitle}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
 
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+
             </div>
           </div>
         )}

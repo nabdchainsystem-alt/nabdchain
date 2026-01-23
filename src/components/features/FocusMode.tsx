@@ -6,7 +6,7 @@ import { useAppContext } from '../../contexts/AppContext';
 
 export const FocusMode: React.FC = () => {
     const { isActive, isSessionActive, timeLeft, toggleFocus, resetFocus, cancelFocus, formatTime, startFocus } = useFocus();
-    const { t } = useAppContext();
+    const { t, dir } = useAppContext();
 
     const handleStart = () => {
         if (!isSessionActive) {
@@ -17,18 +17,19 @@ export const FocusMode: React.FC = () => {
     return (
         <motion.div
             layout="position"
+            key={dir}
             className={`flex items-center h-8 transition-colors duration-300 overflow-hidden ${isSessionActive
                 ? 'ps-1 pe-2 py-0.5'
-                : 'rounded-md hover:bg-gray-100 dark:hover:bg-monday-dark-hover px-1.5'
+                : 'rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center'
                 }`}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
         >
             {/* Stable Icon Button */}
             <button
                 onClick={handleStart}
-                className={`flex items-center justify-center rounded-full transition-colors flex-shrink-0 ${isSessionActive
-                    ? 'w-7 h-7 text-gray-600 dark:text-gray-300 cursor-default'
-                    : 'w-5 h-5 text-gray-500 dark:text-monday-dark-text-secondary cursor-pointer'
+                className={`flex items-center justify-center rounded-full transition-colors flex-shrink-0 cursor-pointer ${isSessionActive
+                    ? 'w-7 h-7 text-gray-600 dark:text-gray-300'
+                    : 'w-5 h-5 text-gray-500 dark:text-monday-dark-text-secondary'
                     }`}
                 disabled={isSessionActive}
                 title={!isSessionActive ? (t('start_focus') || "Start Focus Session") : ""}
