@@ -1,14 +1,11 @@
 import React, { useContext } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { CSS } from '@dnd-kit/utilities';
 import { TableGroup } from '../types';
+import { GroupDragContext } from '../contexts/GroupDragContext';
 
-// Context for sharing drag listeners between GroupWrapper and Handle
-export const GroupDragContext = React.createContext<{
-    listeners?: SyntheticListenerMap,
-    attributes?: any
-}>({});
+// Re-export for backwards compatibility
+export { GroupDragContext } from '../contexts/GroupDragContext';
 
 interface SortableGroupWrapperProps {
     group: TableGroup;

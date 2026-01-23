@@ -6,9 +6,26 @@ interface LazyDashboardProps {
   height?: string;
 }
 
+// Delayed spinner - only shows after delay to prevent flash
+const DelayedSpinner: React.FC<{ delay?: number }> = ({ delay = 200 }) => {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  if (!show) return null;
+
+  return (
+    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  );
+};
+
 /**
  * Lazy loads dashboard components when they become visible in the viewport.
  * Uses IntersectionObserver for efficient visibility detection.
+ * Delayed loading indicators prevent flash on fast loads.
  */
 export const LazyDashboard: React.FC<LazyDashboardProps> = ({
   component: Component,
@@ -28,7 +45,7 @@ export const LazyDashboard: React.FC<LazyDashboardProps> = ({
         }
       },
       {
-        rootMargin: '100px', // Start loading slightly before visible
+        rootMargin: '200px', // Start loading earlier
         threshold: 0.1
       }
     );
@@ -45,14 +62,14 @@ export const LazyDashboard: React.FC<LazyDashboardProps> = ({
       {isVisible ? (
         <Suspense fallback={
           <div className="flex items-center justify-center p-8" style={{ minHeight: height }}>
-            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <DelayedSpinner delay={150} />
           </div>
         }>
           <Component {...props} />
         </Suspense>
       ) : (
-        <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg m-4" style={{ minHeight: height }}>
-          <div className="text-gray-400 text-sm">Loading dashboard...</div>
+        <div className="flex items-center justify-center p-8" style={{ minHeight: height }}>
+          {/* Empty placeholder - no loading text to prevent flash */}
         </div>
       )}
     </div>

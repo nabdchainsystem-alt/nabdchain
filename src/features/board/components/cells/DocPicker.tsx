@@ -14,23 +14,23 @@ interface DocPickerProps {
     currentBoardId?: string;
 }
 
-interface Workspace {
-    id: string;
-    name: string;
-    boards?: Board[];
-}
-
-interface Board {
+interface DocPickerBoard {
     id: string;
     name: string;
     workspaceId: string;
     availableViews?: string[];
 }
+
+interface Workspace {
+    id: string;
+    name: string;
+    boards?: DocPickerBoard[];
+}
 {/* 
    Update DocPicker component to Include creation logic 
 */}
 
-export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, triggerRect, currentBoardId }) => {
+export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, triggerRect, current, currentBoardId }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [loading, setLoading] = useState(true);
@@ -77,7 +77,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
                                         // We need workspaceId. If missing, we might not be able to place it correctly.
                                         // But often local boards have workspaceId.
                                         if (parsed.workspaceId && Array.isArray(boards)) {
-                                            boards.push(parsed as Board);
+                                            boards.push(parsed as DocPickerBoard);
                                         }
                                     }
                                 }

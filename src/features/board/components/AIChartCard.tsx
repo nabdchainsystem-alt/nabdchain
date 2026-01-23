@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { ChartBar as BarChart3, ChartPie as PieChart, ChartLine as LineChart, PlusCircle, X } from 'phosphor-react';
 import { Column, Row } from '../views/Table/RoomTable';
@@ -13,7 +13,7 @@ interface AIChartCardProps {
     onDelete?: () => void;
 }
 
-export const AIChartCard: React.FC<AIChartCardProps> = ({ config, columns, rows, onAdd, onDelete }) => {
+export const AIChartCard: React.FC<AIChartCardProps> = memo(({ config, columns, rows, onAdd, onDelete }) => {
     const chartOption = useMemo(() => {
         const data = ChartDataTransformer.transformData(rows, config);
         return ChartDataTransformer.generateOption(data, config);
@@ -76,4 +76,6 @@ export const AIChartCard: React.FC<AIChartCardProps> = ({ config, columns, rows,
             </div>
         </div>
     );
-};
+});
+
+AIChartCard.displayName = 'AIChartCard';

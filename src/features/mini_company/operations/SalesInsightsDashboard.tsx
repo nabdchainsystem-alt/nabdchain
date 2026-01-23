@@ -102,7 +102,41 @@ interface SalesInsightsDashboardProps {
 }
 
 export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
+
+    // Translated KPIs
+    const translatedTopKPIs = TOP_KPIS.map((kpi, index) => ({
+        ...kpi,
+        label: [t('total_sales'), t('net_revenue'), t('orders_count'), t('avg_order_value')][index],
+        subtitle: [t('gross_sales_revenue'), t('after_deductions'), t('total_processed'), t('per_transaction')][index],
+    }));
+
+    const translatedSideKPIs = SIDE_KPIS.map((kpi, index) => ({
+        ...kpi,
+        label: [t('returned_orders'), t('top_customer_percent'), t('profit_margin'), t('conversion_rate')][index],
+        subtitle: [t('processing_returns'), t('repeat_buyers'), t('net_earnings_ratio'), t('visitor_to_buyer')][index],
+    }));
+
+    // Translated chart data
+    const translatedSalesOverTimeData = SALES_OVER_TIME_DATA.map((item, index) => ({
+        ...item,
+        name: [t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat'), t('sun')][index],
+    }));
+
+    const translatedSalesByChannelData = SALES_BY_CHANNEL_DATA.map((item, index) => ({
+        ...item,
+        name: [t('channel_online'), t('channel_store'), t('channel_marketplace'), t('channel_whatsapp')][index],
+    }));
+
+    const translatedCategoryData = CATEGORY_DATA.map((item, index) => ({
+        ...item,
+        name: [t('category_electronics'), t('category_clothing'), t('category_groceries'), t('category_home')][index],
+    }));
+
+    const translatedStatusData = ORDER_STATUS_DATA.map((item, index) => ({
+        ...item,
+        name: [t('order_completed'), t('order_pending'), t('order_returned'), t('order_cancelled')][index],
+    }));
 
     // Loading state for smooth entrance animation
     const [isLoading, setIsLoading] = useState(true);
@@ -137,7 +171,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
             type: 'pie',
             radius: ['50%', '70%'],
             center: ['40%', '50%'],
-            data: CATEGORY_DATA.map((d, i) => ({
+            data: translatedCategoryData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
@@ -153,7 +187,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
             type: 'pie',
             radius: ['0%', '70%'],
             center: ['40%', '50%'],
-            data: ORDER_STATUS_DATA.map((d, i) => ({
+            data: translatedStatusData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
@@ -224,8 +258,8 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 <div className="flex items-start gap-2">
                     <ChartLineUp size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Sales Insights</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Key sales metrics and revenue distribution overview</p>
+                        <h1 className="text-2xl font-bold">{t('sales_insights')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('key_sales_metrics_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -233,7 +267,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -243,7 +277,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -252,7 +286,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- COMPONENT 1: Top 4 KPIs (Row 1) --- */}
-                {TOP_KPIS.map((kpi, index) => (
+                {translatedTopKPIs.map((kpi, index) => (
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
@@ -268,17 +302,17 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 {/* Sales Over Time (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Sales Over Time" />
+                        <ChartSkeleton height="h-[280px]" title={t('sales_over_time')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales Over Time</h3>
-                                <p className="text-xs text-gray-400 mt-1">Weekly performance overview</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_over_time')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('weekly_performance_overview')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
-                                        data={SALES_OVER_TIME_DATA}
+                                        data={translatedSalesOverTimeData}
                                         margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
                                         onMouseMove={(e: any) => {
                                             if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, time: e.activeTooltipIndex }));
@@ -295,7 +329,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
 
-                                        <Bar dataKey="sales" name="Daily Sales" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} fill="#3b82f6" />
+                                        <Bar dataKey="sales" name={t('daily_sales')} radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -306,16 +340,16 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 {/* Sales By Channel (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Sales by Channel" />
+                        <ChartSkeleton height="h-[280px]" title={t('sales_by_channel')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales by Channel</h3>
-                                <p className="text-xs text-gray-400 mt-1">Revenue distribution source</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_by_channel')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('revenue_distribution_source')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SALES_BY_CHANNEL_DATA} onMouseMove={(e: any) => {
+                                    <BarChart data={translatedSalesByChannelData} onMouseMove={(e: any) => {
                                         if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, channel: e.activeTooltipIndex }));
                                     }} onMouseLeave={() => setActiveIndex(prev => ({ ...prev, channel: null }))}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -323,7 +357,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         <YAxis hide />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
 
-                                        <Bar dataKey="value" name="Revenue" radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} fill="#3b82f6" />
+                                        <Bar dataKey="value" name={t('revenue')} radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -338,12 +372,12 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Category Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Category" />
+                        <PieChartSkeleton title={t('category')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Category</h3>
-                                <p className="text-xs text-gray-400 mt-1">Sales by product category</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('category')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('sales_by_product_category')}</p>
                             </div>
                             <ReactECharts option={categoryPieOption} style={{ height: '210px' }} />
                         </div>
@@ -351,12 +385,12 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
 
                     {/* Status Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Status" />
+                        <PieChartSkeleton title={t('order_status')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Status</h3>
-                                <p className="text-xs text-gray-400 mt-1">Current order status split</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('order_status')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('current_order_status_split')}</p>
                             </div>
                             <ReactECharts option={statusPieOption} style={{ height: '210px' }} />
                         </div>
@@ -365,7 +399,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
 
                 {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
-                    {SIDE_KPIS.map((kpi, index) => (
+                    {translatedSideKPIs.map((kpi, index) => (
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard {...kpi} color="blue" loading={isLoading} />
                         </div>
@@ -381,17 +415,17 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full animate-fade-in-up">
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Top 5 Selling Products</h3>
-                                <p className="text-xs text-gray-400 mt-1">Inventory and revenue leaders</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('top_5_selling_products')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('inventory_revenue_leaders')}</p>
                             </div>
                             <div className="overflow-x-auto h-auto flex flex-col justify-center">
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 uppercase sticky top-0">
                                         <tr>
-                                            <th className="px-6 py-3 font-medium">Product Name</th>
-                                            <th className="px-6 py-3 font-medium text-right">Qty</th>
-                                            <th className="px-6 py-3 font-medium text-right">Revenue</th>
-                                            <th className="px-6 py-3 font-medium text-right">Profit</th>
+                                            <th className="px-6 py-3 font-medium">{t('product_name')}</th>
+                                            <th className="px-6 py-3 font-medium text-end">{t('qty')}</th>
+                                            <th className="px-6 py-3 font-medium text-end">{t('revenue')}</th>
+                                            <th className="px-6 py-3 font-medium text-end">{t('profit')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -400,9 +434,9 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
                                                     {index + 1}. {product.name}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">{product.quantity}</td>
-                                                <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
-                                                <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-4 text-end text-gray-600 dark:text-gray-400">{product.quantity}</td>
+                                                <td className="px-6 py-4 text-end font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-4 text-end text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -413,12 +447,12 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
 
                     {/* Treemap: Product Revenue Contribution */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[420px]" title="Revenue Contribution" showLegend={false} />
+                        <ChartSkeleton height="h-[420px]" title={t('revenue_contribution')} showLegend={false} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue Contribution</h3>
-                                <p className="text-xs text-gray-400 mt-1">Visual dominance of product sales</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('revenue_contribution')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('visual_dominance_product_sales')}</p>
                             </div>
                             <ReactECharts option={treemapOption} style={{ height: '350px' }} />
                         </div>

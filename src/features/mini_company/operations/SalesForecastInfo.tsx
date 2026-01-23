@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, ChartLineUp, Database, Table, Lightbulb, Target, CaretRight, CaretDown, Calculator } from 'phosphor-react';
+import { X, Info, ChartLineUp, Database, Table as TableIcon, Lightbulb, Target, CaretRight, CaretDown, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SalesForecastInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface SalesForecastInfoProps {
 }
 
 export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -43,14 +45,14 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
     const portalTarget = document.fullscreenElement || document.body;
 
     const questions = [
-        { q: 'Are sales on track for the next period?', a: 'By comparing actual sales against weighted forecasts, we can see if performance is meeting expectations.' },
-        { q: 'Which products or regions are at risk?', a: 'The Decision Table highlights deviations, flagging items that are significantly underperforming relative to their forecast.' },
-        { q: 'Are trends linear or changing unexpectedly?', a: 'Our predictive models look for subtle shifts in historical data that might indicate a non-linear trend change.' },
-        { q: 'Should we adjust strategy to prevent potential shortfalls?', a: 'Proactive insights allow management to reallocate resources or launch promotions before a predicted risk becomes a reality.' }
+        { q: t('forecast_q1'), a: t('forecast_a1') },
+        { q: t('forecast_q2'), a: t('forecast_a2') },
+        { q: t('forecast_q3'), a: t('forecast_a3') },
+        { q: t('forecast_q4'), a: t('forecast_a4') }
     ];
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 bg-black/5 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,19 +62,19 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Forecast & Prediction
+                            {t('forecast_and_prediction')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Understanding Forecast & Prediction</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('understanding_forecast_prediction')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -82,40 +84,40 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            The Forecast & Prediction dashboard tracks sales forecasts and predictive insights to help decision-makers plan ahead and reduce risk. It focuses on future trends rather than historical summaries.
+                            {t('forecast_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">02</span>
-                            Key Questions
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}

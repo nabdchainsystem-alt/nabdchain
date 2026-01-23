@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Database, Table, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SalesPerformanceInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface SalesPerformanceInfoProps {
 }
 
 export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,11 +21,11 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
     }, []);
 
     const questions = [
-        { q: 'Are sales growth numbers healthy or inflated?', a: 'Check "Sales Growth %" vs "Discount Impact". High growth with high discounts might mean you are "buying" revenue.' },
-        { q: 'Are customers buying again or only once?', a: 'Look at "Repeat Customers %" and the "New vs Returning" pie chart. Low repeat rates indicate a "leaky bucket" problem.' },
-        { q: 'Are discounts driving sales at the cost of margin?', a: 'Compare "Discount Impact %" with "Average Order Value". If discounts are > 15-20% and margins are thin, you might be losing money.' },
-        { q: 'Where are orders failing or being cancelled?', a: 'See "Cancelled Orders %" and the "Orders vs Completed" chart. High cancellations often mean inventory or fulfillment issues.' },
-        { q: 'Is operational execution supporting sales volume?', a: 'Check "Avg Fulfillment Time". If sales are up but fulfillment is slowing down, your operations are bottlenecked.' }
+        { q: t('perf_q1'), a: t('perf_a1') },
+        { q: t('perf_q2'), a: t('perf_a2') },
+        { q: t('perf_q3'), a: t('perf_a3') },
+        { q: t('perf_q4'), a: t('perf_a4') },
+        { q: t('perf_q5'), a: t('perf_a5') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -51,7 +53,7 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -62,9 +64,9 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
@@ -72,9 +74,9 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Performance & Efficiency
+                            {t('performance_efficiency')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Understanding Performance & Efficiency</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('understanding_performance')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -89,24 +91,24 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard tracks sales efficiency and performance quality to help you understand why sales are growing, slowing, or leaking operationally.
+                            {t('perf_overview_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
@@ -118,7 +120,7 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -128,43 +130,43 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('top_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Sales Growth %" desc="Measures the direction and speed of sales change vs previous period." />
-                                    <DetailItem title="Conversion Rate" desc="Orders divided by visits. Shows efficiency of interest to orders." />
-                                    <DetailItem title="Revenue per Customer" desc="Total Revenue / Unique Customers. Indicates customer value." />
-                                    <DetailItem title="Repeat Customers %" desc="Percentage of customers who placed more than one order." />
+                                    <DetailItem title={t('sales_growth_percent')} desc={t('sales_growth_desc')} />
+                                    <DetailItem title={t('conversion_rate')} desc={t('conversion_rate_desc')} />
+                                    <DetailItem title={t('revenue_per_customer')} desc={t('revenue_per_customer_desc')} />
+                                    <DetailItem title={t('repeat_customers_percent')} desc={t('repeat_customers_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('side_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Discount Impact %" desc="Percentage of revenue foregone due to discounts." />
-                                    <DetailItem title="Avg Fulfillment" desc="Average time from order creation to shipment (hours)." />
-                                    <DetailItem title="Cancelled %" desc="Order failure rate indicating sales friction." />
-                                    <DetailItem title="Return Rate" desc="Percentage of product returns." />
+                                    <DetailItem title={t('discount_impact_percent')} desc={t('discount_impact_desc')} />
+                                    <DetailItem title={t('avg_fulfillment_title')} desc={t('avg_fulfillment_desc')} />
+                                    <DetailItem title={t('cancelled_percent_title')} desc={t('cancelled_desc')} />
+                                    <DetailItem title={t('return_rate_title')} desc={t('return_rate_perf_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Orders vs Completed" desc="Bar chart identifying operational leakage (orders derived but not completed)." />
-                                    <DetailItem title="Revenue by Channel" desc="Highlights strongest and weakest sales channels (Online, Store, etc.)." />
-                                    <DetailItem title="New vs Returning" desc="Pie chart evaluating customer base quality and loyalty." />
-                                    <DetailItem title="Discount vs Full-Price" desc="Pie chart revealing pricing dependency." />
-                                    <DetailItem title="Low Performance Products" desc="Table identifying products with views but low conversion." />
-                                    <DetailItem title="Conversion Flow Analysis" desc="Parallel coordinates chart visualizing the drop-off shape from Views → Orders → Conversion for each product." />
+                                    <DetailItem title={t('orders_vs_completed')} desc={t('orders_vs_completed_desc')} />
+                                    <DetailItem title={t('revenue_by_channel')} desc={t('revenue_by_channel_desc')} />
+                                    <DetailItem title={t('new_vs_returning')} desc={t('new_vs_returning_desc')} />
+                                    <DetailItem title={t('discount_vs_full')} desc={t('discount_vs_full_desc')} />
+                                    <DetailItem title={t('low_performance_products')} desc={t('low_perf_products_desc')} />
+                                    <DetailItem title={t('conversion_flow')} desc={t('conversion_flow_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -173,26 +175,26 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables_fields')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. Orders Table"
-                                        desc="Fulfillment status and cancellation data."
-                                        columns={['Order ID', 'Status', 'Fulfillment Date', 'Total', 'Discount']}
+                                        name={`1. ${t('perf_orders_table')}`}
+                                        desc={t('perf_orders_table_desc')}
+                                        columns={[t('order_id'), t('status_col'), t('fulfillment_date'), t('total_col'), t('discount_col')]}
                                     />
                                     <TableSchema
-                                        name="2. Customers Table"
-                                        desc="Used for Repeat and New vs Returning logic."
-                                        columns={['Customer ID', 'Total Orders', 'First Order Date']}
+                                        name={`2. ${t('perf_customers_table')}`}
+                                        desc={t('perf_customers_table_desc')}
+                                        columns={[t('customer_id'), t('total_orders_col'), t('first_order_date')]}
                                     />
                                 </div>
                             </div>
@@ -200,24 +202,24 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Conversion Rate</strong> = Orders / Visits (or Leads).</span>
+                                        <span><strong>{t('perf_calc_conversion')}</strong> {t('perf_calc_conversion_formula')}</span>
                                     </li>
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Revenue per Customer</strong> = Total Revenue / Unique Customers.</span>
+                                        <span><strong>{t('perf_calc_rev_per_cust')}</strong> {t('perf_calc_rev_formula')}</span>
                                     </li>
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Discount Impact %</strong> = Total Discounts / Gross Revenue.</span>
+                                        <span><strong>{t('perf_calc_discount')}</strong> {t('perf_calc_discount_formula')}</span>
                                     </li>
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span>Includes all completed and cancelled orders for operational visibility.</span>
+                                        <span>{t('perf_calc_note')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -230,7 +232,7 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -240,7 +242,7 @@ export const SalesPerformanceInfo: React.FC<SalesPerformanceInfoProps> = ({ isOp
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>

@@ -96,30 +96,16 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                 title={`NABD Brain - ${credits} credits • ${deepModeEnabled ? 'Deep Mode' : 'Auto Mode'}${hasContext ? ' • Context Active' : ''}`}
             >
                 {isProcessing ? (
-                    <div className="relative">
-                        <CircleNotch size={18} className="animate-spin text-blue-500" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            {getTierIndicator()}
-                        </div>
-                    </div>
+                    <CircleNotch size={18} className="animate-spin" />
                 ) : (
-                    <Brain
+                    <Sparkle
                         size={18}
-                        weight={deepModeEnabled ? 'fill' : 'duotone'}
-                        className={deepModeEnabled ? 'text-purple-500' : ''}
+                        weight={deepModeEnabled ? 'fill' : 'regular'}
                     />
                 )}
 
                 {/* Credits badge */}
-                <span className={`
-                    text-[10px] font-bold px-1 rounded
-                    ${credits < 10
-                        ? 'text-red-500 bg-red-500/10'
-                        : credits < 30
-                            ? 'text-amber-500 bg-amber-500/10'
-                            : isDark ? 'text-gray-400' : 'text-gray-500'
-                    }
-                `}>
+                <span className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     {creditsLoading ? '...' : credits}
                 </span>
 
@@ -136,23 +122,15 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                     ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}
                 `}>
                     {/* Header */}
-                    <div className={`px-3 py-2 border-b ${isDark ? 'border-gray-800 bg-gray-800/50' : 'border-gray-100 bg-gray-50'}`}>
+                    <div className={`px-3 py-2.5 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <Brain size={14} weight="fill" className="text-purple-500" />
-                                <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                <Sparkle size={14} weight="fill" className={isDark ? 'text-gray-400' : 'text-gray-600'} />
+                                <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                     NABD Brain
                                 </span>
                             </div>
-                            <span className={`
-                                text-xs font-bold px-1.5 py-0.5 rounded-full
-                                ${credits < 10
-                                    ? 'text-red-500 bg-red-500/10'
-                                    : credits < 30
-                                        ? 'text-amber-500 bg-amber-500/10'
-                                        : 'text-blue-500 bg-blue-500/10'
-                                }
-                            `}>
+                            <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {creditsLoading ? '...' : `${credits} cr`}
                             </span>
                         </div>
@@ -160,30 +138,26 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
 
                     {/* Mode Selection */}
                     <div className="p-2 space-y-1">
-                        <div className={`text-[9px] font-bold uppercase tracking-wider px-2 mb-1.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                            Routing Mode
-                        </div>
-
                         {/* Auto Mode (Smart Routing) */}
                         <button
                             onClick={() => { if (deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
                             className={`
-                                w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all
+                                w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all
                                 ${!deepModeEnabled
-                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
-                                    : isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
+                                    ? isDark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900'
+                                    : isDark ? 'hover:bg-gray-800/50 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
                                 }
                             `}
                         >
-                            <Robot size={16} weight={!deepModeEnabled ? 'fill' : 'regular'} />
+                            <Robot size={15} weight={!deepModeEnabled ? 'fill' : 'regular'} />
                             <div className="flex-1 text-left">
-                                <div className="text-xs font-bold">Auto Mode</div>
-                                <div className={`text-[9px] ${!deepModeEnabled ? 'text-white/80' : 'opacity-60'}`}>
+                                <div className="text-xs font-medium">Auto</div>
+                                <div className={`text-[9px] opacity-60`}>
                                     Smart routing • 1-5 cr
                                 </div>
                             </div>
                             {!deepModeEnabled && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
+                                <div className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-white' : 'bg-gray-900'}`} />
                             )}
                         </button>
 
@@ -191,45 +165,43 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                         <button
                             onClick={() => { if (!deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
                             className={`
-                                w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all
+                                w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all
                                 ${deepModeEnabled
-                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
-                                    : isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
+                                    ? isDark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900'
+                                    : isDark ? 'hover:bg-gray-800/50 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
                                 }
                             `}
                         >
-                            <Brain size={16} weight={deepModeEnabled ? 'fill' : 'regular'} />
+                            <Brain size={15} weight={deepModeEnabled ? 'fill' : 'regular'} />
                             <div className="flex-1 text-left">
-                                <div className="text-xs font-bold">Deep Mode</div>
-                                <div className={`text-[9px] ${deepModeEnabled ? 'text-white/80' : 'opacity-60'}`}>
+                                <div className="text-xs font-medium">Deep</div>
+                                <div className={`text-[9px] opacity-60`}>
                                     Thinker only • 5 cr
                                 </div>
                             </div>
                             {deepModeEnabled && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
+                                <div className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-white' : 'bg-gray-900'}`} />
                             )}
                         </button>
                     </div>
 
                     {/* Context Status */}
-                    <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
-                        <div className="flex items-center gap-2">
-                            <Database size={12} className={hasContext ? 'text-green-500' : isDark ? 'text-gray-600' : 'text-gray-400'} />
-                            <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {hasContext
-                                    ? `Reading: ${currentBoardContext?.name || currentRoomContext?.name}`
-                                    : 'No context loaded'
-                                }
-                            </span>
+                    {hasContext && (
+                        <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                            <div className="flex items-center gap-2">
+                                <Database size={11} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+                                <span className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {currentBoardContext?.name || currentRoomContext?.name}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Keyboard Shortcut Hint */}
-                    <div className={`px-3 py-1.5 border-t ${isDark ? 'border-gray-800 bg-gray-800/30' : 'border-gray-100 bg-gray-50/50'}`}>
-                        <div className="flex items-center justify-center gap-1">
-                            <Info size={10} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-                            <span className={`text-[9px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                Press <kbd className="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-[8px] font-mono">⌘J</kbd> to open chat
+                    <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                        <div className="flex items-center justify-center gap-1.5">
+                            <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                <kbd className="px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-800' : 'bg-gray-100'} text-[9px] font-mono">⌘J</kbd> to chat
                             </span>
                         </div>
                     </div>

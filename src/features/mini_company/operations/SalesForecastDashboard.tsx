@@ -90,7 +90,7 @@ interface SalesForecastDashboardProps {
 }
 
 export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -139,24 +139,24 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
 
     // KPI Config - Top 4 KPIs
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Expected Revenue', subtitle: 'Next 90 Days projection', value: '0', rawValue: 320500, isCurrency: true, change: '+18.5%', trend: 'up', icon: <Target size={18} />, sparklineData: [40, 42, 45, 48, 52, 58, 65] },
-        { id: '2', label: 'Forecast Accuracy', subtitle: 'Historical performance', value: '94.2%', change: '+1.4%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [92, 93, 91, 94, 94.5, 94.2, 94.2] },
-        { id: '3', label: 'Risk Level', subtitle: 'Operational risk status', value: 'Low', change: 'Stable', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
-        { id: '4', label: 'Exp. Profit Margin', subtitle: 'Projected efficiency', value: '24.5%', change: '-0.5%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [26, 25.5, 25, 24.8, 24.5, 24.5, 24.5] },
+        { id: '1', label: t('expected_revenue'), subtitle: t('next_90_days_projection'), value: '0', rawValue: 320500, isCurrency: true, change: '+18.5%', trend: 'up', icon: <Target size={18} />, sparklineData: [40, 42, 45, 48, 52, 58, 65] },
+        { id: '2', label: t('forecast_accuracy'), subtitle: t('historical_performance'), value: '94.2%', change: '+1.4%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [92, 93, 91, 94, 94.5, 94.2, 94.2] },
+        { id: '3', label: t('risk_level'), subtitle: t('operational_risk_status'), value: t('low'), change: t('stable'), trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
+        { id: '4', label: t('exp_profit_margin'), subtitle: t('projected_efficiency'), value: '24.5%', change: '-0.5%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [26, 25.5, 25, 24.8, 24.5, 24.5, 24.5] },
     ];
 
     // Side 4 KPIs
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Growth Rate', subtitle: 'YoY Projection', value: '+12.4%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 11, 11.5, 12, 12.4] },
-        { id: '6', label: 'Pipeline Value', subtitle: 'Potential Revenue', value: '0', rawValue: 185000, isCurrency: true, change: '+8%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [150, 160, 165, 170, 175, 180, 185] },
-        { id: '7', label: 'Confidence Score', subtitle: 'Model Reliability', value: '87%', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [80, 82, 83, 84, 85, 86, 87] },
-        { id: '8', label: 'Deviation Avg', subtitle: 'Forecast Error', value: '6.2%', change: '-1.5%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [9, 8.5, 8, 7.5, 7, 6.5, 6.2] },
+        { id: '5', label: t('growth_rate'), subtitle: t('yoy_projection'), value: '+12.4%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 11, 11.5, 12, 12.4] },
+        { id: '6', label: t('pipeline_value'), subtitle: t('potential_revenue'), value: '0', rawValue: 185000, isCurrency: true, change: '+8%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [150, 160, 165, 170, 175, 180, 185] },
+        { id: '7', label: t('confidence_score'), subtitle: t('model_reliability'), value: '87%', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [80, 82, 83, 84, 85, 86, 87] },
+        { id: '8', label: t('deviation_avg'), subtitle: t('forecast_error'), value: '6.2%', change: '-1.5%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [9, 8.5, 8, 7.5, 7, 6.5, 6.2] },
     ];
 
     // ECharts Actual vs Forecast Option
     const lineOption: EChartsOption = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-        legend: { data: ['Actual', 'Forecast'], textStyle: { color: '#94a3b8' }, bottom: 0 },
+        legend: { data: [t('actual'), t('forecast')], textStyle: { color: '#94a3b8' }, bottom: 0 },
         grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
         xAxis: {
             type: 'category',
@@ -171,7 +171,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         },
         series: [
             {
-                name: 'Actual',
+                name: t('actual'),
                 type: 'line',
                 smooth: true,
                 data: ACTUAL_VS_FORECAST_DATA.slice(1).map(d => d[1]),
@@ -180,7 +180,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                 symbolSize: 8
             },
             {
-                name: 'Forecast',
+                name: t('forecast'),
                 type: 'line',
                 smooth: true,
                 data: ACTUAL_VS_FORECAST_DATA.slice(1).map(d => d[2]),
@@ -203,9 +203,9 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
             data: [
-                { value: 65, name: 'Low Risk', itemStyle: { color: '#10b981' } },
-                { value: 25, name: 'Medium Risk', itemStyle: { color: '#f59e0b' } },
-                { value: 10, name: 'High Risk', itemStyle: { color: '#f43f5e' } }
+                { value: 65, name: t('low_risk'), itemStyle: { color: '#10b981' } },
+                { value: 25, name: t('medium_risk'), itemStyle: { color: '#f59e0b' } },
+                { value: 10, name: t('high_risk'), itemStyle: { color: '#f43f5e' } }
             ]
         }]
     };
@@ -217,20 +217,20 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
             formatter: (params: any) => {
                 return `<div class="p-2 font-sans">
                     <p class="font-bold text-gray-800">${params.data[2]}</p>
-                    <p class="text-xs text-gray-500 mt-1">Forecast: ${formatCurrency(params.data[0], currency.code, currency.symbol)}</p>
-                    <p class="text-xs text-gray-500">Deviation: ${params.data[1]}%</p>
+                    <p class="text-xs text-gray-500 mt-1">${t('forecast')}: ${formatCurrency(params.data[0], currency.code, currency.symbol)}</p>
+                    <p class="text-xs text-gray-500">${t('deviation')}: ${params.data[1]}%</p>
                 </div>`;
             }
         },
         grid: { top: '15%', bottom: '15%', left: '15%', right: '10%' },
         xAxis: {
-            name: 'Forecast Value',
+            name: t('forecast_value'),
             nameLocation: 'middle',
             nameGap: 25,
             splitLine: { lineStyle: { type: 'dashed' } }
         },
         yAxis: {
-            name: 'Deviation %',
+            name: t('deviation_percent'),
             nameLocation: 'middle',
             nameGap: 35,
             splitLine: { lineStyle: { type: 'dashed' } }
@@ -260,11 +260,11 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 text-start">
                     <Target size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Forecast & Prediction</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Strategic planning and predictive risk assessment</p>
+                        <h1 className="text-2xl font-bold">{t('forecast_and_prediction')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('strategic_planning_predictive')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -272,7 +272,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -282,7 +282,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -306,12 +306,12 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                 {/* Actual vs Forecast (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Actual vs Forecasted Sales" />
+                        <ChartSkeleton height="h-[280px]" title={t('actual_vs_forecast')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Actual vs Forecast</h3>
-                                <p className="text-xs text-gray-400 mt-1">Trend comparison</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('actual_vs_forecast')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('trend_comparison')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ReactECharts option={lineOption} style={{ height: '100%' }} />
@@ -323,12 +323,12 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                 {/* Forecast per Product (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Forecast per Product" />
+                        <ChartSkeleton height="h-[280px]" title={t('forecast_per_product')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Forecast per Product</h3>
-                                <p className="text-xs text-gray-400 mt-1">Projected demand</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('forecast_per_product')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('projected_demand')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -338,8 +338,8 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                                         <YAxis fontSize={12} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="actual" name="Current" fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
-                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
+                                        <Bar dataKey="actual" name={t('current')} fill="#d1d5db" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
+                                        <Bar dataKey="forecast" name={t('forecast')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -353,12 +353,12 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Risk Distribution Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Risk Distribution" />
+                        <PieChartSkeleton title={t('risk_distribution')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Risk Distribution</h3>
-                                <p className="text-xs text-gray-400 mt-1">Vulnerability assessment</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('risk_distribution')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('vulnerability_assessment')}</p>
                             </div>
                             <ReactECharts option={riskPieOption} style={{ height: '210px' }} />
                         </div>
@@ -366,12 +366,12 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
 
                     {/* Regional Forecast */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title="Regional Forecast" />
+                        <ChartSkeleton height="h-[250px]" title={t('regional_forecast')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Regional Forecast</h3>
-                                <p className="text-xs text-gray-400 mt-1">Territory performance</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_forecast')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('territory_performance')}</p>
                             </div>
                             <div className="h-[210px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -380,7 +380,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                                         <XAxis dataKey="name" fontSize={10} tick={{ fill: '#94a3b8' }} />
                                         <YAxis fontSize={10} tick={{ fill: '#94a3b8' }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                        <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={16} animationDuration={1000} />
+                                        <Bar dataKey="forecast" name={t('forecast')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={16} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -412,46 +412,46 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                     <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
                         {/* Table Header / Toolbar */}
                         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
-                            <div>
+                            <div className="text-start">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                    Strategic Decision Table
+                                    {t('strategic_decision_table')}
                                 </h3>
-                                <p className="text-xs text-gray-400 mt-1 italic">Comparing current trends against predictive targets</p>
+                                <p className="text-xs text-gray-400 mt-1 italic">{t('comparing_current_trends')}</p>
                             </div>
                         </div>
 
                         {/* Table Body */}
                         <div className="flex-1 overflow-x-auto min-h-[400px]">
-                            <table className="w-full text-sm text-left h-full">
+                            <table className="w-full text-sm text-start h-full">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4">Target (Product/Region)</th>
-                                        <th className="px-6 py-4 text-right">Last 30D Avg</th>
-                                        <th className="px-6 py-4 text-right">Next 30D Forecast</th>
-                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('deviation')}>Dev. %</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-start">{t('target_product_region')}</th>
+                                        <th className="px-6 py-4 text-end">{t('last_30d_avg')}</th>
+                                        <th className="px-6 py-4 text-end">{t('next_30d_forecast')}</th>
+                                        <th className="px-6 py-4 text-end cursor-pointer hover:text-blue-600" onClick={() => handleSort('deviation')}>{t('dev_percent')}</th>
+                                        <th className="px-6 py-4 text-start">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-5 text-start">
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-gray-900 dark:text-white">{row.name}</span>
                                                     <span className="text-[10px] text-gray-400 uppercase tracking-tighter">{row.type}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 text-right font-medium text-gray-500">{formatCurrency(row.last30, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.forecast30, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5 text-right">
+                                            <td className="px-6 py-5 text-end font-medium text-gray-500">{formatCurrency(row.last30, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end font-bold text-gray-900 dark:text-white">{formatCurrency(row.forecast30, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end">
                                                 <div className={`flex items-center justify-end gap-1 font-bold ${row.deviation > 10 ? 'text-rose-500' : 'text-emerald-500'}`}>
                                                     {row.deviation > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                                                     {Math.abs(row.deviation)}%
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-5 text-start">
                                                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'On Track' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
-                                                    {row.status}
+                                                    {row.status === 'On Track' ? t('on_track') : t('at_risk')}
                                                 </span>
                                             </td>
                                         </tr>
@@ -463,7 +463,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                         {/* Pagination */}
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
                             <span className="text-xs text-gray-500">
-                                Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
+                                {t('showing')} <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> {t('of')} <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
@@ -488,21 +488,21 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
 
                 {/* Companion Chart: Deviation Scatter (1/2 Column) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[400px]" title="Forecast Confidence vs Deviation" />
+                    <ChartSkeleton height="h-[400px]" title={t('forecast_confidence_vs_deviation')} />
                 ) : (
                     <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
-                        <div className="mb-4">
+                        <div className="mb-4 text-start">
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                Forecast Confidence vs Deviation
+                                {t('forecast_confidence_vs_deviation')}
                             </h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Scatter analysis: Bubble size = Projected Revenue, Red Bubbles = High Deviation</p>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('scatter_analysis_desc')}</p>
                         </div>
                         <div className="flex-1 min-h-[400px]">
                             <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
                         </div>
-                        <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                        <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/50 text-start">
                             <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-normal">
-                                <strong>Insight:</strong> Webcam 4K shows the highest deviation from forecast (+52.4%), suggesting an unexpected surge in demand or a conservative initial prediction.
+                                <strong>{t('insight')}:</strong> {t('webcam_insight')}
                             </p>
                         </div>
                     </div>

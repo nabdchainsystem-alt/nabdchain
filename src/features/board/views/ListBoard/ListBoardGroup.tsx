@@ -131,12 +131,12 @@ export const ListBoardGroup: React.FC<ListBoardGroupProps> = React.memo(({
                     />
                     <div className="ml-4 flex items-center gap-2">
                         <div className="flex h-1.5 w-28 overflow-hidden rounded-full bg-gray-100">
-                            {(['new', 'pending', 'working', 'almostFinish', 'done', 'stuck'] as const).map(key => {
+                            {(['todo', 'pending', 'working', 'almostFinish', 'done', 'stuck'] as const).map(key => {
                                 const pct = progress.total === 0 ? 0 : (progress.counts as any)[key] / progress.total * 100;
                                 if (pct <= 0) return null;
-                                const color = key === 'new' ? statusColorMap[Status.New]
+                                const color = key === 'todo' ? statusColorMap[Status.ToDo]
                                     : key === 'pending' ? statusColorMap[Status.Pending]
-                                        : key === 'working' ? statusColorMap[Status.Working]
+                                        : key === 'working' ? statusColorMap[Status.WorkingOnIt]
                                             : key === 'almostFinish' ? statusColorMap[Status.AlmostFinish]
                                                 : key === 'done' ? statusColorMap[Status.Done]
                                                     : statusColorMap[Status.Stuck];
@@ -341,7 +341,7 @@ export const ListBoardGroup: React.FC<ListBoardGroupProps> = React.memo(({
                                 {col.type === 'status' ? (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <StatusCell
-                                            status={col.id === 'col_status' ? (draftTasks[group.id]?.status || Status.New) : (draftTasks[group.id]?.textValues?.[col.id] as Status || Status.New)}
+                                            status={col.id === 'col_status' ? (draftTasks[group.id]?.status || Status.ToDo) : (draftTasks[group.id]?.textValues?.[col.id] as Status || Status.ToDo)}
                                             onChange={(s) => {
                                                 if (col.id === 'col_status') {
                                                     updateDraftTask(group.id, { status: s });

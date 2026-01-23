@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note } from 'phosphor-react';
+import React, { Suspense } from 'react';
+import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note, VideoCamera } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
@@ -15,6 +15,9 @@ import { NabdSmartBar } from '../ui/NabdSmartBar';
 import { QuickNotesPanel } from './QuickNotesPanel';
 import { Board } from '../../types';
 import { AICreditsDisplay } from '../AICreditsDisplay';
+
+// Lazy load LiveSessionPage for the modal
+const LiveSessionPage = React.lazy(() => import('../../features/collaboration/LiveSessionPage').then(m => ({ default: m.LiveSessionPage })));
 
 interface TopBarProps {
   onNavigate: (view: string, boardId?: string) => void;
@@ -51,6 +54,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   // Quick Notes state
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const quickNotesRef = useRef<HTMLDivElement>(null);
+
+  // Live Session modal state
+  const [isLiveSessionOpen, setIsLiveSessionOpen] = useState(false);
 
   // Search results
   const searchResults = React.useMemo(() => {
@@ -216,10 +222,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   return (
     <>
       {isSleepMode && <SleepOverlay onCheck={() => setIsSleepMode(false)} />}
-      <div className="h-12 bg-gradient-to-b from-white to-[#F7F8FA] dark:bg-monday-dark-surface flex items-center justify-between px-4 flex-shrink-0 z-20 shadow-sm transition-colors duration-200 relative">
+      <div className="h-12 bg-gradient-to-b from-white to-[#F7F8FA] dark:bg-monday-dark-surface flex items-center justify-between px-4 rtl:pe-3 flex-shrink-0 z-20 shadow-sm transition-colors duration-200 relative">
 
         {/* Start: Logo Section */}
-        <div className="flex items-center min-w-[200px]">
+        <div className="flex items-center min-w-[200px] rtl:justify-end">
           <div
             className="flex items-center cursor-pointer group"
             onClick={() => onNavigate('dashboard')}
@@ -227,7 +233,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             <img
               src="/top-bar-logo.png"
               alt="NABD Logo"
-              className="h-10 w-auto -me-8 transition-all group-hover:scale-105 object-contain dark:invert dark:brightness-200 mix-blend-multiply dark:mix-blend-screen"
+              className="h-10 w-auto -me-8 rtl:me-0 transition-all group-hover:scale-105 object-contain dark:invert dark:brightness-200 mix-blend-multiply dark:mix-blend-screen"
             />
             <div className="flex items-center gap-1.5 justify-center">
               <span className="text-lg font-bold tracking-tight text-[#323338] dark:text-monday-dark-text leading-none hidden md:block">
@@ -342,6 +348,15 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
           >
             <EyeClosed size={21} weight="light" />
+          </button>
+
+          {/* Live Session Button */}
+          <button
+            onClick={() => setIsLiveSessionOpen(true)}
+            title={t('live_session') || 'Live Session'}
+            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+          >
+            <VideoCamera size={21} weight="light" />
           </button>
 
           {/* Arcade Button */}
@@ -476,6 +491,19 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           </div>
         </div>
       </div>
+
+      {/* Live Session Modal */}
+      {isLiveSessionOpen && (
+        <div className="fixed inset-0 z-[9999] bg-gray-900">
+          <Suspense fallback={
+            <div className="h-full w-full flex items-center justify-center bg-gray-900">
+              <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <LiveSessionPage onClose={() => setIsLiveSessionOpen(false)} />
+          </Suspense>
+        </div>
+      )}
     </>
   );
 };

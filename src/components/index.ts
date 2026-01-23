@@ -6,4 +6,4 @@
 export * from './ui';
 export * from './common';
 export { Logo } from './Logo';
-export { PlaceholderPage } from './PlaceholderPage';
+export { default as PlaceholderPage } from './PlaceholderPage';

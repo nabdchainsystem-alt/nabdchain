@@ -78,18 +78,36 @@ const preloadCriticalRoutes = () => {
   });
 };
 
-// Minimal loading spinner for Suspense
+// Delayed loading spinner - only shows after 150ms to prevent flash on fast loads
+const DelayedSpinner = memo(({ delay = 150, size = 6 }: { delay?: number; size?: number }) => {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  if (!show) return null;
+
+  return (
+    <div className={`w-${size} h-${size} border-2 border-blue-500 border-t-transparent rounded-full animate-spin`}
+         style={{ width: size * 4, height: size * 4 }} />
+  );
+});
+DelayedSpinner.displayName = 'DelayedSpinner';
+
+// Minimal loading spinner for Suspense - delayed to prevent flash
 const LoadingSpinner = memo(() => (
   <div className="h-full w-full flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    <DelayedSpinner size={6} />
   </div>
 ));
 LoadingSpinner.displayName = 'LoadingSpinner';
 
-// Full page loading state
+// Full page loading state - delayed to prevent flash
 const PageLoadingFallback = memo(() => (
   <div className="h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    <DelayedSpinner size={8} delay={100} />
   </div>
 ));
 PageLoadingFallback.displayName = 'PageLoadingFallback';
@@ -1564,7 +1582,7 @@ class AppErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App Error Boundary caught error:', error, errorInfo);
+    appLogger.error('App Error Boundary caught error:', error, errorInfo);
   }
 
   render() {

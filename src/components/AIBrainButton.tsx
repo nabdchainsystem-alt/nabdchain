@@ -34,16 +34,15 @@ export function AIBrainButton() {
         <>
             {/* 3D Circle Button */}
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={() => setIsOpen(!isOpen)}
                 onMouseDown={() => setIsPressed(true)}
                 onMouseUp={() => setIsPressed(false)}
                 onMouseLeave={() => setIsPressed(false)}
                 className={`
-                    fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-[9998]
+                    fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-[10000]
                     w-[44px] h-[44px] rounded-full
                     flex flex-col items-center justify-center
                     transition-all duration-150
-                    ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}
                     ${isPressed ? 'scale-95' : 'hover:scale-105'}
                 `}
                 style={{

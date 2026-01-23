@@ -19,8 +19,12 @@ interface LanguageContextType {
 }
 
 const translations: TranslationMap = {
-    en: {},
-    ar: {}
+    en: {
+        home: 'Home'
+    },
+    ar: {
+        home: 'الرئيسية'
+    }
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

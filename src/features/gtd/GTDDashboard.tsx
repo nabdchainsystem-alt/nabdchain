@@ -143,18 +143,27 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
 
   useEffect(() => {
     const updateNow = () => setNow(new Date());
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') updateNow();
+
+    // Debounced update to prevent flash on focus
+    let focusTimeout: ReturnType<typeof setTimeout> | null = null;
+    const debouncedUpdate = () => {
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(updateNow, 100);
     };
 
-    window.addEventListener('focus', updateNow);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') debouncedUpdate();
+    };
+
+    window.addEventListener('focus', debouncedUpdate);
     document.addEventListener('visibilitychange', handleVisibility);
     // Update every minute (optional but good for midnight crossover)
     const timer = setInterval(updateNow, 60000);
 
     return () => {
-      window.removeEventListener('focus', updateNow);
+      window.removeEventListener('focus', debouncedUpdate);
       document.removeEventListener('visibilitychange', handleVisibility);
+      if (focusTimeout) clearTimeout(focusTimeout);
       clearInterval(timer);
     };
   }, []);

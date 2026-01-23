@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import SimplePeer, { Instance } from 'simple-peer';
 import { useSocket } from '../../contexts/SocketContext';
 import { useUser } from '../../auth-adapter';
+import { useAppContext } from '../../contexts/AppContext';
 import { Phone, PhoneSlash, Microphone, MicrophoneSlash, VideoCamera, VideoCameraSlash, Monitor, MonitorPlay } from 'phosphor-react';
 
 // Free STUN/TURN servers for WebRTC connectivity
@@ -60,6 +61,7 @@ const Video = ({ peer, name }: { peer: Instance, name?: string }) => {
 export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
     const { socket } = useSocket();
     const { user } = useUser();
+    const { t } = useAppContext();
     const [peers, setPeers] = useState<PeerNode[]>([]);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
@@ -358,12 +360,12 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
                     {isJoining ? (
                         <>
                             <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Connecting...</span>
+                            <span>{t('connecting') || 'Connecting...'}</span>
                         </>
                     ) : (
                         <>
+                            <span>{t('join_live_session') || 'Join Live Session'}</span>
                             <VideoCamera size={32} weight="fill" />
-                            <span>Join Live Session</span>
                         </>
                     )}
                 </button>
@@ -377,7 +379,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
                 {/* My Video */}
                 <div className="relative w-32 h-24 bg-gray-800 rounded overflow-hidden">
                     <video ref={userVideo} muted autoPlay playsInline className="w-full h-full object-cover" />
-                    <div className="absolute bottom-1 left-1 text-[10px] text-white bg-black/50 px-1 rounded">You</div>
+                    <div className="absolute bottom-1 start-1 text-[10px] text-white bg-black/50 px-1 rounded">{t('you') || 'You'}</div>
                 </div>
 
                 {/* Peers */}

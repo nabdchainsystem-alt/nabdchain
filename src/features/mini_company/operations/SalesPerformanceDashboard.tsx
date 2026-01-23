@@ -68,7 +68,41 @@ interface SalesPerformanceDashboardProps {
 }
 
 export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
+
+    // Translated KPIs
+    const translatedPerformanceKPIs = PERFORMANCE_KPIS.map((kpi, index) => ({
+        ...kpi,
+        label: [t('sales_growth'), t('conversion_rate'), t('rev_per_customer'), t('repeat_cust_percent')][index],
+        subtitle: [t('vs_previous_period'), t('global_conversion'), t('customer_value'), t('retention_rate')][index],
+    }));
+
+    const translatedEfficiencyKPIs = EFFICIENCY_KPIS.map((kpi, index) => ({
+        ...kpi,
+        label: [t('discount_impact'), t('avg_fulfillment'), t('cancelled_percent'), t('return_rate')][index],
+        subtitle: [t('revenue_foregone'), t('hours_to_ship'), t('order_failure_rate'), t('product_returns')][index],
+    }));
+
+    // Translated chart data
+    const translatedOrdersData = ORDERS_VS_COMPLETED_DATA.map((item, index) => ({
+        ...item,
+        name: [t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat'), t('sun')][index],
+    }));
+
+    const translatedRevenueChannelData = REVENUE_CHANNEL_DATA.map((item, index) => ({
+        ...item,
+        name: [t('online_store'), t('marketplace'), t('retail_pos'), t('social_whatsapp')][index],
+    }));
+
+    const translatedNewVsReturningData = NEW_VS_RETURNING_DATA.map((item, index) => ({
+        ...item,
+        name: [t('new_customers'), t('returning')][index],
+    }));
+
+    const translatedDiscountData = DISCOUNT_VS_FULL_DATA.map((item, index) => ({
+        ...item,
+        name: [t('full_price'), t('discounted')][index],
+    }));
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -92,7 +126,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
             type: 'pie',
             radius: ['50%', '70%'],
             center: ['35%', '50%'],
-            data: NEW_VS_RETURNING_DATA.map((d, i) => ({
+            data: translatedNewVsReturningData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981'][i] }
             })),
@@ -108,7 +142,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
             type: 'pie',
             radius: ['50%', '70%'],
             center: ['35%', '50%'],
-            data: DISCOUNT_VS_FULL_DATA.map((d, i) => ({
+            data: translatedDiscountData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#10b981', '#f59e0b'][i] }
             })),
@@ -160,8 +194,8 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 <div className="flex items-start gap-2">
                     <Gauge size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Performance & Efficiency</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Operational leakage and fulfillment efficiency analysis</p>
+                        <h1 className="text-2xl font-bold">{t('performance_efficiency')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('operational_leakage_analysis')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -169,7 +203,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -179,7 +213,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -188,7 +222,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {PERFORMANCE_KPIS.map((kpi) => (
+                {translatedPerformanceKPIs.map((kpi) => (
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
@@ -204,16 +238,16 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 {/* Orders vs Completed (2 cols) */}
                 <div className="col-span-1 md:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Orders vs Completed" />
+                        <ChartSkeleton height="h-[280px]" title={t('orders_vs_completed')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-5">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Orders vs Completed</h3>
-                                <p className="text-xs text-gray-400 mt-1">Operational leakage analysis</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('orders_vs_completed')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('operational_leakage')}</p>
                             </div>
                             <div className="h-[240px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={ORDERS_VS_COMPLETED_DATA} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={translatedOrdersData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                                         <XAxis
                                             dataKey="name"
@@ -231,8 +265,8 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
 
-                                        <Bar dataKey="orders" name="Total Orders" fill="#dbeafe" radius={[4, 4, 0, 0]} barSize={30} />
-                                        <Bar dataKey="completed" name="Completed" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
+                                        <Bar dataKey="orders" name={t('total_orders')} fill="#dbeafe" radius={[4, 4, 0, 0]} barSize={30} />
+                                        <Bar dataKey="completed" name={t('completed')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -243,17 +277,17 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 {/* Revenue by Channel (2 cols) */}
                 <div className="col-span-1 md:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Revenue by Channel" />
+                        <ChartSkeleton height="h-[280px]" title={t('revenue_by_channel')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-5">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Revenue by Channel</h3>
-                                <p className="text-xs text-gray-400 mt-1">Where sales are coming from</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('revenue_by_channel')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('where_sales_coming')}</p>
                             </div>
                             <div className="h-[240px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
-                                        data={REVENUE_CHANNEL_DATA}
+                                        data={translatedRevenueChannelData}
                                         margin={{ top: 10, right: 40, left: 10, bottom: 0 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -267,11 +301,11 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                         <Tooltip
                                             cursor={{ fill: 'transparent' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                            formatter={(value: number) => [formatCurrency(value, currency.code, currency.symbol), 'Revenue']}
+                                            formatter={(value: number) => [formatCurrency(value, currency.code, currency.symbol), t('revenue')]}
                                         />
 
                                         <Bar
-                                            name="Revenue"
+                                            name={t('revenue')}
                                             dataKey="value"
                                             radius={[0, 6, 6, 0]}
                                             barSize={32}
@@ -298,12 +332,12 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* New vs Returning */}
                     {isLoading ? (
-                        <PieChartSkeleton title="New vs Returning" />
+                        <PieChartSkeleton title={t('new_vs_returning')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">New vs Returning</h3>
-                                <p className="text-xs text-gray-400 mt-1">Customer base quality</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('new_vs_returning')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('customer_base_quality')}</p>
                             </div>
                             <ReactECharts option={newVsReturningOption} style={{ height: '210px' }} />
                         </div>
@@ -311,12 +345,12 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
 
                     {/* Discount vs Full-Price */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Discount vs Full-Price" />
+                        <PieChartSkeleton title={t('discount_vs_full')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Discount vs Full-Price</h3>
-                                <p className="text-xs text-gray-400 mt-1">Pricing health check</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('discount_vs_full')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('pricing_health_check')}</p>
                             </div>
                             <ReactECharts option={discountPieOption} style={{ height: '210px' }} />
                         </div>
@@ -325,7 +359,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
 
                 {/* 4 Side KPIs (Right Half - 2x2 Grid) */}
                 <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
-                    {EFFICIENCY_KPIS.map((kpi) => (
+                    {translatedEfficiencyKPIs.map((kpi) => (
                         <div key={kpi.id} className="col-span-1">
                             <KPICard
                                 {...kpi}
@@ -348,28 +382,28 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                        Low Performance Products
+                                        {t('low_performance_products')}
                                     </h3>
-                                    <p className="text-xs text-gray-400 mt-1">High interest (views) but low conversion</p>
+                                    <p className="text-xs text-gray-400 mt-1">{t('high_views_low_conversion')}</p>
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-6 py-3">Product Name</th>
-                                            <th className="px-6 py-3 text-right">Views</th>
-                                            <th className="px-6 py-3 text-right">Orders</th>
-                                            <th className="px-6 py-3 text-right">Conv. Rate</th>
+                                            <th className="px-6 py-3">{t('product_name')}</th>
+                                            <th className="px-6 py-3 text-end">{t('views')}</th>
+                                            <th className="px-6 py-3 text-end">{t('orders')}</th>
+                                            <th className="px-6 py-3 text-end">{t('conv_rate')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {LOW_PERFORMANCE_PRODUCTS.map((product) => (
                                             <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                                 <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{product.name}</td>
-                                                <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.views}</td>
-                                                <td className="px-6 py-3 text-right text-gray-600 dark:text-gray-400">{product.orders}</td>
-                                                <td className="px-6 py-3 text-right text-orange-500 font-medium">{product.conversion}</td>
+                                                <td className="px-6 py-3 text-end text-gray-600 dark:text-gray-400">{product.views}</td>
+                                                <td className="px-6 py-3 text-end text-gray-600 dark:text-gray-400">{product.orders}</td>
+                                                <td className="px-6 py-3 text-end text-orange-500 font-medium">{product.conversion}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -382,12 +416,12 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                 {/* Companion Chart: Parallel Coordinates (2 Cols) */}
                 <div className="col-span-1 md:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Conversion Flow" showLegend={false} />
+                        <ChartSkeleton height="h-[280px]" title={t('conversion_flow')} showLegend={false} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col animate-fade-in-up">
                             <div className="mb-4 shrink-0">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Flow</h3>
-                                <p className="text-xs text-gray-400 mt-1">Hidden story: Views to Orders path</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('conversion_flow')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('views_to_orders_path')}</p>
                             </div>
                             <div className="flex-1 min-h-[200px]">
                                 <ReactECharts option={parallelChartOption} style={{ height: '100%', width: '100%' }} />

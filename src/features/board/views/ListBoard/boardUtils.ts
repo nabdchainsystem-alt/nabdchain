@@ -1,23 +1,26 @@
 import { ITask, IGroup, Status } from '../../types/boardTypes';
 
 export const statusColorMap: Record<Status, string> = {
-    [Status.Done]: '#33D995',
-    [Status.Working]: '#FFBE66',
+    [Status.ToDo]: '#A0A5B9',
+    [Status.WorkingOnIt]: '#FFBE66',
     [Status.Stuck]: '#f97316',
+    [Status.Done]: '#33D995',
+    [Status.InProgress]: '#3B82F6',
     [Status.Pending]: '#FFD940',
     [Status.AlmostFinish]: '#C48AF0',
-    [Status.New]: '#A0A5B9',
 };
 
 export const normalizeStatus = (raw?: string): Status => {
-    if (!raw) return Status.New;
+    if (!raw) return Status.ToDo;
     const val = raw.toLowerCase();
     if (val.includes('done') || val.includes('complete')) return Status.Done;
-    if (val.includes('work') || val.includes('progress') || val.includes('doing')) return Status.Working;
+    if (val.includes('working on it')) return Status.WorkingOnIt;
+    if (val.includes('progress') || val.includes('doing')) return Status.InProgress;
     if (val.includes('stuck') || val.includes('block')) return Status.Stuck;
-    if (val.includes('pending') || val.includes('todo') || val.includes('to do') || val.includes('backlog')) return Status.Pending;
+    if (val.includes('pending') || val.includes('backlog')) return Status.Pending;
     if (val.includes('almost') || val.includes('review')) return Status.AlmostFinish;
-    return Status.New;
+    if (val.includes('todo') || val.includes('to do')) return Status.ToDo;
+    return Status.ToDo;
 };
 
 export const resolveTaskStatus = (group: IGroup, task: ITask): Status => {
@@ -30,7 +33,7 @@ export const calculateProgress = (group: IGroup, tasksOverride?: ITask[]) => {
     const allTasks = (tasksOverride ?? group.tasks).flatMap(t => [t, ...(t.subtasks || [])]);
     if (allTasks.length === 0) {
         return {
-            counts: { done: 0, working: 0, stuck: 0, pending: 0, almostFinish: 0, new: 0 },
+            counts: { done: 0, working: 0, stuck: 0, pending: 0, almostFinish: 0, todo: 0 },
             weighted: 0,
             total: 0
         };
@@ -39,13 +42,14 @@ export const calculateProgress = (group: IGroup, tasksOverride?: ITask[]) => {
     const counts = allTasks.reduce((acc, task) => {
         const status = resolveTaskStatus(group, task);
         acc[status === Status.Done ? 'done'
-            : status === Status.Working ? 'working'
-                : status === Status.Stuck ? 'stuck'
-                    : status === Status.Pending ? 'pending'
-                        : status === Status.AlmostFinish ? 'almostFinish'
-                            : 'new'] += 1;
+            : status === Status.WorkingOnIt ? 'working'
+                : status === Status.InProgress ? 'working'
+                    : status === Status.Stuck ? 'stuck'
+                        : status === Status.Pending ? 'pending'
+                            : status === Status.AlmostFinish ? 'almostFinish'
+                                : 'todo'] += 1;
         return acc;
-    }, { done: 0, working: 0, stuck: 0, pending: 0, almostFinish: 0, new: 0 });
+    }, { done: 0, working: 0, stuck: 0, pending: 0, almostFinish: 0, todo: 0 });
 
     const total = allTasks.length;
     const weighted = (
@@ -53,7 +57,7 @@ export const calculateProgress = (group: IGroup, tasksOverride?: ITask[]) => {
         counts.almostFinish * 0.75 +
         counts.working * 0.5 +
         counts.pending * 0.25 +
-        counts.new * 0.1 +
+        counts.todo * 0.1 +
         counts.stuck * 0
     ) / total * 100;
 

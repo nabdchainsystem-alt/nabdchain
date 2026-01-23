@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { Warning, ArrowsClockwise } from 'phosphor-react';
+import { appLogger } from '../../utils/logger';
 
 interface Props {
     children: React.ReactNode;
@@ -23,7 +24,7 @@ export class FeatureErrorBoundary extends React.Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-        console.error(`[${this.props.featureName}] Error:`, error, errorInfo);
+        appLogger.error(`[${this.props.featureName}] Error:`, error, errorInfo);
     }
 
     handleRetry = (): void => {

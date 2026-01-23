@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'phosphor-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
@@ -36,7 +36,7 @@ const KPICardSkeleton: React.FC = () => (
     </div>
 );
 
-export const KPICard: React.FC<KPIConfig> = ({ label, subtitle, value, change, trend, icon, color = 'indigo', sparklineData, loading }) => {
+export const KPICard: React.FC<KPIConfig> = memo(({ label, subtitle, value, change, trend, icon, color = 'indigo', sparklineData, loading }) => {
     if (loading) {
         return <KPICardSkeleton />;
     }
@@ -91,7 +91,9 @@ export const KPICard: React.FC<KPIConfig> = ({ label, subtitle, value, change, t
             </div>
         </div>
     );
-};
+});
+
+KPICard.displayName = 'KPICard';
 
 // Export skeleton for standalone use
 export const KPICardLoading = KPICardSkeleton;

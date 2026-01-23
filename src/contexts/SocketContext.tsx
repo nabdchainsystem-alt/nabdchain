@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../auth-adapter';
+import { socketLogger } from '../utils/logger';
 
 interface SocketContextType {
     socket: Socket | null;
@@ -26,7 +27,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     useEffect(() => {
         if (!isLoaded || !userId) return;
 
-        console.log('[SocketContext] Initializing socket connection to:', SOCKET_URL);
+        socketLogger.info('Initializing socket connection to:', SOCKET_URL);
 
         const newSocket = io(SOCKET_URL, {
             withCredentials: true,
@@ -35,23 +36,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
 
         newSocket.on('connect', () => {
-            console.log('[SocketContext] Connected:', newSocket.id);
+            socketLogger.info('Connected:', newSocket.id);
             setIsConnected(true);
         });
 
         newSocket.on('disconnect', () => {
-            console.log('[SocketContext] Disconnected');
+            socketLogger.info('Disconnected');
             setIsConnected(false);
         });
 
         newSocket.on('connect_error', (err) => {
-            console.error('[SocketContext] Connection Error:', err.message);
+            socketLogger.error('Connection Error:', err.message);
         });
 
         setSocket(newSocket);
 
         return () => {
-            console.log('[SocketContext] Cleaning up socket');
+            socketLogger.debug('Cleaning up socket');
             newSocket.disconnect();
         };
     }, [isLoaded, userId]);

@@ -144,6 +144,8 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
                     top: coords?.top ?? 0,
                     left: coords?.left ?? 0,
                     opacity: coords ? 1 : 0,
+                    visibility: coords ? 'visible' : 'hidden',
+                    transition: 'opacity 0.1s ease-out',
                     zIndex: 9999
                 }}
                 onClick={(e) => e.stopPropagation()}

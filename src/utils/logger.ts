@@ -85,3 +85,9 @@ export function createLogger(context: string) {
 export const appLogger = createLogger('App');
 export const boardLogger = createLogger('Board');
 export const storageLogger = createLogger('Storage');
+export const socketLogger = createLogger('Socket');
+export const aiLogger = createLogger('AI');
+export const authLogger = createLogger('Auth');
+export const serviceLogger = createLogger('Service');
+export const videoLogger = createLogger('Video');
+export const talkLogger = createLogger('Talk');

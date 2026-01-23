@@ -133,7 +133,7 @@ export const SortableTaskRow: React.FC<SortableTaskRowProps> = ({
                             {col.type === 'status' ? (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <StatusCell
-                                        status={col.id === 'col_status' ? task.status : (task.textValues[col.id] as Status || Status.New)}
+                                        status={col.id === 'col_status' ? task.status : (task.textValues[col.id] as Status || Status.ToDo)}
                                         onChange={(s) => {
                                             if (col.id === 'col_status') {
                                                 updateTask(group.id, task.id, { status: s });

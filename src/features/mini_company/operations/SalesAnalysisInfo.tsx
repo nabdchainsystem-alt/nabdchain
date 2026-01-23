@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, ChartLineUp, Database, Table, Lightbulb, Target, CaretRight, CaretDown, Calculator } from 'phosphor-react';
+import { X, Info, ChartLineUp, Database, Table as TableIcon, Lightbulb, Target, CaretRight, CaretDown, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SalesAnalysisInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface SalesAnalysisInfoProps {
 }
 
 export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -43,13 +45,13 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
     const portalTarget = document.fullscreenElement || document.body;
 
     const questions = [
-        { q: 'How does this help my decisions?', a: 'By showing region-to-agent performance flows, it helps you allocate resources and detect efficiency gaps early.' },
-        { q: 'How do the table and side chart work?', a: 'The table provides the raw facts, while the companion chart reveals the "hidden story" of value concentration and agent contribution.' },
-        { q: 'How to detect unusual behavior?', a: 'Look for imbalances in the flow chart—if one agent or region has high volume but low completion, it signals a process bottleneck.' }
+        { q: t('analysis_q1'), a: t('analysis_a1') },
+        { q: t('analysis_q2'), a: t('analysis_a2') },
+        { q: t('analysis_q3'), a: t('analysis_a3') }
     ];
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 bg-black/5 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -59,19 +61,19 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Sales Insights & Patterns
+                            {t('sales_insights_patterns')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Understanding Sales Insights & Patterns</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('understanding_sales_insights')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -81,40 +83,40 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            The Sales Insights & Patterns dashboard focuses on deep sales performance analysis. It uncovers patterns, efficiency, and hidden signals that are not obvious in high-level summaries, helping you identify strengths and weaknesses at a glance.
+                            {t('analysis_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">02</span>
-                            Key Insights
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('key_insights')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -123,44 +125,44 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('top_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Total Sales Value" desc="Gross revenue generated before deductions. The top-line health metric." />
-                                    <DetailItem title="Total Orders" desc="Number of transactions processed in the selected period." />
-                                    <DetailItem title="Avg Order Value" desc="Average revenue per transaction. Indicates pricing efficiency." />
-                                    <DetailItem title="Sales Growth" desc="Percentage increase in revenue compared to previous period." />
+                                    <DetailItem title={t('total_sales_value')} desc={t('gross_revenue_desc')} />
+                                    <DetailItem title={t('total_orders')} desc={t('total_orders_desc')} />
+                                    <DetailItem title={t('avg_order_value')} desc={t('avg_order_desc')} />
+                                    <DetailItem title={t('sales_growth_rate')} desc={t('sales_growth_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('side_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Top Agent" desc="Best performing salesperson based on closed revenue." />
-                                    <DetailItem title="Top Product" desc="Revenue leader among all products sold." />
-                                    <DetailItem title="Top Region" desc="Highest volume region driving sales." />
-                                    <DetailItem title="Completion Rate" desc="Order fulfillment success rate percentage." />
+                                    <DetailItem title={t('top_agent')} desc={t('top_agent_desc')} />
+                                    <DetailItem title={t('top_product')} desc={t('top_product_desc')} />
+                                    <DetailItem title={t('top_region')} desc={t('top_region_desc')} />
+                                    <DetailItem title={t('completion_rate_label')} desc={t('completion_rate_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Sales by Product" desc="Bar chart identifying your most popular and profitable items." />
-                                    <DetailItem title="Sales by Agent" desc="Horizontal bars comparing salesperson performance." />
-                                    <DetailItem title="Regional Split" desc="Donut chart showing revenue distribution by geography." />
-                                    <DetailItem title="Agent Performance" desc="Pie chart showing contribution by each sales agent." />
-                                    <DetailItem title="Operational Log" desc="Sortable table with raw transactional data for auditing." />
-                                    <DetailItem title="Hidden Story" desc="Sankey diagram visualizing the flow from Regions to Agents to Status." />
+                                    <DetailItem title={t('sales_by_product')} desc={t('sales_by_product_desc')} />
+                                    <DetailItem title={t('sales_by_agent')} desc={t('sales_by_agent_desc')} />
+                                    <DetailItem title={t('regional_split')} desc={t('regional_split_desc')} />
+                                    <DetailItem title={t('top_agent')} desc={t('agent_performance_desc')} />
+                                    <DetailItem title={t('operational_sales_log')} desc={t('operational_log_desc2')} />
+                                    <DetailItem title={t('sales_flow')} desc={t('hidden_story_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -168,48 +170,48 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">04</span>
-                            Data Sources & Logic
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Analysis Logic</span>
+                                    <span>{t('analysis_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2 text-left">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Operational Accuracy:</strong> Table data is pulled directly from the `sales_orders` transactional log.</span>
+                                        <span><strong>{t('operational_accuracy')}</strong> {t('operational_accuracy_desc')}</span>
                                     </li>
-                                    <li className="flex gap-2 text-left">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Flow Mapping:</strong> The Sankey diagram uses a relational join between `orders`, `agents`, and `regions` to map trajectory.</span>
+                                        <span><strong>{t('flow_mapping')}</strong> {t('flow_mapping_desc')}</span>
                                     </li>
                                 </ul>
                             </div>
 
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
-                                    <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <TableIcon size={14} className="text-gray-500" />
+                                    <span>{t('source_tables_fields')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. Operational Log"
-                                        desc="Stores raw transactional data for every order."
-                                        columns={['Order ID', 'Date', 'Customer', 'Product', 'Quantity', 'Amount', 'Status']}
+                                        name={t('operational_log_table')}
+                                        desc={t('operational_log_desc')}
+                                        columns={[t('order_id'), t('date'), t('customer'), t('product'), 'Quantity', 'Amount', t('status')]}
                                     />
                                     <TableSchema
-                                        name="2. Sales Agents"
-                                        desc="Regional assignment and performance tracking."
-                                        columns={['Agent Name', 'Region', 'Commission Rate', 'Total Target']}
+                                        name={t('sales_agents_table')}
+                                        desc={t('sales_agents_desc')}
+                                        columns={['Agent Name', t('region'), 'Commission Rate', 'Total Target']}
                                     />
                                     <TableSchema
-                                        name="3. Customer Profiles"
-                                        desc="Used for customer-specific filtering and search."
+                                        name={t('customer_profiles_table')}
+                                        desc={t('customer_profiles_desc')}
                                         columns={['Customer Name', 'Category', 'Last Order Date', 'Lifetime Value']}
                                     />
                                 </div>
@@ -218,12 +220,12 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
                     </section>
                 </div>
 
-                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10 text-left">
+                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -233,7 +235,7 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -244,7 +246,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-left">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

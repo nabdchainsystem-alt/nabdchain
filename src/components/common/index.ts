@@ -6,4 +6,4 @@
 export { ErrorBoundary } from './ErrorBoundary';
 export { FeatureErrorBoundary } from './FeatureErrorBoundary';
 export { LoadingSpinner } from './LoadingSpinner';
-export { ProductivitySidebar } from './ProductivitySidebar';
+export { default as ProductivitySidebar } from './ProductivitySidebar';

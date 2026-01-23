@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Database, Table, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SalesDashboardInfoProps {
     isOpen: boolean;
@@ -8,6 +9,8 @@ interface SalesDashboardInfoProps {
 }
 
 export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
+
     // Local state to handle animation rendering
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -22,10 +25,10 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
     }, []);
 
     const questions = [
-        { q: 'Are sales growing?', a: 'Check the "Sales Over Time" chart and the "Total Sales" KPI trend arrow. Green/Up means growth.' },
-        { q: 'Is pricing working?', a: 'Compare "Total Sales" vs "Net Revenue". A large gap might mean heavy discounting is needed to move product.' },
-        { q: 'Are returns high?', a: 'Look at the "Returned Orders" KPI and "Status" Pie Chart. A high % here requires immediate attention.' },
-        { q: 'Volume vs Value focus?', a: 'See "Avg Order Value" vs "Orders Count". If orders are up but value is down, you are selling more cheap items.' }
+        { q: t('q_sales_growing'), a: t('a_sales_growing') },
+        { q: t('q_pricing_working'), a: t('a_pricing_working') },
+        { q: t('q_returns_high'), a: t('a_returns_high') },
+        { q: t('q_volume_vs_value'), a: t('a_volume_vs_value') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -55,7 +58,7 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
             {/* Transparent backdrop for click-outside dismissal - only active when open */}
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
@@ -68,9 +71,9 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
@@ -79,9 +82,9 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Sales Insights
+                            {t('sales_insights')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Understanding Sales Insights</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('understanding_sales_insights')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -99,11 +102,10 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard gives you a quick snapshot of your sales health.
-                            It helps you understand how much you are selling, profitability, and trends—all in one place.
+                            {t('dashboard_overview_desc')}
                         </p>
                     </section>
 
@@ -111,14 +113,14 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
@@ -146,18 +148,18 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             {/* Top KPIs */}
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('top_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Total Sales" desc="Gross revenue before any deductions. The top-line number." />
-                                    <DetailItem title="Net Revenue" desc="Real money earned after discounts and returns. The bottom-line." />
-                                    <DetailItem title="Orders Count" desc="Total number of completed transactions." />
-                                    <DetailItem title="Avg Order Value" desc="Average amount a customer spends per transaction. Higher is better." />
+                                    <DetailItem title={t('total_sales')} desc={t('total_sales_desc')} />
+                                    <DetailItem title={t('net_revenue')} desc={t('net_revenue_desc')} />
+                                    <DetailItem title={t('orders_count')} desc={t('orders_count_desc')} />
+                                    <DetailItem title={t('avg_order_value')} desc={t('avg_order_value_desc')} />
                                 </div>
                             </div>
 
@@ -166,12 +168,12 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
 
                             {/* Side KPIs */}
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('side_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Return Rate" desc="Percentage of orders that were returned." />
-                                    <DetailItem title="Customer Count" desc="Unique customers who placed orders." />
-                                    <DetailItem title="Top Category" desc="Product category generating highest revenue." />
-                                    <DetailItem title="Discount Impact" desc="Revenue reduction from applied discounts." />
+                                    <DetailItem title={t('return_rate')} desc={t('return_rate_desc')} />
+                                    <DetailItem title={t('customer_count')} desc={t('customer_count_desc')} />
+                                    <DetailItem title={t('top_category')} desc={t('top_category_desc')} />
+                                    <DetailItem title={t('discount_impact')} desc={t('discount_impact_desc')} />
                                 </div>
                             </div>
 
@@ -180,14 +182,14 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
 
                             {/* Charts */}
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Sales Over Time" desc="Bar chart showing daily sales volume to identify peak days." />
-                                    <DetailItem title="Sales by Channel" desc="Breakdown of where customers shop (Online vs Store)." />
-                                    <DetailItem title="Category Pie" desc="Distribution of sales across different product categories." />
-                                    <DetailItem title="Status Pie" desc="Operational health check: Completed vs Returned/Cancelled orders." />
-                                    <DetailItem title="Top Products" desc="Table highlighting best sellers and their profit margins." />
-                                    <DetailItem title="Revenue Contribution" desc="Treemap showing which products drive the most revenue." />
+                                    <DetailItem title={t('sales_over_time')} desc={t('sales_over_time_desc')} />
+                                    <DetailItem title={t('sales_by_channel')} desc={t('sales_by_channel_desc')} />
+                                    <DetailItem title={t('category_pie')} desc={t('category_pie_desc')} />
+                                    <DetailItem title={t('status_pie')} desc={t('status_pie_desc')} />
+                                    <DetailItem title={t('top_products')} desc={t('top_products_desc')} />
+                                    <DetailItem title={t('revenue_contribution')} desc={t('revenue_contribution_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -197,7 +199,7 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
@@ -206,20 +208,20 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span>KPIs are based on <span className="font-semibold">completed orders only</span> to ensure accuracy.</span>
+                                        <span>{t('kpis_based_completed')}</span>
                                     </li>
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Net Revenue</strong> = Total Sales - (Discounts + Returns).</span>
+                                        <span>{t('net_revenue_formula')}</span>
                                     </li>
                                     <li className="flex gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span>Data is automatically filtered by your selected date range.</span>
+                                        <span>{t('data_filtered_date')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -228,35 +230,35 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables_fields')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. Orders Table"
-                                        desc="Used to calculate sales volume and order-related KPIs."
-                                        columns={['Order ID', 'Order Date', 'Order Status', 'Total Order Amount', 'Discount Amount', 'Net Order Amount', 'Customer ID']}
+                                        name={`1. ${t('orders_table')}`}
+                                        desc={t('orders_table_desc')}
+                                        columns={[t('order_id'), t('order_date'), t('order_status'), t('total_order_amount'), t('discount_amount'), t('net_order_amount'), t('customer_id')]}
                                     />
                                     <TableSchema
-                                        name="2. Order Items Table"
-                                        desc="Used to analyze product-level performance."
-                                        columns={['Order ID', 'Product ID', 'Product Name', 'Quantity Sold', 'Item Revenue', 'Item Cost']}
+                                        name={`2. ${t('order_items_table')}`}
+                                        desc={t('order_items_table_desc')}
+                                        columns={[t('order_id'), t('product_id'), t('product_name'), t('quantity_sold'), t('item_revenue'), t('item_cost')]}
                                     />
                                     <TableSchema
-                                        name="3. Products Table"
-                                        desc="Used for product identification and grouping."
-                                        columns={['Product ID', 'Product Name', 'Product Category', 'Selling Price', 'Cost Price']}
+                                        name={`3. ${t('products_table')}`}
+                                        desc={t('products_table_desc')}
+                                        columns={[t('product_id'), t('product_name'), t('product_category'), t('selling_price'), t('cost_price')]}
                                     />
                                     <TableSchema
-                                        name="4. Customers Table"
-                                        desc="Used for basic customer contribution insights."
-                                        columns={['Customer ID', 'Customer Name', 'Customer Type', 'Total Orders Count']}
+                                        name={`4. ${t('customers_table')}`}
+                                        desc={t('customers_table_desc')}
+                                        columns={[t('customer_id'), t('customer_name'), t('customer_type'), t('total_orders_count')]}
                                     />
                                 </div>
                             </div>
 
                             <div className="pt-2 text-[10px] text-gray-400 dark:text-gray-500 italic text-center">
-                                This dashboard aggregates data for high-level decision making.
+                                {t('dashboard_aggregates_data')}
                             </div>
                         </div>
                     </section>
@@ -268,7 +270,7 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
 
@@ -279,7 +281,7 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>

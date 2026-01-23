@@ -1,6 +1,7 @@
 export interface CurrencyConfig {
     code: string;
     symbol: string;
+    symbolEn?: string; // English symbol override (e.g., "SAR" instead of "﷼")
     name: string;
 }
 
@@ -28,6 +29,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
         currency: {
             code: 'SAR',
             symbol: '﷼',
+            symbolEn: 'SAR',
             name: 'Saudi Riyal',
         },
         locale: 'ar-SA',
@@ -38,6 +40,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
         currency: {
             code: 'AED',
             symbol: 'د.إ',
+            symbolEn: 'AED',
             name: 'UAE Dirham',
         },
         locale: 'ar-AE',

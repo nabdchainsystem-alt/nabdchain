@@ -93,6 +93,17 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useAI } from '../../contexts/AIContext';
 import { SortableTab } from './components/SortableTab';
 
+// Delayed spinner - prevents flash on fast loads
+const DelayedSpinner: React.FC<{ delay?: number }> = ({ delay = 150 }) => {
+    const [show, setShow] = React.useState(false);
+    React.useEffect(() => {
+        const timer = setTimeout(() => setShow(true), delay);
+        return () => clearTimeout(timer);
+    }, [delay]);
+    if (!show) return null;
+    return <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />;
+};
+
 interface BoardViewProps {
     board: Board;
     onUpdateBoard?: (boardId: string, updates: Partial<Board>) => void;
@@ -1204,7 +1215,13 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
 
                                         <button
                                             onClick={() => setActiveView('overview')}
-                                            onContextMenu={(e) => handleContextMenu(e, 'overview')}
+                                            onContextMenu={(e) => {
+                                                if (isDepartmentLayout) {
+                                                    e.preventDefault();
+                                                    return;
+                                                }
+                                                handleContextMenu(e, 'overview');
+                                            }}
                                             className={`flex items-center justify-start text-left gap-2 py-1.5 border-b-2 text-[13.6px] font-medium transition-colors whitespace-nowrap ${activeView === 'overview'
                                                 ? 'border-slate-900 text-slate-900 dark:text-slate-100'
                                                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1245,7 +1262,13 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                                                     icon={option.icon}
                                                     isPinned={isPinned}
                                                     onClick={() => setActiveView(viewId as BoardViewType)}
-                                                    onContextMenu={(e) => handleContextMenu(e, viewId as BoardViewType)}
+                                                    onContextMenu={(e) => {
+                                                        if (isDepartmentLayout) {
+                                                            e.preventDefault();
+                                                            return;
+                                                        }
+                                                        handleContextMenu(e, viewId as BoardViewType);
+                                                    }}
                                                 />
                                             );
                                         })}
@@ -1401,7 +1424,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                         >
                             <React.Suspense fallback={
                                 <div className="flex items-center justify-center h-full w-full">
-                                    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    <DelayedSpinner delay={150} />
                                 </div>
                             }>
                                 {renderView()}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -57,7 +57,7 @@ const SIDE_KPIS: KPIConfig[] = [
     { id: '7', label: 'Profit Margin', value: '23.5%', change: '+0.5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [20, 21, 22, 22, 23, 23, 24] },
 ];
 
-export const SalesInsightsDashboardECharts: React.FC = () => {
+export const SalesInsightsDashboardECharts: React.FC = memo(() => {
     const { currency } = useAppContext();
     const [showInfo, setShowInfo] = React.useState(false);
     const [isFullScreen, setIsFullScreen] = React.useState(false);
@@ -329,4 +329,6 @@ export const SalesInsightsDashboardECharts: React.FC = () => {
             </div>
         </div>
     );
-};
+});
+
+SalesInsightsDashboardECharts.displayName = 'SalesInsightsDashboardECharts';

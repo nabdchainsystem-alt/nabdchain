@@ -73,8 +73,6 @@ const ALL_QUICK_NAV_ITEMS: QuickNavItem[] = [
     // Marketplace
     { id: 'local_marketplace', icon: Globe, label: 'local_marketplace', view: 'local_marketplace' },
     { id: 'foreign_marketplace', icon: Globe, label: 'foreign_marketplace', view: 'foreign_marketplace' },
-    // Collaboration
-    { id: 'live_session', icon: VideoCamera, label: 'live_session', view: 'live_session' },
 ];
 
 const ACTIVE_SUB_NAV_STYLE = 'font-outfit bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10';
@@ -414,19 +412,7 @@ const QuickNavIcons: React.FC<{
     );
 };
 
-// Export function to get/set quick nav settings (for use in settings page)
-export const getQuickNavSettings = (): string[] => {
-    const saved = localStorage.getItem('sidebar-quick-nav-items');
-    return saved ? JSON.parse(saved) : DEFAULT_QUICK_NAV;
-};
-
-export const setQuickNavSettings = (items: string[]): void => {
-    localStorage.setItem('sidebar-quick-nav-items', JSON.stringify(items));
-    // Dispatch event to notify sidebar of changes
-    window.dispatchEvent(new CustomEvent('quicknav-settings-changed', { detail: items }));
-};
-
-export const getAllQuickNavOptions = () => ALL_QUICK_NAV_ITEMS;
+// Quick nav settings utilities moved to src/utils/sidebarSettings.ts for HMR compatibility
 
 interface SidebarProps {
     onNavigate: (view: ViewState | string, boardId?: string) => void;
@@ -459,6 +445,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     const [isResizing, setIsResizing] = useState(false);
     const [initialMouseX, setInitialMouseX] = useState(0);
     const [initialWidth, setInitialWidth] = useState(width);
+    const [localWidth, setLocalWidth] = useState(width); // Local width during resize to prevent parent re-renders
+    const sidebarRef = useRef<HTMLDivElement>(null);
     const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = useState(false);
     const [addMenuMode, setAddMenuMode] = useState<'board' | 'workspace'>('board');
@@ -577,7 +565,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         return () => window.removeEventListener('click', handleClick);
     }, [isAddMenuOpen]);
 
-    // Resize Logic
+    // Sync local width with prop when not resizing
+    useEffect(() => {
+        if (!isResizing) {
+            setLocalWidth(width);
+        }
+    }, [width, isResizing]);
+
+    // Resize Logic - only update parent state on mouse up to prevent flashing
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isResizing) return;
@@ -589,12 +584,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             const newWidth = initialWidth + delta;
 
             if (newWidth > 200 && newWidth < 450) {
-                onResize(newWidth);
+                // Update local width immediately (no parent re-render)
+                setLocalWidth(newWidth);
             }
         };
         const handleMouseUp = () => {
             setIsResizing(false);
             document.body.style.cursor = 'default';
+            // Only update parent state when done resizing
+            onResize(localWidth);
         };
         if (isResizing) {
             document.addEventListener('mousemove', handleMouseMove);
@@ -605,7 +603,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isResizing, onResize, dir, initialMouseX, initialWidth, width]);
+    }, [isResizing, onResize, dir, initialMouseX, initialWidth, localWidth]);
 
 
 
@@ -755,7 +753,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     };
 
     const collapsedWidth = 42;
-    const expandedWidth = width;
+    const expandedWidth = localWidth;
     // Optimized: Using transform for GPU-accelerated smooth animation
     const textBase = 'overflow-hidden whitespace-nowrap';
     const textVisibility = isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100';
@@ -885,21 +883,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     </button>
                                 </SidebarTooltip>
                             )}
-                            {pageVisibility['live_session'] !== false && (
-                                <SidebarTooltip content="Live Session" enabled={isCollapsed}>
-                                    <button
-                                        onClick={() => window.location.href = '/live/general'}
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100
-                                        ${window.location.pathname.startsWith('/live')
-                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
-                                        `}
-                                    >
-                                        <VideoCamera size={17} weight="light" className="flex-shrink-0" />
-                                        <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>Live Session</span>
-                                    </button>
-                                </SidebarTooltip>
-                            )}
                             {pageVisibility['test_tools'] !== false && (
                                 <SidebarTooltip content={t('test_tools')} enabled={isCollapsed}>
                                     <button
@@ -939,20 +922,20 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <div className="mb-1">
                                             <SidebarTooltip content={t('overview')} enabled={isCollapsed}>
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-slate-700 dark:text-slate-300 transition-colors duration-100`}
                                                     onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
                                                 >
                                                     <Layout size={17} weight="light" className="flex-shrink-0" />
                                                     <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('overview')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_overview') && !isCollapsed && (
-                                                <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                <div className="ms-2 ps-3 border-s border-slate-300 dark:border-slate-600 mt-1 space-y-0.5">
+                                                    <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Layout size={13} weight="light" /> <span>{t('dashboards')}</span>
                                                     </button>
-                                                    <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <FileText size={13} weight="light" /> <span>{t('reports')}</span>
                                                     </button>
                                                 </div>
@@ -963,23 +946,23 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <div className="mb-1">
                                             <SidebarTooltip content={t('operations')} enabled={isCollapsed}>
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 transition-colors duration-100`}
                                                     onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
                                                 >
                                                     <Factory size={17} weight="light" className="flex-shrink-0" />
                                                     <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('operations')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_operations') && !isCollapsed && (
-                                                <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                <div className="ms-2 ps-3 border-s border-gray-300 dark:border-gray-600 mt-1 space-y-0.5">
+                                                    <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Megaphone size={13} weight="light" /> <span>{t('sales')}</span>
                                                     </button>
-                                                    <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <ShoppingCart size={13} weight="light" /> <span>{t('purchases')}</span>
                                                     </button>
-                                                    <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Package size={13} weight="light" /> <span>{t('stock_inventory')}</span>
                                                     </button>
                                                 </div>
@@ -990,17 +973,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <div className="mb-1">
                                             <SidebarTooltip content={t('finance')} enabled={isCollapsed}>
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-zinc-700 dark:text-zinc-300 transition-colors duration-100`}
                                                     onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
                                                 >
                                                     <Money size={17} weight="light" className="flex-shrink-0" />
                                                     <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('finance')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_finance') && !isCollapsed && (
-                                                <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                <div className="ms-2 ps-3 border-s border-zinc-300 dark:border-zinc-600 mt-1 space-y-0.5">
+                                                    <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Money size={13} weight="light" /> <span>{t('expenses')}</span>
                                                     </button>
                                                 </div>
@@ -1011,20 +994,20 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <div className="mb-1">
                                             <SidebarTooltip content={t('people')} enabled={isCollapsed}>
                                                 <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-neutral-700 dark:text-neutral-300 transition-colors duration-100`}
                                                     onClick={() => !isCollapsed && toggleDepartment('mini_people')}
                                                 >
                                                     <UsersThree size={17} weight="light" className="flex-shrink-0" />
                                                     <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('people')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                 </div>
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_people') && !isCollapsed && (
-                                                <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                <div className="ms-2 ps-3 border-s border-neutral-300 dark:border-neutral-600 mt-1 space-y-0.5">
+                                                    <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Users size={13} weight="light" /> <span>{t('customers')}</span>
                                                     </button>
-                                                    <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Truck size={13} weight="light" /> <span>{t('suppliers')}</span>
                                                     </button>
                                                 </div>
@@ -1036,38 +1019,38 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div className="mb-1">
                                                 <SidebarTooltip content={t('supply_chain')} enabled={isCollapsed}>
                                                     <div
-                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-stone-700 dark:text-stone-300 transition-colors duration-100`}
                                                         onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
                                                     >
                                                         <Package size={17} weight="light" className="flex-shrink-0" />
                                                         <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('supply_chain')}</span>
-                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                        <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                     </div>
                                                 </SidebarTooltip>
                                                 {expandedDepartments.has('supply_chain') && !isCollapsed && (
-                                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                    <div className="ms-2 ps-3 border-s border-stone-300 dark:border-stone-600 mt-1 space-y-0.5">
                                                         {pageVisibility['procurement'] !== false && (
-                                                            <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <ShoppingCart size={13} weight="light" /> <span>{t('procurement')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['warehouse'] !== false && (
-                                                            <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <House size={13} weight="light" /> <span>{t('warehouse')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['fleet'] !== false && (
-                                                            <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Truck size={13} weight="light" /> <span>{t('fleet')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['vendors'] !== false && (
-                                                            <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <UsersThree size={13} weight="light" /> <span>{t('vendors')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['planning'] !== false && (
-                                                            <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Gauge size={13} weight="light" /> <span>{t('planning')}</span>
                                                             </button>
                                                         )}
@@ -1081,28 +1064,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div className="mb-1">
                                                 <SidebarTooltip content={t('manufacturing')} enabled={isCollapsed}>
                                                     <div
-                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-slate-600 dark:text-slate-300 transition-colors duration-100`}
                                                         onClick={() => !isCollapsed && toggleDepartment('operations')}
                                                     >
                                                         <Factory size={17} weight="light" className="flex-shrink-0" />
                                                         <span key={dir} className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('manufacturing')}</span>
-                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                        <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                     </div>
                                                 </SidebarTooltip>
                                                 {expandedDepartments.has('operations') && !isCollapsed && (
-                                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                    <div className="ms-2 ps-3 border-s border-slate-300 dark:border-slate-600 mt-1 space-y-0.5">
                                                         {pageVisibility['maintenance'] !== false && (
-                                                            <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Wrench size={13} /> <span>{t('maintenance')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['production'] !== false && (
-                                                            <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Factory size={13} /> <span>{t('production')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['quality'] !== false && (
-                                                            <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <ShieldCheck size={13} weight="light" /> <span>{t('quality')}</span>
                                                             </button>
                                                         )}
@@ -1116,23 +1099,23 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div className="mb-1">
                                                 <SidebarTooltip content={t('business')} enabled={isCollapsed}>
                                                     <div
-                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-zinc-600 dark:text-zinc-300 transition-colors duration-100`}
                                                         onClick={() => !isCollapsed && toggleDepartment('business')}
                                                     >
                                                         <Buildings size={17} weight="light" className="flex-shrink-0" />
                                                         <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business')}</span>
-                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                        <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                     </div>
                                                 </SidebarTooltip>
                                                 {expandedDepartments.has('business') && !isCollapsed && (
-                                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                    <div className="ms-2 ps-3 border-s border-zinc-300 dark:border-zinc-600 mt-1 space-y-0.5">
                                                         {pageVisibility['sales_listing'] !== false && (
-                                                            <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Table size={13} weight="light" /> <span>{t('sales_listings')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['sales_factory'] !== false && (
-                                                            <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Factory size={13} /> <span>{t('sales_factory')}</span>
                                                             </button>
                                                         )}
@@ -1146,28 +1129,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div className="mb-1">
                                                 <SidebarTooltip content={t('business_support')} enabled={isCollapsed}>
                                                     <div
-                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-colors duration-100`}
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-neutral-600 dark:text-neutral-300 transition-colors duration-100`}
                                                         onClick={() => !isCollapsed && toggleDepartment('business_support')}
                                                     >
                                                         <Users size={17} weight="light" className="flex-shrink-0" />
                                                         <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business_support')}</span>
-                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                        <CaretDown size={13} weight="light" className={`text-gray-500 transition-colors duration-100 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
                                                     </div>
                                                 </SidebarTooltip>
                                                 {expandedDepartments.has('business_support') && !isCollapsed && (
-                                                    <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
+                                                    <div className="ms-2 ps-3 border-s border-neutral-300 dark:border-neutral-600 mt-1 space-y-0.5">
                                                         {pageVisibility['it_support'] !== false && (
-                                                            <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Monitor size={13} /> <span>{t('it')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['hr'] !== false && (
-                                                            <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <UsersThree size={13} weight="light" /> <span>{t('hr')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['marketing'] !== false && (
-                                                            <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Megaphone size={13} /> <span>{t('marketing')}</span>
                                                             </button>
                                                         )}
@@ -1681,7 +1664,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             e.preventDefault();
                             setIsResizing(true);
                             setInitialMouseX(e.clientX);
-                            setInitialWidth(width);
+                            setInitialWidth(localWidth);
                         }}
                     ></div>
                 )}

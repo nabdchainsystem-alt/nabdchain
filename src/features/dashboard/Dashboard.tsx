@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, memo, useCallback } from 'react';
 import { Board, RecentlyVisitedItem, ViewState, Task, Workspace } from '../../types';
 import {
   Cloud, CloudRain, Snowflake, Lightning, CloudFog, Sun,
@@ -47,7 +47,7 @@ interface DashboardProps {
   onRequestNewBoard?: (workspaceId: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated, onRequestNewBoard }) => {
+export const Dashboard: React.FC<DashboardProps> = memo(({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated, onRequestNewBoard }) => {
   const { userDisplayName, t, language } = useAppContext();
   const { getToken, isSignedIn } = useAuth();
   const { showToast } = useToast();
@@ -82,9 +82,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [taskRefreshKey, setTaskRefreshKey] = useState(0);
 
   // Listen for storage changes and clean up orphaned task data
+  // Handle storage events and task updates
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.startsWith('board-tasks-')) {
+      if (e.key?.startsWith('board-tasks-') || e.key?.startsWith('room-table-groups-v1-')) {
         setTaskRefreshKey(prev => prev + 1);
       }
     };
@@ -93,46 +94,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       setTaskRefreshKey(prev => prev + 1);
     };
 
-    // Clean up orphaned task data from deleted boards (optimized with Object.keys)
-    const cleanupOrphanedTasks = () => {
-      const boardIds = new Set(boards.map(b => b.id));
-      const allKeys = Object.keys(localStorage);
-
-      const keysToRemove = allKeys.filter(key => {
-        // Check board-tasks-{boardId} keys
-        if (key.startsWith('board-tasks-')) {
-          const boardId = key.replace('board-tasks-', '');
-          return !boardIds.has(boardId);
-        }
-        // Check room-table-groups-v1-{boardId}-* keys
-        if (key.startsWith('room-table-groups-v1-')) {
-          const parts = key.replace('room-table-groups-v1-', '').split('-');
-          const boardId = parts[0];
-          return boardId && !boardIds.has(boardId);
-        }
-        return false;
-      });
-
-      // Remove orphaned keys
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-    };
-
-    // Clean up orphaned data when boards change
-    cleanupOrphanedTasks();
-
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('tasks-updated', handleTaskUpdate);
 
-    // Refresh periodically to catch local changes (30 seconds - rely on events for immediate updates)
+    // Refresh periodically to catch local changes (60 seconds - rely on events for immediate updates)
     const interval = setInterval(() => {
       setTaskRefreshKey(prev => prev + 1);
-    }, 30000);
+    }, 60000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('tasks-updated', handleTaskUpdate);
       clearInterval(interval);
     };
+  }, []);
+
+  // Clean up orphaned task data only when boards are removed (not on every change)
+  const boardIdsRef = React.useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const currentBoardIds = new Set(boards.map(b => b.id));
+    const previousBoardIds = boardIdsRef.current;
+
+    // Only clean up if boards were removed
+    const removedBoards = [...previousBoardIds].filter(id => !currentBoardIds.has(id));
+    if (removedBoards.length > 0) {
+      const allKeys = Object.keys(localStorage);
+      removedBoards.forEach(boardId => {
+        allKeys.forEach(key => {
+          if (key.includes(boardId) && (key.startsWith('board-tasks-') || key.startsWith('room-table-groups-v1-'))) {
+            localStorage.removeItem(key);
+          }
+        });
+      });
+    }
+
+    boardIdsRef.current = currentBoardIds;
   }, [boards]);
 
   // Click outside to close person search
@@ -271,20 +267,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
 
     const timer = setInterval(updateTime, 60000); // Update every minute
 
-    // Update immediately when tab becomes visible or focused
+    // Debounced update on visibility change to prevent flash
+    let focusTimeout: ReturnType<typeof setTimeout> | null = null;
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        updateTime();
+        // Delay update to prevent flash when switching windows
+        if (focusTimeout) clearTimeout(focusTimeout);
+        focusTimeout = setTimeout(updateTime, 100);
       }
     };
 
+    const handleFocus = () => {
+      // Use RAF to batch with other updates and prevent flash
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(updateTime, 100);
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', updateTime);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       clearInterval(timer);
+      if (focusTimeout) clearTimeout(focusTimeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', updateTime);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -1421,4 +1427,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
       )}
     </div >
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';

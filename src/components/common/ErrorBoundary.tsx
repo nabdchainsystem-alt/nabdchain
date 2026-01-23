@@ -1,6 +1,7 @@
-// @ts-nocheck
+// @ts-nocheck - Class components have type inference issues with strict mode
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Warning } from 'phosphor-react';
+import { appLogger } from '../../utils/logger';
 
 interface Props {
     children: ReactNode;
@@ -22,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('Uncaught error:', error, errorInfo);
+        appLogger.error('Uncaught error:', error, errorInfo);
     }
 
     render() {

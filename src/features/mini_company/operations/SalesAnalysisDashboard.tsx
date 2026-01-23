@@ -77,7 +77,7 @@ interface SalesAnalysisDashboardProps {
 }
 
 export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -129,17 +129,17 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
 
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Total Sales Value', subtitle: 'Gross revenue generated', value: '0', rawValue: 284500, isCurrency: true, change: '+14.2%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [40, 45, 42, 50, 55, 62, 70] },
-        { id: '2', label: 'Total Orders', subtitle: 'Volume of transactions', value: '1,248', change: '+8.5%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [20, 22, 25, 23, 28, 30, 32] },
-        { id: '3', label: 'Avg Order Value', subtitle: 'Revenue per transaction', value: '0', rawValue: 228, isCurrency: true, change: '-2.1%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [240, 235, 230, 225, 228, 226, 228] },
-        { id: '4', label: 'Sales Growth Rate', subtitle: 'Period over period', value: '18.4%', change: '+1.2%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [12, 14, 15, 16, 17, 18, 18.4] },
+        { id: '1', label: t('total_sales_value'), subtitle: t('gross_revenue_generated'), value: '0', rawValue: 284500, isCurrency: true, change: '+14.2%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [40, 45, 42, 50, 55, 62, 70] },
+        { id: '2', label: t('total_orders'), subtitle: t('volume_of_transactions'), value: '1,248', change: '+8.5%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [20, 22, 25, 23, 28, 30, 32] },
+        { id: '3', label: t('avg_order_value'), subtitle: t('revenue_per_transaction'), value: '0', rawValue: 228, isCurrency: true, change: '-2.1%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [240, 235, 230, 225, 228, 226, 228] },
+        { id: '4', label: t('sales_growth_rate'), subtitle: t('period_over_period'), value: '18.4%', change: '+1.2%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [12, 14, 15, 16, 17, 18, 18.4] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Top Agent', subtitle: 'Best performer', value: 'Sarah', change: '+15%', trend: 'up', icon: <Database size={18} />, sparklineData: [35, 37, 38, 40, 41, 42, 42] },
-        { id: '6', label: 'Top Product', subtitle: 'Revenue leader', value: 'Laptops', change: '+22%', trend: 'up', icon: <Lightbulb size={18} />, sparklineData: [40, 44, 46, 48, 50, 51, 52] },
-        { id: '7', label: 'Top Region', subtitle: 'Highest volume', value: 'Riyadh', change: '+10%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [38, 40, 42, 43, 44, 45, 45] },
-        { id: '8', label: 'Completion Rate', subtitle: 'Order fulfillment', value: '94.2%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [88, 90, 91, 92, 93, 93.5, 94.2] },
+        { id: '5', label: t('top_agent'), subtitle: t('best_performer'), value: 'Sarah', change: '+15%', trend: 'up', icon: <Database size={18} />, sparklineData: [35, 37, 38, 40, 41, 42, 42] },
+        { id: '6', label: t('top_product'), subtitle: t('revenue_leader'), value: 'Laptops', change: '+22%', trend: 'up', icon: <Lightbulb size={18} />, sparklineData: [40, 44, 46, 48, 50, 51, 52] },
+        { id: '7', label: t('top_region'), subtitle: t('highest_volume'), value: 'Riyadh', change: '+10%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [38, 40, 42, 43, 44, 45, 45] },
+        { id: '8', label: t('completion_rate_label'), subtitle: t('order_fulfillment'), value: '94.2%', change: '+2.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [88, 90, 91, 92, 93, 93.5, 94.2] },
     ];
 
     // ECharts Region Option
@@ -195,11 +195,11 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 text-start">
                     <ChartBar size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Sales Insights & Patterns</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Deep sales performance analysis and pattern detection</p>
+                        <h1 className="text-2xl font-bold">{t('sales_insights_patterns')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('sales_insights_patterns_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -207,7 +207,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -217,7 +217,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -241,12 +241,12 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                 {/* Sales by Product (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Sales by Product" />
+                        <ChartSkeleton height="h-[280px]" title={t('sales_by_product')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales by Product</h3>
-                                <p className="text-xs text-gray-400 mt-1">Revenue generating items</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_by_product')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('revenue_generating_items')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -266,12 +266,12 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                 {/* Sales by Agent (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Sales by Agent" />
+                        <ChartSkeleton height="h-[280px]" title={t('sales_by_agent')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales by Agent</h3>
-                                <p className="text-xs text-gray-400 mt-1">Individual contribution</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_by_agent')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('individual_contribution')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -294,12 +294,12 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Regional Split Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Regional Split" />
+                        <PieChartSkeleton title={t('regional_split')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Regional Split</h3>
-                                <p className="text-xs text-gray-400 mt-1">Geographic distribution</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_split')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('geographic_distribution')}</p>
                             </div>
                             <ReactECharts option={regionPieOption} style={{ height: '210px' }} />
                         </div>
@@ -307,12 +307,12 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
 
                     {/* Sales Flow Sankey */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title="Sales Flow" />
+                        <ChartSkeleton height="h-[250px]" title={t('sales_flow')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales Flow</h3>
-                                <p className="text-xs text-gray-400 mt-1">Region → Agent → Status</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_flow')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('region_agent_status')}</p>
                             </div>
                             <ReactECharts option={flowChartOption} style={{ height: '210px' }} />
                         </div>
@@ -340,27 +340,27 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={5} />
                 ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col animate-fade-in-up">
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-start animate-fade-in-up">
                         {/* Table Header / Toolbar */}
                         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                                    Operational Sales Log
+                                    {t('operational_sales_log')}
                                 </h3>
-                                <p className="text-xs text-gray-400 mt-1">Detailed transactional review for auditing</p>
+                                <p className="text-xs text-gray-400 mt-1">{t('detailed_transactional_review')}</p>
                             </div>
                         </div>
 
                         {/* Table Body */}
                         <div className="flex-1 overflow-x-auto min-h-[400px]">
-                            <table className="w-full text-sm text-left h-full">
+                            <table className="w-full text-sm text-start h-full">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('id')}>Order ID</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('date')}>Date</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('customer')}>Customer</th>
-                                        <th className="px-6 py-4 text-right">Total</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('id')}>{t('order_id')}</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('date')}>{t('date')}</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('customer')}>{t('customer')}</th>
+                                        <th className="px-6 py-4 text-end">{t('total')}</th>
+                                        <th className="px-6 py-4">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -369,13 +369,13 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                             <td className="px-6 py-5 font-mono text-xs text-blue-600 dark:text-blue-400">{row.id}</td>
                                             <td className="px-6 py-5 text-gray-500 whitespace-nowrap">{row.date}</td>
                                             <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
-                                            <td className="px-6 py-5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
                                             <td className="px-6 py-5">
                                                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
                                                     row.status === 'Pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
                                                         'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
                                                     }`}>
-                                                    {row.status}
+                                                    {row.status === 'Completed' ? t('completed') : row.status === 'Pending' ? t('pending') : t('shipped')}
                                                 </span>
                                             </td>
                                         </tr>
@@ -387,7 +387,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                         {/* Pagination */}
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
                             <span className="text-xs text-gray-500">
-                                Showing <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> of <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
+                                {t('showing_x_of_y')} <span className="font-bold text-gray-700 dark:text-gray-300">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedTableData.length)}</span> {t('of')} <span className="font-bold text-gray-700 dark:text-gray-300">{processedTableData.length}</span>
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
@@ -412,14 +412,14 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
 
                     {/* Companion Chart: Regional Performance */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[450px]" title="Regional Performance" />
+                        <ChartSkeleton height="h-[450px]" title={t('regional_performance')} />
                     ) : (
-                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full animate-fade-in-up">
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                                    Regional Performance
+                                    {t('regional_performance')}
                                 </h3>
-                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Comparative volume by territory</p>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('comparative_volume_territory')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -429,13 +429,13 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                         <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
                                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="value" name="Share %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
+                                        <Bar dataKey="value" name={t('share_percent')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-normal">
-                                    <strong>Insight:</strong> Riyadh leads with 45% of sales, followed by Jeddah (25%). Expansion opportunities exist in Abha region.
+                                    <strong>{t('insight')}:</strong> {t('analysis_insight')}
                                 </p>
                             </div>
                         </div>

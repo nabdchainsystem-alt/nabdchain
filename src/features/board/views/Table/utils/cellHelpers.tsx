@@ -83,7 +83,5 @@ export const getShortFileName = (name: string): string => {
     return baseName.slice(0, 10) + '...' + (ext ? '.' + ext : '');
 };
 
-/**
- * Default checkbox color
- */
-export const DEFAULT_CHECKBOX_COLOR = '#2563eb'; // blue-600
+// Re-export from constants for backwards compatibility
+export { DEFAULT_CHECKBOX_COLOR } from './constants';

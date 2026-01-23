@@ -3,6 +3,8 @@
  * Centralizes all localStorage operations for better maintainability
  */
 
+import { storageLogger } from './logger';
+
 export type StorageKey =
   | 'app-active-view'
   | 'app-workspaces'
@@ -30,7 +32,7 @@ export function getStorageItem<T>(key: StorageKey, defaultValue: T): T {
     if (item === null) return defaultValue;
     return JSON.parse(item) as T;
   } catch (error) {
-    console.warn(`[Storage] Failed to parse "${key}":`, error);
+    storageLogger.warn(`Failed to parse "${key}":`, error);
     return defaultValue;
   }
 }
@@ -42,7 +44,7 @@ export function getStorageString(key: StorageKey, defaultValue: string = ''): st
   try {
     return localStorage.getItem(key) ?? defaultValue;
   } catch (error) {
-    console.warn(`[Storage] Failed to get "${key}":`, error);
+    storageLogger.warn(`Failed to get "${key}":`, error);
     return defaultValue;
   }
 }
@@ -55,7 +57,7 @@ export function setStorageItem<T>(key: StorageKey, value: T): boolean {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (error) {
-    console.error(`[Storage] Failed to set "${key}":`, error);
+    storageLogger.error(`Failed to set "${key}":`, error);
     return false;
   }
 }
@@ -68,7 +70,7 @@ export function setStorageString(key: StorageKey, value: string): boolean {
     localStorage.setItem(key, value);
     return true;
   } catch (error) {
-    console.error(`[Storage] Failed to set "${key}":`, error);
+    storageLogger.error(`Failed to set "${key}":`, error);
     return false;
   }
 }
@@ -81,7 +83,7 @@ export function removeStorageItem(key: StorageKey): boolean {
     localStorage.removeItem(key);
     return true;
   } catch (error) {
-    console.error(`[Storage] Failed to remove "${key}":`, error);
+    storageLogger.error(`Failed to remove "${key}":`, error);
     return false;
   }
 }
@@ -118,13 +120,13 @@ export function cleanupBoardStorage(boardId: string): void {
   keysToRemove.forEach(key => {
     try {
       localStorage.removeItem(key);
-      console.log(`[Storage] Cleaned up: ${key}`);
+      storageLogger.debug(`Cleaned up: ${key}`);
     } catch (error) {
-      console.error(`[Storage] Failed to remove "${key}":`, error);
+      storageLogger.error(`Failed to remove "${key}":`, error);
     }
   });
 
-  console.log(`[Storage] Cleaned up ${keysToRemove.length} items for board ${boardId}`);
+  storageLogger.info(`Cleaned up ${keysToRemove.length} items for board ${boardId}`);
 }
 
 /**
