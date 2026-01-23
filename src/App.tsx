@@ -25,6 +25,7 @@ import { API_URL } from './config/api';
 import { adminService } from './services/adminService';
 import { MobileApp } from './features/mobile/MobileApp';
 import { useUserPreferences } from './hooks/useUserPreferences';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 
 
@@ -1737,6 +1738,7 @@ const App: React.FC = () => {
                       <Route path="*" element={<AppRoutes />} />
                     </Routes>
                   </Router>
+                  <SpeedInsights />
                 </AIProvider>
               </ToastProvider>
             </FocusProvider>
