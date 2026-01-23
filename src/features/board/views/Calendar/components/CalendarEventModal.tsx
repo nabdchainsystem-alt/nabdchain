@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CalendarBlank as CalendarIcon, Clock, TextAlignLeft as AlignLeft, Flag, User, CheckCircle as CheckCircle2 } from 'phosphor-react';
 import { ITask, Status, Priority } from '../../../types/boardTypes';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../../../../../contexts/LanguageContext';
 
 interface CalendarEventModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     initialDate,
     existingTask
 }) => {
+    const { t, dir } = useLanguage();
     const [title, setTitle] = useState('');
     const [status, setStatus] = useState<Status>(Status.ToDo);
     const [priority, setPriority] = useState<Priority>(Priority.Normal);
@@ -67,9 +69,9 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     onClick={(e) => e.stopPropagation()}
                     className="w-full max-w-md h-full bg-white dark:bg-monday-dark-surface shadow-2xl border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
                 >
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0" dir={dir}>
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            {existingTask ? 'Edit Event' : 'New Event'}
+                            {existingTask ? t('calendar_edit_event') : t('calendar_new_event_title')}
                         </h2>
                         <button
                             onClick={onClose}
@@ -79,16 +81,16 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="p-6 space-y-5 flex-1 overflow-y-auto">
+                    <form onSubmit={handleSubmit} className="p-6 space-y-5 flex-1 overflow-y-auto" dir={dir}>
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                Event Title
+                                {t('calendar_event_title')}
                             </label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                placeholder="What needs to be done?"
+                                placeholder={t('calendar_event_placeholder')}
                                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                                 autoFocus
                             />
@@ -97,7 +99,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                    <CalendarIcon size={12} /> Date
+                                    <CalendarIcon size={12} /> {t('date')}
                                 </label>
                                 <input
                                     type="date"
@@ -108,7 +110,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                             </div>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                    <Flag size={12} /> Priority
+                                    <Flag size={12} /> {t('priority')}
                                 </label>
                                 <select
                                     value={priority}
@@ -124,7 +126,7 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
 
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                <CheckCircle2 size={12} /> Status
+                                <CheckCircle2 size={12} /> {t('status')}
                             </label>
                             <div className="grid grid-cols-3 gap-2">
                                 {Object.values(Status).map((s) => (
@@ -149,13 +151,13 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                                 onClick={onClose}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
-                                Cancel
+                                {t('calendar_cancel')}
                             </button>
                             <button
                                 type="submit"
                                 className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-sm transition-colors"
                             >
-                                {existingTask ? 'Save Changes' : 'Create Event'}
+                                {existingTask ? t('calendar_save_changes') : t('calendar_create_event')}
                             </button>
                         </div>
                     </form>

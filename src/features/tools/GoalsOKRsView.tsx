@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Flag, LinkSimple as Link2, Target, User } from 'phosphor-react';
-import { loadBoardTasks, SimplifiedTask } from './toolUtils';
+import { loadBoardTasks, SimplifiedTask, RawTaskData } from './toolUtils';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface KeyResult {
@@ -21,7 +21,7 @@ interface Objective {
     keyResults: KeyResult[];
 }
 
-const GoalsOKRsView: React.FC<{ boardId: string; fallbackTasks?: any[] }> = ({ boardId, fallbackTasks = [] }) => {
+const GoalsOKRsView: React.FC<{ boardId: string; fallbackTasks?: RawTaskData[] }> = ({ boardId, fallbackTasks = [] }) => {
     const { t } = useAppContext();
     const storageKey = `goals-okrs-${boardId}`;
     const tasks = useMemo<SimplifiedTask[]>(() => loadBoardTasks(boardId, fallbackTasks), [boardId, fallbackTasks]);

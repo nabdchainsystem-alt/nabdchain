@@ -110,7 +110,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
     const { user: currentUser } = useUser();
-    const { currency: globalCurrency, t } = useAppContext();
+    const { currency: globalCurrency, t, dir, language } = useAppContext();
 
     // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
     const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
@@ -180,14 +180,16 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Date column
     if (col.type === 'date') {
+        // Map language to locale for date formatting
+        const dateLocale = language === 'ar' ? 'ar-SA' : 'en-GB';
         return (
             <div className="relative w-full h-full">
                 <button
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
                     className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
-                    <span className={`text-sm font-datetime truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
-                        {formatDate(value) || t('set_date')}
+                    <span className={`text-sm font-datetime truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`} dir="ltr">
+                        {formatDate(value, dateLocale) || t('set_date')}
                     </span>
                 </button>
                 {isActiveCell && activeCell?.trigger && (
@@ -591,7 +593,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                                                 if (newFiles.length === 0) onSetActiveCell(null);
                                             }}
                                             className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-colors"
-                                            title="Remove file"
+                                            title={t('remove_file')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M3 6h18"></path>

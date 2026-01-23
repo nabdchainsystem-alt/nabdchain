@@ -10,6 +10,7 @@ import {
 import { X, Plus, CaretDown as ChevronDown, Trash } from 'phosphor-react';
 import { Column, Row, FilterRule, SortRule } from '../types';
 import { getConditionsForType } from '../hooks/useTableFiltering';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 interface PersonAvatarItemProps {
     person: any;
@@ -127,6 +128,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     toggleColumnVisibility,
     onExport,
 }) => {
+    const { t } = useAppContext();
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const closeAllPanels = useCallback(() => {
@@ -247,7 +249,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                                     />
                                 ))}
                                 {uniquePeople.length === 0 && (
-                                    <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center" title="No assigned users found">
+                                    <div className="w-10 h-10 rounded-full border-2 border-stone-200 dark:border-stone-600 flex items-center justify-center" title={t('no_assigned_users_found')}>
                                         <UserCircle size={24} weight="regular" className="text-stone-300" />
                                     </div>
                                 )}

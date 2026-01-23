@@ -180,7 +180,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                     <Calendar size={14} strokeWidth={2} />
                 </button>
                 {task.dueDate && (
-                    <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 -ms-1">
+                    <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 -ms-1 font-datetime">
                         {isValid(new Date(task.dueDate)) ? format(new Date(task.dueDate), 'MMM d') : task.dueDate}
                     </span>
                 )}
@@ -461,7 +461,7 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
                     className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors whitespace-nowrap ${date ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                     <Calendar size={13} />
-                    {date ? (isValid(new Date(date)) ? format(new Date(date), 'MMM d') : date) : t('add_dates')}
+                    <span className="font-datetime">{date ? (isValid(new Date(date)) ? format(new Date(date), 'MMM d') : date) : t('add_dates')}</span>
                 </button>
 
                 <button

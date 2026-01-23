@@ -350,7 +350,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {ANOMALIES_TABLE.map((row, index) => (
                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.date}</td>
+                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
                                         <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.amount}</td>
                                         <td className="px-5 py-3 text-right text-red-500 font-medium">{row.deviation}</td>

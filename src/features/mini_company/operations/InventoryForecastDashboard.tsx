@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -7,21 +7,6 @@ import { ArrowsOut, Info, TrendUp, Warning, ShieldCheck, Lightning, ChartLine, C
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { InventoryForecastInfo } from './InventoryForecastInfo';
 import { useAppContext } from '../../../contexts/AppContext';
-
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Forecast Demand', subtitle: 'Next 30 Days', value: '12,500', change: '+8%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [11000, 11500, 11800, 12000, 12200, 12500], color: 'blue' },
-    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Fit', value: '94%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'blue' },
-    { id: '3', label: 'Risk Exposure', subtitle: '% Vulnerable', value: '12%', change: '-2%', trend: 'down', icon: <Warning size={18} />, sparklineData: [15, 14, 14, 13, 13, 12], color: 'blue' },
-    { id: '4', label: 'Expected Stockouts', subtitle: 'Predicted', value: '8', change: '-1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [10, 9, 9, 9, 8, 8], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Overstock Risk', subtitle: 'Potential Excess', value: '25', change: '+3', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'blue' },
-    { id: '6', label: 'Supply Volatility', subtitle: 'Supplier Var', value: 'Low', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [1, 2, 1, 3, 1, 2], color: 'blue' },
-    { id: '7', label: 'Confidence Level', subtitle: 'Statistical', value: '90%', change: '0%', trend: 'neutral', icon: <CalendarCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
-    { id: '8', label: 'Lead Time Avg', subtitle: 'Days to receive', value: '8.5d', change: '-0.5d', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [10, 9.5, 9.2, 9, 8.8, 8.5], color: 'blue' },
-];
 
 // --- Mock Data: Charts ---
 const FORECAST_BY_CATEGORY = [
@@ -75,9 +60,44 @@ const CONE_DATA = {
 };
 
 export const InventoryForecastDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '1', label: t('forecast_demand'), subtitle: t('next_30_days'), value: '12,500', change: '+8%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [11000, 11500, 11800, 12000, 12200, 12500], color: 'blue' },
+        { id: '2', label: t('forecast_accuracy'), subtitle: t('model_fit'), value: '94%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'blue' },
+        { id: '3', label: t('risk_exposure'), subtitle: t('pct_vulnerable'), value: '12%', change: '-2%', trend: 'down', icon: <Warning size={18} />, sparklineData: [15, 14, 14, 13, 13, 12], color: 'blue' },
+        { id: '4', label: t('expected_stockouts'), subtitle: t('predicted'), value: '8', change: '-1', trend: 'down', icon: <Lightning size={18} />, sparklineData: [10, 9, 9, 9, 8, 8], color: 'blue' },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '5', label: t('overstock_risk'), subtitle: t('potential_excess'), value: '25', change: '+3', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'blue' },
+        { id: '6', label: t('supply_volatility'), subtitle: t('supplier_var'), value: t('low'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [1, 2, 1, 3, 1, 2], color: 'blue' },
+        { id: '7', label: t('confidence_level'), subtitle: t('statistical'), value: '90%', change: '0%', trend: 'neutral', icon: <CalendarCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
+        { id: '8', label: t('lead_time_avg'), subtitle: t('days_to_receive'), value: '8.5d', change: '-0.5d', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [10, 9.5, 9.2, 9, 8.8, 8.5], color: 'blue' },
+    ];
+
+    const getRiskLabel = (level: string) => {
+        switch (level) {
+            case 'Safe': return t('safe');
+            case 'Critical': return t('critical');
+            case 'High Risk': return t('high_risk');
+            case 'Overstock': return t('overstock');
+            default: return level;
+        }
+    };
+
+    const getActionLabel = (action: string) => {
+        switch (action) {
+            case 'Reorder ASAP': return t('reorder_asap');
+            case 'Delay PO': return t('delay_po');
+            case 'None': return t('none');
+            case 'Expedite': return t('expedite');
+            default: return action;
+        }
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -124,14 +144,14 @@ export const InventoryForecastDashboard: React.FC = () => {
 
     // Cone Chart (Area between lines)
     const coneOption: EChartsOption = {
-        title: { text: 'Forecast Uncertainty', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('forecast_uncertainty'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'axis' },
         grid: { left: '10%', right: '10%', bottom: '10%', top: '20%' },
         xAxis: { type: 'category', boundaryGap: false, data: CONE_DATA.x },
         yAxis: { type: 'value' },
         series: [
             {
-                name: 'Upper Bound',
+                name: t('upper_bound'),
                 type: 'line',
                 data: CONE_DATA.upper,
                 lineStyle: { opacity: 0 },
@@ -139,18 +159,16 @@ export const InventoryForecastDashboard: React.FC = () => {
                 symbol: 'none'
             },
             {
-                name: 'Confidence Range', // This effectively fills down to lower bound if configured with base, but simpler to just fill between
+                name: t('confidence_range'),
                 type: 'line',
                 data: CONE_DATA.lower,
                 lineStyle: { opacity: 0 },
                 stack: 'confidence',
                 symbol: 'none',
-                areaStyle: { color: '#818cf8', opacity: 0.3 } // Fill between upper and lower logic requires specific config in ECharts, usually 'stack' isn't enough for range area.
-                // Simpler for mock: Area from Upper to axis, minus Area from Lower to axis (opacity hack) or use specialized 'custom' series.
-                // For simplicity here, just showing Mean line + Upper area (fading) to simulate fan chart basics.
+                areaStyle: { color: '#818cf8', opacity: 0.3 }
             },
             {
-                name: 'Mean Forecast',
+                name: t('mean_forecast'),
                 type: 'line',
                 data: CONE_DATA.mean,
                 itemStyle: { color: '#4f46e5' },
@@ -167,16 +185,16 @@ export const InventoryForecastDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <TrendUp size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
-                    <div>
-                        <h1 className="text-2xl font-bold">Forecast & Risk</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Predictive demand planning</p>
+                    <div className="text-start">
+                        <h1 className="text-2xl font-bold">{t('forecast_risk')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('predictive_demand_planning')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -185,7 +203,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -208,13 +226,13 @@ export const InventoryForecastDashboard: React.FC = () => {
                 {/* Recharts: Forecast by Category */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Projected Demand" />
+                        <ChartSkeleton height="h-[300px]" title={t('projected_demand')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Projected Demand</h3>
-                            <p className="text-xs text-gray-400">By category</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('projected_demand')}</h3>
+                            <p className="text-xs text-gray-400">{t('by_category')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -236,13 +254,13 @@ export const InventoryForecastDashboard: React.FC = () => {
                 {/* Recharts: Demand by Month */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Demand by Month" />
+                        <ChartSkeleton height="h-[300px]" title={t('demand_by_month')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Demand by Month</h3>
-                            <p className="text-xs text-gray-400">Projected units</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('demand_by_month')}</h3>
+                            <p className="text-xs text-gray-400">{t('projected_units')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -267,12 +285,12 @@ export const InventoryForecastDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts: Risk Distribution */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Risk Profile" />
+                        <PieChartSkeleton title={t('risk_profile')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Profile</h3>
-                                <p className="text-xs text-gray-400">Inventory health status</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_profile')}</h3>
+                                <p className="text-xs text-gray-400">{t('inventory_health_status')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -280,12 +298,12 @@ export const InventoryForecastDashboard: React.FC = () => {
 
                     {/* ECharts: Accuracy by Category */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Accuracy by Category" />
+                        <PieChartSkeleton title={t('accuracy_by_category')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Accuracy by Category</h3>
-                                <p className="text-xs text-gray-400">Forecast precision</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('accuracy_by_category')}</h3>
+                                <p className="text-xs text-gray-400">{t('forecast_precision')}</p>
                             </div>
                             <ReactECharts option={accuracyPieOption} style={{ height: '180px' }} />
                         </div>
@@ -310,40 +328,40 @@ export const InventoryForecastDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <TableSkeleton rows={5} columns={5} />
+                        <TableSkeleton rows={5} columns={5} title={t('risk_assessment')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Assessment</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_assessment')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">SKU</th>
-                                        <th className="px-5 py-3 text-right">Stock</th>
-                                        <th className="px-5 py-3 text-right">Forecast</th>
-                                        <th className="px-5 py-3">Risk Level</th>
-                                        <th className="px-5 py-3">Action</th>
+                                        <th className="px-5 py-3 text-start">{t('sku')}</th>
+                                        <th className="px-5 py-3 text-end">{t('stock')}</th>
+                                        <th className="px-5 py-3 text-end">{t('forecast')}</th>
+                                        <th className="px-5 py-3 text-start">{t('risk_level')}</th>
+                                        <th className="px-5 py-3 text-start">{t('action')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {RISK_TABLE.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.stock}</td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.forecast}</td>
-                                            <td className="px-5 py-3">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.id}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.stock}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.forecast}</td>
+                                            <td className="px-5 py-3 text-start">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.level === 'Safe' ? 'bg-emerald-100 text-emerald-700' :
                                                         row.level === 'Critical' ? 'bg-red-100 text-red-700' :
                                                             row.level === 'High Risk' ? 'bg-orange-100 text-orange-700' :
                                                                 'bg-blue-100 text-blue-700'
                                                     }`}>
-                                                    {row.level}
+                                                    {getRiskLabel(row.level)}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3 text-xs font-medium text-gray-700 dark:text-gray-300">{row.action}</td>
+                                            <td className="px-5 py-3 text-xs font-medium text-gray-700 dark:text-gray-300 text-start">{getActionLabel(row.action)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -355,7 +373,7 @@ export const InventoryForecastDashboard: React.FC = () => {
                 {/* Companion Chart: Cone (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Forecast Uncertainty" />
+                        <ChartSkeleton height="h-[280px]" title={t('forecast_uncertainty')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

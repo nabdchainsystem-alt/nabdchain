@@ -8,9 +8,14 @@ const ReminderStatusChip: React.FC<{ status: ReminderStatus }> = ({ status }) =>
     triggered: 'bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-100',
     dismissed: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
   };
+  const labels: Record<ReminderStatus, string> = {
+    scheduled: 'مجدول',
+    triggered: 'مُشغَّل',
+    dismissed: 'تم التجاهل'
+  };
   return (
-    <span className={`px-2 py-0.5 text-[11px] rounded-full font-medium capitalize ${tones[status]}`}>
-      {status}
+    <span className={`px-2 py-0.5 text-[11px] rounded-full font-medium ${tones[status]}`}>
+      {labels[status]}
     </span>
   );
 };
@@ -34,10 +39,10 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
 }) => {
   const [customDateTime, setCustomDateTime] = useState('');
   const quickRelative = [
-    { label: 'In 1 hour', minutes: 60 },
-    { label: 'Later today', minutes: 3 * 60 },
-    { label: 'Tomorrow', minutes: 24 * 60 },
-    { label: 'Next week', minutes: 7 * 24 * 60 },
+    { label: 'بعد ساعة', minutes: 60 },
+    { label: 'لاحقاً اليوم', minutes: 3 * 60 },
+    { label: 'غداً', minutes: 24 * 60 },
+    { label: 'الأسبوع القادم', minutes: 7 * 24 * 60 },
   ];
 
   const handleAddRelative = (minutes: number, label: string) => {
@@ -56,16 +61,16 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
   const formatDateTime = (value: string) => {
     const date = new Date(value);
     if (isNaN(date.getTime())) return value;
-    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <div className="w-80 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Reminders</p>
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">التذكيرات</p>
           <p className="text-[11px] text-stone-500 dark:text-stone-400">
-            Stored on this item. Notifications are off for now.
+            مُخزّنة على هذا العنصر. الإشعارات معطّلة حالياً.
           </p>
         </div>
         <Bell size={16} className="text-stone-400" />
@@ -73,14 +78,14 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
 
       <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
         {reminders.length === 0 ? (
-          <p className="text-xs text-stone-500">No reminders yet for "{itemTitle || 'this item'}".</p>
+          <p className="text-xs text-stone-500">لا توجد تذكيرات بعد لـ "{itemTitle || 'هذا العنصر'}".</p>
         ) : reminders.map((reminder) => (
           <div key={reminder.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-stone-100 dark:border-stone-800">
             <div className="min-w-0">
-              <div className="text-sm text-stone-800 dark:text-stone-100 truncate">
+              <div className="text-sm text-stone-800 dark:text-stone-100 truncate font-datetime">
                 {reminder.relativeLabel || formatDateTime(reminder.remindAt)}
               </div>
-              <div className="text-[11px] text-stone-500 truncate">
+              <div className="text-[11px] text-stone-500 truncate font-datetime">
                 {formatDateTime(reminder.remindAt)}
               </div>
             </div>
@@ -91,13 +96,13 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
                   onClick={() => onUpdateStatus(reminder.id, reminder.status === 'triggered' ? 'dismissed' : 'triggered')}
                   className="px-2 py-1 text-[11px] rounded bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
                 >
-                  {reminder.status === 'triggered' ? 'Dismiss' : 'Trigger now'}
+                  {reminder.status === 'triggered' ? 'تجاهل' : 'تشغيل الآن'}
                 </button>
               )}
               <button
                 onClick={() => onDelete(reminder.id)}
                 className="p-1 text-stone-400 hover:text-rose-500"
-                title="Remove reminder"
+                title="إزالة التذكير"
               >
                 <Trash2 size={14} />
               </button>
@@ -107,7 +112,7 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
       </div>
 
       <div className="border-t border-stone-200 dark:border-stone-800 pt-2">
-        <p className="text-[11px] font-semibold text-stone-500 mb-2">Quick relative</p>
+        <p className="text-[11px] font-semibold text-stone-500 mb-2">تذكير سريع</p>
         <div className="flex flex-wrap gap-2">
           {quickRelative.map((opt) => (
             <button
@@ -122,7 +127,7 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
       </div>
 
       <div className="border-t border-stone-200 dark:border-stone-800 pt-2 space-y-2">
-        <p className="text-[11px] font-semibold text-stone-500">Absolute time</p>
+        <p className="text-[11px] font-semibold text-stone-500">وقت محدد</p>
         <div className="flex items-center gap-2">
           <input
             type="datetime-local"
@@ -135,13 +140,13 @@ export const ReminderPanel: React.FC<ReminderPanelProps> = ({
             className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
             disabled={!customDateTime}
           >
-            Save
+            حفظ
           </button>
         </div>
       </div>
 
       <div className="text-[11px] text-stone-500">
-        Reminders stay with this item; delivery will activate once notifications are enabled.
+        التذكيرات تبقى مع هذا العنصر؛ سيتم التسليم عند تفعيل الإشعارات.
       </div>
     </div>
   );

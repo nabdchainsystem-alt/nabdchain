@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
     Files,
@@ -40,6 +40,7 @@ import { ConfirmDialog } from '../../../../components/ui/ConfirmDialog';
 import { RFQSection } from './RFQSection';
 import { NewRFQModal } from './NewRFQModal';
 import { appLogger } from '../../../../utils/logger';
+import { useAuth } from '../../../../auth-adapter';
 
 // --- Empty / Initial State Data ---
 
@@ -287,6 +288,7 @@ const RequestDetailsModal: React.FC<{ request: any | null; onClose: () => void }
 };
 
 export const ProcurementOverview: React.FC = () => {
+    const { getToken } = useAuth();
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
@@ -369,40 +371,43 @@ export const ProcurementOverview: React.FC = () => {
         loadData();
         loadRfqs();
         loadOrders();
-    }, []);
+    }, [loadData, loadRfqs, loadOrders]);
 
-    const loadRfqs = async () => {
+    const loadRfqs = useCallback(async () => {
         setLoadingRfqs(true);
         try {
-            const data = await procurementService.getAllRfqs();
+            const token = await getToken() || '';
+            const data = await procurementService.getAllRfqs(token);
             setRfqs(data.reverse()); // Show most recent first
         } catch (error) {
             appLogger.error("Failed to load RFQs", error);
         } finally {
             setLoadingRfqs(false);
         }
-    };
+    }, [getToken]);
 
-    const loadOrders = async () => {
+    const loadOrders = useCallback(async () => {
         setLoadingOrders(true);
         try {
-            const data = await procurementService.getAllOrders();
+            const token = await getToken() || '';
+            const data = await procurementService.getAllOrders(token);
             setOrders(data.reverse());
         } catch (error) {
             appLogger.error("Failed to load orders", error);
         } finally {
             setLoadingOrders(false);
         }
-    };
+    }, [getToken]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const data = await procurementService.getAllRequests();
+            const token = await getToken() || '';
+            const data = await procurementService.getAllRequests(token);
             setTableData(data.reverse().map(withRequestDefaults)); // Most recent first
         } catch (error) {
             appLogger.error("Failed to load requests", error);
         }
-    };
+    }, [getToken]);
 
     const handleCreateRequest = async (data: any) => {
         // Map modal data to board task structure
@@ -426,7 +431,8 @@ export const ProcurementOverview: React.FC = () => {
 
         setTableData(updatedRows);
         try {
-            await procurementService.createRequest(newTask);
+            const token = await getToken() || '';
+            await procurementService.createRequest(token, newTask);
         } catch (error) {
             appLogger.error("Local save failed", error);
         }
@@ -439,7 +445,8 @@ export const ProcurementOverview: React.FC = () => {
         setTableData(prev => updateList(prev));
 
         try {
-            await procurementService.updateRequest(id, { approvalStatus });
+            const token = await getToken() || '';
+            await procurementService.updateRequest(token, id, { approvalStatus });
         } catch (error) {
             appLogger.error("Failed to update approval status", error);
         }
@@ -460,7 +467,8 @@ export const ProcurementOverview: React.FC = () => {
         setTableData(prev => prev.map(r => r.id === id ? { ...r, isDeleted: true } : r));
         setSelectedRequestDetails(prev => prev?.id === id ? null : prev);
         try {
-            await procurementService.updateRequest(id, { isDeleted: true });
+            const token = await getToken() || '';
+            await procurementService.updateRequest(token, id, { isDeleted: true });
         } catch (error) {
             appLogger.error("Failed to mark request deleted", error);
         }
@@ -481,18 +489,19 @@ export const ProcurementOverview: React.FC = () => {
         setRfqs(prev => [optimisticRfq, ...prev]);
 
         try {
-            const created = await procurementService.createRfq(rfq);
+            const token = await getToken() || '';
+            const created = await procurementService.createRfq(token, rfq);
             // Replace optimistic with real data
             setRfqs(prev => prev.map(r => r.id === optimisticId ? created : r));
             setTableData(prev => prev.map(req => req.id === rfq.requestId ? { ...req, rfqSent: true } : req));
             try {
-                await procurementService.updateRequest(rfq.requestId, { rfqSent: true });
+                await procurementService.updateRequest(token, rfq.requestId, { rfqSent: true });
             } catch (error) {
                 appLogger.error("Failed to mark request as sent to RFQ", error);
             }
         } catch (error) {
             appLogger.error("Failed to create RFQ on server", error);
-            // Fallback: keep optimistic but mark as errored if we had that state, 
+            // Fallback: keep optimistic but mark as errored if we had that state,
             // for now just keep it so the user sees something happened.
         }
     };
@@ -523,10 +532,11 @@ export const ProcurementOverview: React.FC = () => {
         };
 
         try {
-            const createdOrder = await procurementService.createOrder(orderPayload);
+            const token = await getToken() || '';
+            const createdOrder = await procurementService.createOrder(token, orderPayload);
             setOrders(prev => [createdOrder, ...prev.filter(o => o.id !== createdOrder.id)]);
             setRfqs(prev => prev.map(r => r.id === rfq.id ? { ...r, status: 'Sent to PO', sentToOrder: true, orderId: createdOrder.id } : r));
-            await procurementService.updateRfq(rfq.id, { status: 'Sent to PO', sentToOrder: true, orderId: createdOrder.id });
+            await procurementService.updateRfq(token, rfq.id, { status: 'Sent to PO', sentToOrder: true, orderId: createdOrder.id });
         } catch (error) {
             appLogger.error("Failed to send RFQ to order", error);
         }
@@ -535,7 +545,8 @@ export const ProcurementOverview: React.FC = () => {
     const handleDeleteRfq = async (id: string) => {
         setRfqs(prev => prev.map(r => r.id === id ? { ...r, isDeleted: true } : r));
         try {
-            await procurementService.updateRfq(id, { isDeleted: true });
+            const token = await getToken() || '';
+            await procurementService.updateRfq(token, id, { isDeleted: true });
         } catch (error) {
             appLogger.error("Failed to mark RFQ deleted", error);
         }
@@ -544,7 +555,8 @@ export const ProcurementOverview: React.FC = () => {
     const handleDeleteOrder = async (id: string) => {
         setOrders(prev => prev.map(o => o.id === id ? { ...o, isDeleted: true } : o));
         try {
-            await procurementService.updateOrder(id, { isDeleted: true });
+            const token = await getToken() || '';
+            await procurementService.updateOrder(token, id, { isDeleted: true });
         } catch (error) {
             appLogger.error("Failed to mark order deleted", error);
         }
@@ -555,7 +567,8 @@ export const ProcurementOverview: React.FC = () => {
         if (target?.isDeleted) return;
         setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'Received' } : o));
         try {
-            await procurementService.updateOrder(id, { status: 'Received' });
+            const token = await getToken() || '';
+            await procurementService.updateOrder(token, id, { status: 'Received' });
         } catch (error) {
             appLogger.error("Failed to mark goods receipt", error);
         }
@@ -566,7 +579,8 @@ export const ProcurementOverview: React.FC = () => {
         if (target?.isDeleted) return;
         setOrders(prev => prev.map(o => o.id === id ? { ...o, approvals } : o));
         try {
-            await procurementService.updateOrder(id, { approvals });
+            const token = await getToken() || '';
+            await procurementService.updateOrder(token, id, { approvals });
         } catch (error) {
             appLogger.error("Failed to update order approval", error);
         }
@@ -1647,7 +1661,7 @@ export const ProcurementOverview: React.FC = () => {
                                                     {row.id}
                                                 </button>
                                             </td>
-                                            <td className="px-4 py-3 text-gray-500">{row.date}</td>
+                                            <td className="px-4 py-3 text-gray-500 font-datetime">{row.date}</td>
                                             <td className="px-4 py-3">
                                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                                     <Building2 size={10} />
@@ -1979,7 +1993,7 @@ export const ProcurementOverview: React.FC = () => {
                                             >
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{order.id}</td>
                                                 <td className="px-4 py-3 text-gray-500">{order.supplier}</td>
-                                                <td className="px-4 py-3 text-gray-500">{order.date || '-'}</td>
+                                                <td className="px-4 py-3 text-gray-500 font-datetime">{order.date || '-'}</td>
                                                 <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-semibold">
                                                     {order.totalValue?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                 </td>

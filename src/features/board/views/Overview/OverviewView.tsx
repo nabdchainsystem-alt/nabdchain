@@ -425,7 +425,7 @@ const UpcomingDeadlinesWidget = ({ tasks, t }: { tasks: any[], t: (key: string) 
                     upcomingTasks.map((task, idx) => (
                         <div key={task.id || idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                             <span className="text-xs text-gray-700 dark:text-gray-300 truncate flex-1">{task.name}</span>
-                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 ml-2">{formatDate(task.dueDate)}</span>
+                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 ml-2 font-datetime">{formatDate(task.dueDate)}</span>
                         </div>
                     ))
                 )}

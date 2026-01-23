@@ -53,9 +53,11 @@ const removeLocal = (key: CollectionKey, id: string): void => {
 };
 
 export const procurementService = {
-    async getAllRequests(): Promise<ProcurementRequest[]> {
+    async getAllRequests(token: string): Promise<ProcurementRequest[]> {
         try {
-            const response = await fetch(`${API_URL}/procurementRequests`);
+            const response = await fetch(`${API_URL}/procurementRequests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch requests');
             const data = await response.json();
             writeLocal(LOCAL_KEYS.procurementRequests, data);
@@ -66,12 +68,13 @@ export const procurementService = {
         }
     },
 
-    async createRequest(request: CreateProcurementRequestData): Promise<ProcurementRequest> {
+    async createRequest(token: string, request: CreateProcurementRequestData): Promise<ProcurementRequest> {
         try {
             const response = await fetch(`${API_URL}/procurementRequests`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(request),
             });
@@ -86,12 +89,13 @@ export const procurementService = {
         }
     },
 
-    async updateRequest(id: string, updates: UpdateProcurementRequestData): Promise<ProcurementRequest> {
+    async updateRequest(token: string, id: string, updates: UpdateProcurementRequestData): Promise<ProcurementRequest> {
         try {
             const response = await fetch(`${API_URL}/procurementRequests/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(updates),
             });
@@ -107,10 +111,11 @@ export const procurementService = {
         }
     },
 
-    async deleteRequest(id: string): Promise<boolean> {
+    async deleteRequest(token: string, id: string): Promise<boolean> {
         try {
             const response = await fetch(`${API_URL}/procurementRequests/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete request');
             return true;
@@ -121,9 +126,11 @@ export const procurementService = {
         }
     },
 
-    async getAllRfqs(): Promise<RFQ[]> {
+    async getAllRfqs(token: string): Promise<RFQ[]> {
         try {
-            const response = await fetch(`${API_URL}/rfqs`);
+            const response = await fetch(`${API_URL}/rfqs`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch RFQs');
             const data = await response.json();
             writeLocal(LOCAL_KEYS.rfqs, data);
@@ -134,12 +141,13 @@ export const procurementService = {
         }
     },
 
-    async createRfq(rfq: CreateRFQData): Promise<RFQ> {
+    async createRfq(token: string, rfq: CreateRFQData): Promise<RFQ> {
         try {
             const response = await fetch(`${API_URL}/rfqs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(rfq),
             });
@@ -154,12 +162,13 @@ export const procurementService = {
         }
     },
 
-    async updateRfq(id: string, updates: UpdateRFQData): Promise<RFQ> {
+    async updateRfq(token: string, id: string, updates: UpdateRFQData): Promise<RFQ> {
         try {
             const response = await fetch(`${API_URL}/rfqs/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(updates),
             });
@@ -175,10 +184,11 @@ export const procurementService = {
         }
     },
 
-    async deleteRfq(id: string): Promise<boolean> {
+    async deleteRfq(token: string, id: string): Promise<boolean> {
         try {
             const response = await fetch(`${API_URL}/rfqs/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete RFQ');
             return true;
@@ -189,9 +199,11 @@ export const procurementService = {
         }
     },
 
-    async getAllOrders(): Promise<Order[]> {
+    async getAllOrders(token: string): Promise<Order[]> {
         try {
-            const response = await fetch(`${API_URL}/orders`);
+            const response = await fetch(`${API_URL}/orders`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch orders');
             const data = await response.json();
             writeLocal(LOCAL_KEYS.orders, data);
@@ -202,12 +214,13 @@ export const procurementService = {
         }
     },
 
-    async createOrder(order: CreateOrderData): Promise<Order> {
+    async createOrder(token: string, order: CreateOrderData): Promise<Order> {
         try {
             const response = await fetch(`${API_URL}/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(order),
             });
@@ -222,12 +235,13 @@ export const procurementService = {
         }
     },
 
-    async updateOrder(id: string, updates: UpdateOrderData): Promise<Order> {
+    async updateOrder(token: string, id: string, updates: UpdateOrderData): Promise<Order> {
         try {
             const response = await fetch(`${API_URL}/orders/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(updates),
             });
@@ -243,10 +257,11 @@ export const procurementService = {
         }
     },
 
-    async deleteOrder(id: string): Promise<boolean> {
+    async deleteOrder(token: string, id: string): Promise<boolean> {
         try {
             const response = await fetch(`${API_URL}/orders/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete order');
             return true;

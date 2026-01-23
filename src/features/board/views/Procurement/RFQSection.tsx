@@ -301,11 +301,11 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
                                     >
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-white">{rfq.id}</td>
                                         <td className="px-5 py-3 italic text-gray-500">{rfq.requestId}</td>
-                                        <td className="px-5 py-3">{rfq.date}</td>
+                                        <td className="px-5 py-3 font-datetime">{rfq.date}</td>
                                         <td className="px-5 py-3">{rfq.department}</td>
                                         <td className="px-5 py-3 font-medium">{rfq.supplier}</td>
                                         <td className="px-5 py-3">SAR {rfq.value?.toLocaleString()}</td>
-                                        <td className="px-5 py-3">{rfq.dueDate}</td>
+                                        <td className="px-5 py-3 font-datetime">{rfq.dueDate}</td>
                                         <td className="px-5 py-3">
                                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${rfq.status === 'Done' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' :
                                                 rfq.status === 'Overdue' ? 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400' :

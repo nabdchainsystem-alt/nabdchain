@@ -3,6 +3,30 @@ import { Column } from '../types';
 import { SortableHeader } from './SortableHeader';
 import { Trash as Trash2, Plus } from 'phosphor-react';
 import { HeaderContextMenu } from './HeaderContextMenu';
+import { useAppContext } from '../../../../../contexts/AppContext';
+
+// Standard column IDs that should be translated
+const STANDARD_COLUMN_KEYS: Record<string, string> = {
+    'name': 'name',
+    'people': 'people',
+    'status': 'status',
+    'priority': 'priority',
+    'date': 'date',
+    'dueDate': 'due_date',
+    'timeline': 'timeline',
+    'files': 'files',
+    'checkbox': 'checkbox',
+    'number': 'number',
+    'text': 'text',
+    'email': 'email',
+    'phone': 'phone',
+    'url': 'link',
+    'location': 'location',
+    'rating': 'rating',
+    'tags': 'tags',
+    'currency': 'currency',
+    'dropdown': 'dropdown',
+};
 
 interface TableHeaderCellProps {
     col: Column;
@@ -43,7 +67,19 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
     showRightShadow,
     sortDirection,
 }) => {
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const uniqueId = `${group.id}__${col.id}`;
+
+    // Get translated label for standard columns, or use the custom label
+    const getColumnLabel = (column: Column): string => {
+        const translationKey = STANDARD_COLUMN_KEYS[column.id];
+        if (translationKey) {
+            return t(translationKey);
+        }
+        return column.label;
+    };
+    const displayLabel = getColumnLabel(col);
     // const isSticky = !!col.pinned; <- passed via style now
 
     // Calculate sticky position if needed
@@ -154,7 +190,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                         e.stopPropagation();
                         if (col.id !== 'select') setRenamingColId(col.id);
                     }}>
-                        {col.label}
+                        {displayLabel}
                         {sortDirection === 'asc' && <span className="ms-1 text-blue-500">↑</span>}
                         {sortDirection === 'desc' && <span className="ms-1 text-blue-500">↓</span>}
                     </span>
@@ -162,13 +198,13 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                         <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteColumn(col.id); }}
                             className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-600 rounded transition-all"
-                            title="Delete Column"
+                            title={t('delete_column')}
                         >
                             <Trash2 size={12} />
                         </button>
                     )}
                     <div
-                        className="w-1 h-3/4 cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-600 rounded opacity-0 group-hover:opacity-100 transition-opacity absolute -right-[2px] top-1/2 -translate-y-1/2 z-10"
+                        className={`w-1 h-3/4 cursor-col-resize hover:bg-stone-300 dark:hover:bg-stone-600 rounded opacity-0 group-hover:opacity-100 transition-opacity absolute top-1/2 -translate-y-1/2 z-10 ${isRTL ? '-left-[2px]' : '-right-[2px]'}`}
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => { e.stopPropagation(); startResize(e, col.id, col.width); }}
                         onClick={(e) => e.stopPropagation()}

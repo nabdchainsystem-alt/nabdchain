@@ -20,7 +20,7 @@ export const VendorDashboard: React.FC = () => {
         <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">Vendor Intelligence</h1>
-                <div className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</div>
+                <div className="text-sm text-gray-500">Last updated: <span className="font-datetime">{new Date().toLocaleDateString()}</span></div>
             </div>
 
             {/* Overview Cards */}

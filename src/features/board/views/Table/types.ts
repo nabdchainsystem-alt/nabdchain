@@ -132,13 +132,15 @@ export const sortRowsWithDoneAtBottom = (rows: Row[]): Row[] => {
     return [...nonDone, ...done];
 };
 
-export const formatDate = (date: string | null): string => {
+export const formatDate = (date: string | null, locale?: string): string => {
     if (!date) return '';
     try {
         const d = new Date(date);
         if (isNaN(d.getTime())) return date;
-        const datePart = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(d);
-        const timePart = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+        // Use provided locale or browser default
+        const loc = locale || navigator.language || 'en-GB';
+        const datePart = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short' }).format(d);
+        const timePart = new Intl.DateTimeFormat(loc, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
         return `${datePart} - ${timePart}`;
     } catch {
         return date || '';

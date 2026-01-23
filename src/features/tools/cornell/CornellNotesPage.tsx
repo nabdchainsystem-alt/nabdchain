@@ -458,7 +458,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
 
                         <div className="flex items-center gap-2">
                             {item.dueDate && (
-                                <span className="text-[10px] bg-zinc-100 dark:bg-monday-dark-hover text-zinc-500 dark:text-monday-dark-text-secondary px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-[10px] bg-zinc-100 dark:bg-monday-dark-hover text-zinc-500 dark:text-monday-dark-text-secondary px-1.5 py-0.5 rounded font-medium font-datetime">
                                     {new Date(item.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
                             )}
@@ -563,7 +563,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                     {note.title || t('untitled')}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                    <span>{note.date}</span>
+                                    <span className="font-datetime">{note.date}</span>
                                     {note.tags.length > 0 && <span className="bg-gray-100 dark:bg-monday-dark-hover px-1.5 rounded text-[10px]">{note.tags[0]}</span>}
                                 </div>
                             </div>
@@ -683,7 +683,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                                 onClick={() => setActiveDateSelector({ id: 'note', rect: dateTriggerRef.current!.getBoundingClientRect() })}
                                 className="w-full flex items-center justify-between px-3 py-1.5 text-xs bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-lg text-gray-600 dark:text-monday-dark-text-secondary hover:border-blue-500 transition-colors shadow-sm"
                             >
-                                <span className="font-medium">
+                                <span className="font-medium font-datetime">
                                     {new Date(date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                                 </span>
                                 <Calendar size={14} className="text-gray-400" />

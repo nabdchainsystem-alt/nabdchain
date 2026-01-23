@@ -321,7 +321,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                                                 <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.type}</td>
                                                 <td className="px-5 py-3 font-medium text-gray-800 dark:text-gray-200">{row.score}</td>
-                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-mono">{row.date}</td>
+                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-datetime">{row.date}</td>
                                                 <td className="px-5 py-3 text-right">
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Closed' ? 'bg-green-100 text-green-700' :
                                                         row.status === 'Escalated' ? 'bg-red-100 text-red-700' :

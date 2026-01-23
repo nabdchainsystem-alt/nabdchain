@@ -6,9 +6,11 @@ const API_URL = API_BASE_URL;
 
 export const roomService = {
     // Rooms
-    async getAllRooms(): Promise<Room[]> {
+    async getAllRooms(token: string): Promise<Room[]> {
         try {
-            const response = await fetch(`${API_URL}/rooms`);
+            const response = await fetch(`${API_URL}/rooms`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch rooms');
             return await response.json();
         } catch (error) {
@@ -17,9 +19,11 @@ export const roomService = {
         }
     },
 
-    async getRoom(id: string): Promise<Room | null> {
+    async getRoom(token: string, id: string): Promise<Room | null> {
         try {
-            const response = await fetch(`${API_URL}/rooms/${id}`);
+            const response = await fetch(`${API_URL}/rooms/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch room');
             return await response.json();
         } catch (error) {
@@ -28,11 +32,14 @@ export const roomService = {
         }
     },
 
-    async createRoom(room: CreateRoomData): Promise<Room> {
+    async createRoom(token: string, room: CreateRoomData): Promise<Room> {
         try {
             const response = await fetch(`${API_URL}/rooms`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(room),
             });
             if (!response.ok) throw new Error('Failed to create room');
@@ -44,9 +51,11 @@ export const roomService = {
     },
 
     // Rows
-    async getRows(roomId: string): Promise<Row[]> {
+    async getRows(token: string, roomId: string): Promise<Row[]> {
         try {
-            const response = await fetch(`${API_URL}/rows?roomId=${roomId}`);
+            const response = await fetch(`${API_URL}/rows?roomId=${roomId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch rows');
             return await response.json();
         } catch (error) {
@@ -55,11 +64,14 @@ export const roomService = {
         }
     },
 
-    async createRow(row: CreateRowData): Promise<Row> {
+    async createRow(token: string, row: CreateRowData): Promise<Row> {
         try {
             const response = await fetch(`${API_URL}/rows`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(row),
             });
             if (!response.ok) throw new Error('Failed to create row');
@@ -70,11 +82,14 @@ export const roomService = {
         }
     },
 
-    async updateRow(id: string, updates: UpdateRowData): Promise<Row> {
+    async updateRow(token: string, id: string, updates: UpdateRowData): Promise<Row> {
         try {
             const response = await fetch(`${API_URL}/rows/${id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(updates),
             });
             if (!response.ok) throw new Error('Failed to update row');
@@ -85,10 +100,11 @@ export const roomService = {
         }
     },
 
-    async deleteRow(id: string): Promise<boolean> {
+    async deleteRow(token: string, id: string): Promise<boolean> {
         try {
             const response = await fetch(`${API_URL}/rows/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete row');
             return true;
@@ -99,9 +115,11 @@ export const roomService = {
     },
 
     // Columns
-    async getColumns(roomId: string): Promise<Column[]> {
+    async getColumns(token: string, roomId: string): Promise<Column[]> {
         try {
-            const response = await fetch(`${API_URL}/columns?roomId=${roomId}`);
+            const response = await fetch(`${API_URL}/columns?roomId=${roomId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch columns');
             const result = await response.json();
             return result.length > 0 ? result[0].columns : [];
@@ -111,17 +129,22 @@ export const roomService = {
         }
     },
 
-    async updateColumns(roomId: string, columns: Column[]): Promise<{ id: string; roomId: string; columns: Column[] }> {
+    async updateColumns(token: string, roomId: string, columns: Column[]): Promise<{ id: string; roomId: string; columns: Column[] }> {
         try {
             // First, check if columns already exist for this room
-            const existing = await fetch(`${API_URL}/columns?roomId=${roomId}`);
+            const existing = await fetch(`${API_URL}/columns?roomId=${roomId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const existingData = await existing.json();
 
             if (existingData.length > 0) {
                 // Update existing
                 const response = await fetch(`${API_URL}/columns/${existingData[0].id}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ columns }),
                 });
                 if (!response.ok) throw new Error('Failed to update columns');
@@ -130,7 +153,10 @@ export const roomService = {
                 // Create new
                 const response = await fetch(`${API_URL}/columns`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ roomId, columns }),
                 });
                 if (!response.ok) throw new Error('Failed to create columns');

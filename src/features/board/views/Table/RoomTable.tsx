@@ -169,7 +169,8 @@ interface RoomTableProps {
 
 // --- Main RoomTable Component ---
 const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, tasks: externalTasks, name: initialName, columns: externalColumns, onUpdateTasks, onDeleteTask, renderCustomActions, onRename, onNavigate, onAddGroup, onUpdateGroup, onDeleteGroup, enableImport, hideGroupHeader, showPagination, tasksVersion }) => {
-    const { t } = useAppContext();
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const { showToast } = useToast();
     // Keys for persistence
     const storageKeyColumns = `room-table-columns-v7-${roomId}-${viewId}`;
@@ -1771,11 +1772,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         };
         setColumns([...columns, newCol]);
 
-        // Auto-scroll to the right to show the new column
+        // Auto-scroll to show the new column (end of table)
         setTimeout(() => {
             if (tableBodyRef.current) {
-                tableBodyRef.current.scrollTo({
-                    left: tableBodyRef.current.scrollWidth,
+                const el = tableBodyRef.current;
+                // In RTL, new columns appear on the left (end), scrollLeft 0 is rightmost
+                // Use scrollWidth - clientWidth to get the maximum scroll distance
+                const maxScroll = el.scrollWidth - el.clientWidth;
+                el.scrollTo({
+                    left: isRTL ? -maxScroll : maxScroll,
                     behavior: 'smooth'
                 });
             }
@@ -2652,6 +2657,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 <div
                     ref={tableBodyRef}
                     className="flex-1 overflow-y-auto overflow-x-auto bg-white dark:bg-stone-900 relative"
+                    dir={dir}
                     style={{
                         WebkitOverflowScrolling: 'touch',
                         paddingBottom: '20vh',
@@ -2808,9 +2814,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                             style={{
                                                                                 width: col.width,
                                                                                 ...(isSticky && {
-                                                                                    left: leftPos,
+                                                                                    [isRTL ? 'right' : 'left']: leftPos,
                                                                                     position: 'sticky',
-                                                                                    willChange: 'transform, left',
+                                                                                    willChange: isRTL ? 'transform, right' : 'transform, left',
                                                                                 }),
                                                                                 backgroundColor: col.headerColor || col.backgroundColor || (isSticky ? undefined : undefined)
                                                                             }}
@@ -2840,7 +2846,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                                 className="fixed z-[100]"
                                                                                 style={{
                                                                                     top: `${activeColumnMenu.rect.bottom + 8}px`,
-                                                                                    right: `${window.innerWidth - activeColumnMenu.rect.right}px`,
+                                                                                    // Position menu to stay within viewport
+                                                                                    // In RTL: if button is near left edge, position from left; otherwise from right
+                                                                                    // In LTR: if button is near right edge, position from right; otherwise from left
+                                                                                    ...(isRTL
+                                                                                        ? activeColumnMenu.rect.left < 350
+                                                                                            ? { left: `${Math.max(8, activeColumnMenu.rect.left)}px` }
+                                                                                            : { right: `${Math.max(8, window.innerWidth - activeColumnMenu.rect.right)}px` }
+                                                                                        : activeColumnMenu.rect.right > window.innerWidth - 350
+                                                                                            ? { right: `${Math.max(8, window.innerWidth - activeColumnMenu.rect.right)}px` }
+                                                                                            : { left: `${Math.max(8, activeColumnMenu.rect.left)}px` }
+                                                                                    ),
                                                                                 }}
                                                                             >
                                                                                 <ColumnMenu
@@ -2901,12 +2917,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                                 style={{
                                                                                     width: col.width,
                                                                                     ...(isSticky && {
-                                                                                        left: leftPos,
+                                                                                        [isRTL ? 'right' : 'left']: leftPos,
                                                                                         position: 'sticky',
-                                                                                        willChange: 'transform, left',
+                                                                                        willChange: isRTL ? 'transform, right' : 'transform, left',
                                                                                     })
                                                                                 }}
-                                                                                className={`h-full border-e border-stone-100 dark:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-white dark:bg-stone-900 shadow-sm' : ''} ${isSticky && !visibleColumns[index + 1]?.pinned ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                                                                                className={`h-full border-e border-stone-100 dark:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? 'z-10 bg-white dark:bg-stone-900 shadow-sm' : ''} ${isSticky && !visibleColumns[index + 1]?.pinned ? `after:absolute ${isRTL ? 'after:left-0' : 'after:right-0'} after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]` : ''}`}
                                                                             >
                                                                                 {col.id === 'select' ? (
                                                                                     <div className="w-full h-full flex items-center justify-center px-2">

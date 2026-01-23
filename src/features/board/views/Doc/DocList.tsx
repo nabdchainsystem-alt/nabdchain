@@ -35,7 +35,7 @@ export const DocList: React.FC<DocListProps> = ({ docs, selectedDocId, onSelectD
                         </p>
 
                         <div className="flex items-center gap-3 text-xs text-stone-400 font-sans">
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 font-datetime">
                                 <Clock size={12} />
                                 {new Date(doc.updatedAt).toLocaleDateString()}
                             </span>

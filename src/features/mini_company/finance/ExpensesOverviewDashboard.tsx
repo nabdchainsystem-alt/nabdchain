@@ -345,7 +345,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                             <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.type}</td>
                                             <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.date}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
                                             <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.amount}</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Approved' || row.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :

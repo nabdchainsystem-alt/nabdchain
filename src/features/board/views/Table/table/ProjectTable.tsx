@@ -20,6 +20,7 @@ import { DropdownCell } from '../../../components/cells/DropdownCell';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../../../components/ui/PortalPopup';
 import { boardLogger } from '../../../../../utils/logger';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 
 // --- Helpers ---
@@ -153,6 +154,8 @@ interface ProjectTableProps {
 }
 
 export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) => {
+    const { dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const storageKey = `project-table-${roomId}-${viewId}`;
 
     const [tasks, setTasks] = useState<Task[]>(() => {
@@ -435,7 +438,10 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                         className="fixed z-[9999]"
                         style={{
                             top: activeColumnMenu.rect.bottom + 8,
-                            left: Math.min(activeColumnMenu.rect.left, window.innerWidth - 350), // Prevent overflow
+                            ...(isRTL
+                                ? { right: Math.min(window.innerWidth - activeColumnMenu.rect.right, window.innerWidth - 350) }
+                                : { left: Math.min(activeColumnMenu.rect.left, window.innerWidth - 350) }
+                            ),
                         }}
                     >
                         <ColumnMenu

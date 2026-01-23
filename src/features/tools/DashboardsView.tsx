@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Activity, Warning as AlertTriangle, ChartBar as BarChart3, SquaresFour as LayoutDashboard, ChartPie as PieChart, TrendUp as TrendingUp } from 'phosphor-react';
-import { loadBoardTasks, isDoneStatus, parseDate, SimplifiedTask } from './toolUtils';
+import { Activity, Warning as AlertTriangle, ChartBar as BarChart3, SquaresFour as LayoutDashboard, ChartPie as PieChart, TrendUp as TrendingUp, IconProps } from 'phosphor-react';
+import { loadBoardTasks, isDoneStatus, parseDate, SimplifiedTask, RawTaskData } from './toolUtils';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface DashboardsViewProps {
     boardId: string;
     boardName?: string;
-    fallbackTasks?: any[];
+    fallbackTasks?: RawTaskData[];
 }
 
-const WidgetCard = ({ title, value, subtitle, icon: Icon, color }: { title: string; value: string; subtitle: string; icon: any; color: string }) => (
+const WidgetCard = ({ title, value, subtitle, icon: Icon, color }: { title: string; value: string; subtitle: string; icon: React.ComponentType<IconProps>; color: string }) => (
     <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-xl p-4 shadow-sm flex items-center gap-3">
         <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-opacity-100`}>
             <Icon size={18} />
@@ -184,7 +184,7 @@ const DashboardsView: React.FC<DashboardsViewProps> = ({ boardId, boardName = 'B
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-semibold text-gray-800 dark:text-monday-dark-text truncate">{task.name}</span>
-                                                <span className="text-[11px] text-gray-500">{due ? due.toLocaleDateString() : 'No date'}</span>
+                                                <span className="text-[11px] text-gray-500 font-datetime">{due ? due.toLocaleDateString() : 'No date'}</span>
                                             </div>
                                             <div className="w-full h-1.5 bg-gray-100 dark:bg-monday-dark-hover rounded-full overflow-hidden mt-1">
                                                 <div

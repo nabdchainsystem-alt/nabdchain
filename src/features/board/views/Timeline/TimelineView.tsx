@@ -282,7 +282,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                                         ? { right: i * CELL_WIDTH + 10 }
                                         : { left: i * CELL_WIDTH + 10 };
                                     return (
-                                        <div key={`month-${i}`} className="absolute top-2 text-lg font-semibold text-gray-800 dark:text-gray-100" style={posStyle}>
+                                        <div key={`month-${i}`} className="absolute top-2 text-lg font-semibold text-gray-800 dark:text-gray-100 font-datetime" style={posStyle}>
                                             {d.toLocaleDateString(isRTL ? 'ar' : 'en-US', { month: 'long', year: 'numeric' })}
                                         </div>
                                     )
@@ -367,7 +367,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                                         <span className="text-xs font-medium truncate text-gray-700 dark:text-gray-200 select-none">{task.name}</span>
 
                                         {/* Hover Details - Position on outer edge */}
-                                        <div className="absolute left-full rtl:left-auto rtl:right-full ml-2 rtl:ml-0 rtl:mr-2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                        <div className="absolute left-full rtl:left-auto rtl:right-full ml-2 rtl:ml-0 rtl:mr-2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 font-datetime">
                                             {new Date(task._start).toLocaleDateString(isRTL ? 'ar' : undefined)} - {new Date(task._end).toLocaleDateString(isRTL ? 'ar' : undefined)}
                                         </div>
 

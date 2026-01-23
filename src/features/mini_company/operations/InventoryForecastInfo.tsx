@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, TrendUp, Table, Calculator, Warning } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface InventoryForecastInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface InventoryForecastInfoProps {
 }
 
 export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
     }, []);
 
     const questions = [
-        { q: 'How much stock will we need?', a: 'See "Forecasted Stock Demand". This predicts future item requirements based on historical sales trends.' },
-        { q: 'How reliable are the predictions?', a: 'Check "Forecast Accuracy" and "Confidence Level". Higher percentages indicate the model (e.g., ARIMA) fits past data well.' },
-        { q: 'Where are the risks?', a: '"Risk Exposure %" and "Supply Volatility" highlight areas where supply might not meet demand (stockouts) or exceed it (overstock).' },
-        { q: 'What actions should we take?', a: 'The "Recommended Action" column in the detailed table suggests outcome-based steps like "Reorder Now" or "Monitor".' }
+        { q: t('if_info_q1'), a: t('if_info_a1') },
+        { q: t('if_info_q2'), a: t('if_info_a2') },
+        { q: t('if_info_q3'), a: t('if_info_a3') },
+        { q: t('if_info_q4'), a: t('if_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -60,63 +62,63 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-indigo-600 dark:text-indigo-400" />
-                            Forecast & Risk
+                            {t('forecast_risk')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Predictive Analytics & Supply Risk</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('if_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard uses predictive modeling to forecast inventory requirements and identify potential supply chain risks before they impact operations.
+                            {t('if_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-indigo-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,32 +128,32 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Forecasted Demand" desc="Projected units needed for next period." />
-                                    <DetailItem title="Forecast Accuracy" desc="Historical reliability of the model." />
-                                    <DetailItem title="Risk Exposure %" desc="Portion of inventory vulnerable to supply shock." />
-                                    <DetailItem title="Expected Stockouts" desc="Predicted items reaching zero stock." />
-                                    <DetailItem title="Overstock Risk" desc="Items predicted to exceed max limits." />
-                                    <DetailItem title="Supply Volatility" desc="Measure of supplier consistency." />
-                                    <DetailItem title="Confidence Level" desc="Statistical certainty of the forecast." />
+                                    <DetailItem title={t('forecast_demand')} desc={t('if_info_demand_desc')} />
+                                    <DetailItem title={t('forecast_accuracy')} desc={t('if_info_accuracy_desc')} />
+                                    <DetailItem title={t('risk_exposure')} desc={t('if_info_risk_desc')} />
+                                    <DetailItem title={t('expected_stockouts')} desc={t('if_info_stockouts_desc')} />
+                                    <DetailItem title={t('overstock_risk')} desc={t('if_info_overstock_desc')} />
+                                    <DetailItem title={t('supply_volatility')} desc={t('if_info_volatility_desc')} />
+                                    <DetailItem title={t('confidence_level')} desc={t('if_info_confidence_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Forecast by Category" desc="Bar chart (Recharts) of predicted volume." />
-                                    <DetailItem title="Risk Distribution" desc="Pie chart (ECharts) of inventory health." />
-                                    <DetailItem title="Risk Assessment" desc="Table listing specific SKU vulnerabilities." />
-                                    <DetailItem title="Uncertainty Cone" desc="Visualizes the range of possible future outcomes." />
+                                    <DetailItem title={t('forecast_by_category')} desc={t('if_info_forecast_cat_desc')} />
+                                    <DetailItem title={t('risk_distribution')} desc={t('if_info_risk_dist_desc')} />
+                                    <DetailItem title={t('risk_assessment')} desc={t('if_info_risk_assess_desc')} />
+                                    <DetailItem title={t('uncertainty_cone')} desc={t('if_info_cone_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -160,26 +162,26 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="SalesHistory"
-                                        desc="Past demand data."
-                                        columns={['Date', 'SKU', 'QtySold']}
+                                        name={t('if_table_sales')}
+                                        desc={t('if_table_sales_desc')}
+                                        columns={[t('date'), t('sku'), t('qty_sold')]}
                                     />
                                     <TableSchema
-                                        name="SupplyRisks"
-                                        desc="External factors."
-                                        columns={['Supplier', 'LeadTimeVar', 'Region']}
+                                        name={t('if_table_risks')}
+                                        desc={t('if_table_risks_desc')}
+                                        columns={[t('supplier'), t('lead_time_var'), t('region')]}
                                     />
                                 </div>
                             </div>
@@ -187,12 +189,12 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
                             <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-indigo-800 dark:text-indigo-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-indigo-600 dark:text-indigo-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-indigo-900/80 dark:text-indigo-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-indigo-900/80 dark:text-indigo-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                                        <span><strong>Forecast</strong> = Trend + Seasonality + Noise (Time Series).</span>
+                                        <span><strong>{t('forecast')}:</strong> {t('if_calc_forecast')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -205,7 +207,7 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
                         onClick={onClose}
                         className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -215,7 +217,7 @@ export const InventoryForecastInfo: React.FC<InventoryForecastInfoProps> = ({ is
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
             {title}
         </div>
@@ -226,7 +228,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

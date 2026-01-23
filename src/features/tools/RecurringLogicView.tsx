@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarBlank as CalendarClock, ClockCounterClockwise as History, Repeat, ArrowClockwise as RotateCw } from 'phosphor-react';
-import { loadBoardTasks } from './toolUtils';
+import { loadBoardTasks, RawTaskData } from './toolUtils';
 
 type Frequency = 'weekly' | 'monthly' | 'custom';
 
@@ -21,7 +21,7 @@ const computeNextDate = (current: string | undefined, frequency: Frequency, inte
     return base.toISOString().split('T')[0];
 };
 
-const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: any[] }> = ({ boardId, fallbackTasks = [] }) => {
+const RecurringLogicView: React.FC<{ boardId: string; fallbackTasks?: RawTaskData[] }> = ({ boardId, fallbackTasks = [] }) => {
     const storageKey = `recurring-logic-${boardId}`;
     const tasks = useMemo(() => loadBoardTasks(boardId, fallbackTasks), [boardId, fallbackTasks]);
 

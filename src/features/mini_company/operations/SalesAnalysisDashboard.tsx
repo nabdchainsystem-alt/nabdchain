@@ -367,7 +367,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
                                             <td className="px-6 py-5 font-mono text-xs text-blue-600 dark:text-blue-400">{row.id}</td>
-                                            <td className="px-6 py-5 text-gray-500 whitespace-nowrap">{row.date}</td>
+                                            <td className="px-6 py-5 text-gray-500 whitespace-nowrap font-datetime">{row.date}</td>
                                             <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
                                             <td className="px-6 py-5 text-end font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
                                             <td className="px-6 py-5">

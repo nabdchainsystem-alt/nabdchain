@@ -496,7 +496,7 @@ const TaskRow: React.FC<{ task: Task; level: number; statusColor?: string; onTog
                     className={`hover:bg-gray-100 p-1 rounded transition-colors flex items-center gap-2 text-xs ${task.dueDate || task.startDate ? 'text-gray-600' : 'text-gray-300 group-hover/date:text-gray-500'}`}
                 >
                     <CalendarPlus className={`w-4 h-4 ${(task.dueDate || task.startDate) ? 'text-gray-500' : ''}`} />
-                    {formatDateRange() && <span>{formatDateRange()}</span>}
+                    {formatDateRange() && <span className="font-datetime">{formatDateRange()}</span>}
                 </button>
                 {showDatePicker && (
                     <PortalPopup
@@ -559,7 +559,7 @@ const TaskRow: React.FC<{ task: Task; level: number; statusColor?: string; onTog
                                                     className={`hover:bg-gray-100 p-1 rounded transition-colors flex items-center gap-2 text-xs w-full ${val ? 'text-gray-600' : 'text-gray-300 group-hover/date-custom:text-gray-500'}`}
                                                 >
                                                     <CalendarPlus className={`w-3.5 h-3.5 ${val ? 'text-gray-500' : ''}`} />
-                                                    {val ? new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                                                    <span className="font-datetime">{val ? new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
                                                 </button>
                                                 {activeDateCol === col.id && (
                                                     <PortalPopup
@@ -775,7 +775,8 @@ interface ListsProps {
 }
 
 export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks, onUpdateTasks }: ListsProps) {
-    const { t } = useAppContext();
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     // Shared Storage Keys
     const isSharedView = !viewId || viewId === 'list-main' || viewId === 'list';
     const storageKeyStatuses = `board-statuses-${roomId}`;
@@ -1295,7 +1296,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
                         onClick={() => setActiveColumnMenu(null)}
                     />
                     <div
-                        className="fixed top-[100px] bottom-0 right-0 z-[10005]"
+                        className={`fixed top-[100px] bottom-0 z-[10005] ${isRTL ? 'left-0' : 'right-0'}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <ColumnMenu

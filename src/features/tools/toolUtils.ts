@@ -9,11 +9,32 @@ export interface SimplifiedTask {
     priority?: string;
 }
 
-const cleanString = (value: any): string => {
+/** Raw task data structure that may come from various sources */
+export interface RawTaskData {
+    id?: string;
+    name?: string;
+    title?: string;
+    Name?: string;
+    assignees?: string | string[];
+    owner?: string;
+    Owner?: string;
+    person?: string;
+    Person?: string;
+    status?: string;
+    Status?: string;
+    dueDate?: string;
+    date?: string;
+    Date?: string;
+    due_date?: string;
+    priority?: string;
+    Priority?: string;
+}
+
+const cleanString = (value: unknown): string => {
     return typeof value === 'string' ? value.trim() : '';
 };
 
-const pickOwner = (task: any): string => {
+const pickOwner = (task: RawTaskData | null | undefined): string => {
     if (Array.isArray(task?.assignees) && task.assignees.length > 0) {
         return task.assignees.join(', ');
     }
@@ -25,7 +46,7 @@ const pickOwner = (task: any): string => {
     return 'Unassigned';
 };
 
-export const loadBoardTasks = (boardId: string, fallbackTasks: any[] = []): SimplifiedTask[] => {
+export const loadBoardTasks = (boardId: string, fallbackTasks: RawTaskData[] = []): SimplifiedTask[] => {
     let source = fallbackTasks;
 
     try {
@@ -40,7 +61,7 @@ export const loadBoardTasks = (boardId: string, fallbackTasks: any[] = []): Simp
         // Best-effort read; fall back silently
     }
 
-    return (source || []).map((task, index) => {
+    return (source || []).map((task: RawTaskData, index: number) => {
         const name = cleanString(task?.name) || cleanString(task?.title) || cleanString(task?.Name) || `Task ${index + 1}`;
         return {
             id: task?.id || `task-${index}`,

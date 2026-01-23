@@ -399,7 +399,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                                             <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
                                                 <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white text-start">{row.name}</td>
                                                 <td className="px-6 py-5 text-gray-500 text-start">{row.stage}</td>
-                                                <td className="px-6 py-5 text-gray-500 font-mono text-xs text-start">{row.date}</td>
+                                                <td className="px-6 py-5 text-gray-500 font-datetime text-xs text-start">{row.date}</td>
                                                 <td className="px-6 py-5 text-end font-bold text-gray-900 dark:text-white">{formatCurrency(row.value, currency.code, currency.symbol)}</td>
                                                 <td className="px-6 py-5 text-start">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Won' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :

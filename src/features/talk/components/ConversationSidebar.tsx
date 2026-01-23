@@ -546,7 +546,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                 {reminder.text}
                                             </p>
                                             <p className={`text-xs flex items-center gap-1 mt-0.5 ${isOverdue(reminder.dueDate) && !reminder.completed ? 'text-red-500' : 'text-gray-400'}`}>
-                                                <Clock size={10} /> {formatDate(reminder.dueDate)}
+                                                <Clock size={10} /> <span className="font-datetime">{formatDate(reminder.dueDate)}</span>
                                             </p>
                                         </div>
                                         <button onClick={() => deleteReminder(reminder.id)} className="p-1 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500"><Trash size={14} /></button>

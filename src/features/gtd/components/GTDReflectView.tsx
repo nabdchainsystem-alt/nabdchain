@@ -176,7 +176,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                                     <div className="mt-1 w-2 h-2 rounded-full bg-gray-300 group-hover:bg-black dark:group-hover:bg-white transition-colors flex-shrink-0" />
                                                     <div className="flex-1">
                                                         <h4 className="text-base text-gray-800 dark:text-gray-200 font-serif leading-snug mb-0.5">{item.title}</h4>
-                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-datetime">
                                                             {new Date(item.createdAt).toLocaleDateString(undefined, {
                                                                 weekday: 'short',
                                                                 month: 'short',

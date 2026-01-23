@@ -1,5 +1,6 @@
 import React, { useRef, useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useAppContext } from '../../../../../../contexts/AppContext';
 
 // Color palette for checkbox/selection colors
 const COLORS = [
@@ -21,6 +22,7 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
     current,
     triggerRect
 }) => {
+    const { t } = useAppContext();
     const menuRef = useRef<HTMLDivElement>(null);
     const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({ display: 'none' });
 
@@ -88,7 +90,7 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
                                 onSelect(e.target.value);
                                 onClose();
                             }}
-                            title="Custom Color"
+                            title={t('custom_color')}
                         />
                         <div className="w-full h-full rounded-md flex items-center justify-center transition-all border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:scale-105 hover:border-stone-400 shadow-sm">
                             <span className="text-[10px] text-stone-500 font-bold">+</span>

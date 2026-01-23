@@ -433,7 +433,7 @@ const QuickNotesPage: React.FC = () => {
                                 )}
 
                                 {/* Timestamp */}
-                                <div className="flex items-center gap-1.5 mt-3 text-[10px] text-gray-400">
+                                <div className="flex items-center gap-1.5 mt-3 text-[10px] text-gray-400 font-datetime">
                                     <Clock size={10} />
                                     {formatDate(note.createdAt)}
                                 </div>

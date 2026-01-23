@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Trash } from 'phosphor-react';
 import { STATUS_STYLES, StatusOption } from '../../types';
 import { usePopupPosition } from '../../hooks/usePopupPosition';
+import { useAppContext } from '../../../../../../contexts/AppContext';
 
 // Default statuses with colors matching KanbanBoard
 const DEFAULT_STATUSES: StatusOption[] = [
@@ -13,6 +14,16 @@ const DEFAULT_STATUSES: StatusOption[] = [
     { id: 'Stuck', title: 'Stuck', color: 'orange' },
     { id: 'Rejected', title: 'Rejected', color: 'rose' }
 ];
+
+// Status label translation keys
+const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+    'To Do': 'to_do',
+    'In Progress': 'in_progress',
+    'Q&A': 'qa',
+    'Done': 'done',
+    'Stuck': 'stuck',
+    'Rejected': 'rejected',
+};
 
 interface StatusPickerProps {
     onSelect: (status: string) => void;
@@ -33,9 +44,17 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
     onAdd,
     onDelete
 }) => {
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const [customStatus, setCustomStatus] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
     const positionStyle = usePopupPosition({ triggerRect, menuHeight: 250 });
+
+    // Get translated status label
+    const getStatusLabel = (title: string): string => {
+        const key = STATUS_TRANSLATION_KEYS[title];
+        return key ? t(key) : title;
+    };
 
     // Use provided options or fall back to defaults
     const displayStatuses = options && options.length > 0 ? options : DEFAULT_STATUSES;
@@ -64,7 +83,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
                     <span className="text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400">
-                        Task Status
+                        {t('task_status')}
                     </span>
                 </div>
                 <div className="p-2 max-h-64 overflow-y-auto flex flex-col gap-1 custom-scrollbar">
@@ -80,7 +99,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                                     onClick={() => { onSelect(statusTitle); onClose(); }}
                                     className={`flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded shadow-sm transition-transform active:scale-95 ${statusStyle}`}
                                 >
-                                    {statusTitle}
+                                    {getStatusLabel(statusTitle)}
                                 </button>
                                 {!DEFAULT_STATUSES.some(ds => ds.id === statusId) && onDelete && (
                                     <button
@@ -88,8 +107,8 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                                             e.stopPropagation();
                                             if (onDelete) onDelete(statusTitle);
                                         }}
-                                        className="absolute right-0 top-0 bottom-0 px-2 flex items-center justify-center text-stone-400 hover:text-red-500 bg-white/50 hover:bg-white/80 rounded-r opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Delete status"
+                                        className={`absolute top-0 bottom-0 px-2 flex items-center justify-center text-stone-400 hover:text-red-500 bg-white/50 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'left-0 rounded-s' : 'right-0 rounded-e'}`}
+                                        title={t('delete_status')}
                                     >
                                         <Trash size={12} />
                                     </button>
@@ -103,7 +122,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                         type="text"
                         value={customStatus}
                         onChange={(e) => setCustomStatus(e.target.value)}
-                        placeholder="Add new status..."
+                        placeholder={t('add_new_status')}
                         className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-100 dark:focus:ring-stone-800 transition-all placeholder:text-stone-400"
                     />
                 </form>

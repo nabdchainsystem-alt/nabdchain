@@ -168,22 +168,26 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         let targetDate = new Date(now);
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dayNames = language === 'ar'
+            ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
+            : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = language === 'ar'
+            ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+            : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         switch (type) {
             case 'today':
                 return dayNames[now.getDay()];
             case 'later':
                 const laterTime = new Date();
-                return laterTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+                return laterTime.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
             case 'tomorrow':
                 targetDate.setDate(now.getDate() + 1);
                 return dayNames[targetDate.getDay()];
             case 'nextWeek':
-                return 'Mon';
+                return language === 'ar' ? 'إثنين' : 'Mon';
             case 'nextWeekend':
-                return 'Sat';
+                return language === 'ar' ? 'سبت' : 'Sat';
             case '2weeks':
                 targetDate.setDate(now.getDate() + 14);
                 return `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
@@ -216,78 +220,39 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
     ];
 
     return (
-        <div className="bg-white dark:bg-stone-900 shadow-xl border border-stone-200 dark:border-stone-800 rounded-lg flex overflow-hidden w-[480px] max-w-[90vw] text-stone-800 dark:text-stone-200 font-sans">
-            {/* Sidebar Shortcuts */}
-            <div className="w-[180px] bg-white dark:bg-stone-900 border-e border-stone-100 dark:border-stone-800 py-3 flex flex-col">
-                <div className="flex-1 overflow-y-auto">
-                    {shortcuts.map(({ key, label }) => (
-                        <button
-                            key={key}
-                            type="button"
-                            onClick={() => handleShortcut(key)}
-                            className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-                        >
-                            <span className="font-medium">{label}</span>
-                            <span className="text-stone-400 dark:text-stone-500 text-xs">{getShortcutLabel(key)}</span>
-                        </button>
-                    ))}
-                </div>
+        <div className="bg-white dark:bg-stone-900 shadow-xl border border-stone-200 dark:border-stone-800 rounded-lg flex overflow-hidden w-[280px] text-stone-800 dark:text-stone-200 font-sans" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            {/* Shortcuts - Hidden on small calendars, shown as compact row */}
+            <div className="hidden">
+                {shortcuts.map(({ key, label }) => (
+                    <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleShortcut(key)}
+                        className="flex items-center justify-between px-3 py-2 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors whitespace-nowrap"
+                    >
+                        <span className="font-medium">{label}</span>
+                        <span className="text-stone-400 dark:text-stone-500 text-[10px] ms-2">{getShortcutLabel(key)}</span>
+                    </button>
+                ))}
             </div>
 
 
             {/* Main Calendar */}
-            <div className="w-2/3 p-4 bg-white dark:bg-stone-900 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="flex-1">
-                        <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                            {mode === 'range' ? 'Start Date' : 'Date'}
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="MMM DD, YYYY"
-                                value={rangeStart ? rangeStart.toLocaleDateString() : (selectedDate ? new Date(selectedDate).toLocaleDateString() : '')}
-                                readOnly
-                                className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
-                            />
-                            <CalendarBlank size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
-                        </div>
-                    </div>
-                    {mode === 'range' && (
-                        <div className="flex-1">
-                            <label className="block text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                                End Date
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="MMM DD, YYYY"
-                                    value={rangeEnd ? rangeEnd.toLocaleDateString() : ''}
-                                    readOnly
-                                    className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500"
-                                />
-                                <CalendarBlank size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
-                    <span className="font-semibold text-gray-800 dark:text-stone-200 text-base">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                    <div className="flex items-center gap-2">
-                        <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">Today</button>
-                        <div className="flex flex-col">
-                            <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretUp size={14} /></button>
-                            <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretDown size={14} /></button>
-                        </div>
+            <div className="flex-1 p-3 bg-white dark:bg-stone-900 flex flex-col min-w-0">
+                <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-gray-800 dark:text-stone-200 text-sm font-datetime">{currentMonth.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}</span>
+                    <div className="flex items-center gap-1">
+                        <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-xs text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">{language === 'ar' ? 'اليوم' : 'Today'}</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretLeft size={14} /></button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretRight size={14} /></button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                    {weekDays.map(d => <span key={d} className="text-xs text-stone-400 font-medium w-8">{d}</span>)}
+                <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
+                    {weekDays.map(d => <span key={d} className="text-[10px] text-stone-400 font-medium">{d}</span>)}
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 text-center">
+                <div className="grid grid-cols-7 gap-0.5 text-center">
                     {generateCalendar().map((day, idx) => {
                         if (!day) return <div key={idx} className="w-8 h-8" />;
                         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
@@ -307,7 +272,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDateClick(date); }}
                                 onMouseEnter={() => setHoverDate(date)}
-                                className={`w-8 h-8 rounded-full text-xs flex items-center justify-center transition-colors mx-auto ${bgClass}`}
+                                className={`w-8 h-8 rounded-full text-xs flex items-center justify-center transition-colors ${bgClass}`}
                             >
                                 {day}
                             </button>
@@ -315,7 +280,7 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                     })}
                 </div>
 
-                <div className="mt-auto pt-3 flex items-center justify-between border-t border-stone-100 dark:border-stone-800">
+                <div className="mt-2 pt-2 flex items-center justify-between border-t border-stone-100 dark:border-stone-800">
                     <button
                         type="button"
                         onClick={() => {
@@ -324,12 +289,12 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                             onClear?.();
                             onClose();
                         }}
-                        className="text-xs font-medium text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                        className="text-[11px] font-medium text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
                     >
-                        Clear date
+                        {language === 'ar' ? 'مسح' : 'Clear'}
                     </button>
-                    <button type="button" onClick={onClose} className="text-xs font-medium px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded shadow-sm hover:shadow transition-all">
-                        Done
+                    <button type="button" onClick={onClose} className="text-[11px] font-medium px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded shadow-sm hover:shadow transition-all">
+                        {language === 'ar' ? 'تم' : 'Done'}
                     </button>
                 </div>
             </div>

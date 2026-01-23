@@ -24,7 +24,7 @@ type ViewMode = 'day' | 'week' | 'month';
 export const GanttView: React.FC<GanttViewProps> = ({ roomId, boardName = 'Board', tasks, onUpdateTasks }) => {
     const { language, t, dir } = useLanguage();
     const isRTL = dir === 'rtl';
-    const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
 
     const [viewMode, setViewMode] = useState<ViewMode>('week');
     const [currentDate, setCurrentDate] = useState(new Date());

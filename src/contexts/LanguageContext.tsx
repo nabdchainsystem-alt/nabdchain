@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
+import { useAppContext } from './AppContext';
 
 type Language = 'en' | 'ar';
 
@@ -74,18 +75,23 @@ const translations: TranslationMap = {
         unpin_group: 'Unpin Group',
 
         // Status Options
+        task_status: 'Task Status',
         to_do: 'To Do',
         in_progress: 'In Progress',
+        qa: 'Q&A',
         done: 'Done',
         stuck: 'Stuck',
         rejected: 'Rejected',
+        add_new_status: 'Add new status...',
 
         // Priority Options
+        task_priority: 'Task Priority',
         urgent: 'Urgent',
         high: 'High',
         medium: 'Medium',
         low: 'Low',
         none: 'None',
+        no_priority: 'No priority',
 
         // Actions & Messages
         no_data_to_export: 'No data to export.',
@@ -117,6 +123,15 @@ const translations: TranslationMap = {
         text: 'Text',
         number: 'Number',
         link: 'Link',
+        timeline: 'Timeline',
+        checkbox: 'Checkbox',
+        email: 'Email',
+        phone: 'Phone',
+        location: 'Location',
+        rating: 'Rating',
+        tags: 'Tags',
+        currency: 'Currency',
+        dropdown: 'Dropdown',
 
         // Add Column
         add_column: 'Add Column',
@@ -154,6 +169,14 @@ const translations: TranslationMap = {
         calendar_new_event: 'New event',
         calendar_my_calendars: 'My calendars',
         calendar_calendar: 'Calendar',
+        calendar_more: 'more',
+        calendar_edit_event: 'Edit Event',
+        calendar_new_event_title: 'New Event',
+        calendar_event_title: 'Event Title',
+        calendar_event_placeholder: 'What needs to be done?',
+        calendar_cancel: 'Cancel',
+        calendar_save_changes: 'Save Changes',
+        calendar_create_event: 'Create Event',
 
         // Doc
         doc_add_page: 'Add page',
@@ -221,18 +244,23 @@ const translations: TranslationMap = {
         unpin_group: 'إلغاء تثبيت المجموعة',
 
         // Status Options
+        task_status: 'حالة المهمة',
         to_do: 'للتنفيذ',
         in_progress: 'قيد التنفيذ',
+        qa: 'مراجعة',
         done: 'مكتمل',
         stuck: 'متوقف',
         rejected: 'مرفوض',
+        add_new_status: 'إضافة حالة جديدة...',
 
         // Priority Options
+        task_priority: 'أولوية المهمة',
         urgent: 'عاجل',
         high: 'عالي',
         medium: 'متوسط',
         low: 'منخفض',
         none: 'بدون',
+        no_priority: 'بدون أولوية',
 
         // Actions & Messages
         no_data_to_export: 'لا توجد بيانات للتصدير.',
@@ -264,6 +292,15 @@ const translations: TranslationMap = {
         text: 'نص',
         number: 'رقم',
         link: 'رابط',
+        timeline: 'الجدول الزمني',
+        checkbox: 'مربع اختيار',
+        email: 'بريد إلكتروني',
+        phone: 'هاتف',
+        location: 'موقع',
+        rating: 'تقييم',
+        tags: 'علامات',
+        currency: 'عملة',
+        dropdown: 'قائمة منسدلة',
 
         // Add Column
         add_column: 'إضافة عمود',
@@ -301,6 +338,14 @@ const translations: TranslationMap = {
         calendar_new_event: 'حدث جديد',
         calendar_my_calendars: 'تقويماتي',
         calendar_calendar: 'التقويم',
+        calendar_more: 'المزيد',
+        calendar_edit_event: 'تعديل الحدث',
+        calendar_new_event_title: 'حدث جديد',
+        calendar_event_title: 'عنوان الحدث',
+        calendar_event_placeholder: 'ما الذي يجب القيام به؟',
+        calendar_cancel: 'إلغاء',
+        calendar_save_changes: 'حفظ التغييرات',
+        calendar_create_event: 'إنشاء حدث',
 
         // Doc
         doc_add_page: 'إضافة صفحة',
@@ -322,25 +367,27 @@ interface LanguageProviderProps {
 }
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-    const [language, setLanguage] = useState<Language>(() => {
-        return (localStorage.getItem('app-language') as Language) || 'en';
-    });
+    // Get language from AppContext to keep them in sync
+    const { language: appLanguage, toggleLanguage } = useAppContext();
+    const language = appLanguage as Language;
+
+    // setLanguage toggles the language via AppContext
+    const setLanguage = useCallback((lang: Language) => {
+        if (lang !== language) {
+            toggleLanguage();
+        }
+    }, [language, toggleLanguage]);
+
     const t = useCallback((key: string): string => translations[language]?.[key] || key, [language]);
 
-    // Update document direction and language capability
-    React.useEffect(() => {
-        const dir = language === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.dir = dir;
-        document.documentElement.lang = language;
-        localStorage.setItem('app-language', language);
-    }, [language]);
+    // Note: Document direction is already handled by AppContext, no need to duplicate here
 
     const value = useMemo<LanguageContextType>(() => ({
         language,
         setLanguage,
         t,
         dir: language === 'ar' ? 'rtl' : 'ltr'
-    }), [language, t]);
+    }), [language, setLanguage, t]);
 
     return (
         <LanguageContext.Provider value={value}>

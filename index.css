@@ -73,7 +73,16 @@
     }
 
     .font-datetime {
-        font-family: 'Cairo', 'Noto Kufi Arabic', 'Inter', sans-serif !important;
+        font-family: 'Cairo', 'Noto Kufi Arabic', 'Inter', system-ui, sans-serif !important;
+        font-weight: 500;
+        font-feature-settings: 'tnum' on, 'lnum' on;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.01em;
+    }
+
+    [dir="rtl"] .font-datetime {
+        font-weight: 600;
+        letter-spacing: 0.02em;
     }
 }
 

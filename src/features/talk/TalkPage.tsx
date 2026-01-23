@@ -555,7 +555,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
                                         <div key={groupIndex}>
                                             {/* Date Separator */}
                                             <div className="flex items-center justify-center my-4">
-                                                <div className="bg-gray-200 dark:bg-gray-800 px-4 py-1 rounded-full text-xs text-text-secondary-light dark:text-text-secondary-dark font-medium">
+                                                <div className="bg-gray-200 dark:bg-gray-800 px-4 py-1 rounded-full text-xs text-text-secondary-light dark:text-text-secondary-dark font-medium font-datetime">
                                                     {formatDate(group.date)}
                                                 </div>
                                             </div>

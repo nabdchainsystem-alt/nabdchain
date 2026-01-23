@@ -571,7 +571,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                         title={t('date')}
                                     >
                                         <CalendarIcon size={16} />
-                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline">{newTaskDate || t('date')}</span>
+                                        <span className="text-[10px] font-bold transition-colors hidden sm:inline font-datetime">{newTaskDate || t('date')}</span>
                                     </button>
                                     {activeMenu === 'date' && <DateMenu onSelect={setNewTaskDate} onClose={() => setActiveMenu('none')} t={t} />}
                                 </div>
@@ -617,7 +617,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                                                 {task.priority ? t(task.priority.toLowerCase()) : t('normal')}
                                             </span>
                                             {task.date && (
-                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 font-datetime">
                                                     <CalendarIcon size={10} />
                                                     {task.date === new Date().toISOString().split('T')[0] ? t('today') : task.date}
                                                 </span>

@@ -24,11 +24,11 @@ export const DocDetail: React.FC<DocDetailProps> = ({ doc }) => {
             <div className="px-8 pt-8 pb-4 flex items-start justify-between z-10">
                 <div className="space-y-4 max-w-2xl w-full">
                     <div className="flex items-center gap-4 text-sm text-stone-400 font-sans">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 font-datetime">
                             <Calendar size={14} />
                             <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 font-datetime">
                             <Clock size={14} />
                             <span>{new Date(doc.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>

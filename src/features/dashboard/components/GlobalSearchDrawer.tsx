@@ -438,7 +438,7 @@ export const GlobalSearchDrawer: React.FC<GlobalSearchDrawerProps> = ({
 
                                                 <div className="flex items-center gap-2 text-[10px] text-gray-400 shrink-0">
                                                     {task.date && (
-                                                        <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{task.date}</span>
+                                                        <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 font-datetime">{task.date}</span>
                                                     )}
                                                 </div>
                                                 <CaretRight size={14} className="text-gray-300 group-hover:text-blue-400" />

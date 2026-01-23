@@ -84,9 +84,11 @@ export const boardService = {
     },
 
     // Cards
-    async getCards(boardId: string): Promise<Card[]> {
+    async getCards(token: string, boardId: string): Promise<Card[]> {
         try {
-            const response = await fetch(`${API_URL}/cards?boardId=${boardId}`);
+            const response = await fetch(`${API_URL}/cards?boardId=${boardId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch cards');
             return await response.json();
         } catch (error) {
@@ -95,9 +97,11 @@ export const boardService = {
         }
     },
 
-    async getAllCards(): Promise<Card[]> {
+    async getAllCards(token: string): Promise<Card[]> {
         try {
-            const response = await fetch(`${API_URL}/cards`);
+            const response = await fetch(`${API_URL}/cards`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch cards');
             return await response.json();
         } catch (error) {
@@ -106,11 +110,14 @@ export const boardService = {
         }
     },
 
-    async createCard(card: CreateCardData): Promise<Card> {
+    async createCard(token: string, card: CreateCardData): Promise<Card> {
         try {
             const response = await fetch(`${API_URL}/cards`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(card),
             });
             if (!response.ok) throw new Error('Failed to create card');
@@ -121,11 +128,14 @@ export const boardService = {
         }
     },
 
-    async updateCard(id: string, updates: UpdateCardData): Promise<Card> {
+    async updateCard(token: string, id: string, updates: UpdateCardData): Promise<Card> {
         try {
             const response = await fetch(`${API_URL}/cards/${id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(updates),
             });
             if (!response.ok) throw new Error('Failed to update card');
@@ -136,10 +146,11 @@ export const boardService = {
         }
     },
 
-    async deleteCard(id: string): Promise<boolean> {
+    async deleteCard(token: string, id: string): Promise<boolean> {
         try {
             const response = await fetch(`${API_URL}/cards/${id}`, {
                 method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to delete card');
             return true;

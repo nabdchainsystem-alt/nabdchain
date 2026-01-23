@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { CaretDown, CaretRight, ChartBar, Clock, Lightning, Users, Warning, CheckCircle, Circle } from 'phosphor-react';
-import { isDoneStatus, loadBoardTasks, parseDate, SimplifiedTask } from './toolUtils';
+import { isDoneStatus, loadBoardTasks, parseDate, SimplifiedTask, RawTaskData } from './toolUtils';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface WorkloadPerson {
@@ -15,7 +15,7 @@ interface WorkloadPerson {
 const CAPACITY_PER_DAY = 3;
 const formatDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const WorkloadView: React.FC<{ boardId: string; fallbackTasks?: any[] }> = ({ boardId, fallbackTasks = [] }) => {
+const WorkloadView: React.FC<{ boardId: string; fallbackTasks?: RawTaskData[] }> = ({ boardId, fallbackTasks = [] }) => {
     const { t } = useAppContext();
     const [range, setRange] = useState<'week' | 'month'>('week');
     const [expandedPersons, setExpandedPersons] = useState<Set<string>>(new Set());
@@ -109,7 +109,7 @@ const WorkloadView: React.FC<{ boardId: string; fallbackTasks?: any[] }> = ({ bo
                 <div className="flex border-b border-stone-200 dark:border-stone-700">
                     <div className="w-64 shrink-0 px-4 py-3 border-r border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-500 uppercase">Team ({stats.total})</div>
                     <div className="flex-1 flex overflow-x-auto">
-                        {dayColumns.map((d, i) => <div key={i} className={`flex-1 min-w-[50px] py-2 text-center border-r border-stone-100 dark:border-stone-800 ${d.isToday ? 'bg-blue-50 dark:bg-blue-900/20' : d.isWeekend ? 'bg-stone-50 dark:bg-stone-800/50' : ''}`}><div className={`text-[10px] font-medium ${d.isToday ? 'text-blue-600' : 'text-stone-400'}`}>{d.date.toLocaleDateString('en-US', { weekday: 'short' })}</div><div className={`text-sm font-semibold ${d.isToday ? 'text-blue-600' : 'text-stone-700 dark:text-stone-300'}`}>{d.date.getDate()}</div></div>)}
+                        {dayColumns.map((d, i) => <div key={i} className={`flex-1 min-w-[50px] py-2 text-center border-r border-stone-100 dark:border-stone-800 ${d.isToday ? 'bg-blue-50 dark:bg-blue-900/20' : d.isWeekend ? 'bg-stone-50 dark:bg-stone-800/50' : ''}`}><div className={`text-[10px] font-medium font-datetime ${d.isToday ? 'text-blue-600' : 'text-stone-400'}`}>{d.date.toLocaleDateString('en-US', { weekday: 'short' })}</div><div className={`text-sm font-semibold font-datetime ${d.isToday ? 'text-blue-600' : 'text-stone-700 dark:text-stone-300'}`}>{d.date.getDate()}</div></div>)}
                     </div>
                 </div>
 
@@ -129,7 +129,7 @@ const WorkloadView: React.FC<{ boardId: string; fallbackTasks?: any[] }> = ({ bo
                                         {dayColumns.map((d, i) => { const l = p.dailyLoad[formatDateKey(d.date)] || 0; return <div key={i} className={`flex-1 min-w-[50px] p-1.5 border-r border-stone-100 dark:border-stone-800 flex items-center justify-center ${d.isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : d.isWeekend ? 'bg-stone-50/50 dark:bg-stone-800/30' : ''}`}>{l > 0 ? <div className={`w-full h-6 rounded ${getLoadColor(l)} flex items-center justify-center`}><span className="text-[10px] font-semibold text-white">{l}</span></div> : <div className="w-full h-6 rounded bg-stone-100 dark:bg-stone-800 opacity-30" />}</div>; })}
                                     </div>
                                 </div>
-                                {exp && upcoming.length > 0 && <div className="bg-stone-50 dark:bg-stone-800/50 px-4 py-2 pl-20 space-y-1">{upcoming.slice(0, 6).map(t => { const d = parseDate(t.dueDate); return <div key={t.id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white dark:hover:bg-stone-800"><Circle size={12} className={d && d < today ? 'text-amber-500' : 'text-stone-400'} weight="fill" /><span className="flex-1 text-sm text-stone-700 dark:text-stone-300 truncate">{t.name}</span><span className={`text-xs ${d && d < today ? 'text-amber-600' : 'text-stone-400'}`}>{d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>; })}{upcoming.length > 6 && <div className="text-xs text-stone-500 pl-3">+{upcoming.length - 6} more</div>}</div>}
+                                {exp && upcoming.length > 0 && <div className="bg-stone-50 dark:bg-stone-800/50 px-4 py-2 pl-20 space-y-1">{upcoming.slice(0, 6).map(t => { const d = parseDate(t.dueDate); return <div key={t.id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white dark:hover:bg-stone-800"><Circle size={12} className={d && d < today ? 'text-amber-500' : 'text-stone-400'} weight="fill" /><span className="flex-1 text-sm text-stone-700 dark:text-stone-300 truncate">{t.name}</span><span className={`text-xs font-datetime ${d && d < today ? 'text-amber-600' : 'text-stone-400'}`}>{d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>; })}{upcoming.length > 6 && <div className="text-xs text-stone-500 pl-3">+{upcoming.length - 6} more</div>}</div>}
                             </div>
                         );
                     })}

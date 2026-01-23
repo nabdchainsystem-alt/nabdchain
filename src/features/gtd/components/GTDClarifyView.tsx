@@ -332,7 +332,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                                     }`}
                                             >
                                                 <span className={`text-xs font-medium ${selectedDate && option.date.toDateString() === selectedDate.toDateString() ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}>{option.label}</span>
-                                                <span className={`text-[10px] ${selectedDate && option.date.toDateString() === selectedDate.toDateString() ? 'text-blue-400 dark:text-blue-300' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>{option.sub}</span>
+                                                <span className={`text-[10px] font-datetime ${selectedDate && option.date.toDateString() === selectedDate.toDateString() ? 'text-blue-400 dark:text-blue-300' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>{option.sub}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -362,7 +362,7 @@ export const GTDClarifyView: React.FC<GTDClarifyViewProps> = ({ items, initialIt
                                         </div>
                                         <div className="flex-1 bg-white dark:bg-black/20 border border-blue-100 dark:border-blue-500/30 rounded-lg flex items-center px-2.5 py-1.5 gap-2 shadow-sm">
                                             <CalendarIcon size={14} className="text-blue-500" />
-                                            <span className="text-xs font-bold text-gray-800 dark:text-white">
+                                            <span className="text-xs font-bold text-gray-800 dark:text-white font-datetime">
                                                 {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Due date'}
                                             </span>
                                         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -7,21 +7,6 @@ import { ArrowsOut, Info, ArrowUpRight, ArrowDownLeft, ArrowsLeftRight, Activity
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { StockMovementInfo } from './StockMovementInfo';
 import { useAppContext } from '../../../contexts/AppContext';
-
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Stock In Qty', subtitle: 'Received', value: '4,500', change: '+12%', trend: 'up', icon: <ArrowDownLeft size={18} />, sparklineData: [3500, 3800, 4000, 4100, 4300, 4500], color: 'blue' },
-    { id: '2', label: 'Stock Out Qty', subtitle: 'Shipped', value: '4,100', change: '+8%', trend: 'up', icon: <ArrowUpRight size={18} />, sparklineData: [3800, 3900, 3950, 4000, 4050, 4100], color: 'blue' },
-    { id: '3', label: 'Net Movement', subtitle: 'Balance', value: '+400', change: '+20%', trend: 'up', icon: <ArrowsLeftRight size={18} />, sparklineData: [200, 250, 300, 350, 380, 400], color: 'blue' },
-    { id: '4', label: 'Movement Frequency', subtitle: 'Trans/Day', value: '145', change: '-5', trend: 'down', icon: <Activity size={18} />, sparklineData: [150, 155, 148, 146, 142, 145], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Bottleneck Items', subtitle: 'Slow Processing', value: '12', change: '+2', trend: 'down', icon: <Clock size={18} />, sparklineData: [10, 10, 11, 11, 12, 12], color: 'blue' },
-    { id: '6', label: 'Avg Daily Movement', subtitle: 'Unit Volume', value: '850', change: '+50', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [750, 780, 800, 820, 840, 850], color: 'blue' },
-    { id: '7', label: 'Movement Volatility', subtitle: 'Std Dev', value: 'High', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [10, 20, 15, 25, 10, 30], color: 'blue' },
-    { id: '8', label: 'Transfer Efficiency', subtitle: 'On-time %', value: '94.5%', change: '+1.2%', trend: 'up', icon: <Activity size={18} />, sparklineData: [91, 92, 92.5, 93, 93.8, 94.5], color: 'blue' },
-];
 
 // --- Mock Data: Charts ---
 const IN_OUT_BY_CATEGORY = [
@@ -84,9 +69,34 @@ const SANKEY_LINKS = [
 ];
 
 export const StockMovementDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '1', label: t('stock_in_qty'), subtitle: t('received'), value: '4,500', change: '+12%', trend: 'up', icon: <ArrowDownLeft size={18} />, sparklineData: [3500, 3800, 4000, 4100, 4300, 4500], color: 'blue' },
+        { id: '2', label: t('stock_out_qty'), subtitle: t('shipped'), value: '4,100', change: '+8%', trend: 'up', icon: <ArrowUpRight size={18} />, sparklineData: [3800, 3900, 3950, 4000, 4050, 4100], color: 'blue' },
+        { id: '3', label: t('net_movement'), subtitle: t('balance'), value: '+400', change: '+20%', trend: 'up', icon: <ArrowsLeftRight size={18} />, sparklineData: [200, 250, 300, 350, 380, 400], color: 'blue' },
+        { id: '4', label: t('movement_frequency'), subtitle: t('trans_per_day'), value: '145', change: '-5', trend: 'down', icon: <Activity size={18} />, sparklineData: [150, 155, 148, 146, 142, 145], color: 'blue' },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '5', label: t('bottleneck_items'), subtitle: t('slow_processing'), value: '12', change: '+2', trend: 'down', icon: <Clock size={18} />, sparklineData: [10, 10, 11, 11, 12, 12], color: 'blue' },
+        { id: '6', label: t('avg_daily_movement'), subtitle: t('unit_volume'), value: '850', change: '+50', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [750, 780, 800, 820, 840, 850], color: 'blue' },
+        { id: '7', label: t('movement_volatility'), subtitle: t('std_dev'), value: t('high'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [10, 20, 15, 25, 10, 30], color: 'blue' },
+        { id: '8', label: t('transfer_efficiency'), subtitle: t('on_time_pct'), value: '94.5%', change: '+1.2%', trend: 'up', icon: <Activity size={18} />, sparklineData: [91, 92, 92.5, 93, 93.8, 94.5], color: 'blue' },
+    ];
+
+    const getTypeLabel = (type: string) => {
+        switch (type) {
+            case 'Receipt': return t('receipt');
+            case 'Shipment': return t('shipment');
+            case 'Transfer': return t('transfer');
+            case 'Return': return t('return');
+            default: return type;
+        }
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -132,7 +142,7 @@ export const StockMovementDashboard: React.FC = () => {
 
     // Sankey Chart for Flow
     const sankeyOption: EChartsOption = {
-        title: { text: 'Inventory Flow Path', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('inventory_flow_path'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', triggerOn: 'mousemove' },
         series: [{
             type: 'sankey',
@@ -153,16 +163,16 @@ export const StockMovementDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <ArrowsLeftRight size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
-                    <div>
-                        <h1 className="text-2xl font-bold">Stock Movement & Flow</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">In/Out tracking and bottleneck detection</p>
+                    <div className="text-start">
+                        <h1 className="text-2xl font-bold">{t('stock_movement_flow')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('in_out_tracking_bottleneck')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -171,7 +181,7 @@ export const StockMovementDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -194,13 +204,13 @@ export const StockMovementDashboard: React.FC = () => {
                 {/* Recharts: In vs Out per Category */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="In vs Out per Category" />
+                        <ChartSkeleton height="h-[300px]" title={t('in_vs_out_category')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">In vs Out per Category</h3>
-                            <p className="text-xs text-gray-400">Volume comparison</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('in_vs_out_category')}</h3>
+                            <p className="text-xs text-gray-400">{t('volume_comparison')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -213,8 +223,8 @@ export const StockMovementDashboard: React.FC = () => {
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
                                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                    <Bar dataKey="in" name="Stock In" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
-                                    <Bar dataKey="out" name="Stock Out" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="in" name={t('stock_in')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="out" name={t('stock_out')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -224,13 +234,13 @@ export const StockMovementDashboard: React.FC = () => {
                 {/* Recharts: Daily Movement Trend */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Daily Movement Trend" />
+                        <ChartSkeleton height="h-[300px]" title={t('daily_movement_trend')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Daily Movement Trend</h3>
-                            <p className="text-xs text-gray-400">Weekly in/out volume</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('daily_movement_trend')}</h3>
+                            <p className="text-xs text-gray-400">{t('weekly_in_out_volume')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -243,8 +253,8 @@ export const StockMovementDashboard: React.FC = () => {
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
                                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                    <Bar dataKey="inbound" name="Inbound" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
-                                    <Bar dataKey="outbound" name="Outbound" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="inbound" name={t('inbound')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="outbound" name={t('outbound')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -257,12 +267,12 @@ export const StockMovementDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts: Movement Type Distribution */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Movement Types" />
+                        <PieChartSkeleton title={t('movement_types')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Movement Types</h3>
-                                <p className="text-xs text-gray-400">Transaction breakdown</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('movement_types')}</h3>
+                                <p className="text-xs text-gray-400">{t('transaction_breakdown')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -270,12 +280,12 @@ export const StockMovementDashboard: React.FC = () => {
 
                     {/* ECharts: Movement by Warehouse */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Movement by Warehouse" />
+                        <PieChartSkeleton title={t('movement_by_warehouse')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Movement by Warehouse</h3>
-                                <p className="text-xs text-gray-400">Activity distribution</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('movement_by_warehouse')}</h3>
+                                <p className="text-xs text-gray-400">{t('activity_distribution')}</p>
                             </div>
                             <ReactECharts option={warehousePieOption} style={{ height: '180px' }} />
                         </div>
@@ -300,40 +310,40 @@ export const StockMovementDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <TableSkeleton rows={5} columns={5} />
+                        <TableSkeleton rows={5} columns={5} title={t('recent_movements')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Movements</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('recent_movements')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">SKU</th>
-                                        <th className="px-5 py-3">Type</th>
-                                        <th className="px-5 py-3 text-right">Qty</th>
-                                        <th className="px-5 py-3">Date</th>
-                                        <th className="px-5 py-3 text-right">Route</th>
+                                        <th className="px-5 py-3 text-start">{t('sku')}</th>
+                                        <th className="px-5 py-3 text-start">{t('type')}</th>
+                                        <th className="px-5 py-3 text-end">{t('qty')}</th>
+                                        <th className="px-5 py-3 text-start">{t('date')}</th>
+                                        <th className="px-5 py-3 text-end">{t('route')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {MOVEMENT_LOG.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.sku}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.sku}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium border ${row.type === 'Receipt' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                                                     row.type === 'Shipment' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                                                         'bg-gray-50 text-gray-600 border-gray-100'
                                                     }`}>
-                                                    {row.type}
+                                                    {getTypeLabel(row.type)}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">{row.qty}</td>
-                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">{row.date}</td>
-                                            <td className="px-5 py-3 text-right text-[10px] text-gray-500 dark:text-gray-400">
-                                                {row.from} <span className="text-gray-300">→</span> {row.to}
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">{row.qty}</td>
+                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-start">{row.date}</td>
+                                            <td className="px-5 py-3 text-end text-[10px] text-gray-500 dark:text-gray-400">
+                                                {row.from} <span className="text-gray-300 rtl:rotate-180 inline-block">→</span> {row.to}
                                             </td>
                                         </tr>
                                     ))}
@@ -346,7 +356,7 @@ export const StockMovementDashboard: React.FC = () => {
                 {/* Companion Chart: Sankey (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Inventory Flow Path" />
+                        <ChartSkeleton height="h-[280px]" title={t('inventory_flow_path')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

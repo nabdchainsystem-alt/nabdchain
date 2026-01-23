@@ -58,8 +58,7 @@ const MiniCalendar: React.FC<{
     onMonthChange: (date: Date) => void;
     locale: string;
     isRTL: boolean;
-    showHijri?: boolean;
-}> = ({ currentDate, selectedDate, onDateSelect, onMonthChange, locale, isRTL, showHijri }) => {
+}> = ({ currentDate, selectedDate, onDateSelect, onMonthChange, locale, isRTL }) => {
     const [viewDate, setViewDate] = useState(currentDate);
 
     const year = viewDate.getFullYear();
@@ -89,8 +88,6 @@ const MiniCalendar: React.FC<{
         return date.toLocaleDateString(locale, { weekday: 'narrow' });
     };
 
-    const hijriDate = showHijri ? viewDate.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'short' }) : '';
-
     return (
         <div className="w-full">
             {/* Mini Calendar Header */}
@@ -98,14 +95,9 @@ const MiniCalendar: React.FC<{
                 <button onClick={prevMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
                     {isRTL ? <ChevronRight size={14} className="text-stone-500" /> : <ChevronLeft size={14} className="text-stone-500" />}
                 </button>
-                <div className="text-center">
-                    <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 tracking-tight" style={{ fontFeatureSettings: '"tnum"' }}>
-                        {viewDate.toLocaleString(locale, { year: 'numeric', month: 'long' })}
-                    </span>
-                    {showHijri && (
-                        <div className="text-[10px] font-medium text-stone-400" style={{ fontFeatureSettings: '"tnum"' }}>{hijriDate}</div>
-                    )}
-                </div>
+                <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 tracking-tight" style={{ fontFeatureSettings: '"tnum"' }}>
+                    {viewDate.toLocaleString(locale, { year: 'numeric', month: 'long' })}
+                </span>
                 <button onClick={nextMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
                     {isRTL ? <ChevronLeft size={14} className="text-stone-500" /> : <ChevronRight size={14} className="text-stone-500" />}
                 </button>
@@ -196,7 +188,8 @@ const DroppableDayCell: React.FC<{
     isCurrentMonth: boolean;
     onClick: () => void;
     onTaskClick: (task: ITask, groupId: string) => void;
-}> = ({ date, dateKey, tasks, isToday, isCurrentMonth, onClick, onTaskClick }) => {
+    moreLabel: string;
+}> = ({ date, dateKey, tasks, isToday, isCurrentMonth, onClick, onTaskClick, moreLabel }) => {
     const { setNodeRef, isOver } = useDroppable({ id: dateKey, data: { dateKey, date } });
 
     return (
@@ -239,7 +232,7 @@ const DroppableDayCell: React.FC<{
                     />
                 ))}
                 {tasks.length > 3 && (
-                    <div className="text-[10px] text-stone-500 px-1">+{tasks.length - 3} more</div>
+                    <div className="text-[10px] text-stone-500 px-1">+{tasks.length - 3} {moreLabel}</div>
                 )}
             </div>
         </div>
@@ -379,7 +372,6 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     const isRTL = dir === 'rtl';
     // Use Gregorian calendar for both languages, but with Arabic numerals/text for Arabic
     const locale = language === 'ar' ? 'ar-EG' : 'en-US';
-    const hijriLocale = 'ar-SA-u-ca-islamic';
 
     const effectiveKey = propBoard
         ? `shadow-${roomId || 'calendar'}`
@@ -556,11 +548,6 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
         setIsModalOpen(false);
     };
 
-    // Get Hijri date for Arabic display
-    const getHijriDate = (date: Date) => {
-        return date.toLocaleDateString(hijriLocale, { year: 'numeric', month: 'long' });
-    };
-
     const getGregorianTitle = () => {
         if (calendarView === 'month') {
             return currentDate.toLocaleString(locale, { year: 'numeric', month: 'long' });
@@ -617,7 +604,6 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             onMonthChange={(date) => setCurrentDate(date)}
                             locale={locale}
                             isRTL={isRTL}
-                            showHijri={language === 'ar'}
                         />
                     </div>
 
@@ -661,12 +647,8 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                         </div>
 
                         {/* Title */}
-                        <h1 className="text-lg font-semibold text-stone-900 dark:text-white tracking-tight" style={{ fontFeatureSettings: '"tnum"' }}>
+                        <h1 className="text-lg font-semibold text-stone-900 dark:text-white tracking-tight font-datetime">
                             {getGregorianTitle()}
-                            {language === 'ar' && calendarView === 'month' && (
-                                <span className="mx-2 text-stone-400">•</span>
-                            )}
-                            {language === 'ar' && calendarView === 'month' && getHijriDate(currentDate)}
                         </h1>
 
                         {/* View Switcher */}
@@ -726,6 +708,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                                             isCurrentMonth={cell.isCurrentMonth}
                                             onClick={() => onDateClick(cell.date)}
                                             onTaskClick={onTaskClick}
+                                            moreLabel={t('calendar_more')}
                                         />
                                     );
                                 })}

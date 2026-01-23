@@ -45,12 +45,13 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
         const loadData = async () => {
             try {
                 setLoading(true);
-                // Fetch rooms (workspaces)
-                const rooms = await roomService.getAllRooms();
-
-                // Fetch all boards
                 // Use token if available, otherwise try without
                 const token = localStorage.getItem('token') || '';
+
+                // Fetch rooms (workspaces)
+                const rooms = await roomService.getAllRooms(token);
+
+                // Fetch all boards
                 const boards = await boardService.getAllBoards(token);
 
                 // Sync local board data (scan all local keys to find new boards/views)
