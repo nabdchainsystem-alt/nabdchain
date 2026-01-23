@@ -150,7 +150,7 @@ const QuickNavIcons: React.FC<{
         return saved ? JSON.parse(saved) : DEFAULT_QUICK_NAV;
     });
     const [showSettings, setShowSettings] = useState(false);
-    const [settingsPos, setSettingsPos] = useState({ top: 0, left: 0, right: 0 });
+    const [settingsPos, setSettingsPos] = useState({ top: 0, left: 0, maxHeight: 0, isRTL: false });
     const settingsRef = useRef<HTMLDivElement>(null);
     const { dir } = useAppContext();
 
@@ -267,23 +267,52 @@ const QuickNavIcons: React.FC<{
                     onClick={(e) => {
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
-                        let top = rect.top;
-
                         // Smart vertical positioning: if popup would go off screen, align it to bottom
                         const maxMenuHeight = 600;
-                        const bottomMargin = 20;
-                        const estimatedHeight = Math.min(maxMenuHeight, window.innerHeight - (bottomMargin * 2));
-                        if (top + estimatedHeight > window.innerHeight - bottomMargin) {
-                            top = Math.max(10, window.innerHeight - estimatedHeight - bottomMargin);
+                        const safetyMargin = 60; // Larger margin for better visibility
+                        const availableHeight = window.innerHeight - (safetyMargin * 2);
+                        const maxHeight = Math.min(maxMenuHeight, availableHeight);
+
+                        let top = rect.top;
+
+                        // If it would go off bottom, shift it up
+                        if (top + maxHeight > window.innerHeight - safetyMargin) {
+                            top = window.innerHeight - maxHeight - safetyMargin;
                         }
 
-                        const isRTL = dir === 'rtl';
-                        const pos: any = {
+                        // Ensure it doesn't go off top
+                        top = Math.max(safetyMargin / 2, top);
+
+                        const isRTL_pref = dir === 'rtl';
+                        const MENU_WIDTH = 200;
+                        const spaceLeft = rect.left;
+                        const spaceRight = window.innerWidth - rect.right;
+
+                        let left, isRTL;
+                        if (isRTL_pref) {
+                            if (spaceLeft >= MENU_WIDTH + 12) {
+                                left = rect.left - 12;
+                                isRTL = true;
+                            } else {
+                                left = rect.right + 12;
+                                isRTL = false;
+                            }
+                        } else {
+                            if (spaceRight >= MENU_WIDTH + 12) {
+                                left = rect.right + 12;
+                                isRTL = false;
+                            } else {
+                                left = rect.left - 12;
+                                isRTL = true;
+                            }
+                        }
+
+                        setSettingsPos({
                             top,
-                            left: isRTL ? rect.left - 12 : rect.right + 12,
+                            left,
+                            maxHeight,
                             isRTL
-                        };
-                        setSettingsPos(pos);
+                        });
                         setShowSettings(!showSettings);
                     }}
                     title="Customize quick nav"
@@ -301,10 +330,11 @@ const QuickNavIcons: React.FC<{
             {showSettings && createPortal(
                 <div
                     ref={settingsRef}
-                    className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 min-w-[200px] max-h-[600px] overflow-y-auto no-scrollbar"
+                    className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 min-w-[200px] overflow-y-auto no-scrollbar"
                     style={{
                         top: settingsPos.top,
                         left: settingsPos.left,
+                        maxHeight: `${settingsPos.maxHeight}px`,
                         transform: settingsPos.isRTL ? 'translateX(-100%)' : 'none'
                     }}
                     onClick={(e) => e.stopPropagation()}
@@ -644,39 +674,36 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         } else {
             if (addButtonRef.current) {
                 const rect = addButtonRef.current.getBoundingClientRect();
-                const MENU_HEIGHT = 320; // Increased to account for icon picker
-                const MENU_WIDTH = 220;
+                const MENU_HEIGHT = 320;
+                const MENU_WIDTH = 240;
+                const GAP = 4;
 
-                let left, isRTL = false;
+                // 1. Horizontal Positioning
+                let left;
                 if (dir === 'rtl') {
-                    if (rect.left - MENU_WIDTH - 10 < 10) {
-                        // Not enough space on the start side (left in RTL), show on the other side
-                        left = rect.right + 10;
-                    } else {
-                        // Standard RTL: show on the left of button
-                        left = rect.left - 10;
-                        isRTL = true;
-                    }
+                    // Pop out to the left of the button in RTL
+                    left = rect.left - MENU_WIDTH - GAP;
                 } else {
-                    if (rect.right + MENU_WIDTH + 10 > window.innerWidth - 10) {
-                        // Not enough space on the end side (right in LTR), show on the other side
-                        left = rect.left - 10 - MENU_WIDTH; // Fallback positioning
-                    } else {
-                        // Standard LTR: show on the right of button
-                        left = rect.right + 10;
-                    }
+                    // Pop out to the right of the button in LTR (similar to board menu style)
+                    left = rect.right + GAP;
                 }
 
-                const spaceBelow = window.innerHeight - rect.top;
-                const spaceAbove = rect.bottom;
+                // Ensure it stays within viewport boundaries
+                left = Math.max(10, Math.min(left, window.innerWidth - MENU_WIDTH - 10));
 
-                if (spaceBelow >= MENU_HEIGHT || spaceBelow >= spaceAbove) {
-                    const top = Math.min(rect.top, window.innerHeight - MENU_HEIGHT - 10);
-                    setAddMenuPos({ top: Math.max(10, top), bottom: undefined, left, isRTL });
-                } else {
-                    const bottom = window.innerHeight - rect.bottom;
-                    setAddMenuPos({ top: undefined, bottom: Math.max(10, bottom), left, isRTL });
+                // 2. Vertical Positioning (Align top with button top, with edge safety)
+                let top = rect.top;
+                if (top + MENU_HEIGHT > window.innerHeight - 10) {
+                    top = window.innerHeight - MENU_HEIGHT - 10;
                 }
+                top = Math.max(10, top);
+
+                setAddMenuPos({
+                    top,
+                    bottom: undefined,
+                    left,
+                    isRTL: false
+                });
             }
             setAddMenuMode('board');
             setIsAddMenuOpen(true);
@@ -691,14 +718,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                 const rect = workspaceButtonRef.current.getBoundingClientRect();
                 const MENU_WIDTH = 220;
 
+                const spaceLeft = rect.left;
+                const spaceRight = window.innerWidth - rect.right;
+
                 let left;
                 if (dir === 'rtl') {
-                    // In RTL, position menu to the left of the sidebar
-                    left = Math.max(10, rect.left - MENU_WIDTH - 8);
+                    // Prefer left side of sidebar in RTL
+                    if (spaceLeft >= MENU_WIDTH + 8) {
+                        left = rect.left - MENU_WIDTH - 8;
+                    } else {
+                        left = rect.right + 8;
+                    }
                 } else {
-                    // In LTR, position menu to the right of the sidebar
-                    left = rect.right + 8;
+                    // Prefer right side of sidebar in LTR
+                    if (spaceRight >= MENU_WIDTH + 8) {
+                        left = rect.right + 8;
+                    } else {
+                        left = rect.left - MENU_WIDTH - 8;
+                    }
                 }
+
+                // Final clamping
+                left = Math.max(10, Math.min(left, window.innerWidth - MENU_WIDTH - 10));
 
                 const top = rect.top;
                 setWorkspaceMenuPos({ top, left });
@@ -1529,7 +1570,22 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                                                    setQuickAddMenu({ x: rect.right + 4, y: rect.top, parentId: board.id });
+                                                                    const MENU_WIDTH = 240;
+                                                                    const GAP = 4;
+                                                                    let x;
+
+                                                                    if (dir === 'rtl') {
+                                                                        // In RTL, menu should pop out to the left of the button
+                                                                        x = rect.left - MENU_WIDTH - GAP;
+                                                                    } else {
+                                                                        // In LTR, menu should pop out to the right of the button
+                                                                        x = rect.right + GAP;
+                                                                    }
+
+                                                                    // Ensure it stays within viewport boundaries
+                                                                    x = Math.max(10, Math.min(x, window.innerWidth - MENU_WIDTH - 10));
+
+                                                                    setQuickAddMenu({ x, y: rect.top, parentId: board.id });
                                                                 }}
                                                                 className={`p-1 rounded-sm hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-monday-dark-border text-gray-400 invisible group-hover:visible`}
                                                                 title={t('add_sub_board')}
