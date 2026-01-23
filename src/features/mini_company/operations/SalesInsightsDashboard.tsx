@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useEffect, useMemo, memo, useRef } from 'react';
+import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, PieChart, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
+import { StableResponsiveContainer as ResponsiveContainer, useStableChartData } from '../../../components/common/StableResponsiveContainer';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { ChartLineUp, CurrencyDollar, ShoppingCart, Users, Receipt, TrendUp, TrendDown, Star, Tag, Package, Info, ArrowsOut } from 'phosphor-react';
@@ -101,51 +102,65 @@ interface SalesInsightsDashboardProps {
     hideFullscreen?: boolean;
 }
 
-export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ hideFullscreen = false }) => {
+export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = memo(({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
 
-    // Translated KPIs
-    const translatedTopKPIs = TOP_KPIS.map((kpi, index) => ({
+    // Track if component has mounted (prevent animation on re-renders)
+    const hasAnimatedRef = useRef(false);
+
+    // Memoize translated KPIs to prevent recreation on every render
+    const translatedTopKPIs = useMemo(() => TOP_KPIS.map((kpi, index) => ({
         ...kpi,
         label: [t('total_sales'), t('net_revenue'), t('orders_count'), t('avg_order_value')][index],
         subtitle: [t('gross_sales_revenue'), t('after_deductions'), t('total_processed'), t('per_transaction')][index],
-    }));
+    })), [t]);
 
-    const translatedSideKPIs = SIDE_KPIS.map((kpi, index) => ({
+    const translatedSideKPIs = useMemo(() => SIDE_KPIS.map((kpi, index) => ({
         ...kpi,
         label: [t('returned_orders'), t('top_customer_percent'), t('profit_margin'), t('conversion_rate')][index],
         subtitle: [t('processing_returns'), t('repeat_buyers'), t('net_earnings_ratio'), t('visitor_to_buyer')][index],
-    }));
+    })), [t]);
 
-    // Translated chart data
-    const translatedSalesOverTimeData = SALES_OVER_TIME_DATA.map((item, index) => ({
+    // Memoize chart data - stable references prevent chart re-renders
+    const translatedSalesOverTimeData = useMemo(() => SALES_OVER_TIME_DATA.map((item, index) => ({
         ...item,
         name: [t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat'), t('sun')][index],
-    }));
+    })), [t]);
 
-    const translatedSalesByChannelData = SALES_BY_CHANNEL_DATA.map((item, index) => ({
+    const translatedSalesByChannelData = useMemo(() => SALES_BY_CHANNEL_DATA.map((item, index) => ({
         ...item,
         name: [t('channel_online'), t('channel_store'), t('channel_marketplace'), t('channel_whatsapp')][index],
-    }));
+    })), [t]);
 
-    const translatedCategoryData = CATEGORY_DATA.map((item, index) => ({
+    const translatedCategoryData = useMemo(() => CATEGORY_DATA.map((item, index) => ({
         ...item,
         name: [t('category_electronics'), t('category_clothing'), t('category_groceries'), t('category_home')][index],
-    }));
+    })), [t]);
 
-    const translatedStatusData = ORDER_STATUS_DATA.map((item, index) => ({
+    const translatedStatusData = useMemo(() => ORDER_STATUS_DATA.map((item, index) => ({
         ...item,
         name: [t('order_completed'), t('order_pending'), t('order_returned'), t('order_cancelled')][index],
-    }));
+    })), [t]);
 
-    // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
+    // Use stable chart data to prevent flicker on visibility change
+    const stableSalesOverTimeData = useStableChartData(translatedSalesOverTimeData);
+    const stableSalesByChannelData = useStableChartData(translatedSalesByChannelData);
+    const stableCategoryData = useStableChartData(translatedCategoryData);
+    const stableStatusData = useStableChartData(translatedStatusData);
 
-    // Simulate data loading with staggered animation
+    // Loading state for smooth entrance animation (only on first mount)
+    const [isLoading, setIsLoading] = useState(() => !hasAnimatedRef.current);
+
+    // Simulate data loading with staggered animation (only once)
     useEffect(() => {
+        if (hasAnimatedRef.current) {
+            setIsLoading(false);
+            return;
+        }
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 800); // Short delay for smooth transition
+            hasAnimatedRef.current = true;
+        }, 800);
         return () => clearTimeout(timer);
     }, []);
 
@@ -161,41 +176,45 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
-    // Calculate total revenue for percentage
-    const totalRevenue = TOP_PRODUCTS_DATA.reduce((acc, curr) => acc + curr.revenue, 0);
+    // Calculate total revenue for percentage (memoized)
+    const totalRevenue = useMemo(() =>
+        TOP_PRODUCTS_DATA.reduce((acc, curr) => acc + curr.revenue, 0), []);
 
-    const categoryPieOption: EChartsOption = {
+    // Memoize ECharts options to prevent recreation and chart re-render
+    const categoryPieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
         legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        animation: false, // Disable animation on re-renders
         series: [{
             type: 'pie',
             radius: ['50%', '70%'],
             center: ['40%', '50%'],
-            data: translatedCategoryData.map((d, i) => ({
+            data: stableCategoryData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
             label: { show: false },
             emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
         }]
-    };
+    }), [stableCategoryData]);
 
-    const statusPieOption: EChartsOption = {
+    const statusPieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
         legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        animation: false,
         series: [{
             type: 'pie',
             radius: ['0%', '70%'],
             center: ['40%', '50%'],
-            data: translatedStatusData.map((d, i) => ({
+            data: stableStatusData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
             label: { show: false }
         }]
-    };
+    }), [stableStatusData]);
 
-    const treemapOption: EChartsOption = {
+    const treemapOption: EChartsOption = useMemo(() => ({
         tooltip: {
             formatter: (info: any) => {
                 const value = info.value;
@@ -214,6 +233,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
             textStyle: { color: '#1f2937' },
             padding: 10
         },
+        animation: false,
         series: [{
             type: 'treemap',
             roam: false,
@@ -247,7 +267,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                 }
             }))
         }]
-    };
+    }), [totalRevenue, currency]);
 
     return (
         <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
@@ -310,9 +330,9 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                 <p className="text-xs text-gray-400 mt-1">{t('weekly_performance_overview')}</p>
                             </div>
                             <div className="h-[260px]">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" debounce={150}>
                                     <BarChart
-                                        data={translatedSalesOverTimeData}
+                                        data={stableSalesOverTimeData}
                                         margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
                                         onMouseMove={(e: any) => {
                                             if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, time: e.activeTooltipIndex }));
@@ -329,7 +349,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
 
-                                        <Bar dataKey="sales" name={t('daily_sales')} radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} fill="#3b82f6" />
+                                        <Bar dataKey="sales" name={t('daily_sales')} radius={[4, 4, 0, 0]} barSize={50} isAnimationActive={!hasAnimatedRef.current} animationDuration={800} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -348,8 +368,8 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                 <p className="text-xs text-gray-400 mt-1">{t('revenue_distribution_source')}</p>
                             </div>
                             <div className="h-[260px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={translatedSalesByChannelData} onMouseMove={(e: any) => {
+                                <ResponsiveContainer width="100%" height="100%" debounce={150}>
+                                    <BarChart data={stableSalesByChannelData} onMouseMove={(e: any) => {
                                         if (e.activeTooltipIndex !== undefined) setActiveIndex(prev => ({ ...prev, channel: e.activeTooltipIndex }));
                                     }} onMouseLeave={() => setActiveIndex(prev => ({ ...prev, channel: null }))}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -357,7 +377,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
                                         <YAxis hide />
                                         <Tooltip cursor={{ fill: '#f1f5f9', opacity: 0.5 }} content={<CustomTooltip />} />
 
-                                        <Bar dataKey="value" name={t('revenue')} radius={[4, 4, 0, 0]} barSize={24} animationDuration={1000} fill="#3b82f6" />
+                                        <Bar dataKey="value" name={t('revenue')} radius={[4, 4, 0, 0]} barSize={24} isAnimationActive={!hasAnimatedRef.current} animationDuration={800} fill="#3b82f6" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -462,4 +482,6 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = ({ 
             </div>
         </div>
     );
-};
+});
+
+SalesInsightsDashboard.displayName = 'SalesInsightsDashboard';

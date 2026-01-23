@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Wallet, Tag, Receipt } from 'phosphor-react';
@@ -10,18 +10,19 @@ import { TrendsAnomaliesDashboard } from './TrendsAnomaliesDashboard';
 import { ApprovalFlowDashboard } from './ApprovalFlowDashboard';
 import { DeptAccountabilityDashboard } from './DeptAccountabilityDashboard';
 import { ForecastOptimizationDashboard } from './ForecastOptimizationDashboard';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const INITIAL_BOARD: Board = {
     id: 'dept-expenses',
     name: 'Expenses',
     description: 'Track and approve expenses',
     columns: [
-        { id: 'name', title: 'Description', type: 'text' },
-        { id: 'amount', title: 'Amount', type: 'text' },
-        { id: 'requester', title: 'Requester', type: 'person' },
-        { id: 'status', title: 'Status', type: 'status' }, // Pending, Approved, Rejected
-        { id: 'date', title: 'Date', type: 'date' },
-        { id: 'category', title: 'Category', type: 'status' } // Travel, Meals, Supplies
+        { id: 'name', title: 'description', type: 'text' },
+        { id: 'amount', title: 'amount', type: 'text' },
+        { id: 'requester', title: 'requester', type: 'person' },
+        { id: 'status', title: 'status', type: 'status' },
+        { id: 'date', title: 'date', type: 'date' },
+        { id: 'category', title: 'category', type: 'status' }
     ],
     tasks: [],
     availableViews: [
@@ -38,57 +39,59 @@ const INITIAL_BOARD: Board = {
 };
 
 const ExpensesPage: React.FC = () => {
+    const { t } = useLanguage();
+
     // Define dashboard sections for the board view
     const dashboardSections = [
         {
-            title: 'Control & Analysis',
+            title: t('control_analysis'),
             options: [
                 {
                     id: 'expenses_overview',
-                    label: 'Expenses Overview',
+                    label: t('expenses_overview'),
                     icon: Wallet,
-                    description: 'Operational spending snapshot'
+                    description: t('expenses_overview_desc')
                 },
                 {
                     id: 'category_analysis',
-                    label: 'Category Analysis',
+                    label: t('category_analysis'),
                     icon: Tag,
-                    description: 'Control overspending & variances'
+                    description: t('category_analysis_desc')
                 },
                 {
                     id: 'fixed_variable',
-                    label: 'Fixed vs Variable',
+                    label: t('fixed_variable'),
                     icon: Receipt,
-                    description: 'Cost structure & flexibility'
+                    description: t('fixed_variable_desc')
                 },
                 {
                     id: 'trends_anomalies',
-                    label: 'Trends & Anomalies',
+                    label: t('trends_anomalies'),
                     icon: Tag,
-                    description: 'Detect abnormal behavior'
+                    description: t('trends_anomalies_desc')
                 }
             ]
         },
         {
-            title: 'Governance & Strategy',
+            title: t('governance_strategy'),
             options: [
                 {
                     id: 'approval_flow',
-                    label: 'Approval & Control',
+                    label: t('approval_control'),
                     icon: Wallet,
-                    description: 'Workflow efficiency'
+                    description: t('approval_control_desc')
                 },
                 {
                     id: 'dept_accountability',
-                    label: 'Dept Accountability',
+                    label: t('dept_accountability'),
                     icon: Receipt,
-                    description: 'Cost center ownership'
+                    description: t('dept_accountability_desc')
                 },
                 {
                     id: 'forecast_optimization',
-                    label: 'Forecast & Optimization',
+                    label: t('forecast_optimization'),
                     icon: Tag,
-                    description: 'Future planning & savings'
+                    description: t('forecast_optimization_desc')
                 }
             ]
         }
@@ -151,9 +154,16 @@ const ExpensesPage: React.FC = () => {
         }
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('expenses'),
+        description: t('expenses_desc')
+    }), [board, t]);
+
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

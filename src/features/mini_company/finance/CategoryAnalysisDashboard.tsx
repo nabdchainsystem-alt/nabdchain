@@ -7,84 +7,79 @@ import { ArrowsOut, Info, TrendUp, Warning, Tag, ChartBar, Target, ArrowDown, Ac
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CategoryAnalysisInfo } from './CategoryAnalysisInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Categories', subtitle: 'Active Budget Lines', value: '15', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [12, 12, 13, 13, 14, 15], color: 'blue' },
-    { id: '2', label: 'Highest Cost Category', subtitle: 'Current Period', value: 'Payroll', change: '', trend: 'neutral', icon: <ArrowDown size={18} />, sparklineData: [45000, 46000, 45500, 48000, 47000, 45000], color: 'blue' },
-    { id: '3', label: 'Category Variance %', subtitle: 'Avg Deviation', value: '8.5%', change: '-1.2%', trend: 'down', icon: <Activity size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.6, 8.5], color: 'blue' },
-    { id: '4', label: 'Budget Breach Count', subtitle: 'Categories > Budget', value: '2', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 3, 2, 2, 3, 2], color: 'blue' },
+// --- KPI Data getter functions ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('total_categories'), subtitle: t('active_budget_lines'), value: '15', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [12, 12, 13, 13, 14, 15], color: 'blue' },
+    { id: '2', label: t('highest_cost_category'), subtitle: t('current_period'), value: t('payroll'), change: '', trend: 'neutral', icon: <ArrowDown size={18} />, sparklineData: [45000, 46000, 45500, 48000, 47000, 45000], color: 'blue' },
+    { id: '3', label: t('category_variance'), subtitle: t('avg_deviation'), value: '8.5%', change: '-1.2%', trend: 'down', icon: <Activity size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.6, 8.5], color: 'blue' },
+    { id: '4', label: t('budget_breach_count'), subtitle: t('categories_over_budget'), value: '2', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 3, 2, 2, 3, 2], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Avg Category Spend', subtitle: 'Per Month', value: '$8,250', change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'blue' },
-    { id: '6', label: 'Volatility Index', subtitle: 'Fluctuation Score', value: 'Medium', change: '', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [40, 45, 42, 48, 45, 45], color: 'blue' },
-    { id: '7', label: 'Control Score', subtitle: 'Budget Adherence', value: '88/100', change: '+2', trend: 'up', icon: <Target size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
-    { id: '8', label: 'Category Growth Rate', subtitle: 'MoM Average', value: '+2.3%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [3.2, 3.0, 2.8, 2.6, 2.4, 2.3], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('avg_category_spend'), subtitle: t('per_month'), value: '$8,250', change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'blue' },
+    { id: '6', label: t('volatility_index'), subtitle: t('fluctuation_score'), value: t('medium'), change: '', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [40, 45, 42, 48, 45, 45], color: 'blue' },
+    { id: '7', label: t('control_score'), subtitle: t('budget_adherence'), value: '88/100', change: '+2', trend: 'up', icon: <Target size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
+    { id: '8', label: t('category_growth_rate'), subtitle: t('mom_average'), value: '+2.3%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [3.2, 3.0, 2.8, 2.6, 2.4, 2.3], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
-const SPEND_PER_CATEGORY = [
-    { name: 'Payroll', value: 45000 },
-    { name: 'Rent', value: 20000 },
-    { name: 'Marketing', value: 15000 },
-    { name: 'R&D', value: 12000 },
-    { name: 'IT', value: 8000 },
-    { name: 'Sales', value: 7500 },
-    { name: 'Admin', value: 5000 },
+// --- Chart Data getter functions ---
+const getSpendPerCategory = (t: (key: string) => string) => [
+    { name: t('payroll'), value: 45000 },
+    { name: t('rent'), value: 20000 },
+    { name: t('marketing'), value: 15000 },
+    { name: t('r_and_d'), value: 12000 },
+    { name: t('it'), value: 8000 },
+    { name: t('sales'), value: 7500 },
+    { name: t('admin'), value: 5000 },
 ];
 
-const CATEGORY_SHARE = [
-    { value: 40, name: 'Payroll' },
-    { value: 18, name: 'Rent' },
-    { value: 13, name: 'Marketing' },
-    { value: 11, name: 'R&D' },
-    { value: 7, name: 'IT' },
-    { value: 11, name: 'Other' }
+const getCategoryShare = (t: (key: string) => string) => [
+    { value: 40, name: t('payroll') },
+    { value: 18, name: t('rent') },
+    { value: 13, name: t('marketing') },
+    { value: 11, name: t('r_and_d') },
+    { value: 7, name: t('it') },
+    { value: 11, name: t('other') }
 ];
 
-// --- Mock Data: Table & Radar ---
-const CATEGORY_TABLE = [
-    { category: 'Payroll', budget: '$46,000', actual: '$45,000', variance: '-$1,000', status: 'Under' },
-    { category: 'Rent', budget: '$20,000', actual: '$20,000', variance: '$0', status: 'On Track' },
-    { category: 'Marketing', budget: '$12,000', actual: '$15,000', variance: '+$3,000', status: 'Over' },
-    { category: 'R&D', budget: '$10,000', actual: '$12,000', variance: '+$2,000', status: 'Over' },
-    { category: 'IT', budget: '$9,000', actual: '$8,000', variance: '-$1,000', status: 'Under' },
+// --- Table Data getter function ---
+const getCategoryTable = (t: (key: string) => string) => [
+    { category: t('payroll'), budget: '$46,000', actual: '$45,000', variance: '-$1,000', status: t('under_budget'), statusKey: 'under' },
+    { category: t('rent'), budget: '$20,000', actual: '$20,000', variance: '$0', status: t('on_track'), statusKey: 'on_track' },
+    { category: t('marketing'), budget: '$12,000', actual: '$15,000', variance: '+$3,000', status: t('over_budget'), statusKey: 'over' },
+    { category: t('r_and_d'), budget: '$10,000', actual: '$12,000', variance: '+$2,000', status: t('over_budget'), statusKey: 'over' },
+    { category: t('it'), budget: '$9,000', actual: '$8,000', variance: '-$1,000', status: t('under_budget'), statusKey: 'under' },
 ];
 
-// Radar Data
-const RADAR_INDICATORS = [
-    { name: 'Payroll', max: 100 },
-    { name: 'Rent', max: 100 },
-    { name: 'Marketing', max: 100 },
-    { name: 'R&D', max: 100 },
-    { name: 'IT', max: 100 }
+// Radar Data getter function
+const getRadarIndicators = (t: (key: string) => string) => [
+    { name: t('payroll'), max: 100 },
+    { name: t('rent'), max: 100 },
+    { name: t('marketing'), max: 100 },
+    { name: t('r_and_d'), max: 100 },
+    { name: t('it'), max: 100 }
 ];
 
-const RADAR_DATA = [
-    {
-        value: [98, 100, 125, 120, 89],
-        name: 'Budget % Used'
-    }
+// Category Trend data (keys stay the same for Recharts dataKey mapping)
+const getCategoryTrend = (t: (key: string) => string) => [
+    { name: t('jan'), Payroll: 44000, Marketing: 12000, IT: 7500 },
+    { name: t('feb'), Payroll: 45000, Marketing: 13000, IT: 8000 },
+    { name: t('mar'), Payroll: 44500, Marketing: 14000, IT: 7800 },
+    { name: t('apr'), Payroll: 45500, Marketing: 15000, IT: 8200 },
+    { name: t('may'), Payroll: 45000, Marketing: 14500, IT: 8000 },
 ];
 
-// Additional chart data
-const CATEGORY_TREND = [
-    { name: 'Jan', Payroll: 44000, Marketing: 12000, IT: 7500 },
-    { name: 'Feb', Payroll: 45000, Marketing: 13000, IT: 8000 },
-    { name: 'Mar', Payroll: 44500, Marketing: 14000, IT: 7800 },
-    { name: 'Apr', Payroll: 45500, Marketing: 15000, IT: 8200 },
-    { name: 'May', Payroll: 45000, Marketing: 14500, IT: 8000 },
-];
-
-const BUDGET_STATUS = [
-    { value: 40, name: 'On Track' },
-    { value: 35, name: 'Under Budget' },
-    { value: 25, name: 'Over Budget' }
+const getBudgetStatus = (t: (key: string) => string) => [
+    { value: 40, name: t('on_track') },
+    { value: 35, name: t('under_budget') },
+    { value: 25, name: t('over_budget') }
 ];
 
 export const CategoryAnalysisDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -98,6 +93,16 @@ export const CategoryAnalysisDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // Get translated data
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+    const SPEND_PER_CATEGORY = getSpendPerCategory(t);
+    const CATEGORY_SHARE = getCategoryShare(t);
+    const CATEGORY_TABLE = getCategoryTable(t);
+    const RADAR_INDICATORS = getRadarIndicators(t);
+    const CATEGORY_TREND = getCategoryTrend(t);
+    const BUDGET_STATUS = getBudgetStatus(t);
 
     // --- ECharts Options ---
 
@@ -133,7 +138,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
 
     // Radar Chart - Category Deviation
     const radarOption: EChartsOption = {
-        title: { text: 'Budget Utilization %', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('budget_adherence'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: {},
         radar: {
             indicator: RADAR_INDICATORS,
@@ -147,8 +152,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
             type: 'radar',
             data: [
                 {
-                    value: RADAR_DATA[0].value,
-                    name: 'Utilization',
+                    value: [98, 100, 125, 120, 89],
+                    name: t('budget_adherence'),
                     areaStyle: { color: 'rgba(239, 68, 68, 0.4)' },
                     lineStyle: { color: '#ef4444' },
                     itemStyle: { color: '#ef4444' }
@@ -165,8 +170,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                     <div className="flex items-start gap-2">
                         <Tag size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
                         <div>
-                            <h1 className="text-2xl font-bold">Category Analysis</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control overspending & variances</p>
+                            <h1 className="text-2xl font-bold">{t('category_analysis')}</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('category_analysis_desc')}</p>
                         </div>
                     </div>
                 </div>
@@ -217,15 +222,15 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Tag size={28} className="text-indigo-600 dark:text-indigo-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Category Analysis</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control overspending & variances</p>
+                        <h1 className="text-2xl font-bold">{t('category_analysis')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('category_analysis_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -234,7 +239,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-indigo-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -256,8 +261,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 {/* Recharts: Spend per Category (Bar) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Category</h3>
-                        <p className="text-xs text-gray-400">Actual spend breakdown</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_per_category')}</h3>
+                        <p className="text-xs text-gray-400">{t('actual_spend_breakdown')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -275,8 +280,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 {/* Recharts: Category Trend (Bar) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Trend</h3>
-                        <p className="text-xs text-gray-400">Monthly spend by category</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_trend')}</h3>
+                        <p className="text-xs text-gray-400">{t('monthly_spend_by_category')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -304,8 +309,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                     {/* ECharts: Category Share (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Category Allocation</h3>
-                            <p className="text-xs text-gray-400">Departmental breakdown</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_allocation')}</h3>
+                            <p className="text-xs text-gray-400">{t('departmental_breakdown')}</p>
                         </div>
                         <ReactECharts option={pieOption} style={{ height: '180px' }} />
                     </div>
@@ -313,8 +318,8 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                     {/* ECharts: Budget Status (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget Status</h3>
-                            <p className="text-xs text-gray-400">Categories by status</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_status')}</h3>
+                            <p className="text-xs text-gray-400">{t('categories_by_status')}</p>
                         </div>
                         <ReactECharts option={budgetStatusPieOption} style={{ height: '180px' }} />
                     </div>
@@ -342,29 +347,29 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget Analysis</h3>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_vs_actual')}</h3>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-start">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                 <tr>
-                                    <th className="px-5 py-3">Category</th>
-                                    <th className="px-5 py-3 text-right">Budget</th>
-                                    <th className="px-5 py-3 text-right">Actual</th>
-                                    <th className="px-5 py-3 text-right">Variance</th>
-                                    <th className="px-5 py-3 text-center">Status</th>
+                                    <th className="px-5 py-3">{t('category')}</th>
+                                    <th className="px-5 py-3 text-end">{t('budget')}</th>
+                                    <th className="px-5 py-3 text-end">{t('actual')}</th>
+                                    <th className="px-5 py-3 text-end">{t('variance')}</th>
+                                    <th className="px-5 py-3 text-center">{t('status')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {CATEGORY_TABLE.map((row) => (
-                                    <tr key={row.category} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                {CATEGORY_TABLE.map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
-                                        <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.budget}</td>
-                                        <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.actual}</td>
-                                        <td className={`px-5 py-3 text-right font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-emerald-500'}`}>{row.variance}</td>
+                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.budget}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.actual}</td>
+                                        <td className={`px-5 py-3 text-end font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-emerald-500'}`}>{row.variance}</td>
                                         <td className="px-5 py-3 text-center">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Over' ? 'bg-red-100 text-red-700' :
-                                                row.status === 'Under' ? 'bg-emerald-100 text-emerald-700' :
+                                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.statusKey === 'over' ? 'bg-red-100 text-red-700' :
+                                                row.statusKey === 'under' ? 'bg-emerald-100 text-emerald-700' :
                                                     'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {row.status}

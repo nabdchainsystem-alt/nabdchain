@@ -3,6 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { cacheService, cacheKeys, TTL } from '../services/cacheService';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -110,7 +111,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
 
         res.json(parsedBoards);
     } catch (error) {
-        console.error("Get Boards Error:", error);
+        apiLogger.error('Get Boards Error:', error);
         res.status(500).json({ error: "Failed to fetch boards" });
     }
 });
@@ -146,7 +147,7 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
 
         res.json(parsedBoard);
     } catch (error) {
-        console.error("Get Board Error:", error);
+        apiLogger.error('Get Board Error:', error);
         res.status(500).json({ error: "Failed to fetch board" });
     }
 });
@@ -211,7 +212,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Create Board Error:", error);
+        apiLogger.error('Create Board Error:', error);
         res.status(500).json({ error: "Failed to create board" });
     }
 });
@@ -266,7 +267,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Update Board Error:", error);
+        apiLogger.error('Update Board Error:', error);
         res.status(500).json({ error: "Failed to update board" });
     }
 });
@@ -315,7 +316,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error("Delete Board Error:", error);
+        apiLogger.error('Delete Board Error:', error);
         res.status(500).json({ error: "Failed to delete board" });
     }
 });

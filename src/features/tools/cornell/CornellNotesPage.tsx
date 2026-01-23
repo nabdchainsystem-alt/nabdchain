@@ -123,10 +123,16 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
     const listKey = `cornell-notes-list-${roomId}`;
 
     // --- Helpers ---
-    const getSafeList = (data: any[]): CornellNote[] => {
+    const getSafeList = (data: Partial<CornellNote>[]): CornellNote[] => {
         // Ensure backward compatibility by mapping old notes to new structure
         return data.map(item => ({
-            ...item,
+            id: item.id || `note-${Date.now()}`,
+            title: item.title || 'Untitled Note',
+            date: item.date || new Date().toISOString().split('T')[0],
+            cues: item.cues || '',
+            notes: item.notes || '',
+            summary: item.summary || '',
+            topic: item.topic || '',
             tags: item.tags || [],
             linkedRecords: item.linkedRecords || [],
             actionItems: item.actionItems || [],
@@ -264,7 +270,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
         setTimeout(() => setSaveStatus('saved'), 500);
     };
 
-    const handleChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setSaveStatus('unsaved');
     };
@@ -801,7 +807,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
             {/* Premium Date Picker Popover */}
             {activeDateSelector && (
                 <PortalPopup
-                    triggerRef={{ current: { getBoundingClientRect: () => activeDateSelector.rect } } as any}
+                    triggerRef={{ current: { getBoundingClientRect: () => activeDateSelector.rect } } as React.RefObject<HTMLElement>}
                     onClose={() => setActiveDateSelector(null)}
                     align="end"
                 >

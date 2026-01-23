@@ -17,6 +17,7 @@ import {
     AIContext,
     FileUploadData,
 } from '../services/aiRouterService';
+import { aiLogger } from '../utils/logger';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get('/credits', async (req: AuthRequest, res: Response) => {
         const balance = await getCreditsBalance(userId);
         res.json({ credits: balance });
     } catch (error) {
-        console.error('[AI Routes] Get credits error:', error);
+        aiLogger.error('Get credits error:', error);
         res.status(500).json({ error: 'Failed to get credit balance' });
     }
 });
@@ -65,7 +66,7 @@ router.post('/credits/add', async (req: AuthRequest, res: Response) => {
         const newBalance = await addCredits(userId, amount);
         res.json({ credits: newBalance, added: amount });
     } catch (error) {
-        console.error('[AI Routes] Add credits error:', error);
+        aiLogger.error('Add credits error:', error);
         res.status(500).json({ error: 'Failed to add credits' });
     }
 });
@@ -90,7 +91,7 @@ router.get('/usage', async (req: AuthRequest, res: Response) => {
 
         res.json(stats);
     } catch (error) {
-        console.error('[AI Routes] Usage stats error:', error);
+        aiLogger.error('Usage stats error:', error);
         res.status(500).json({ error: 'Failed to get usage statistics' });
     }
 });
@@ -135,7 +136,7 @@ router.post('/process', async (req: AuthRequest, res: Response) => {
             complexityFactors: complexity.factors,
         });
     } catch (error) {
-        console.error('[AI Routes] Process error:', error);
+        aiLogger.error('Process error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'AI processing failed'
@@ -170,7 +171,7 @@ router.post('/upload', async (req: AuthRequest, res: Response) => {
         const result = await processFileUpload(userId, fileData);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] Upload error:', error);
+        aiLogger.error('Upload error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'File processing failed'
@@ -202,7 +203,7 @@ router.post('/chart', async (req: AuthRequest, res: Response) => {
         const result = await generateChart(userId, prompt, data, deepMode === true);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] Chart error:', error);
+        aiLogger.error('Chart error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Chart generation failed'
@@ -234,7 +235,7 @@ router.post('/table', async (req: AuthRequest, res: Response) => {
         const result = await generateTable(userId, prompt, data, deepMode === true);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] Table error:', error);
+        aiLogger.error('Table error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Table generation failed'
@@ -266,7 +267,7 @@ router.post('/forecast', async (req: AuthRequest, res: Response) => {
         const result = await generateForecast(userId, prompt, data, periods || 6);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] Forecast error:', error);
+        aiLogger.error('Forecast error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Forecast generation failed'
@@ -291,7 +292,7 @@ router.post('/tips', async (req: AuthRequest, res: Response) => {
         const result = await generateTips(userId, aiContext, focusArea);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] Tips error:', error);
+        aiLogger.error('Tips error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Tips generation failed'
@@ -319,7 +320,7 @@ router.post('/gtd', async (req: AuthRequest, res: Response) => {
         const result = await extractGTDTasks(userId, input, context);
         res.json(result);
     } catch (error) {
-        console.error('[AI Routes] GTD error:', error);
+        aiLogger.error('GTD error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'GTD task extraction failed'
@@ -347,7 +348,7 @@ router.post('/analyze', async (req: AuthRequest, res: Response) => {
         const response = await analyzeDeep(userId, prompt, context);
         res.json(response);
     } catch (error) {
-        console.error('[AI Routes] Analyze error:', error);
+        aiLogger.error('Analyze error:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Analysis failed'
@@ -397,7 +398,7 @@ router.post('/tier-preview', async (req: AuthRequest, res: Response) => {
             },
         });
     } catch (error) {
-        console.error('[AI Routes] Tier preview error:', error);
+        aiLogger.error('Tier preview error:', error);
         res.status(500).json({ error: 'Failed to preview tier' });
     }
 });
@@ -423,7 +424,7 @@ router.post('/complexity', async (req: AuthRequest, res: Response) => {
             factors: complexity.factors,
         });
     } catch (error) {
-        console.error('[AI Routes] Complexity analysis error:', error);
+        aiLogger.error('Complexity analysis error:', error);
         res.status(500).json({ error: 'Failed to analyze complexity' });
     }
 });

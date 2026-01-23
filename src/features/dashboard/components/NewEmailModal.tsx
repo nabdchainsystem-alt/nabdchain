@@ -4,10 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, EnvelopeSimple, PaperPlaneRight, User, TextAa } from 'phosphor-react';
 import { useAppContext } from '../../../contexts/AppContext';
 
+interface EmailData {
+    to: string;
+    subject: string;
+    body: string;
+}
+
 interface NewEmailModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSend: (emailData: any) => void;
+    onSend: (emailData: EmailData) => void;
 }
 
 export const NewEmailModal: React.FC<NewEmailModalProps> = ({

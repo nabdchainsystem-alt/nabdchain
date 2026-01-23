@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -7,21 +7,9 @@ import { ArrowsOut, Info, TrendUp, Warning, Truck, Factory, Money, Star, Buildin
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SupplierOverviewInfo } from './SupplierOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Suppliers', subtitle: 'Global Vendor Base', value: '142', change: '+5', trend: 'up', icon: <Buildings size={18} />, sparklineData: [130, 132, 135, 138, 140, 142], color: 'blue' },
-    { id: '2', label: 'Active Suppliers', subtitle: 'Engaged YTD', value: '88', change: '+2', trend: 'up', icon: <Handshake size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
-    { id: '3', label: 'Total Spend', subtitle: 'YTD Procurement', value: '$4.2M', change: '+12%', trend: 'up', icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
-    { id: '4', label: 'Avg Rating', subtitle: 'Performance Score', value: '4.2', change: '+0.1', trend: 'up', icon: <Star size={18} />, sparklineData: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Risk Profile', subtitle: 'High Risk Vendors', value: '7', change: '-1', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 8, 8, 7, 7, 7], color: 'blue' },
-    { id: '6', label: 'On-Time Deliv', subtitle: 'Global Average', value: '94%', change: '+1%', trend: 'up', icon: <Truck size={18} />, sparklineData: [92, 92, 93, 93, 94, 94], color: 'blue' },
-    { id: '7', label: 'Sourcing Mix', subtitle: 'Strategic Partners', value: '25%', change: 'Stable', trend: 'neutral', icon: <Globe size={18} />, sparklineData: [25, 25, 25, 25, 25, 25], color: 'blue' },
-    { id: '8', label: 'New Vendors', subtitle: 'Added This Quarter', value: '8', change: '+3', trend: 'up', icon: <Factory size={18} />, sparklineData: [4, 5, 5, 6, 7, 8], color: 'blue' },
-];
+// --- Mock Data (Non-translatable) ---
 
 // --- Mock Data: Charts ---
 const SPEND_BY_SUPPLIER = [
@@ -81,7 +69,40 @@ const SUPPLIER_STATUS = [
 
 export const SupplierOverviewDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t, dir } = useLanguage();
+    const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
+
+    // Translated KPI Data
+    const TOP_KPIS = useMemo(() => [
+        { id: '1', label: t('total_suppliers'), subtitle: t('global_vendor_base'), value: '142', change: '+5', trend: 'up' as const, icon: <Buildings size={18} />, sparklineData: [130, 132, 135, 138, 140, 142], color: 'blue' },
+        { id: '2', label: t('active_suppliers'), subtitle: t('engaged_ytd'), value: '88', change: '+2', trend: 'up' as const, icon: <Handshake size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
+        { id: '3', label: t('total_spend'), subtitle: t('ytd_procurement'), value: '$4.2M', change: '+12%', trend: 'up' as const, icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
+        { id: '4', label: t('avg_rating'), subtitle: t('performance_score'), value: '4.2', change: '+0.1', trend: 'up' as const, icon: <Star size={18} />, sparklineData: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2], color: 'blue' },
+    ], [t]);
+
+    const SIDE_KPIS = useMemo(() => [
+        { id: '5', label: t('risk_profile'), subtitle: t('high_risk_vendors'), value: '7', change: '-1', trend: 'down' as const, icon: <Warning size={18} />, sparklineData: [9, 8, 8, 7, 7, 7], color: 'blue' },
+        { id: '6', label: t('on_time_deliv'), subtitle: t('global_average'), value: '94%', change: '+1%', trend: 'up' as const, icon: <Truck size={18} />, sparklineData: [92, 92, 93, 93, 94, 94], color: 'blue' },
+        { id: '7', label: t('sourcing_mix'), subtitle: t('strategic_partners'), value: '25%', change: t('stable'), trend: 'neutral' as const, icon: <Globe size={18} />, sparklineData: [25, 25, 25, 25, 25, 25], color: 'blue' },
+        { id: '8', label: t('new_vendors'), subtitle: t('added_this_quarter'), value: '8', change: '+3', trend: 'up' as const, icon: <Factory size={18} />, sparklineData: [4, 5, 5, 6, 7, 8], color: 'blue' },
+    ], [t]);
+
+    // Translated Chart Data
+    const TRANSLATED_CATEGORY_SPLIT = useMemo(() => [
+        { value: 40, name: t('raw_materials') },
+        { value: 25, name: t('logistics') },
+        { value: 20, name: t('services') },
+        { value: 10, name: t('packaging') },
+        { value: 5, name: t('it_saas') }
+    ], [t]);
+
+    const TRANSLATED_SUPPLIER_STATUS = useMemo(() => [
+        { value: 45, name: t('strategic') },
+        { value: 30, name: t('active') },
+        { value: 15, name: t('probation') },
+        { value: 10, name: t('new_segment') }
+    ], [t]);
 
     // Loading state for smooth entrance animation
     const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +132,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
             itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
-            data: CATEGORY_SPLIT,
+            data: TRANSLATED_CATEGORY_SPLIT,
             color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
         }]
     };
@@ -126,22 +147,22 @@ export const SupplierOverviewDashboard: React.FC = () => {
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            data: SUPPLIER_STATUS,
+            data: TRANSLATED_SUPPLIER_STATUS,
             color: ['#8b5cf6', '#10b981', '#ef4444', '#f59e0b']
         }]
     };
 
     // Bubble Chart (Scatter)
     const bubbleOption: EChartsOption = {
-        title: { text: 'Supplier Matrix', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('supplier_matrix'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         grid: { left: '8%', right: '10%', top: '15%', bottom: '15%' },
         tooltip: {
             formatter: (params: any) => {
-                return `${params.data[3]}<br/>Spend: $${(params.data[0] / 1000).toFixed(0)}k<br/>Rating: ${params.data[1]}<br/>Risk: ${params.data[4]}`;
+                return `${params.data[3]}<br/>${t('spend')}: $${(params.data[0] / 1000).toFixed(0)}k<br/>${t('rating')}: ${params.data[1]}<br/>${t('risk_level')}: ${params.data[4]}`;
             }
         },
-        xAxis: { type: 'value', name: 'Spend', nameLocation: 'middle', nameGap: 30, splitLine: { show: false } },
-        yAxis: { type: 'value', name: 'Rating', min: 1, max: 5, splitLine: { lineStyle: { type: 'dashed' } } },
+        xAxis: { type: 'value', name: t('spend'), nameLocation: 'middle', nameGap: 30, splitLine: { show: false } },
+        yAxis: { type: 'value', name: t('rating'), min: 1, max: 5, splitLine: { lineStyle: { type: 'dashed' } } },
         series: [{
             type: 'scatter',
             symbolSize: function (data: any) {
@@ -170,15 +191,15 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Factory size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Suppliers Overview</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sourcing & Procurement</p>
+                        <h1 className="text-2xl font-bold">{t('suppliers_overview')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('sourcing_procurement')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -187,7 +208,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -209,31 +230,31 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 {isLoading ? (
                     <>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Top Spend" />
+                            <ChartSkeleton height="h-[300px]" title={t('top_spend')} />
                         </div>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Supplier Ratings" />
+                            <ChartSkeleton height="h-[300px]" title={t('supplier_ratings')} />
                         </div>
                     </>
                 ) : (
                     <>
                         {/* Recharts: Spend by Supplier (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Top Spend</h3>
-                                <p className="text-xs text-gray-400">By Supplier</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('top_spend')}</h3>
+                                <p className="text-xs text-gray-400">{t('by_supplier')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SPEND_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={SPEND_BY_SUPPLIER} margin={{ top: 5, right: isRTL ? 10 : 30, left: isRTL ? 30 : 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Spend" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                        <Bar dataKey="Spend" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} name={t('spend')} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -241,21 +262,21 @@ export const SupplierOverviewDashboard: React.FC = () => {
 
                         {/* Recharts: Rating by Supplier (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Supplier Ratings</h3>
-                                <p className="text-xs text-gray-400">Performance Score</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_ratings')}</h3>
+                                <p className="text-xs text-gray-400">{t('performance_score')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={RATING_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={RATING_BY_SUPPLIER} margin={{ top: 5, right: isRTL ? 10 : 30, left: isRTL ? 30 : 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 5]} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 5]} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Rating" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                        <Bar dataKey="Rating" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} name={t('rating')} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -268,8 +289,8 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2">
                             <div className="grid grid-cols-2 gap-6">
-                                <PieChartSkeleton title="Spend Mix" />
-                                <PieChartSkeleton title="Status Mix" />
+                                <PieChartSkeleton title={t('spend_mix')} />
+                                <PieChartSkeleton title={t('status_mix')} />
                             </div>
                         </div>
                         <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
@@ -286,18 +307,18 @@ export const SupplierOverviewDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-6">
                             {/* ECharts: Category Split (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Mix</h3>
-                                    <p className="text-xs text-gray-400">By Category</p>
+                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_mix')}</h3>
+                                    <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
                                 <ReactECharts option={pieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Supplier Status (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Status Mix</h3>
-                                    <p className="text-xs text-gray-400">By Classification</p>
+                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('status_mix')}</h3>
+                                    <p className="text-xs text-gray-400">{t('by_classification')}</p>
                                 </div>
                                 <ReactECharts option={statusPieOption} style={{ height: '180px' }} />
                             </div>
@@ -327,30 +348,32 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Strategic Suppliers</h3>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('strategic_suppliers')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Supplier</th>
-                                        <th className="px-5 py-3">Category</th>
-                                        <th className="px-5 py-3">Spend</th>
-                                        <th className="px-5 py-3">Rating</th>
-                                        <th className="px-5 py-3 text-right">Status</th>
+                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('category')}</th>
+                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('spend')}</th>
+                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('rating')}</th>
+                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {SUPPLIER_TABLE.map((row, index) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.category}</td>
-                                            <td className="px-5 py-3 font-medium text-gray-800 dark:text-gray-200">{row.spend}</td>
-                                            <td className="px-5 py-3 text-amber-500 font-bold flex items-center gap-1">
-                                                {row.rating} <Star size={12} weight="fill" />
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-xs ${isRTL ? 'text-right' : ''}`}>{row.category}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 ${isRTL ? 'text-left' : 'text-right'}`}>{row.spend}</td>
+                                            <td className={`px-5 py-3 text-amber-500 font-bold ${isRTL ? 'text-right' : ''}`}>
+                                                <span className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
+                                                    {row.rating} <Star size={12} weight="fill" />
+                                                </span>
                                             </td>
-                                            <td className="px-5 py-3 text-right">
+                                            <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Strategic' ? 'bg-purple-100 text-purple-700' :
                                                     row.status === 'Probation' ? 'bg-red-100 text-red-700' :
                                                         'bg-green-100 text-green-700'
@@ -369,7 +392,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 {/* Companion Chart: Bubble Matrix (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Risk vs Value Matrix" />
+                        <ChartSkeleton height="h-[300px]" title={t('risk_vs_value_matrix')} />
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">

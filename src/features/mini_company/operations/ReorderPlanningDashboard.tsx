@@ -159,8 +159,8 @@ export const ReorderPlanningDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <ShoppingCart size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Reorder & Planning</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Replenishment and safety stock management</p>
+                        <h1 className="text-2xl font-bold">{t('reorder_planning')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('reorder_planning_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

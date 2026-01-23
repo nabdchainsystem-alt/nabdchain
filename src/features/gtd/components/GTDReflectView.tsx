@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tray as Inbox, CheckCircle, Bell, Stack as Layers, Clock, CheckSquare, X } from 'phosphor-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface ReflectItem {
     id: string;
@@ -26,7 +27,9 @@ const StatCard: React.FC<{
     colorClass: string;
     emptyText: string;
     onClick: () => void;
-}> = ({ title, icon: Icon, items, colorClass, emptyText, onClick }) => {
+    t: (key: string) => string;
+    isRTL: boolean;
+}> = ({ title, icon: Icon, items, colorClass, emptyText, onClick, t, isRTL }) => {
     const recentItems = items.slice(0, 3); // Show top 3 recent items
 
     return (
@@ -37,8 +40,8 @@ const StatCard: React.FC<{
                 <div className={`p-2 rounded-full bg-gray-50 dark:bg-white/5 group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className={`w-5 h-5 ${colorClass}`} />
                 </div>
-                <h3 className="font-bold text-lg text-gray-800 dark:text-white flex-1 font-serif italic">{title}</h3>
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded-full uppercase tracking-wider">
+                <h3 className={`font-bold text-lg text-gray-800 dark:text-white flex-1 ${isRTL ? 'font-sans' : 'font-serif italic'}`}>{title}</h3>
+                <span className={`text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded-full uppercase ${isRTL ? '' : 'tracking-wider'}`}>
                     {items.length}
                 </span>
             </div>
@@ -48,15 +51,15 @@ const StatCard: React.FC<{
             <div className="flex-1 w-full">
                 {items.length > 0 ? (
                     <div className="space-y-3">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-2">Recent Thoughts</p>
+                        <p className={`text-[10px] text-gray-400 uppercase ${isRTL ? '' : 'tracking-widest'} font-bold mb-2`}>{t('recent_thoughts')}</p>
                         {recentItems.map(item => (
-                            <div key={item.id} className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1 font-serif">
+                            <div key={item.id} className={`text-sm text-gray-600 dark:text-gray-300 line-clamp-1 ${isRTL ? 'font-sans' : 'font-serif'}`}>
                                 • {item.title}
                             </div>
                         ))}
                         {items.length > 3 && (
                             <div className="text-[10px] text-gray-400 italic mt-2">
-                                + {items.length - 3} more...
+                                + {items.length - 3} {t('more_items')}
                             </div>
                         )}
                     </div>
@@ -71,63 +74,77 @@ const StatCard: React.FC<{
 };
 
 export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     const [selectedCategory, setSelectedCategory] = useState<{ title: string; items: ReflectItem[] } | null>(null);
 
     return (
         <div className="w-full max-w-6xl mx-auto flex flex-col items-center pb-12 relative">
             <div className="text-center mb-12">
-                <h2 className="text-2xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Reflect</h2>
-                <p className="text-gray-400 font-serif italic tracking-widest text-sm uppercase">Review your system</p>
+                <h2 className={`text-2xl font-black ${isRTL ? '' : 'tracking-widest'} uppercase mb-4 text-[#1A1A1A] dark:text-white`}>{t('reflect')}</h2>
+                <p className={`text-gray-400 ${isRTL ? 'font-sans font-medium' : 'font-serif italic tracking-widest'} text-sm uppercase`}>{t('review_your_system')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4">
                 <StatCard
-                    title="Inbox"
+                    title={t('inbox')}
                     icon={Inbox}
                     items={lists.inbox}
                     colorClass="text-blue-500"
-                    emptyText="Empty"
-                    onClick={() => setSelectedCategory({ title: 'Inbox', items: lists.inbox })}
+                    emptyText={t('empty')}
+                    onClick={() => setSelectedCategory({ title: t('inbox'), items: lists.inbox })}
+                    t={t}
+                    isRTL={isRTL}
                 />
                 <StatCard
-                    title="Next Actions"
+                    title={t('next_actions')}
                     icon={CheckCircle}
                     items={lists.nextActions}
                     colorClass="text-green-500"
-                    emptyText="Empty"
-                    onClick={() => setSelectedCategory({ title: 'Next Actions', items: lists.nextActions })}
+                    emptyText={t('empty')}
+                    onClick={() => setSelectedCategory({ title: t('next_actions'), items: lists.nextActions })}
+                    t={t}
+                    isRTL={isRTL}
                 />
                 <StatCard
-                    title="Waiting For"
+                    title={t('waiting_for')}
                     icon={Bell}
                     items={lists.waitingFor}
                     colorClass="text-orange-400"
-                    emptyText="Empty"
-                    onClick={() => setSelectedCategory({ title: 'Waiting For', items: lists.waitingFor })}
+                    emptyText={t('empty')}
+                    onClick={() => setSelectedCategory({ title: t('waiting_for'), items: lists.waitingFor })}
+                    t={t}
+                    isRTL={isRTL}
                 />
                 <StatCard
-                    title="Active Projects"
+                    title={t('active_projects')}
                     icon={Layers}
                     items={lists.projects}
                     colorClass="text-purple-500"
-                    emptyText="Empty"
-                    onClick={() => setSelectedCategory({ title: 'Active Projects', items: lists.projects })}
+                    emptyText={t('empty')}
+                    onClick={() => setSelectedCategory({ title: t('active_projects'), items: lists.projects })}
+                    t={t}
+                    isRTL={isRTL}
                 />
                 <StatCard
-                    title="Someday / Maybe"
+                    title={t('someday_maybe')}
                     icon={Clock}
                     items={lists.someday}
                     colorClass="text-gray-400"
-                    emptyText="Empty"
-                    onClick={() => setSelectedCategory({ title: 'Someday / Maybe', items: lists.someday })}
+                    emptyText={t('empty')}
+                    onClick={() => setSelectedCategory({ title: t('someday_maybe'), items: lists.someday })}
+                    t={t}
+                    isRTL={isRTL}
                 />
                 <StatCard
-                    title="Completed"
+                    title={t('completed')}
                     icon={CheckSquare}
                     items={lists.completed}
                     colorClass="text-blue-400"
-                    emptyText="No completed items yet"
-                    onClick={() => setSelectedCategory({ title: 'Completed', items: lists.completed })}
+                    emptyText={t('no_completed_items_yet')}
+                    onClick={() => setSelectedCategory({ title: t('completed'), items: lists.completed })}
+                    t={t}
+                    isRTL={isRTL}
                 />
             </div>
 
@@ -156,8 +173,8 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                 {/* Header */}
                                 <div className="p-8 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-white/5">
                                     <div>
-                                        <h3 className="text-xl font-serif italic text-[#1A1A1A] dark:text-white mb-2">{selectedCategory.title}</h3>
-                                        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">{selectedCategory.items.length} Items</p>
+                                        <h3 className={`text-xl ${isRTL ? 'font-sans font-bold' : 'font-serif italic'} text-[#1A1A1A] dark:text-white mb-2`}>{selectedCategory.title}</h3>
+                                        <p className={`text-xs text-gray-400 uppercase ${isRTL ? '' : 'tracking-widest'} font-bold`}>{selectedCategory.items.length} {t('items')}</p>
                                     </div>
                                     <button
                                         onClick={() => setSelectedCategory(null)}
@@ -175,8 +192,8 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                                 <div key={item.id} className="group flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/5">
                                                     <div className="mt-1 w-2 h-2 rounded-full bg-gray-300 group-hover:bg-black dark:group-hover:bg-white transition-colors flex-shrink-0" />
                                                     <div className="flex-1">
-                                                        <h4 className="text-base text-gray-800 dark:text-gray-200 font-serif leading-snug mb-0.5">{item.title}</h4>
-                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-datetime">
+                                                        <h4 className={`text-base text-gray-800 dark:text-gray-200 ${isRTL ? 'font-sans' : 'font-serif'} leading-snug mb-0.5`}>{item.title}</h4>
+                                                        <span className={`text-[10px] text-gray-400 uppercase ${isRTL ? '' : 'tracking-wider'} font-datetime`}>
                                                             {new Date(item.createdAt).toLocaleDateString(undefined, {
                                                                 weekday: 'short',
                                                                 month: 'short',
@@ -191,7 +208,7 @@ export const GTDReflectView: React.FC<GTDReflectViewProps> = ({ lists }) => {
                                         </div>
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-gray-400 italic">
-                                            <p>No items in this list.</p>
+                                            <p>{t('no_items_in_list')}</p>
                                         </div>
                                     )}
                                 </div>

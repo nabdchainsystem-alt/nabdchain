@@ -29,7 +29,7 @@ export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onTogg
         if (item.type === 'folder') {
             onNavigate(item.id);
         } else if (item.previewUrl) {
-            window.open(item.previewUrl, '_blank');
+            window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
         }
     };
 
@@ -73,7 +73,7 @@ export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onTogg
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (item.type === 'folder') onNavigate(item.id);
-                                    else if (item.previewUrl) window.open(item.previewUrl, '_blank');
+                                    else if (item.previewUrl) window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
                                     setContextMenu(null);
                                 }}
                                 className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"

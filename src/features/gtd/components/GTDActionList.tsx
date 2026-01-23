@@ -1,5 +1,6 @@
 import React from 'react';
 import { DotsThree as MoreHorizontal, DotsSixVertical as GripVertical } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface Task {
     id: string;
@@ -16,6 +17,7 @@ interface GTDActionListProps {
 }
 
 export const GTDActionList: React.FC<GTDActionListProps> = ({ title, icon: Icon, tasks, color }) => {
+    const { t } = useAppContext();
     return (
         <div className="bg-white dark:bg-monday-dark-elevated rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-monday-dark-elevated h-full">
             <div className="flex items-center justify-between mb-6">
@@ -44,7 +46,7 @@ export const GTDActionList: React.FC<GTDActionListProps> = ({ title, icon: Icon,
                     </div>
                 )) : (
                     <div className="text-center py-10 text-gray-400 text-sm italic">
-                        No actions here. Clear mind!
+                        {t('no_actions_clear_mind')}
                     </div>
                 )}
             </div>

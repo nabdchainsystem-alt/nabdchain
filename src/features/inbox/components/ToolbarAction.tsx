@@ -20,6 +20,8 @@ export const ToolbarAction: React.FC<ToolbarActionProps> = ({
     <button
         onClick={onClick}
         disabled={disabled}
+        aria-label={label}
+        aria-disabled={disabled}
         className={`
             flex flex-col items-center justify-center px-1.5 py-1 rounded
             hover:bg-gray-100 dark:hover:bg-monday-dark-hover
@@ -29,7 +31,7 @@ export const ToolbarAction: React.FC<ToolbarActionProps> = ({
             ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : ''}
         `}
     >
-        <div className="group-hover:scale-105 transition-transform">{icon}</div>
+        <div className="group-hover:scale-105 transition-transform" aria-hidden="true">{icon}</div>
         <span className="text-[9px] font-medium whitespace-nowrap opacity-80 group-hover:opacity-100">
             {label}
         </span>

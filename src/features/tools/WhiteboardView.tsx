@@ -338,6 +338,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                     ref={fileInputRef}
                     className="hidden"
                     accept="image/*"
+                    aria-label={t('upload_image')}
                     onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -350,7 +351,15 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     ctx?.drawImage(img, 100, 100, 300, 300 * (img.height / img.width));
                                     setCurrentTool('select');
                                 };
+                                img.onerror = () => {
+                                    console.error('Failed to load image');
+                                    setCurrentTool('select');
+                                };
                                 img.src = event.target?.result as string;
+                            };
+                            reader.onerror = () => {
+                                console.error('Failed to read file');
+                                setCurrentTool('select');
                             };
                             reader.readAsDataURL(file);
                         }
@@ -480,10 +489,12 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('select')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'select' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Select"
+                                    aria-label="Select tool"
+                                    aria-pressed={currentTool === 'select'}
                                 >
                                     <Cursor size={20} />
                                 </button>
-                                <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors" title="Lasso Select">
+                                <button className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary transition-colors" title="Lasso Select" aria-label="Lasso select tool">
                                     <Selection size={20} />
                                 </button>
                             </div>
@@ -493,6 +504,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('pen')}
                                     className={`p-2.5 rounded-xl transition-colors relative ${currentTool === 'pen' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Pen"
+                                    aria-label="Pen tool"
+                                    aria-pressed={currentTool === 'pen'}
                                 >
                                     <Pen size={20} />
                                     {currentTool === 'pen' && <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-[#00bdc7] animate-pulse"></div>}
@@ -501,6 +514,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('highlighter')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'highlighter' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Highlighter"
+                                    aria-label="Highlighter tool"
+                                    aria-pressed={currentTool === 'highlighter'}
                                 >
                                     <PenNib size={20} />
                                 </button>
@@ -508,6 +523,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('laser')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'laser' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Laser Pointer"
+                                    aria-label="Laser pointer tool"
+                                    aria-pressed={currentTool === 'laser'}
                                 >
                                     <Sparkle size={20} />
                                 </button>
@@ -518,6 +535,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('rectangle')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'rectangle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Rectangle"
+                                    aria-label="Rectangle shape tool"
+                                    aria-pressed={currentTool === 'rectangle'}
                                 >
                                     <FrameCorners size={20} />
                                 </button>
@@ -525,6 +544,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('circle')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'circle' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Circle"
+                                    aria-label="Circle shape tool"
+                                    aria-pressed={currentTool === 'circle'}
                                 >
                                     <Polygon size={20} />
                                 </button>
@@ -532,6 +553,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('mindmap')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'mindmap' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Mind-map Node"
+                                    aria-label="Mind-map node tool"
+                                    aria-pressed={currentTool === 'mindmap'}
                                 >
                                     <GitFork size={20} />
                                 </button>
@@ -539,6 +562,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('connector')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'connector' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Connectors"
+                                    aria-label="Connector tool"
+                                    aria-pressed={currentTool === 'connector'}
                                 >
                                     <ArrowUpRight size={20} />
                                 </button>
@@ -546,6 +571,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('table')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'table' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Table"
+                                    aria-label="Table tool"
+                                    aria-pressed={currentTool === 'table'}
                                 >
                                     <GridFour size={20} />
                                 </button>
@@ -553,6 +580,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('frame')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'frame' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Frame Container"
+                                    aria-label="Frame container tool"
+                                    aria-pressed={currentTool === 'frame'}
                                 >
                                     <FrameCorners size={20} />
                                 </button>
@@ -563,6 +592,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('note')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'note' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Sticky Note"
+                                    aria-label="Sticky note tool"
+                                    aria-pressed={currentTool === 'note'}
                                 >
                                     <Note size={20} />
                                 </button>
@@ -570,6 +601,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     onClick={() => setCurrentTool('text')}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'text' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Text Tool"
+                                    aria-label="Text tool"
+                                    aria-pressed={currentTool === 'text'}
                                 >
                                     <TextT size={20} />
                                 </button>
@@ -580,6 +613,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     }}
                                     className={`p-2.5 rounded-xl transition-colors ${currentTool === 'image' ? 'bg-[#00bdc7]/10 text-[#00bdc7] border border-[#00bdc7]/20 shadow-inner' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary'}`}
                                     title="Images"
+                                    aria-label="Insert image"
+                                    aria-pressed={currentTool === 'image'}
                                 >
                                     <PhImage size={20} />
                                 </button>
@@ -589,6 +624,8 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 onClick={() => setCurrentTool('eraser')}
                                 className={`p-2.5 rounded-xl transition-colors ${currentTool === 'eraser' ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border border-red-200' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-monday-dark-text-secondary hover:text-red-500'}`}
                                 title="Eraser"
+                                aria-label="Eraser tool"
+                                aria-pressed={currentTool === 'eraser'}
                             >
                                 <Eraser size={20} />
                             </button>
@@ -603,15 +640,17 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 <button
                                     onClick={zoomOut}
                                     className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
+                                    aria-label="Zoom out"
                                 >
                                     <Minus size={20} />
                                 </button>
-                                <div className="px-2 min-w-[50px] text-center">
+                                <div className="px-2 min-w-[50px] text-center" aria-live="polite">
                                     <span className="text-xs font-bold text-gray-900 dark:text-white select-none">{zoom}%</span>
                                 </div>
                                 <button
                                     onClick={zoomIn}
                                     className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
+                                    aria-label="Zoom in"
                                 >
                                     <Plus size={20} />
                                 </button>
@@ -621,6 +660,7 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                 onClick={resetZoom}
                                 className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-monday-dark-text-secondary active:scale-90 transition-transform"
                                 title="Reset Zoom"
+                                aria-label="Reset zoom to 100%"
                             >
                                 <CornersOut size={20} />
                             </button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tray as Inbox, CheckCircle as CheckCircle2, Stack as Layers, CheckSquare, Lightning as Zap } from 'phosphor-react';
 import { motion } from 'framer-motion';
+import { useAppContext } from '../../../contexts/AppContext';
 
 export type GTDPhase = 'capture' | 'clarify' | 'organize' | 'reflect' | 'engage';
 
@@ -10,12 +11,14 @@ interface GTDTabsProps {
 }
 
 export const GTDTabs: React.FC<GTDTabsProps> = ({ activePhase, onChange }) => {
-    const tabs: { id: GTDPhase; label: string; icon: any }[] = [
-        { id: 'capture', label: 'CAPTURE', icon: Inbox },
-        { id: 'clarify', label: 'CLARIFY', icon: CheckCircle2 },
-        { id: 'organize', label: 'ORGANIZE', icon: Layers },
-        { id: 'reflect', label: 'REFLECT', icon: CheckSquare },
-        { id: 'engage', label: 'ENGAGE', icon: Zap },
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
+    const tabs: { id: GTDPhase; labelKey: string; icon: any }[] = [
+        { id: 'capture', labelKey: 'capture', icon: Inbox },
+        { id: 'clarify', labelKey: 'clarify', icon: CheckCircle2 },
+        { id: 'organize', labelKey: 'organize', icon: Layers },
+        { id: 'reflect', labelKey: 'reflect', icon: CheckSquare },
+        { id: 'engage', labelKey: 'engage', icon: Zap },
     ];
 
     return (
@@ -27,7 +30,7 @@ export const GTDTabs: React.FC<GTDTabsProps> = ({ activePhase, onChange }) => {
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
                         className={`
-                            relative flex items-center gap-2 text-xs font-bold tracking-[0.2em] transition-colors duration-300 uppercase
+                            relative flex items-center gap-2 text-xs font-bold ${isRTL ? '' : 'tracking-[0.2em]'} transition-colors duration-300 uppercase
                             ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}
                         `}
                     >
@@ -39,7 +42,7 @@ export const GTDTabs: React.FC<GTDTabsProps> = ({ activePhase, onChange }) => {
                             />
                         )}
                         <tab.icon className={`w-4 h-4 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
-                        {tab.label}
+                        {t(tab.labelKey)}
                     </button>
                 );
             })}

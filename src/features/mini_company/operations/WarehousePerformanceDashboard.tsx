@@ -147,8 +147,8 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Buildings size={28} className="text-violet-600 dark:text-violet-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Warehouse Performance</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Efficiency, utilization, and speed stats</p>
+                        <h1 className="text-2xl font-bold">{t('warehouse_perf')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('warehouse_perf_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { emailLogger } from '../utils/logger';
 
 // Initialize Resend client (only if API key is available)
 const resend = process.env.RESEND_API_KEY
@@ -30,7 +31,7 @@ export const emailService = {
    */
   async send(options: EmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
     if (!resend) {
-      console.warn('Email service not configured, skipping email send');
+      emailLogger.warn('Email service not configured, skipping email send');
       return { success: false, error: 'Email service not configured' };
     }
 
@@ -55,13 +56,13 @@ export const emailService = {
       const { data, error } = await resend.emails.send(emailPayload as Parameters<typeof resend.emails.send>[0]);
 
       if (error) {
-        console.error('Email send error:', error);
+        emailLogger.error('Email send error:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, id: data?.id };
     } catch (error) {
-      console.error('Email send exception:', error);
+      emailLogger.error('Email send exception:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

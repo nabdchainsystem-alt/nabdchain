@@ -3,6 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -46,16 +47,16 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
         if (!user) {
             try {
                 // Search for user in Clerk by email
-                console.log('[TeamSearch] Searching Clerk for:', searchEmail);
+                apiLogger.info('[TeamSearch] Searching Clerk for:', searchEmail);
                 const clerkUsers = await clerkClient.users.getUserList({
                     emailAddress: [searchEmail]
                 });
-                console.log('[TeamSearch] Clerk returned:', clerkUsers.length, 'users');
+                apiLogger.info('[TeamSearch] Clerk returned:', clerkUsers.length, 'users');
 
                 const clerkUser = clerkUsers[0];
 
                 if (clerkUser && clerkUser.id !== userId) {
-                    console.log('[TeamSearch] Found user in Clerk:', clerkUser.id);
+                    apiLogger.info('[TeamSearch] Found user in Clerk:', clerkUser.id);
                     // Found in Clerk - upsert in our database (create or update)
                     const name = clerkUser.firstName
                         ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim()
@@ -84,13 +85,13 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
                     };
                 }
             } catch (clerkErr) {
-                console.error('[TeamSearch] Clerk search error:', clerkErr);
+                apiLogger.error('[TeamSearch] Clerk search error:', clerkErr);
                 // Continue - user not found
             }
         }
 
         if (!user) {
-            console.log('[TeamSearch] User not found in DB or Clerk:', searchEmail);
+            apiLogger.info('[TeamSearch] User not found in DB or Clerk:', searchEmail);
             return res.status(404).json({ error: 'User not found' });
         }
 
@@ -110,7 +111,7 @@ router.get('/search', requireAuth, async (req: any, res: Response) => {
             connectionId: existingConnection?.id || null
         });
     } catch (error) {
-        console.error('Search user error:', error);
+        apiLogger.error('Search user error:', error);
         res.status(500).json({ error: 'Failed to search user' });
     }
 });
@@ -180,7 +181,7 @@ router.post('/request', requireAuth, async (req: any, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Send request error:', error);
+        apiLogger.error('Send request error:', error);
         res.status(500).json({ error: 'Failed to send connection request' });
     }
 });
@@ -214,7 +215,7 @@ router.get('/requests/pending', requireAuth, async (req: any, res: Response) => 
 
         res.json(requestsWithSenders);
     } catch (error) {
-        console.error('Get pending requests error:', error);
+        apiLogger.error('Get pending requests error:', error);
         res.status(500).json({ error: 'Failed to get pending requests' });
     }
 });
@@ -248,7 +249,7 @@ router.get('/requests/sent', requireAuth, async (req: any, res: Response) => {
 
         res.json(requestsWithReceivers);
     } catch (error) {
-        console.error('Get sent requests error:', error);
+        apiLogger.error('Get sent requests error:', error);
         res.status(500).json({ error: 'Failed to get sent requests' });
     }
 });
@@ -290,7 +291,7 @@ router.post('/request/respond', requireAuth, async (req: any, res: Response) => 
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Respond to request error:', error);
+        apiLogger.error('Respond to request error:', error);
         res.status(500).json({ error: 'Failed to respond to request' });
     }
 });
@@ -344,7 +345,7 @@ router.get('/members', requireAuth, async (req: any, res: Response) => {
 
         res.json(membersWithConnectionInfo);
     } catch (error) {
-        console.error('Get team members error:', error);
+        apiLogger.error('Get team members error:', error);
         res.status(500).json({ error: 'Failed to get team members' });
     }
 });
@@ -374,7 +375,7 @@ router.delete('/connection/:id', requireAuth, async (req: any, res: Response) =>
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Remove connection error:', error);
+        apiLogger.error('Remove connection error:', error);
         res.status(500).json({ error: 'Failed to remove connection' });
     }
 });

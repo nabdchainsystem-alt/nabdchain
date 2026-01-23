@@ -7,6 +7,7 @@ import { ArrowsOut, Info, TrendUp, Warning, Receipt, ChartBar, Lock, ArrowDown }
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { FixedVariableInfo } from './FixedVariableInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 // Helper icon
 const TargetIcon = ({ size }: { size: number }) => (
@@ -17,72 +18,73 @@ const TargetIcon = ({ size }: { size: number }) => (
     </svg>
 );
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Fixed Expenses', subtitle: 'Annualized', value: '$840,000', change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'blue' },
-    { id: '2', label: 'Variable Expenses', subtitle: 'Last 30 Days', value: '$45,230', change: '+5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [40, 42, 41, 44, 43, 45], color: 'blue' },
-    { id: '3', label: 'Flexibility Ratio', subtitle: 'Var / Total', value: '35%', change: '+1.5%', trend: 'up', icon: <ArrowDown size={18} />, sparklineData: [32, 33, 33, 34, 34, 35], color: 'blue' },
-    { id: '4', label: 'Fixed Cost Growth', subtitle: 'YoY', value: '2.1%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [2.5, 2.4, 2.3, 2.2, 2.1, 2.1], color: 'blue' },
+// --- KPI Data getter functions ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('fixed_expenses'), subtitle: t('annualized'), value: '$840,000', change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'blue' },
+    { id: '2', label: t('variable_expenses'), subtitle: t('last_30_days'), value: '$45,230', change: '+5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [40, 42, 41, 44, 43, 45], color: 'blue' },
+    { id: '3', label: t('flexibility_ratio'), subtitle: t('var_total'), value: '35%', change: '+1.5%', trend: 'up', icon: <ArrowDown size={18} />, sparklineData: [32, 33, 33, 34, 34, 35], color: 'blue' },
+    { id: '4', label: t('fixed_cost_growth'), subtitle: t('yoy'), value: '2.1%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [2.5, 2.4, 2.3, 2.2, 2.1, 2.1], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Var Cost Volatility', subtitle: 'Std Dev', value: 'High', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [60, 75, 50, 80, 65, 70], color: 'blue' },
-    { id: '6', label: 'Break-Even Impact', subtitle: 'Revenue Needed', value: '$1.2M', change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'blue' },
-    { id: '7', label: 'Cost Rigidity', subtitle: 'Fixed / Total', value: '65%', change: '-1.5%', trend: 'down', icon: <Lock size={18} />, sparklineData: [68, 67, 67, 66, 66, 65], color: 'blue' },
-    { id: '8', label: 'Optimization Score', subtitle: 'Cost Efficiency', value: '78/100', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('var_cost_volatility'), subtitle: t('std_dev'), value: t('high'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [60, 75, 50, 80, 65, 70], color: 'blue' },
+    { id: '6', label: t('break_even_impact'), subtitle: t('revenue_needed'), value: '$1.2M', change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'blue' },
+    { id: '7', label: t('cost_rigidity'), subtitle: t('fixed_total'), value: '65%', change: '-1.5%', trend: 'down', icon: <Lock size={18} />, sparklineData: [68, 67, 67, 66, 66, 65], color: 'blue' },
+    { id: '8', label: t('optimization_score'), subtitle: t('cost_efficiency'), value: '78/100', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
-const FIXED_VAR_TREND = [
-    { name: 'Jan', Fixed: 70000, Variable: 30000 },
-    { name: 'Feb', Fixed: 70000, Variable: 35000 },
-    { name: 'Mar', Fixed: 70000, Variable: 32000 },
-    { name: 'Apr', Fixed: 70000, Variable: 40000 },
-    { name: 'May', Fixed: 70000, Variable: 38000 },
-    { name: 'Jun', Fixed: 70000, Variable: 45230 },
+// --- Chart Data getter functions ---
+const getFixedVarTrend = (t: (key: string) => string) => [
+    { name: t('jan'), Fixed: 70000, Variable: 30000 },
+    { name: t('feb'), Fixed: 70000, Variable: 35000 },
+    { name: t('mar'), Fixed: 70000, Variable: 32000 },
+    { name: t('apr'), Fixed: 70000, Variable: 40000 },
+    { name: t('may'), Fixed: 70000, Variable: 38000 },
+    { name: t('jun'), Fixed: 70000, Variable: 45230 },
 ];
 
-const COST_STRUCTURE = [
-    { value: 65, name: 'Fixed' },
-    { value: 35, name: 'Variable' }
+const getCostStructure = (t: (key: string) => string) => [
+    { value: 65, name: t('fixed') },
+    { value: 35, name: t('variable') }
 ];
 
-// --- Mock Data: Table & Matrix ---
-const EXPENSE_CLASSIFICATION = [
-    { name: 'Office Rent', type: 'Fixed', amount: '$20,000', frequency: 'Monthly', category: 'Facilities' },
-    { name: 'Salaries', type: 'Fixed', amount: '$45,000', frequency: 'Monthly', category: 'Payroll' },
-    { name: 'Ad Spend', type: 'Variable', amount: '$12,000', frequency: 'Ad-hoc', category: 'Marketing' },
-    { name: 'Shipping', type: 'Variable', amount: '$5,000', frequency: 'Per Order', category: 'Logistics' },
-    { name: 'Utilities', type: 'Semi-Var', amount: '$1,500', frequency: 'Monthly', category: 'Facilities' },
+// --- Table Data getter function ---
+const getExpenseClassification = (t: (key: string) => string) => [
+    { name: t('office_rent'), type: t('fixed'), amount: '$20,000', frequency: t('monthly'), category: t('facilities') },
+    { name: t('salaries'), type: t('fixed'), amount: '$45,000', frequency: t('monthly'), category: t('payroll') },
+    { name: t('ad_spend'), type: t('variable'), amount: '$12,000', frequency: t('ad_hoc'), category: t('marketing') },
+    { name: t('shipping'), type: t('variable'), amount: '$5,000', frequency: t('per_order'), category: t('logistics') },
+    { name: t('utilities'), type: t('semi_var'), amount: '$1,500', frequency: t('monthly'), category: t('facilities') },
 ];
 
-// Matrix Data: Impact vs Frequency (Rigidity Matrix)
-const MATRIX_DATA = [
-    [1, 9, 'Rent', 'Fixed'],
-    [2, 8, 'Salaries', 'Fixed'],
-    [8, 6, 'Ad Spend', 'Variable'],
-    [9, 4, 'Shipping', 'Variable'],
-    [5, 5, 'Utilities', 'Semi-Var']
+// Matrix Data getter function
+const getMatrixData = (t: (key: string) => string) => [
+    [1, 9, t('rent'), t('fixed')],
+    [2, 8, t('salaries'), t('fixed')],
+    [8, 6, t('ad_spend'), t('variable')],
+    [9, 4, t('shipping'), t('variable')],
+    [5, 5, t('utilities'), t('semi_var')]
 ];
 
-// Additional chart data
-const FIXED_BY_CATEGORY = [
-    { name: 'Salaries', value: 45000 },
-    { name: 'Rent', value: 20000 },
-    { name: 'Insurance', value: 5000 },
-    { name: 'Depreciation', value: 3000 },
-    { name: 'Subscriptions', value: 2000 },
+// Additional chart data getter functions
+const getFixedByCategory = (t: (key: string) => string) => [
+    { name: t('salaries'), value: 45000 },
+    { name: t('rent'), value: 20000 },
+    { name: t('insurance'), value: 5000 },
+    { name: t('depreciation'), value: 3000 },
+    { name: t('subscriptions'), value: 2000 },
 ];
 
-const VARIABLE_BREAKDOWN = [
-    { value: 35, name: 'Marketing' },
-    { value: 28, name: 'Shipping' },
-    { value: 22, name: 'Commissions' },
-    { value: 15, name: 'Utilities' }
+const getVariableBreakdown = (t: (key: string) => string) => [
+    { value: 35, name: t('marketing') },
+    { value: 28, name: t('shipping') },
+    { value: 22, name: t('commissions') },
+    { value: 15, name: t('utilities') }
 ];
 
 export const FixedVariableDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -96,6 +98,16 @@ export const FixedVariableDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // Get translated data
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+    const FIXED_VAR_TREND = getFixedVarTrend(t);
+    const COST_STRUCTURE = getCostStructure(t);
+    const EXPENSE_CLASSIFICATION = getExpenseClassification(t);
+    const MATRIX_DATA = getMatrixData(t);
+    const FIXED_BY_CATEGORY = getFixedByCategory(t);
+    const VARIABLE_BREAKDOWN = getVariableBreakdown(t);
 
     // --- ECharts Options ---
 
@@ -131,15 +143,15 @@ export const FixedVariableDashboard: React.FC = () => {
 
     // Matrix Chart (Scatter)
     const matrixOption: EChartsOption = {
-        title: { text: 'Cost Rigidity Matrix (Flexibility vs Impact)', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('cost_rigidity_matrix'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         grid: { top: 30, right: 30, bottom: 20, left: 30, containLabel: true },
         tooltip: {
             formatter: (params: any) => {
-                return `<b>${params.value[2]}</b><br/>Impact: ${params.value[0]}<br/>Rigidity: ${params.value[1]}<br/>Type: ${params.value[3]}`;
+                return `<b>${params.value[2]}</b><br/>${t('impact')}: ${params.value[0]}<br/>${t('rigidity')}: ${params.value[1]}<br/>${t('type')}: ${params.value[3]}`;
             }
         },
-        xAxis: { name: 'Flexibility', type: 'value', min: 0, max: 10, splitLine: { show: false } },
-        yAxis: { name: 'Impact', type: 'value', min: 0, max: 10, splitLine: { show: false } },
+        xAxis: { name: t('flexibility'), type: 'value', min: 0, max: 10, splitLine: { show: false } },
+        yAxis: { name: t('impact'), type: 'value', min: 0, max: 10, splitLine: { show: false } },
         series: [{
             type: 'scatter',
             symbolSize: 20,
@@ -147,7 +159,9 @@ export const FixedVariableDashboard: React.FC = () => {
             itemStyle: {
                 color: (params: any) => {
                     const type = params.value[3];
-                    return type === 'Fixed' ? '#64748b' : type === 'Variable' ? '#3b82f6' : '#f59e0b';
+                    const fixedTrans = t('fixed');
+                    const variableTrans = t('variable');
+                    return type === fixedTrans ? '#64748b' : type === variableTrans ? '#3b82f6' : '#f59e0b';
                 }
             }
         }]
@@ -162,15 +176,15 @@ export const FixedVariableDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Receipt size={28} className="text-slate-600 dark:text-slate-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Fixed vs Variable</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cost structure & flexibility</p>
+                        <h1 className="text-2xl font-bold">{t('fixed_variable')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('fixed_variable_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -179,7 +193,7 @@ export const FixedVariableDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-slate-600 dark:text-gray-400 dark:hover:text-slate-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-slate-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -203,8 +217,8 @@ export const FixedVariableDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Structure Trend</h3>
-                                <p className="text-xs text-gray-400">Fixed (Slate) vs Variable (Blue)</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_structure_trend')}</h3>
+                                <p className="text-xs text-gray-400">{t('fixed_slate_variable_blue')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -232,8 +246,8 @@ export const FixedVariableDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Fixed Cost Breakdown</h3>
-                                <p className="text-xs text-gray-400">Major fixed expenses</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('fixed_cost_breakdown')}</h3>
+                                <p className="text-xs text-gray-400">{t('major_fixed_expenses')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -262,8 +276,8 @@ export const FixedVariableDashboard: React.FC = () => {
                         ) : (
                             <>
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Current Split</h3>
-                                    <p className="text-xs text-gray-400">Fixed vs Variable Ratio</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('current_split')}</h3>
+                                    <p className="text-xs text-gray-400">{t('fixed_vs_variable_ratio')}</p>
                                 </div>
                                 <ReactECharts option={pieOption} style={{ height: '180px' }} />
                             </>
@@ -277,8 +291,8 @@ export const FixedVariableDashboard: React.FC = () => {
                         ) : (
                             <>
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Variable Cost Mix</h3>
-                                    <p className="text-xs text-gray-400">Variable expense types</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('variable_cost_mix')}</h3>
+                                    <p className="text-xs text-gray-400">{t('variable_expense_types')}</p>
                                 </div>
                                 <ReactECharts option={variablePieOption} style={{ height: '180px' }} />
                             </>
@@ -314,17 +328,17 @@ export const FixedVariableDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expense Classification</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('expense_classification')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Expense Name</th>
-                                            <th className="px-5 py-3">Type</th>
-                                            <th className="px-5 py-3">Category</th>
-                                            <th className="px-5 py-3 text-right">Amount</th>
-                                            <th className="px-5 py-3 text-right">Frequency</th>
+                                            <th className="px-5 py-3">{t('expense_name')}</th>
+                                            <th className="px-5 py-3">{t('type')}</th>
+                                            <th className="px-5 py-3">{t('category')}</th>
+                                            <th className="px-5 py-3 text-end">{t('amount')}</th>
+                                            <th className="px-5 py-3 text-end">{t('frequency')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -333,8 +347,8 @@ export const FixedVariableDashboard: React.FC = () => {
                                                 <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.type}</td>
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.category}</td>
-                                                <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.amount}</td>
-                                                <td className="px-5 py-3 text-right text-gray-500 dark:text-gray-400">{row.frequency}</td>
+                                                <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                                <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400">{row.frequency}</td>
                                             </tr>
                                         ))}
                                     </tbody>

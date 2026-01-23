@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -7,89 +7,94 @@ import { ArrowsOut, Info, TrendUp, Warning, Path, MapTrifold, Hourglass, CheckCi
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { JourneyTouchpointsInfo } from './JourneyTouchpointsInfo';
 import { useAppContext } from '../../../contexts/AppContext';
-
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Touchpoints Count', subtitle: 'Total Interactions', value: '1,240', change: '+12%', trend: 'up', icon: <Path size={18} />, sparklineData: [1100, 1150, 1180, 1200, 1220, 1240], color: 'blue' },
-    { id: '2', label: 'Avg Journey Time', subtitle: 'Discovery to Conversion', value: '14 days', change: '-2 days', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [18, 17, 16, 16, 15, 14], color: 'blue' },
-    { id: '3', label: 'Drop-Off Points', subtitle: 'Highest Friction', value: 'Checkout', change: 'Neutral', trend: 'neutral', icon: <XCircle size={18} />, sparklineData: [5, 5, 6, 6, 5, 5], color: 'blue' },
-    { id: '4', label: 'Conversion Pts', subtitle: 'Successful Deals', value: '85', change: '+15%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [70, 72, 75, 78, 80, 85], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Engagement Score', subtitle: 'Interaction Depth', value: '7.8', change: '+0.3', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [7.2, 7.3, 7.5, 7.6, 7.7, 7.8], color: 'blue' },
-    { id: '6', label: 'Completion %', subtitle: 'End-to-End Success', value: '24%', change: '+1.5%', trend: 'up', icon: <Path size={18} />, sparklineData: [20, 21, 22, 22, 23, 24], color: 'blue' },
-    { id: '7', label: 'Friction Index', subtitle: 'Efficiency Metrics', value: '32', change: '-5', trend: 'up', icon: <Warning size={18} />, sparklineData: [40, 38, 36, 35, 33, 32], color: 'blue' },
-    { id: '8', label: 'Omnichannel Score', subtitle: 'Cross-Channel Activity', value: '68%', change: '+4%', trend: 'up', icon: <MapTrifold size={18} />, sparklineData: [60, 62, 64, 65, 66, 68], color: 'blue' },
-];
-
-// --- Mock Data: Charts ---
-const TOUCHPOINTS_BY_STAGE = [
-    { name: 'Awareness', Count: 450 },
-    { name: 'Interest', Count: 320 },
-    { name: 'Consider', Count: 210 },
-    { name: 'Intent', Count: 140 },
-    { name: 'Purchase', Count: 85 },
-    { name: 'Retention', Count: 35 },
-];
-
-const FUNNEL_DATA = [
-    { value: 100, name: 'Awareness' },
-    { value: 71, name: 'Interest' },
-    { value: 46, name: 'Consideration' },
-    { value: 31, name: 'Intent' },
-    { value: 19, name: 'Purchase' }
-];
-
-// Interaction Log Table
-const INTERACTION_LOG = [
-    { customer: 'Acme Corp', stage: 'Consideration', type: 'Demo Request', date: '2024-01-15', outcome: 'Scheduled' },
-    { customer: 'Globex', stage: 'Interest', type: 'Whitepaper DL', date: '2024-01-16', outcome: 'Nurture' },
-    { customer: 'Soylent', stage: 'Purchase', type: 'Contract Sign', date: '2024-01-14', outcome: 'Won' },
-    { customer: 'Initech', stage: 'Awareness', type: 'Ad Click', date: '2024-01-17', outcome: 'Visited' },
-    { customer: 'Umbrella', stage: 'Intent', type: 'Pricing Page', date: '2024-01-16', outcome: 'High Intent' },
-];
-
-// Sankey Data
-const SANKEY_NODES = [
-    { name: 'Ad Click' }, { name: 'Social' }, { name: 'Email' },
-    { name: 'Landing Page' }, { name: 'Product Page' },
-    { name: 'Cart' }, { name: 'Demo' },
-    { name: 'Purchase' }, { name: 'Drop' }
-];
-
-const SANKEY_LINKS = [
-    { source: 'Ad Click', target: 'Landing Page', value: 50 },
-    { source: 'Social', target: 'Landing Page', value: 30 },
-    { source: 'Email', target: 'Product Page', value: 20 },
-    { source: 'Landing Page', target: 'Product Page', value: 40 },
-    { source: 'Landing Page', target: 'Drop', value: 40 },
-    { source: 'Product Page', target: 'Cart', value: 25 },
-    { source: 'Product Page', target: 'Demo', value: 15 },
-    { source: 'Product Page', target: 'Drop', value: 20 },
-    { source: 'Cart', target: 'Purchase', value: 20 },
-    { source: 'Cart', target: 'Drop', value: 5 },
-    { source: 'Demo', target: 'Purchase', value: 10 },
-    { source: 'Demo', target: 'Drop', value: 5 },
-];
-
-// Additional chart data
-const CHANNEL_PERFORMANCE = [
-    { name: 'Email', Conversions: 45 },
-    { name: 'Paid Search', Conversions: 38 },
-    { name: 'Social', Conversions: 25 },
-    { name: 'Direct', Conversions: 20 },
-];
-
-const DROP_POINT_SPLIT = [
-    { value: 40, name: 'Checkout' },
-    { value: 25, name: 'Cart' },
-    { value: 20, name: 'Product Page' },
-    { value: 15, name: 'Landing Page' }
-];
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 export const JourneyTouchpointsDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
+
+    // --- KPI Data ---
+    const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
+        { id: '1', label: t('touchpoints_per_journey'), subtitle: t('interactions'), value: '4.5', change: '+12%', trend: 'up', icon: <Path size={18} />, sparklineData: [3.8, 4.0, 4.2, 4.3, 4.4, 4.5], color: 'blue' },
+        { id: '2', label: t('avg_journey_length'), subtitle: t('days_to_convert'), value: '14', change: '-2 days', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [18, 17, 16, 16, 15, 14], color: 'blue' },
+        { id: '3', label: t('conversion_rate'), subtitle: t('visitors_to_customers'), value: '3.2%', change: '+0.4%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [2.6, 2.7, 2.9, 3.0, 3.1, 3.2], color: 'blue' },
+        { id: '4', label: t('drop_off_rate'), subtitle: t('funnel_exits'), value: '42%', change: '-3%', trend: 'up', icon: <XCircle size={18} />, sparklineData: [48, 47, 45, 44, 43, 42], color: 'blue' },
+    ], [t]);
+
+    const SIDE_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
+        { id: '5', label: t('first_touch_channel'), subtitle: t('entry_point'), value: t('social'), change: '38%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [32, 33, 35, 36, 37, 38], color: 'blue' },
+        { id: '6', label: t('last_touch_channel'), subtitle: t('exit_point'), value: t('email'), change: '45%', trend: 'up', icon: <Path size={18} />, sparklineData: [40, 41, 42, 43, 44, 45], color: 'blue' },
+        { id: '7', label: t('multi_channel_users'), subtitle: t('cross_channel'), value: '68%', change: '+4%', trend: 'up', icon: <MapTrifold size={18} />, sparklineData: [60, 62, 64, 65, 66, 68], color: 'blue' },
+        { id: '8', label: t('journey_completion'), subtitle: t('full_funnel'), value: '24%', change: '+1.5%', trend: 'up', icon: <Warning size={18} />, sparklineData: [20, 21, 22, 22, 23, 24], color: 'blue' },
+    ], [t]);
+
+    // --- Mock Data: Charts ---
+    const TOUCHPOINTS_BY_STAGE = useMemo(() => [
+        { name: t('awareness'), Count: 450 },
+        { name: t('consideration'), Count: 320 },
+        { name: t('decision'), Count: 210 },
+        { name: t('purchase'), Count: 85 },
+    ], [t]);
+
+    const FUNNEL_DATA = useMemo(() => [
+        { value: 100, name: t('awareness') },
+        { value: 71, name: t('consideration') },
+        { value: 46, name: t('decision') },
+        { value: 19, name: t('purchase') }
+    ], [t]);
+
+    // Channel Performance Data
+    const CHANNEL_PERFORMANCE = useMemo(() => [
+        { name: t('email'), Conversions: 45 },
+        { name: t('search'), Conversions: 38 },
+        { name: t('social'), Conversions: 25 },
+        { name: t('direct'), Conversions: 20 },
+    ], [t]);
+
+    const DROP_POINT_SPLIT = useMemo(() => [
+        { value: 40, name: t('decision') },
+        { value: 25, name: t('consideration') },
+        { value: 20, name: t('awareness') },
+        { value: 15, name: t('purchase') }
+    ], [t]);
+
+    // Interaction Log Table - raw data with outcomeKey for styling
+    const TABLE_DATA = [
+        { id: 'J-001', touchpointsCount: 6, durationDays: 12, outcomeKey: 'converted' },
+        { id: 'J-002', touchpointsCount: 4, durationDays: 8, outcomeKey: 'converted' },
+        { id: 'J-003', touchpointsCount: 3, durationDays: 5, outcomeKey: 'pending' },
+        { id: 'J-004', touchpointsCount: 7, durationDays: 18, outcomeKey: 'dropped' },
+        { id: 'J-005', touchpointsCount: 5, durationDays: 10, outcomeKey: 'pending' },
+    ];
+
+    const TRANSLATED_TABLE = useMemo(() => TABLE_DATA.map(item => ({
+        ...item,
+        outcome: t(item.outcomeKey)
+    })), [t]);
+
+    // Sankey Data
+    const SANKEY_NODES = useMemo(() => [
+        { name: t('social') }, { name: t('email') }, { name: t('search') },
+        { name: t('web') }, { name: t('direct') },
+        { name: t('consideration') }, { name: t('decision') },
+        { name: t('purchase') }, { name: t('dropped') }
+    ], [t]);
+
+    const SANKEY_LINKS = useMemo(() => [
+        { source: t('social'), target: t('web'), value: 50 },
+        { source: t('email'), target: t('web'), value: 30 },
+        { source: t('search'), target: t('consideration'), value: 20 },
+        { source: t('web'), target: t('consideration'), value: 40 },
+        { source: t('web'), target: t('dropped'), value: 40 },
+        { source: t('consideration'), target: t('decision'), value: 25 },
+        { source: t('consideration'), target: t('direct'), value: 15 },
+        { source: t('consideration'), target: t('dropped'), value: 20 },
+        { source: t('decision'), target: t('purchase'), value: 20 },
+        { source: t('decision'), target: t('dropped'), value: 5 },
+        { source: t('direct'), target: t('purchase'), value: 10 },
+        { source: t('direct'), target: t('dropped'), value: 5 },
+    ], [t]);
+
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -107,12 +112,12 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
     // --- ECharts Options ---
 
     // Funnel Chart
-    const funnelOption: EChartsOption = {
-        title: { text: 'Conversion Funnel', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+    const funnelOption: EChartsOption = useMemo(() => ({
+        title: { text: t('funnel_progression'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c}%' },
         series: [
             {
-                name: 'Funnel',
+                name: t('funnel_progression'),
                 type: 'funnel',
                 left: '10%',
                 top: 60,
@@ -132,10 +137,10 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 color: ['#0f766e', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4']
             }
         ]
-    };
+    }), [t, FUNNEL_DATA]);
 
     // Drop Point Split Pie
-    const dropPieOption: EChartsOption = {
+    const dropPieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
         series: [{
@@ -147,11 +152,11 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
             data: DROP_POINT_SPLIT,
             color: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
         }]
-    };
+    }), [DROP_POINT_SPLIT]);
 
     // Sankey Chart
-    const sankeyOption: EChartsOption = {
-        title: { text: 'Customer Journey Flow', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+    const sankeyOption: EChartsOption = useMemo(() => ({
+        title: { text: t('journey_flow'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', triggerOn: 'mousemove' },
         series: [
             {
@@ -165,7 +170,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 label: { color: '#000', fontSize: 10 }
             }
         ]
-    };
+    }), [t, SANKEY_NODES, SANKEY_LINKS]);
 
     return (
         <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
@@ -176,15 +181,15 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <MapTrifold size={28} className="text-teal-600 dark:text-teal-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Journey & Touchpoints</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Lifecycle Mapping</p>
+                        <h1 className="text-2xl font-bold">{t('journey_touchpoints')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('journey_touchpoints_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -193,7 +198,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-teal-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -221,8 +226,8 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                         {/* Recharts: Touchpoints per Stage (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Touchpoints by Stage</h3>
-                                <p className="text-xs text-gray-400">Interaction Volume</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('touchpoint_analysis')}</h3>
+                                <p className="text-xs text-gray-400">{t('journey_stages')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -243,8 +248,8 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                         {/* Recharts: Channel Performance (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Channel Performance</h3>
-                                <p className="text-xs text-gray-400">Conversions by Source</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('channel_effectiveness')}</h3>
+                                <p className="text-xs text-gray-400">{t('channel_contribution')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -277,8 +282,8 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                             {/* ECharts: Conversion Funnel */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Funnel View</h3>
-                                    <p className="text-xs text-gray-400">Yield Analysis</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('funnel_progression')}</h3>
+                                    <p className="text-xs text-gray-400">{t('path_analysis')}</p>
                                 </div>
                                 <ReactECharts option={funnelOption} style={{ height: '180px' }} />
                             </div>
@@ -286,8 +291,8 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                             {/* ECharts: Drop Point Split (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Drop-Off Points</h3>
-                                    <p className="text-xs text-gray-400">Where Customers Leave</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('drop_off_rate')}</h3>
+                                    <p className="text-xs text-gray-400">{t('funnel_exits')}</p>
                                 </div>
                                 <ReactECharts option={dropPieOption} style={{ height: '180px' }} />
                             </div>
@@ -319,30 +324,28 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                         {/* Table (2 cols) */}
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Interactions</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('recent_journeys')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Customer</th>
-                                            <th className="px-5 py-3">Stage</th>
-                                            <th className="px-5 py-3">Type</th>
-                                            <th className="px-5 py-3">Date</th>
-                                            <th className="px-5 py-3 text-right">Outcome</th>
+                                            <th className="px-5 py-3">{t('journey_id')}</th>
+                                            <th className="px-5 py-3">{t('touchpoints')}</th>
+                                            <th className="px-5 py-3">{t('duration')}</th>
+                                            <th className="px-5 py-3 text-end">{t('outcome')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {INTERACTION_LOG.map((row, index) => (
+                                        {TRANSLATED_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.customer}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.stage}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.type}</td>
-                                                <td className="px-5 py-3 text-gray-500 dark:text-gray-500 text-xs font-datetime">{row.date}</td>
-                                                <td className="px-5 py-3 text-right">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.outcome === 'Won' ? 'bg-green-100 text-green-700' :
-                                                        row.outcome === 'High Intent' ? 'bg-teal-100 text-teal-700' :
-                                                            'bg-gray-100 text-gray-600'
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.touchpointsCount}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.durationDays}d</td>
+                                                <td className="px-5 py-3 text-end">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.outcomeKey === 'converted' ? 'bg-green-100 text-green-700' :
+                                                        row.outcomeKey === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-red-100 text-red-600'
                                                         }`}>
                                                         {row.outcome}
                                                     </span>

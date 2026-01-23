@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
         });
         res.json(items);
     } catch (error) {
-        console.error('Error fetching vault items:', error);
+        apiLogger.error('Error fetching vault items:', error);
         res.status(500).json({ error: 'Failed to fetch vault items' });
     }
 });
@@ -51,7 +52,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Error creating vault item:', error);
+        apiLogger.error('Error creating vault item:', error);
         res.status(500).json({ error: 'Failed to create vault item' });
     }
 });
@@ -81,7 +82,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Error updating vault item:', error);
+        apiLogger.error('Error updating vault item:', error);
         res.status(500).json({ error: 'Failed to update vault item' });
     }
 });
@@ -103,7 +104,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
         });
         res.json({ success: true });
     } catch (error) {
-        console.error('Error deleting vault item:', error);
+        apiLogger.error('Error deleting vault item:', error);
         res.status(500).json({ error: 'Failed to delete vault item' });
     }
 });

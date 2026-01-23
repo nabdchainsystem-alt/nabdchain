@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get('/me', requireAuth, async (req, res) => {
 
         res.json(user);
     } catch (error) {
-        console.error('[UserRoutes] Error fetching user:', error);
+        apiLogger.error('Error fetching user:', error);
         res.status(500).json({ error: 'Failed to fetch user' });
     }
 });
@@ -59,7 +60,7 @@ router.patch('/me', requireAuth, async (req, res) => {
 
         res.json(user);
     } catch (error) {
-        console.error('[UserRoutes] Error updating user:', error);
+        apiLogger.error('Error updating user:', error);
         res.status(500).json({ error: 'Failed to update user' });
     }
 });

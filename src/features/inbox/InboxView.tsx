@@ -19,6 +19,25 @@ import { sanitizeHTML } from '../../utils/sanitize';
 import { NavItem, FolderItem, ToolbarAction, PlusIcon } from './components';
 import { appLogger } from '../../utils/logger';
 
+interface LocalBoardTask {
+  id: string;
+  name: string;
+  status: string;
+  priority: string;
+  personId: string | null;
+  dueDate: string;
+  textValues: Record<string, unknown>;
+  selected: boolean;
+}
+
+interface LocalBoardGroup {
+  tasks: LocalBoardTask[];
+}
+
+interface LocalBoardData {
+  groups: LocalBoardGroup[];
+}
+
 interface MailItem {
   id: string;
   sender: string;
@@ -262,12 +281,12 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
       // Attempt to find the main board data in localStorage
       const keys = ['room-board-data-v2-main', 'room-board-data-v2-default-board'];
       let targetKey = '';
-      let boardData: any = null;
+      let boardData: LocalBoardData | null = null;
 
       for (const key of keys) {
         const data = localStorage.getItem(key);
         if (data) {
-          boardData = JSON.parse(data);
+          boardData = JSON.parse(data) as LocalBoardData;
           targetKey = key;
           break;
         }

@@ -11,6 +11,7 @@ import emailRoutes from './routes/emailRoutes';
 import inviteRoutes from './routes/inviteRoutes';
 import teamRoutes from './routes/teamRoutes';
 import boardRoutes from './routes/boardRoutes';
+import roomRoutes from './routes/roomRoutes';
 import vaultRoutes from './routes/vaultRoutes';
 import docRoutes from './routes/docRoutes';
 import talkRoutes from './routes/talkRoutes';
@@ -23,6 +24,7 @@ import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
 import { initializeSocket } from './socket/index';
+import { serverLogger, authLogger, dbLogger } from './utils/logger';
 
 // Validate environment variables at startup
 validateEnv();
@@ -70,8 +72,8 @@ const corsOptions: cors.CorsOptions = {
         if (!isProduction) {
             return callback(null, true);
         }
-        // Check if origin is in allowed list
-        if (allowedOrigins.some(allowed => origin.includes(allowed.replace('https://', '').replace('http://', '')))) {
+        // Check if origin exactly matches an allowed origin (secure matching)
+        if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
         callback(new Error('Not allowed by CORS'));
@@ -162,7 +164,7 @@ app.use(async (req: any, res, next) => {
                     });
                 }
             } catch (e) {
-                console.error("User Sync Error", e);
+                dbLogger.error('User Sync Error', e);
             }
         }
         next();
@@ -172,7 +174,7 @@ app.use(async (req: any, res, next) => {
 // --- HELPERS ---
 
 function handleError(res: express.Response, error: unknown) {
-    console.error(error);
+    serverLogger.error('Request error:', error);
     const message = error instanceof Error ? error.message : String(error);
     res.status(500).json({ error: message });
 }
@@ -182,6 +184,7 @@ app.use('/api/email', emailRoutes);
 app.use('/api/invite', inviteRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/boards', boardRoutes);
+app.use('/api', roomRoutes);  // Handles /api/rooms, /api/rows, /api/columns
 app.use('/api/vault', vaultRoutes);
 app.use('/api/docs', docRoutes);
 app.use('/api/talk', talkRoutes);
@@ -235,12 +238,12 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
     try {
         const userId = req.auth.userId;
         const { name, icon, color } = req.body;
-        console.log(`[Workspaces] Creating workspace for user: ${userId}`, { name, icon, color });
+        serverLogger.info(`Creating workspace for user: ${userId}`, { name, icon, color });
 
         // Ensure user exists first (redundant check but good for debug)
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
         if (!userExists) {
-            console.error(`[Workspaces] User ${userId} not found in DB!`);
+            dbLogger.error(`User ${userId} not found in DB!`);
             // Auto-create if missing (failsafe for dev mode inconsistencies)
             await prisma.user.create({
                 data: {
@@ -271,7 +274,7 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
             }
         });
 
-        console.log(`[Workspaces] Workspace created: ${newWorkspace.id}`);
+        serverLogger.info(`Workspace created: ${newWorkspace.id}`);
 
         // Update user's active workspace
         await prisma.user.update({
@@ -281,7 +284,7 @@ app.post('/api/workspaces', requireAuth, async (req: any, res) => {
 
         res.json(newWorkspace);
     } catch (e) {
-        console.error('[Workspaces] Creation Failed:', e);
+        serverLogger.error('Workspace creation failed:', e);
         handleError(res, e);
     }
 });
@@ -408,7 +411,7 @@ const io = new SocketIOServer(httpServer, {
 initializeSocket(io);
 
 httpServer.listen(PORT, () => {
-    console.log(`[Server] NABD API running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-    console.log(`[Socket.io] WebSocket server ready`);
+    serverLogger.info(`NABD API running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
+    serverLogger.info('Socket.io WebSocket server ready');
 });
 

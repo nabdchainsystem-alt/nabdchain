@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -95,7 +96,7 @@ router.get('/:containerId', requireAuth, async (req, res: Response) => {
         });
         res.json(pages);
     } catch (e) {
-        console.error(e);
+        apiLogger.error('Failed to fetch docs', e);
         res.status(500).json({ error: 'Failed to fetch docs' });
     }
 });
@@ -118,7 +119,7 @@ router.get('/page/:id', requireAuth, async (req, res: Response) => {
 
         res.json(page);
     } catch (e) {
-        console.error(e);
+        apiLogger.error('Failed to fetch page', e);
         res.status(500).json({ error: 'Failed to fetch page' });
     }
 });
@@ -165,7 +166,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
         if (e instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: e.issues });
         }
-        console.error('Create Page Error', e);
+        apiLogger.error('Create Page Error', e);
         res.status(500).json({ error: 'Failed to create page' });
     }
 });
@@ -203,7 +204,7 @@ router.patch('/:id', requireAuth, async (req, res: Response) => {
         if (e instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: e.issues });
         }
-        console.error(e);
+        apiLogger.error('Failed to update page', e);
         res.status(500).json({ error: 'Failed to update page' });
     }
 });
@@ -227,7 +228,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
         await prisma.docPage.delete({ where: { id } });
         res.json({ success: true });
     } catch (e) {
-        console.error(e);
+        apiLogger.error('Failed to delete page', e);
         res.status(500).json({ error: 'Failed to delete page' });
     }
 });

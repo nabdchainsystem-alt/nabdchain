@@ -60,7 +60,7 @@ export const emailService = {
     },
 
     trash: async (token: string, id: string, provider: string) => {
-        await fetch(`${API_BASE}/email/trash`, {
+        const res = await fetch(`${API_BASE}/email/trash`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -68,10 +68,12 @@ export const emailService = {
             },
             body: JSON.stringify({ id, provider })
         });
+        if (!res.ok) throw new Error('Failed to move email to trash');
+        return res.json();
     },
 
     archive: async (token: string, id: string, provider: string) => {
-        await fetch(`${API_BASE}/email/archive`, {
+        const res = await fetch(`${API_BASE}/email/archive`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -79,10 +81,12 @@ export const emailService = {
             },
             body: JSON.stringify({ id, provider })
         });
+        if (!res.ok) throw new Error('Failed to archive email');
+        return res.json();
     },
 
     markRead: async (token: string, id: string, provider: string) => {
-        await fetch(`${API_BASE}/email/read`, {
+        const res = await fetch(`${API_BASE}/email/read`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -90,6 +94,8 @@ export const emailService = {
             },
             body: JSON.stringify({ id, provider })
         });
+        if (!res.ok) throw new Error('Failed to mark email as read');
+        return res.json();
     },
 
     // New method to get auth url

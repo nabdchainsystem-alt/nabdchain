@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, TrendUp, MagicWand, Graph } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface ForecastOptimizationInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface ForecastOptimizationInfoProps {
 }
 
 export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
     }, []);
 
     const questions = [
-        { q: 'How is the forecast calculated?', a: 'We use a linear regression model based on the last 6 months of expense data, adjusted for known seasonality.' },
-        { q: 'What is "Optimization Potential"?', a: 'The estimated savings amount if all recommended actions (e.g., switching vendors, bulk buying) are implemented.' },
-        { q: 'What determines the "Confidence Level"?', a: 'It reflects the statistical variance of the forecast model. Lower variance means higher confidence.' },
-        { q: 'How can we reduce expenses?', a: 'Review the "Optimization Opportunities" table for specific actions like renegotiating contracts or cutting unused licenses.' }
+        { q: t('fo_info_q1'), a: t('fo_info_a1') },
+        { q: t('fo_info_q2'), a: t('fo_info_a2') },
+        { q: t('fo_info_q3'), a: t('fo_info_a3') },
+        { q: t('fo_info_q4'), a: t('fo_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -60,63 +62,63 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Forecast & Optimization
+                            {t('forecast_optimization')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Future Planning & Savings</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('fo_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard predicts future spending based on historical data and identifies specific opportunities to reduce costs through optimization strategies.
+                            {t('fo_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,29 +128,29 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Forecasted Expenses" desc="Projected next month spend." />
-                                    <DetailItem title="Accuracy" desc="Historical model precision." />
-                                    <DetailItem title="Expected Savings" desc="Value of implemented optimizations." />
-                                    <DetailItem title="Risk/Confidence" desc="Reliability of the projection." />
+                                    <DetailItem title={t('forecasted_expenses')} desc={t('fo_forecasted_desc')} />
+                                    <DetailItem title={t('accuracy')} desc={t('fo_accuracy_desc')} />
+                                    <DetailItem title={t('expected_savings')} desc={t('fo_savings_desc')} />
+                                    <DetailItem title={t('risk_confidence')} desc={t('fo_confidence_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Forecast by Category" desc="Sector-specific growth trends." />
-                                    <DetailItem title="Future Allocation" desc="Projected budget distribution." />
-                                    <DetailItem title="Optimization Table" desc="Actionable cost-saving items." />
-                                    <DetailItem title="Savings Landscape" desc="Visualizing easy wins vs hard savings." />
+                                    <DetailItem title={t('forecast_by_category')} desc={t('fo_by_category_desc')} />
+                                    <DetailItem title={t('future_allocation')} desc={t('fo_allocation_desc')} />
+                                    <DetailItem title={t('optimization_table')} desc={t('fo_opt_table_desc')} />
+                                    <DetailItem title={t('savings_landscape')} desc={t('fo_landscape_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -157,20 +159,20 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Models
+                            {t('models')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Graph size={14} className="text-gray-500" />
-                                    <span>Predictive Logic</span>
+                                    <span>{t('predictive_logic')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">Time Series</div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">Basic linear extrapolation with seasonal adjustments for recurring annual expenses.</p>
+                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">{t('time_series')}</div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('fo_time_series_desc')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -183,7 +185,7 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -193,7 +195,7 @@ export const ForecastOptimizationInfo: React.FC<ForecastOptimizationInfoProps> =
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>

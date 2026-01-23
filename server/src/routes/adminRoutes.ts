@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -69,7 +70,7 @@ const requireAdmin = async (req: Request, res: Response, next: NextFunction) => 
 
         next();
     } catch (error) {
-        console.error('Admin check error:', error);
+        apiLogger.error('Admin check error:', error);
         res.status(500).json({ error: 'Failed to verify admin status' });
     }
 };
@@ -89,7 +90,7 @@ router.get('/features', requireAuth, async (req, res: Response) => {
 
         res.json(allFlags);
     } catch (error) {
-        console.error('Get Features Error:', error);
+        apiLogger.error('Get Features Error:', error);
         res.status(500).json({ error: 'Failed to fetch features' });
     }
 });
@@ -119,11 +120,11 @@ router.put('/features/:key', requireAuth, requireAdmin, async (req, res: Respons
             }
         });
 
-        console.log(`[Admin] Feature "${key}" set to ${enabled} by user ${userId}`);
+        apiLogger.info(`[Admin] Feature "${key}" set to ${enabled} by user ${userId}`);
 
         res.json(flag);
     } catch (error) {
-        console.error('Toggle Feature Error:', error);
+        apiLogger.error('Toggle Feature Error:', error);
         res.status(500).json({ error: 'Failed to toggle feature' });
     }
 });
@@ -146,7 +147,7 @@ router.get('/users', requireAuth, requireAdmin, async (req, res: Response) => {
 
         res.json(users);
     } catch (error) {
-        console.error('Get Users Error:', error);
+        apiLogger.error('Get Users Error:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
@@ -179,11 +180,11 @@ router.put('/users/:id/role', requireAuth, requireAdmin, async (req, res: Respon
             }
         });
 
-        console.log(`[Admin] User ${id} role changed to "${role}" by admin ${adminUserId}`);
+        apiLogger.info(`[Admin] User ${id} role changed to "${role}" by admin ${adminUserId}`);
 
         res.json(user);
     } catch (error) {
-        console.error('Update User Role Error:', error);
+        apiLogger.error('Update User Role Error:', error);
         res.status(500).json({ error: 'Failed to update user role' });
     }
 });
@@ -202,7 +203,7 @@ router.get('/me', requireAuth, async (req, res: Response) => {
             user
         });
     } catch (error) {
-        console.error('Get Admin Status Error:', error);
+        apiLogger.error('Get Admin Status Error:', error);
         res.status(500).json({ error: 'Failed to get admin status' });
     }
 });
@@ -235,7 +236,7 @@ router.get('/me/visibility', requireAuth, async (req, res: Response) => {
 
         res.json(visibility);
     } catch (error) {
-        console.error('Get Visibility Error:', error);
+        apiLogger.error('Get Visibility Error:', error);
         res.status(500).json({ error: 'Failed to get visibility' });
     }
 });
@@ -265,7 +266,7 @@ router.get('/users/:userId/permissions', requireAuth, requireAdmin, async (req, 
 
         res.json({ userId, permissions });
     } catch (error) {
-        console.error('Get User Permissions Error:', error);
+        apiLogger.error('Get User Permissions Error:', error);
         res.status(500).json({ error: 'Failed to get user permissions' });
     }
 });
@@ -298,11 +299,11 @@ router.put('/users/:userId/permissions', requireAuth, requireAdmin, async (req, 
             }
         }
 
-        console.log(`[Admin] User ${userId} permissions updated by admin ${adminUserId}`);
+        apiLogger.info(`[Admin] User ${userId} permissions updated by admin ${adminUserId}`);
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Update User Permissions Error:', error);
+        apiLogger.error('Update User Permissions Error:', error);
         res.status(500).json({ error: 'Failed to update user permissions' });
     }
 });
@@ -317,11 +318,11 @@ router.delete('/users/:userId/permissions', requireAuth, requireAdmin, async (re
             where: { userId }
         });
 
-        console.log(`[Admin] User ${userId} permissions reset to global by admin ${adminUserId}`);
+        apiLogger.info(`[Admin] User ${userId} permissions reset to global by admin ${adminUserId}`);
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Reset User Permissions Error:', error);
+        apiLogger.error('Reset User Permissions Error:', error);
         res.status(500).json({ error: 'Failed to reset user permissions' });
     }
 });
@@ -347,11 +348,11 @@ router.post('/bootstrap', requireAuth, async (req, res: Response) => {
             select: { id: true, email: true, name: true, role: true }
         });
 
-        console.log(`[Admin] Bootstrap: User ${userId} (${user.email}) promoted to admin`);
+        apiLogger.info(`[Admin] Bootstrap: User ${userId} (${user.email}) promoted to admin`);
 
         res.json({ success: true, message: 'You are now an admin', user });
     } catch (error) {
-        console.error('Bootstrap Error:', error);
+        apiLogger.error('Bootstrap Error:', error);
         res.status(500).json({ error: 'Failed to bootstrap admin' });
     }
 });

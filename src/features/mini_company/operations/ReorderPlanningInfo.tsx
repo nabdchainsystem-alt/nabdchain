@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, ShoppingCart, Table, Calculator, Warning } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface ReorderPlanningInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface ReorderPlanningInfoProps {
 }
 
 export const ReorderPlanningInfo: React.FC<ReorderPlanningInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -70,9 +72,9 @@ export const ReorderPlanningInfo: React.FC<ReorderPlanningInfoProps> = ({ isOpen
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Reorder & Planning
+                            {t('reorder_planning')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Replenishment & Safety Stock</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('reorder_planning_desc')}</p>
                     </div>
                     <button
                         onClick={onClose}

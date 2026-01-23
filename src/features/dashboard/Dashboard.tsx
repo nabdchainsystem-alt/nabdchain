@@ -36,6 +36,38 @@ interface Activity {
   createdAt: string;
 }
 
+interface StorageRow {
+  id: string;
+  name?: string;
+  title?: string;
+  person?: string;
+  people?: string;
+  status?: string;
+  date?: string;
+  dueDate?: string;
+  priority?: string | null;
+  [key: string]: unknown;
+}
+
+interface StorageGroup {
+  rows?: StorageRow[];
+  [key: string]: unknown;
+}
+
+interface EventData {
+  name: string;
+  priority: string;
+  date: string;
+  description: string;
+  attendees: string;
+}
+
+interface EmailData {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 interface DashboardProps {
   onBoardCreated: (board: Board) => void;
   recentlyVisited: RecentlyVisitedItem[];
@@ -386,9 +418,9 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ onBoardCreated, recen
         try {
           const groups = JSON.parse(localStorage.getItem(key) || '[]');
           if (Array.isArray(groups)) {
-            groups.forEach((group: any) => {
+            groups.forEach((group: StorageGroup) => {
               if (group.rows && Array.isArray(group.rows)) {
-                group.rows.forEach((row: any) => {
+                group.rows.forEach((row: StorageRow) => {
                   // Convert row to task format
                   // Handle both 'person' and 'people' field names (RoomTable uses 'people')
                   const personData = row.person || row.people || '';
@@ -611,7 +643,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ onBoardCreated, recen
     // Keeping it for now as per "Auto-save" behavior.
   };
 
-  const handleEventSave = async (eventData: any, boardId: string) => {
+  const handleEventSave = async (eventData: EventData, boardId: string) => {
     try {
       if (!boardId) return;
 
@@ -633,7 +665,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ onBoardCreated, recen
     }
   };
 
-  const handleEmailSend = (emailData: any) => {
+  const handleEmailSend = (emailData: EmailData) => {
     appLogger.info("Email Sent:", emailData);
     // Here you would typically integrate with an email API or logic
     setActivities(prev => [{

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Users, Diamond, Activity, Table, Kanban, ListDashes } from 'phosphor-react';
@@ -9,6 +9,7 @@ import { RetentionChurnDashboard } from './RetentionChurnDashboard';
 import { JourneyTouchpointsDashboard } from './JourneyTouchpointsDashboard';
 import { SatisfactionFeedbackDashboard } from './SatisfactionFeedbackDashboard';
 import { ForecastLifetimeRiskDashboard } from './ForecastLifetimeRiskDashboard';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const INITIAL_BOARD: Board = {
     id: 'customer-data',
@@ -35,6 +36,8 @@ const INITIAL_BOARD: Board = {
 };
 
 export const CustomersPage = () => {
+    const { t } = useLanguage();
+
     const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('mini_company_customers_board');
         if (saved) {
@@ -74,49 +77,49 @@ export const CustomersPage = () => {
 
     const dashboardSections = [
         {
-            title: 'Customer Intelligence',
+            title: t('customer_intelligence'),
             options: [
                 {
                     id: 'customer_overview',
-                    label: 'Customer Overview',
+                    label: t('customer_overview'),
                     icon: Users,
-                    description: 'Base size & health'
+                    description: t('customer_overview_desc')
                 },
                 {
                     id: 'segmentation_value',
-                    label: 'Segmentation & Value',
+                    label: t('segmentation_value'),
                     icon: Diamond,
-                    description: 'Value-based analysis'
+                    description: t('segmentation_value_desc')
                 },
                 {
                     id: 'behavior_patterns',
-                    label: 'Behavior & Patterns',
+                    label: t('behavior_patterns'),
                     icon: Activity,
-                    description: 'Purchasing habits'
+                    description: t('behavior_patterns_desc')
                 },
                 {
                     id: 'retention_churn',
-                    label: 'Retention & Churn',
-                    icon: Activity, // Using generic icon as we didn't import others yet for this list, or let's use Activity/Users
-                    description: 'Stability analysis'
+                    label: t('retention_churn'),
+                    icon: Activity,
+                    description: t('retention_churn_desc')
                 },
                 {
                     id: 'journey_touchpoints',
-                    label: 'Journey & Touchpoints',
+                    label: t('journey_touchpoints'),
                     icon: Users,
-                    description: 'Lifecycle mapping'
+                    description: t('journey_touchpoints_desc')
                 },
                 {
                     id: 'satisfaction_feedback',
-                    label: 'Satisfaction & Feedback',
+                    label: t('satisfaction_feedback'),
                     icon: Diamond,
-                    description: 'Sentiment & NPS'
+                    description: t('satisfaction_feedback_desc')
                 },
                 {
                     id: 'forecast_risk',
-                    label: 'Forecast & Lifetime Risk',
+                    label: t('forecast_lifetime_risk'),
                     icon: Diamond,
-                    description: 'Predictive analytics'
+                    description: t('forecast_lifetime_risk_desc')
                 }
             ]
         }
@@ -143,9 +146,16 @@ export const CustomersPage = () => {
         }
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('customer_intelligence'),
+        description: t('customer_intelligence_desc')
+    }), [board, t]);
+
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

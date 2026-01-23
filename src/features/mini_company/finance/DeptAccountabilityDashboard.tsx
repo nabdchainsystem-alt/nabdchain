@@ -7,58 +7,58 @@ import { ArrowsOut, Info, TrendUp, Warning, UsersThree, Buildings, Target, Troph
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { DeptAccountabilityInfo } from './DeptAccountabilityInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Departments Count', subtitle: 'Active', value: '8', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [8, 8, 8, 8, 8, 8], color: 'blue' },
-    { id: '2', label: 'Highest Spending', subtitle: 'Engineering', value: '$120k', change: '+5%', trend: 'up', icon: <UsersThree size={18} />, sparklineData: [110, 115, 112, 118, 120, 120], color: 'blue' },
-    { id: '3', label: 'Budget Variance', subtitle: 'Total Excess', value: '$12.5k', change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'blue' },
-    { id: '4', label: 'Avg Dept Expense', subtitle: 'Per Month', value: '$45k', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'blue' },
+// --- KPI Data (will be translated in component) ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('departments_count'), subtitle: t('active'), value: '8', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [8, 8, 8, 8, 8, 8], color: 'blue' },
+    { id: '2', label: t('highest_spending'), subtitle: t('engineering'), value: '$120k', change: '+5%', trend: 'up', icon: <UsersThree size={18} />, sparklineData: [110, 115, 112, 118, 120, 120], color: 'blue' },
+    { id: '3', label: t('budget_variance'), subtitle: t('total_excess'), value: '$12.5k', change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'blue' },
+    { id: '4', label: t('avg_dept_expense'), subtitle: t('per_month'), value: '$45k', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Over-Budget Depts', subtitle: 'Red Flags', value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [1, 1, 0, 1, 1, 2], color: 'blue' },
-    { id: '6', label: 'Efficiency Score', subtitle: 'Org Wide', value: '85/100', change: '+2', trend: 'up', icon: <Trophy size={18} />, sparklineData: [80, 82, 83, 84, 84, 85], color: 'blue' },
-    { id: '7', label: 'Accountability Index', subtitle: 'Compliance', value: '92%', change: '0%', trend: 'neutral', icon: <ChartPieSlice size={18} />, sparklineData: [90, 91, 92, 92, 92, 92], color: 'blue' },
-    { id: '8', label: 'Cost per Employee', subtitle: 'Avg Monthly', value: '$2,850', change: '-2%', trend: 'down', icon: <UsersThree size={18} />, sparklineData: [3000, 2950, 2900, 2880, 2860, 2850], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('over_budget_depts'), subtitle: t('red_flags'), value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [1, 1, 0, 1, 1, 2], color: 'blue' },
+    { id: '6', label: t('efficiency_score'), subtitle: t('org_wide'), value: '85/100', change: '+2', trend: 'up', icon: <Trophy size={18} />, sparklineData: [80, 82, 83, 84, 84, 85], color: 'blue' },
+    { id: '7', label: t('accountability_index'), subtitle: t('compliance'), value: '92%', change: '0%', trend: 'neutral', icon: <ChartPieSlice size={18} />, sparklineData: [90, 91, 92, 92, 92, 92], color: 'blue' },
+    { id: '8', label: t('cost_per_employee'), subtitle: t('avg_monthly'), value: '$2,850', change: '-2%', trend: 'down', icon: <UsersThree size={18} />, sparklineData: [3000, 2950, 2900, 2880, 2860, 2850], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
-const SPEND_PER_DEPT = [
-    { name: 'Engineering', Amount: 120000 },
-    { name: 'Marketing', Amount: 85000 },
-    { name: 'Sales', Amount: 95000 },
-    { name: 'HR', Amount: 25000 },
-    { name: 'Operations', Amount: 45000 },
-    { name: 'Finance', Amount: 30000 },
+// --- Translated Data Functions ---
+const getSpendPerDept = (t: (key: string) => string) => [
+    { name: t('engineering'), Amount: 120000 },
+    { name: t('marketing'), Amount: 85000 },
+    { name: t('sales'), Amount: 95000 },
+    { name: t('hr'), Amount: 25000 },
+    { name: t('operations'), Amount: 45000 },
+    { name: t('finance'), Amount: 30000 },
 ];
 
-const DEPT_SHARE = [
-    { value: 120000, name: 'Engineering' },
-    { value: 95000, name: 'Sales' },
-    { value: 85000, name: 'Marketing' },
-    { value: 45000, name: 'Operations' },
-    { value: 30000, name: 'Finance' },
-    { value: 25000, name: 'HR' }
+const getDeptShare = (t: (key: string) => string) => [
+    { value: 120000, name: t('engineering') },
+    { value: 95000, name: t('sales') },
+    { value: 85000, name: t('marketing') },
+    { value: 45000, name: t('operations') },
+    { value: 30000, name: t('finance') },
+    { value: 25000, name: t('hr') }
 ];
 
-// --- Mock Data: Table & Graph ---
-const DEPT_PERFORMANCE = [
-    { dept: 'Engineering', budget: '$110,000', actual: '$120,000', variance: '+$10,000', owner: 'Mike Ross' },
-    { dept: 'Sales', budget: '$100,000', actual: '$95,000', variance: '-$5,000', owner: 'Harvey Specter' },
-    { dept: 'Marketing', budget: '$80,000', actual: '$85,000', variance: '+$5,000', owner: 'Donna Paulsen' },
-    { dept: 'Operations', budget: '$50,000', actual: '$45,000', variance: '-$5,000', owner: 'Louis Litt' },
-    { dept: 'HR', budget: '$25,000', actual: '$25,000', variance: '$0', owner: 'Rachel Zane' },
+const getDeptPerformance = (t: (key: string) => string) => [
+    { dept: t('engineering'), budget: '$110,000', actual: '$120,000', variance: '+$10,000', owner: 'Mike Ross' },
+    { dept: t('sales'), budget: '$100,000', actual: '$95,000', variance: '-$5,000', owner: 'Harvey Specter' },
+    { dept: t('marketing'), budget: '$80,000', actual: '$85,000', variance: '+$5,000', owner: 'Donna Paulsen' },
+    { dept: t('operations'), budget: '$50,000', actual: '$45,000', variance: '-$5,000', owner: 'Louis Litt' },
+    { dept: t('hr'), budget: '$25,000', actual: '$25,000', variance: '$0', owner: 'Rachel Zane' },
 ];
 
-// Network Graph Data (Mock)
-const NETWORK_NODES = [
-    { id: '0', name: 'Finance', symbolSize: 30, value: 30000, category: 0 },
-    { id: '1', name: 'Engineering', symbolSize: 50, value: 120000, category: 1 },
-    { id: '2', name: 'Sales', symbolSize: 45, value: 95000, category: 1 },
-    { id: '3', name: 'Marketing', symbolSize: 40, value: 85000, category: 1 },
-    { id: '4', name: 'Operations', symbolSize: 35, value: 45000, category: 2 },
-    { id: '5', name: 'HR', symbolSize: 25, value: 25000, category: 2 },
+// Network Graph Data (needs translation for labels)
+const getNetworkNodes = (t: (key: string) => string) => [
+    { id: '0', name: t('finance'), symbolSize: 30, value: 30000, category: 0 },
+    { id: '1', name: t('engineering'), symbolSize: 50, value: 120000, category: 1 },
+    { id: '2', name: t('sales'), symbolSize: 45, value: 95000, category: 1 },
+    { id: '3', name: t('marketing'), symbolSize: 40, value: 85000, category: 1 },
+    { id: '4', name: t('operations'), symbolSize: 35, value: 45000, category: 2 },
+    { id: '5', name: t('hr'), symbolSize: 25, value: 25000, category: 2 },
 ];
 const NETWORK_LINKS = [
     { source: '0', target: '1' },
@@ -70,25 +70,37 @@ const NETWORK_LINKS = [
     { source: '2', target: '3' }  // Sales -> Marketing interaction
 ];
 
-// Additional chart data
-const BUDGET_VS_ACTUAL = [
-    { name: 'Engineering', Budget: 110000, Actual: 120000 },
-    { name: 'Sales', Budget: 100000, Actual: 95000 },
-    { name: 'Marketing', Budget: 80000, Actual: 85000 },
-    { name: 'Operations', Budget: 50000, Actual: 45000 },
-    { name: 'HR', Budget: 25000, Actual: 25000 },
+const getBudgetVsActual = (t: (key: string) => string) => [
+    { name: t('engineering'), Budget: 110000, Actual: 120000 },
+    { name: t('sales'), Budget: 100000, Actual: 95000 },
+    { name: t('marketing'), Budget: 80000, Actual: 85000 },
+    { name: t('operations'), Budget: 50000, Actual: 45000 },
+    { name: t('hr'), Budget: 25000, Actual: 25000 },
 ];
 
-const VARIANCE_STATUS = [
-    { value: 40, name: 'Over Budget' },
-    { value: 35, name: 'On Track' },
-    { value: 25, name: 'Under Budget' }
+const getVarianceStatus = (t: (key: string) => string) => [
+    { value: 40, name: t('over_budget') },
+    { value: 35, name: t('on_track') },
+    { value: 25, name: t('under_budget') }
 ];
 
 export const DeptAccountabilityDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Get translated KPIs
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+
+    // Get translated chart/table data
+    const SPEND_PER_DEPT = getSpendPerDept(t);
+    const DEPT_SHARE = getDeptShare(t);
+    const DEPT_PERFORMANCE = getDeptPerformance(t);
+    const NETWORK_NODES = getNetworkNodes(t);
+    const BUDGET_VS_ACTUAL = getBudgetVsActual(t);
+    const VARIANCE_STATUS = getVarianceStatus(t);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -163,8 +175,8 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                     <div className="flex items-start gap-2">
                         <Buildings size={28} className="text-orange-600 dark:text-orange-400 mt-1" />
                         <div>
-                            <h1 className="text-2xl font-bold">Department Accountability</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cost Center Performance</p>
+                            <h1 className="text-2xl font-bold">{t('dept_accountability')}</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('da_subtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -215,15 +227,15 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Buildings size={28} className="text-orange-600 dark:text-orange-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Department Accountability</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cost Center Performance</p>
+                        <h1 className="text-2xl font-bold">{t('dept_accountability')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('da_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -232,7 +244,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-orange-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -254,8 +266,8 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 {/* Recharts: Spend per Dept (Bar) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Department</h3>
-                        <p className="text-xs text-gray-400">Total Spend</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_per_department')}</h3>
+                        <p className="text-xs text-gray-400">{t('total_spend')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -276,8 +288,8 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 {/* Recharts: Budget vs Actual (Bar) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget vs Actual</h3>
-                        <p className="text-xs text-gray-400">Performance comparison</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_vs_actual')}</h3>
+                        <p className="text-xs text-gray-400">{t('performance_comparison')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -304,8 +316,8 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                     {/* ECharts: Dept Share (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Distribution</h3>
-                            <p className="text-xs text-gray-400">Share by Department</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_distribution')}</h3>
+                            <p className="text-xs text-gray-400">{t('share_by_department')}</p>
                         </div>
                         <ReactECharts option={pieOption} style={{ height: '180px' }} />
                     </div>
@@ -313,8 +325,8 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                     {/* ECharts: Variance Status (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Variance Status</h3>
-                            <p className="text-xs text-gray-400">Budget adherence</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('variance_status')}</h3>
+                            <p className="text-xs text-gray-400">{t('budget_adherence')}</p>
                         </div>
                         <ReactECharts option={variancePieOption} style={{ height: '180px' }} />
                     </div>
@@ -342,29 +354,29 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Department Performance</h3>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('department_performance')}</h3>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-start">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                 <tr>
-                                    <th className="px-5 py-3">Department</th>
-                                    <th className="px-5 py-3 text-right">Budget</th>
-                                    <th className="px-5 py-3 text-right">Actual Spend</th>
-                                    <th className="px-5 py-3 text-right">Variance</th>
-                                    <th className="px-5 py-3 text-right">Owner</th>
+                                    <th className="px-5 py-3 text-start">{t('department')}</th>
+                                    <th className="px-5 py-3 text-end">{t('budget')}</th>
+                                    <th className="px-5 py-3 text-end">{t('actual_spend')}</th>
+                                    <th className="px-5 py-3 text-end">{t('variance')}</th>
+                                    <th className="px-5 py-3 text-end">{t('owner')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {DEPT_PERFORMANCE.map((row, index) => (
                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.dept}</td>
-                                        <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.budget}</td>
-                                        <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.actual}</td>
-                                        <td className={`px-5 py-3 text-right font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
+                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.dept}</td>
+                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.budget}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.actual}</td>
+                                        <td className={`px-5 py-3 text-end font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
                                             {row.variance}
                                         </td>
-                                        <td className="px-5 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{row.owner}</td>
+                                        <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400 text-xs">{row.owner}</td>
                                     </tr>
                                 ))}
                             </tbody>

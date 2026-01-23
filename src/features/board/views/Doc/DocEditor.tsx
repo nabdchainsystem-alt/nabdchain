@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { CoverPicker } from './CoverPicker';
 import { IconPicker } from './IconPicker';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 import {
     FileText,
     Table,
@@ -30,6 +31,8 @@ interface DocEditorProps {
 }
 
 export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storageKey }) => {
+    const { t } = useLanguage();
+
     // Persistence state
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -39,8 +42,8 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
     const [hasStartedWriting, setHasStartedWriting] = useState(false);
     const loadedContentRef = useRef<string | null>(null);
 
-    // Initial load from storage
-    React.useEffect(() => {
+    // Initial load from storage - use useLayoutEffect to run BEFORE other effects
+    useLayoutEffect(() => {
         if (!storageKey) {
             setIsLoaded(true);
             return;
@@ -54,7 +57,6 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                 if (data.icon !== undefined) setIcon(data.icon);
                 if (data.coverImage !== undefined) setCoverImage(data.coverImage);
                 if (data.hasStartedWriting !== undefined) setHasStartedWriting(data.hasStartedWriting);
-
 
                 // Content is handled separately via ref to avoid React render cycles with contentEditable
                 // We store it in a ref and apply it once the contentRef becomes available
@@ -100,34 +102,111 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
     }, [storageKey, isLoaded]);
 
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSaveTimeRef = useRef<number>(0);
+
     const debouncedSaveContent = React.useCallback(() => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = setTimeout(saveContentOnly, 1000);
+
+        // Save immediately if it's been more than 2 seconds since last save
+        const now = Date.now();
+        if (now - lastSaveTimeRef.current > 2000) {
+            saveContentOnly();
+            lastSaveTimeRef.current = now;
+        } else {
+            // Otherwise debounce for 300ms
+            saveTimeoutRef.current = setTimeout(() => {
+                saveContentOnly();
+                lastSaveTimeRef.current = Date.now();
+            }, 300);
+        }
     }, [saveContentOnly]);
 
-    // Clean up timeout
+    // Flush any pending save immediately
+    const flushPendingSave = React.useCallback(() => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+        }
+        // Save immediately
+        if (storageKey && isLoaded && contentRef.current) {
+            try {
+                const saved = localStorage.getItem(storageKey);
+                const data = saved ? JSON.parse(saved) : {};
+                data.content = contentRef.current.innerHTML || '';
+                data.hasStartedWriting = hasStartedWriting;
+                data.title = title;
+                data.icon = icon;
+                data.coverImage = coverImage;
+                localStorage.setItem(storageKey, JSON.stringify(data));
+            } catch (e) {
+                boardLogger.error('Failed to flush save', e);
+            }
+        }
+    }, [storageKey, isLoaded, hasStartedWriting, title, icon, coverImage]);
+
+    // Save on page unload (refresh/close) and visibility change (tab switch)
     React.useEffect(() => {
-        return () => {
-            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        const handleBeforeUnload = () => {
+            flushPendingSave();
         };
-    }, []);
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                flushPendingSave();
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [flushPendingSave]);
+
+    // Clean up and flush pending save on unmount - use useLayoutEffect for synchronous cleanup
+    useLayoutEffect(() => {
+        return () => {
+            // Flush pending save before unmount
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = null;
+            }
+            // Synchronous save on unmount - save ALL data to ensure nothing is lost
+            if (storageKey && contentRef.current) {
+                try {
+                    const saved = localStorage.getItem(storageKey);
+                    const data = saved ? JSON.parse(saved) : {};
+                    data.content = contentRef.current.innerHTML || '';
+                    data.hasStartedWriting = true; // If we're here, writing has started
+                    localStorage.setItem(storageKey, JSON.stringify(data));
+                } catch (e) {
+                    // Silent fail on unmount
+                }
+            }
+        };
+    }, [storageKey]);
 
     // Auto-save when metadata changes
     React.useEffect(() => {
         saveToStorage();
     }, [title, icon, coverImage, hasStartedWriting, saveToStorage]);
 
-    // Update title when defaultTitle changes (e.g. navigation) if not loaded yet
-    React.useEffect(() => {
-        if (!isLoaded) {
-            setTitle(defaultTitle === 'Inbox' || defaultTitle === 'Untitled' ? '' : defaultTitle);
-        }
-    }, [defaultTitle, isLoaded]);
-    // Apply loaded content when ref becomes available
-    React.useEffect(() => {
-        if (isLoaded && hasStartedWriting && contentRef.current && loadedContentRef.current !== null) {
-            contentRef.current.innerHTML = sanitizeDocHTML(loadedContentRef.current || '');
-            loadedContentRef.current = null; // Mark as applied
+    // Apply loaded content when ref becomes available - use useLayoutEffect for synchronous DOM update
+    useLayoutEffect(() => {
+        if (isLoaded && hasStartedWriting && loadedContentRef.current !== null) {
+            // Use requestAnimationFrame to ensure DOM is ready
+            const applyContent = () => {
+                if (contentRef.current && loadedContentRef.current !== null) {
+                    contentRef.current.innerHTML = sanitizeDocHTML(loadedContentRef.current || '');
+                    loadedContentRef.current = null; // Mark as applied
+                } else if (loadedContentRef.current !== null) {
+                    // Retry if ref not ready yet
+                    requestAnimationFrame(applyContent);
+                }
+            };
+            applyContent();
         }
     }, [isLoaded, hasStartedWriting]);
 
@@ -178,14 +257,14 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                         <button
                             className="bg-white/90 hover:bg-white text-stone-600 text-xs font-medium px-2.5 py-1.5 rounded shadow-sm transition-colors border border-stone-200"
                         >
-                            Reposition
+                            {t('doc_reposition')}
                         </button>
                         <div className="relative" ref={coverButtonRef}>
                             <button
                                 onClick={() => setIsCoverPickerOpen(!isCoverPickerOpen)}
                                 className="bg-white/90 hover:bg-white text-stone-600 text-xs font-medium px-2.5 py-1.5 rounded shadow-sm transition-colors border border-stone-200"
                             >
-                                Change cover
+                                {t('doc_change_cover')}
                             </button>
                             {isCoverPickerOpen && (
                                 <CoverPicker
@@ -207,11 +286,11 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
 
             {/* Right Floating Toolbar (Visual Only) */}
             <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-20 text-stone-300">
-                <ToolButton icon={<PanelRight size={20} strokeWidth={1.5} />} label="Sidebar" />
-                <ToolButton icon={<Type size={20} strokeWidth={1.5} />} label="Typography" />
-                <ToolButton icon={<ArrowLeftRight size={20} strokeWidth={1.5} />} label="Connections" />
-                <ToolButton icon={<Wand2 size={20} strokeWidth={1.5} />} label="AI Assistant" />
-                <ToolButton icon={<SquareArrowUp size={20} strokeWidth={1.5} />} label="Share" />
+                <ToolButton icon={<PanelRight size={20} strokeWidth={1.5} />} label={t('doc_sidebar')} />
+                <ToolButton icon={<Type size={20} strokeWidth={1.5} />} label={t('doc_typography')} />
+                <ToolButton icon={<ArrowLeftRight size={20} strokeWidth={1.5} />} label={t('doc_connections')} />
+                <ToolButton icon={<Wand2 size={20} strokeWidth={1.5} />} label={t('doc_ai_assistant')} />
+                <ToolButton icon={<SquareArrowUp size={20} strokeWidth={1.5} />} label={t('doc_share')} />
             </div>
 
             <div className="w-full max-w-4xl px-8 sm:px-16 py-8 sm:py-12 relative animate-in fade-in duration-500">
@@ -220,7 +299,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                 <div className="mb-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-4 text-sm text-stone-400">
                     <button className="flex items-center gap-1.5 hover:text-stone-700 dark:hover:text-stone-300 transition-colors">
                         <Link size={14} />
-                        <span>Link Task or Doc</span>
+                        <span>{t('doc_link_task_or_doc')}</span>
                     </button>
                 </div>
 
@@ -262,7 +341,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                         onFocus={() => setIsTitleFocused(true)}
                         onBlur={() => setIsTitleFocused(false)}
                         className="w-full bg-transparent text-5xl font-serif font-bold text-stone-900 dark:text-stone-100 placeholder-stone-300 dark:placeholder-stone-700 outline-none border-none p-0 leading-tight"
-                        placeholder="Untitled"
+                        placeholder={t('doc_untitled')}
                         onKeyDown={handleTitleKeyDown}
                     />
                     {/* Add icon/cover hint - visible on hover or empty */}
@@ -273,7 +352,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                                     onClick={() => setShowIconPicker(!showIconPicker)}
                                     className="hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
                                 >
-                                    <span className="text-base">☺</span> Add icon
+                                    <span className="text-base">☺</span> {t('doc_add_icon')}
                                 </button>
                                 {showIconPicker && (
                                     <IconPicker
@@ -288,7 +367,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                         )}
                         {!coverImage && (
                             <button onClick={handleAddCover} className="hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded flex items-center gap-1.5 transition-colors">
-                                <ImageIcon size={14} /> Add cover
+                                <ImageIcon size={14} /> {t('doc_add_cover')}
                             </button>
                         )}
                     </div>
@@ -301,11 +380,11 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-10 text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-sans">
                             <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">A</div>
-                                <span className="text-stone-400">Owners:</span>
-                                <span className="text-stone-800 dark:text-stone-200">You</span>
+                                <span className="text-stone-400">{t('doc_owners')}</span>
+                                <span className="text-stone-800 dark:text-stone-200">{t('doc_you')}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-stone-400">Last Updated:</span>
+                                <span className="text-stone-400">{t('doc_last_updated')}</span>
                                 <span className="text-stone-800 dark:text-stone-200">Today at 2:01 pm</span>
                             </div>
                         </div>
@@ -314,21 +393,21 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                         <div className="space-y-1 mb-12">
                             <QuickActionItem
                                 icon={<FileText size={16} />}
-                                label="Start writing"
+                                label={t('doc_start_writing')}
                                 active
                                 onClick={handleStartWriting}
                             />
-                            <QuickActionItem icon={<File size={16} />} label="Blank wiki" />
+                            <QuickActionItem icon={<File size={16} />} label={t('doc_blank_wiki')} />
                         </div>
 
                         {/* Add New Section */}
                         <div className="mt-8">
-                            <div className="text-sm font-medium text-stone-500 mb-3 px-2">Add new</div>
+                            <div className="text-sm font-medium text-stone-500 mb-3 px-2">{t('doc_add_new')}</div>
                             <div className="flex flex-col gap-1">
-                                <AddItem icon={<Table size={20} strokeWidth={1.5} />} label="Table" />
-                                <AddItem icon={<Columns size={20} strokeWidth={1.5} />} label="Column" />
-                                <AddItem icon={<List size={20} strokeWidth={1.5} />} label="ClickUp List" />
-                                <AddItem icon={<FileText size={20} strokeWidth={1.5} />} label="Subpage" />
+                                <AddItem icon={<Table size={20} strokeWidth={1.5} />} label={t('doc_table')} />
+                                <AddItem icon={<Columns size={20} strokeWidth={1.5} />} label={t('doc_column')} />
+                                <AddItem icon={<List size={20} strokeWidth={1.5} />} label={t('doc_list')} />
+                                <AddItem icon={<FileText size={20} strokeWidth={1.5} />} label={t('doc_subpage')} />
                             </div>
                         </div>
                     </div>
@@ -343,7 +422,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                             onBlur={saveToStorage}
                             onInput={debouncedSaveContent}
                             className="w-full min-h-[50vh] outline-none text-lg text-stone-800 dark:text-stone-200 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-stone-400 cursor-text"
-                            data-placeholder="Type '/' for commands"
+                            data-placeholder={t('doc_type_for_commands')}
                             onKeyDown={(e) => {
                                 if (e.key === 'Backspace' && e.currentTarget.textContent === '') {
                                     // Optional: Could go back to setup state if desired, but sticking to simple flow for now

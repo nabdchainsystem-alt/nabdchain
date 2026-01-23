@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -82,7 +83,7 @@ router.get('/conversations', requireAuth, async (req: any, res: Response) => {
 
         res.json(conversations);
     } catch (error) {
-        console.error('Get conversations error:', error);
+        apiLogger.error('Get conversations error:', error);
         res.status(500).json({ error: 'Failed to get conversations' });
     }
 });
@@ -119,7 +120,7 @@ router.patch('/conversations/:id/status', requireAuth, async (req: any, res: Res
 
         res.json(updated);
     } catch (error) {
-        console.error('Update status error:', error);
+        apiLogger.error('Update status error:', error);
         res.status(500).json({ error: 'Failed to update conversation status' });
     }
 });
@@ -140,7 +141,7 @@ router.delete('/conversations/:id', requireAuth, async (req: any, res: Response)
         await (prisma.conversation as any).delete({ where: { id } });
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete conversation error:', error);
+        apiLogger.error('Delete conversation error:', error);
         res.status(500).json({ error: 'Failed to delete conversation' });
     }
 });
@@ -248,7 +249,7 @@ router.post('/conversations/dm', requireAuth, async (req: any, res: Response) =>
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Create DM error:', error);
+        apiLogger.error('Create DM error:', error);
         res.status(500).json({ error: 'Failed to create conversation' });
     }
 });
@@ -304,7 +305,7 @@ router.post('/conversations/channel', requireAuth, async (req: any, res: Respons
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Create channel error:', error);
+        apiLogger.error('Create channel error:', error);
         res.status(500).json({ error: 'Failed to create channel' });
     }
 });
@@ -367,7 +368,7 @@ router.get('/conversations/:id/messages', requireAuth, async (req: any, res: Res
         // Return in chronological order (oldest first)
         res.json(messages.reverse());
     } catch (error) {
-        console.error('Get messages error:', error);
+        apiLogger.error('Get messages error:', error);
         res.status(500).json({ error: 'Failed to get messages' });
     }
 });
@@ -434,7 +435,7 @@ router.post('/conversations/:id/messages', requireAuth, async (req: any, res: Re
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error('Send message error:', error);
+        apiLogger.error('Send message error:', error);
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
@@ -457,7 +458,7 @@ router.post('/conversations/:id/read', requireAuth, async (req: any, res: Respon
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Mark read error:', error);
+        apiLogger.error('Mark read error:', error);
         res.status(500).json({ error: 'Failed to mark as read' });
     }
 });
@@ -484,7 +485,7 @@ router.get('/conversations/:id/data', requireAuth, async (req: any, res: Respons
 
         res.json({ tasks, reminders, files });
     } catch (error) {
-        console.error('Get talk data error:', error);
+        apiLogger.error('Get talk data error:', error);
         res.status(500).json({ error: 'Failed to get talk data' });
     }
 });
@@ -611,7 +612,7 @@ router.delete('/messages/:id', requireAuth, async (req: any, res: Response) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete message error:', error);
+        apiLogger.error('Delete message error:', error);
         res.status(500).json({ error: 'Failed to delete message' });
     }
 });

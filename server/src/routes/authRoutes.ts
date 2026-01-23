@@ -5,6 +5,7 @@ import { google } from 'googleapis';
 import { prisma } from '../lib/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getEnv } from '../utils/env';
+import { authLogger } from '../utils/logger';
 
 const FRONTEND_URL = getEnv('FRONTEND_URL', 'http://localhost:3000');
 
@@ -25,7 +26,7 @@ router.get('/google/callback', async (req, res) => {
 
     if (!state) {
         // Fallback or error? For now, if no state, we can't link to user securely.
-        console.error("Google Auth Callback missing state");
+        authLogger.error("Google Auth Callback missing state");
         return res.redirect(`${FRONTEND_URL}/inbox?status=error&message=missing_state`);
     }
 
@@ -44,7 +45,7 @@ router.get('/google/callback', async (req, res) => {
 
         res.redirect(`${FRONTEND_URL}/inbox?status=success&provider=google`);
     } catch (error) {
-        console.error('Google Auth Error:', error);
+        authLogger.error('Google Auth Error:', error);
         res.redirect(`${FRONTEND_URL}/inbox?status=error`);
     }
 });
@@ -59,7 +60,7 @@ router.get('/outlook', async (req: any, res) => {
         const url = await getOutlookAuthURL(userId);
         res.json({ url });
     } catch (err) {
-        console.error(err);
+        authLogger.error('Error initiating Outlook auth', err);
         res.status(500).send("Error initiating Outlook auth");
     }
 });
@@ -68,7 +69,7 @@ router.get('/outlook/callback', async (req, res) => {
     const { code, state } = req.query;
 
     if (!state) {
-        console.error("Outlook Auth Callback missing state");
+        authLogger.error("Outlook Auth Callback missing state");
         return res.redirect(`${FRONTEND_URL}/inbox?status=error&message=missing_state`);
     }
 
@@ -79,7 +80,7 @@ router.get('/outlook/callback', async (req, res) => {
         await handleOutlookCallback(code as string, userId);
         res.redirect(`${FRONTEND_URL}/inbox?status=success&provider=outlook`);
     } catch (error) {
-        console.error('Outlook Auth Error:', error);
+        authLogger.error('Outlook Auth Error:', error);
         res.redirect(`${FRONTEND_URL}/inbox?status=error`);
     }
 });

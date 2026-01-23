@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stack as Layers, CheckCircle, Bell, CalendarBlank as Calendar, Clock, FileText, Plus, Trash as Trash2 } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface OrganizedItem {
     id: string;
@@ -24,7 +25,9 @@ const ListCard: React.FC<{
     items: OrganizedItem[];
     colorClass: string;
     onDelete: (id: string) => void;
-}> = ({ title, icon: Icon, items, colorClass, onDelete }) => {
+    t: (key: string) => string;
+    isRTL: boolean;
+}> = ({ title, icon: Icon, items, colorClass, onDelete, t, isRTL }) => {
     return (
         <div className="bg-white dark:bg-monday-dark-bg rounded-3xl p-4 border border-gray-100 dark:border-white/5 h-56 flex flex-col hover:shadow-lg transition-shadow duration-300">
             <div className="flex items-center justify-between mb-4">
@@ -34,19 +37,19 @@ const ListCard: React.FC<{
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded-full">
-                        TOTAL: {items.length}
+                        {t('total')}: {items.length}
                     </span>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto space-y-2 ltr:pr-1 rtl:pl-1 custom-scrollbar">
                 {items.length > 0 ? (
                     items.map(item => (
                         <div key={item.id} className="group relative flex items-center justify-between text-xs p-2 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors cursor-pointer">
-                            <div className="flex flex-col flex-1 min-w-0 mr-2">
+                            <div className="flex flex-col flex-1 min-w-0 ltr:mr-2 rtl:ml-2">
                                 <span className="truncate font-medium">{item.title}</span>
                                 {item.scheduledAt && (
-                                    <span className="text-[9px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                    <span className={`text-[9px] text-blue-500 font-bold uppercase ${isRTL ? '' : 'tracking-wider'} flex items-center gap-1 mt-0.5`}>
                                         <Calendar size={8} />
                                         {new Date(item.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                     </span>
@@ -65,7 +68,7 @@ const ListCard: React.FC<{
                     ))
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-700 opacity-50">
-                        <span className="text-[10px] italic">Empty</span>
+                        <span className="text-[10px] italic">{t('empty')}</span>
                     </div>
                 )}
             </div>
@@ -76,21 +79,23 @@ const ListCard: React.FC<{
 export const GTDOrganizeView: React.FC<GTDOrganizeViewProps> = ({
     projects, nextActions, waitingFor, scheduled, someday, reference, onDelete
 }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     return (
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center pb-12">
             <div className="text-center mb-10">
-                <h2 className="text-2xl font-black tracking-widest uppercase mb-4 text-[#1A1A1A] dark:text-white">Organize</h2>
-                <p className="text-gray-400 font-serif italic tracking-widest text-sm uppercase">Clarify outcomes & next actions</p>
+                <h2 className={`text-2xl font-black ${isRTL ? '' : 'tracking-widest'} uppercase mb-4 text-[#1A1A1A] dark:text-white`}>{t('organize')}</h2>
+                <p className={`text-gray-400 ${isRTL ? 'font-sans font-medium' : 'font-serif italic tracking-widest'} text-sm uppercase`}>{t('clarify_outcomes_actions')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                <ListCard title="Projects" icon={Layers} items={projects} colorClass="text-purple-500" onDelete={onDelete} />
-                <ListCard title="Next Actions" icon={CheckCircle} items={nextActions} colorClass="text-green-500" onDelete={onDelete} />
-                <ListCard title="Waiting For" icon={Bell} items={waitingFor} colorClass="text-orange-400" onDelete={onDelete} />
+                <ListCard title={t('projects')} icon={Layers} items={projects} colorClass="text-purple-500" onDelete={onDelete} t={t} isRTL={isRTL} />
+                <ListCard title={t('next_actions')} icon={CheckCircle} items={nextActions} colorClass="text-green-500" onDelete={onDelete} t={t} isRTL={isRTL} />
+                <ListCard title={t('waiting_for')} icon={Bell} items={waitingFor} colorClass="text-orange-400" onDelete={onDelete} t={t} isRTL={isRTL} />
 
-                <ListCard title="Scheduled" icon={Calendar} items={scheduled} colorClass="text-blue-500" onDelete={onDelete} />
-                <ListCard title="Someday / Maybe" icon={Clock} items={someday} colorClass="text-gray-400" onDelete={onDelete} />
-                <ListCard title="Reference" icon={FileText} items={reference} colorClass="text-gray-500" onDelete={onDelete} />
+                <ListCard title={t('scheduled')} icon={Calendar} items={scheduled} colorClass="text-blue-500" onDelete={onDelete} t={t} isRTL={isRTL} />
+                <ListCard title={t('someday_maybe')} icon={Clock} items={someday} colorClass="text-gray-400" onDelete={onDelete} t={t} isRTL={isRTL} />
+                <ListCard title={t('reference')} icon={FileText} items={reference} colorClass="text-gray-500" onDelete={onDelete} t={t} isRTL={isRTL} />
             </div>
         </div>
     );

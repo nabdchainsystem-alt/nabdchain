@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -60,7 +61,7 @@ async function getOrCreateAssignedBoard(userId: string): Promise<string> {
         }
     });
 
-    console.log(`[Assignment] Created "Assigned to me" board ${board.id} for user ${userId} in workspace ${userWorkspace?.id}`);
+    apiLogger.info(`[Assignment] Created "Assigned to me" board ${board.id} for user ${userId} in workspace ${userWorkspace?.id}`);
 
     return board.id;
 }
@@ -107,7 +108,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Create Assignment Error:", error);
+        apiLogger.error("Create Assignment Error:", error);
         res.status(500).json({ error: "Failed to create assignment" });
     }
 });
@@ -138,7 +139,7 @@ router.get('/pending', requireAuth, async (req, res: Response) => {
 
         res.json(parsedAssignments);
     } catch (error) {
-        console.error("Get Pending Assignments Error:", error);
+        apiLogger.error("Get Pending Assignments Error:", error);
         res.status(500).json({ error: "Failed to fetch pending assignments" });
     }
 });
@@ -157,7 +158,7 @@ router.get('/count', requireAuth, async (req, res: Response) => {
 
         res.json({ count });
     } catch (error) {
-        console.error("Get Assignment Count Error:", error);
+        apiLogger.error("Get Assignment Count Error:", error);
         res.status(500).json({ error: "Failed to fetch assignment count" });
     }
 });
@@ -168,7 +169,7 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
         const userId = (req as AuthRequest).auth.userId;
         const id = req.params.id as string;
 
-        console.log(`[Assignment] PUT /:id/viewed called - assignmentId: ${id}, userId: ${userId}`);
+        apiLogger.info(`[Assignment] PUT /:id/viewed called - assignmentId: ${id}, userId: ${userId}`);
 
         // Verify assignment belongs to user
         const assignment = await prisma.assignment.findFirst({
@@ -184,18 +185,18 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
         });
 
         if (!assignment) {
-            console.log(`[Assignment] Assignment not found for id: ${id}`);
+            apiLogger.info(`[Assignment] Assignment not found for id: ${id}`);
             return res.status(404).json({ error: "Assignment not found" });
         }
 
-        console.log(`[Assignment] Found assignment, copiedBoardId: ${assignment.copiedBoardId}, copiedRowId: ${assignment.copiedRowId}`);
+        apiLogger.info(`[Assignment] Found assignment, copiedBoardId: ${assignment.copiedBoardId}, copiedRowId: ${assignment.copiedRowId}`);
 
         let copiedBoardId = assignment.copiedBoardId;
         let copiedRowId = assignment.copiedRowId;
 
         // Only create board and copy task if not already done
         if (!copiedBoardId || !copiedRowId) {
-            console.log(`[Assignment] Creating board and copying task...`);
+            apiLogger.info(`[Assignment] Creating board and copying task...`);
 
             // Get source board info
             const sourceBoard = await prisma.board.findUnique({
@@ -205,7 +206,7 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
 
             // Get or create "Assigned to me" board for the user
             copiedBoardId = await getOrCreateAssignedBoard(userId);
-            console.log(`[Assignment] Got/Created board: ${copiedBoardId}`);
+            apiLogger.info(`[Assignment] Got/Created board: ${copiedBoardId}`);
 
             // Get current tasks from the assigned board
             const assignedBoard = await prisma.board.findUnique({
@@ -238,7 +239,7 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
                 data: { tasks: JSON.stringify(currentTasks) }
             });
 
-            console.log(`[Assignment] Task copied to board. Task count: ${currentTasks.length}`);
+            apiLogger.info(`[Assignment] Task copied to board. Task count: ${currentTasks.length}`);
         }
 
         // Update assignment with viewed status and board/row IDs
@@ -252,7 +253,7 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
             }
         });
 
-        console.log(`[Assignment] Assignment updated. Returning copiedBoardId: ${copiedBoardId}`);
+        apiLogger.info(`[Assignment] Assignment updated. Returning copiedBoardId: ${copiedBoardId}`);
 
         res.json({
             ...updated,
@@ -260,7 +261,7 @@ router.put('/:id/viewed', requireAuth, async (req, res: Response) => {
             copiedRowId
         });
     } catch (error) {
-        console.error("Mark Assignment Viewed Error:", error);
+        apiLogger.error("Mark Assignment Viewed Error:", error);
         res.status(500).json({ error: "Failed to mark assignment as viewed" });
     }
 });
@@ -290,7 +291,7 @@ router.get('/all', requireAuth, async (req, res: Response) => {
 
         res.json(parsedAssignments);
     } catch (error) {
-        console.error("Get All Assignments Error:", error);
+        apiLogger.error("Get All Assignments Error:", error);
         res.status(500).json({ error: "Failed to fetch assignments" });
     }
 });

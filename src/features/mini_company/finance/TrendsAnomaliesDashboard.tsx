@@ -7,23 +7,24 @@ import { ArrowsOut, Info, TrendUp, Warning, Lightning, ChartLine, ShieldWarning,
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendsAnomaliesInfo } from './TrendsAnomaliesInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Trend Direction', subtitle: 'Last 3 Months', value: 'Rising', change: '+5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 48, 50, 52], color: 'blue' },
-    { id: '2', label: 'Spike Count', subtitle: 'Last 30 Days', value: '5', change: '+2', trend: 'up', icon: <Lightning size={18} />, sparklineData: [1, 0, 1, 0, 2, 1], color: 'blue' },
-    { id: '3', label: 'Anomaly Value', subtitle: 'Total Excess', value: '$4,250', change: '+12%', trend: 'down', icon: <Warning size={18} />, sparklineData: [1000, 1200, 800, 3000, 4250, 4250], color: 'blue' },
-    { id: '4', label: 'Avg Monthly Change', subtitle: 'Volatility', value: '8.2%', change: '+1.5%', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [5, 6, 8, 7, 8, 8.2], color: 'blue' },
+// --- KPI Data (as functions to support translation) ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('trend_direction'), subtitle: t('last_3_months'), value: t('rising'), change: '+5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 48, 50, 52], color: 'blue' },
+    { id: '2', label: t('spike_count'), subtitle: t('last_30_days'), value: '5', change: '+2', trend: 'up', icon: <Lightning size={18} />, sparklineData: [1, 0, 1, 0, 2, 1], color: 'blue' },
+    { id: '3', label: t('anomaly_value'), subtitle: t('total_excess'), value: '$4,250', change: '+12%', trend: 'down', icon: <Warning size={18} />, sparklineData: [1000, 1200, 800, 3000, 4250, 4250], color: 'blue' },
+    { id: '4', label: t('avg_daily_variance'), subtitle: t('volatility'), value: '8.2%', change: '+1.5%', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [5, 6, 8, 7, 8, 8.2], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Risk Level', subtitle: 'Assessment', value: 'Medium', change: '', trend: 'neutral', icon: <ShieldWarning size={18} />, sparklineData: [30, 30, 40, 50, 50, 50], color: 'blue' },
-    { id: '6', label: 'Alert Frequency', subtitle: 'Avg per Week', value: '3.5', change: '-5%', trend: 'down', icon: <Lightning size={18} />, sparklineData: [4, 4, 3, 3, 4, 3.5], color: 'blue' },
-    { id: '7', label: 'Expense Stability', subtitle: 'Index Score', value: '72/100', change: '-2', trend: 'down', icon: <ChartLine size={18} />, sparklineData: [78, 76, 75, 74, 73, 72], color: 'blue' },
-    { id: '8', label: 'Pattern Confidence', subtitle: 'Detection Rate', value: '94%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [88, 90, 91, 92, 93, 94], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('risk_level'), subtitle: t('assessment'), value: t('medium'), change: '', trend: 'neutral', icon: <ShieldWarning size={18} />, sparklineData: [30, 30, 40, 50, 50, 50], color: 'blue' },
+    { id: '6', label: t('alert_frequency'), subtitle: t('avg_per_week'), value: '3.5', change: '-5%', trend: 'down', icon: <Lightning size={18} />, sparklineData: [4, 4, 3, 3, 4, 3.5], color: 'blue' },
+    { id: '7', label: t('expense_stability'), subtitle: t('index_score'), value: '72/100', change: '-2', trend: 'down', icon: <ChartLine size={18} />, sparklineData: [78, 76, 75, 74, 73, 72], color: 'blue' },
+    { id: '8', label: t('pattern_confidence'), subtitle: t('detection_rate'), value: '94%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [88, 90, 91, 92, 93, 94], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
+// --- Mock Data: Charts (static numeric data) ---
 const MONTHLY_EXPENSES = [
     { name: 'Jan', Standard: 10000, Anomaly: 500 },
     { name: 'Feb', Standard: 10200, Anomaly: 0 },
@@ -31,20 +32,6 @@ const MONTHLY_EXPENSES = [
     { name: 'Apr', Standard: 10500, Anomaly: 200 },
     { name: 'May', Standard: 10100, Anomaly: 800 },
     { name: 'Jun', Standard: 10300, Anomaly: 1550 },
-];
-
-const ANOMALY_SPLIT = [
-    { value: 95, name: 'Normal Spend' },
-    { value: 5, name: 'Anomalous Spend' }
-];
-
-// --- Mock Data: Table & Timeline ---
-const ANOMALIES_TABLE = [
-    { date: '2023-06-12', category: 'Travel', amount: '$1,200', deviation: '+45%', flag: 'High' },
-    { date: '2023-06-18', category: 'Software', amount: '$850', deviation: '+25%', flag: 'Medium' },
-    { date: '2023-05-22', category: 'Marketing', amount: '$3,000', deviation: '+60%', flag: 'Critical' },
-    { date: '2023-05-05', category: 'Office', amount: '$450', deviation: '+30%', flag: 'Medium' },
-    { date: '2023-04-15', category: 'Rent', amount: '$200', deviation: '+10%', flag: 'Low' }, // Late fee perhaps
 ];
 
 // Timeline Chart Data (Scatter or ThemeRiver - using Scatter for spikes)
@@ -58,24 +45,38 @@ const TIMELINE_DATA = [
     ['2023-06-25', 1550, 'High']
 ];
 
-// Additional chart data
-const ANOMALY_BY_CATEGORY = [
-    { name: 'Travel', value: 1200 },
-    { name: 'Software', value: 850 },
-    { name: 'Marketing', value: 3000 },
-    { name: 'Office', value: 450 },
-    { name: 'Rent', value: 200 },
+// --- Translated Data Functions ---
+const getAnomalySplit = (t: (key: string) => string) => [
+    { value: 95, name: t('normal_spend') },
+    { value: 5, name: t('anomalous_spend') }
 ];
 
-const SEVERITY_DISTRIBUTION = [
-    { value: 35, name: 'Critical' },
-    { value: 40, name: 'High' },
-    { value: 15, name: 'Medium' },
-    { value: 10, name: 'Low' }
+const getAnomaliesTable = (t: (key: string) => string) => [
+    { date: '2023-06-12', category: t('travel'), amount: '$1,200', deviation: '+45%', flag: t('high') },
+    { date: '2023-06-18', category: t('software'), amount: '$850', deviation: '+25%', flag: t('medium') },
+    { date: '2023-05-22', category: t('marketing'), amount: '$3,000', deviation: '+60%', flag: t('critical') },
+    { date: '2023-05-05', category: t('office'), amount: '$450', deviation: '+30%', flag: t('medium') },
+    { date: '2023-04-15', category: t('rent'), amount: '$200', deviation: '+10%', flag: t('low') },
+];
+
+const getAnomalyByCategory = (t: (key: string) => string) => [
+    { name: t('travel'), value: 1200 },
+    { name: t('software'), value: 850 },
+    { name: t('marketing'), value: 3000 },
+    { name: t('office'), value: 450 },
+    { name: t('rent'), value: 200 },
+];
+
+const getSeverityDistribution = (t: (key: string) => string) => [
+    { value: 35, name: t('critical') },
+    { value: 40, name: t('high') },
+    { value: 15, name: t('medium') },
+    { value: 10, name: t('low') }
 ];
 
 export const TrendsAnomaliesDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -89,6 +90,16 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // Get translated KPI data
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+
+    // Get translated chart/table data
+    const ANOMALY_SPLIT = getAnomalySplit(t);
+    const ANOMALIES_TABLE = getAnomaliesTable(t);
+    const ANOMALY_BY_CATEGORY = getAnomalyByCategory(t);
+    const SEVERITY_DISTRIBUTION = getSeverityDistribution(t);
 
     // --- ECharts Options ---
 
@@ -124,7 +135,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
 
     // Timeline Chart (Scatter for anomalies over time)
     const timelineOption: EChartsOption = {
-        title: { text: 'Spike Timeline', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('spike_timeline'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         grid: { top: 30, right: 30, bottom: 20, left: 30, containLabel: true },
         tooltip: {
             formatter: (params: any) => {
@@ -156,8 +167,8 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                     <div className="flex items-start gap-2">
                         <Lightning size={28} className="text-purple-600 dark:text-purple-400 mt-1" />
                         <div>
-                            <h1 className="text-2xl font-bold">Trends & Anomalies</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detect unusual behavior</p>
+                            <h1 className="text-2xl font-bold">{t('trends_anomalies')}</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('ta_subtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -208,15 +219,15 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Lightning size={28} className="text-purple-600 dark:text-purple-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Trends & Anomalies</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detect unusual behavior</p>
+                        <h1 className="text-2xl font-bold">{t('trends_anomalies')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('ta_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -225,7 +236,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-purple-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -247,8 +258,8 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                 {/* Recharts: Monthly Expenses (Stacked Bar - Standard vs Anomaly) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Monthly Spend Composition</h3>
-                        <p className="text-xs text-gray-400">Standard (Gray) vs Anomaly (Red)</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('monthly_spend_composition')}</h3>
+                        <p className="text-xs text-gray-400">{t('standard_vs_anomaly')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -270,8 +281,8 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                 {/* Recharts: Anomaly by Category (Bar) */}
                 <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Anomaly by Category</h3>
-                        <p className="text-xs text-gray-400">Deviation by expense type</p>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('anomaly_by_category')}</h3>
+                        <p className="text-xs text-gray-400">{t('deviation_by_expense_type')}</p>
                     </div>
                     <div className="h-[220px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -296,8 +307,8 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                     {/* ECharts: Normal vs Anomalous (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Purity</h3>
-                            <p className="text-xs text-gray-400">Ratio of irregular spend</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_purity')}</h3>
+                            <p className="text-xs text-gray-400">{t('ratio_irregular_spend')}</p>
                         </div>
                         <ReactECharts option={pieOption} style={{ height: '180px' }} />
                     </div>
@@ -305,8 +316,8 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                     {/* ECharts: Severity Distribution (Pie) */}
                     <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="mb-2">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Severity Distribution</h3>
-                            <p className="text-xs text-gray-400">Anomaly severity breakdown</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('severity_distribution')}</h3>
+                            <p className="text-xs text-gray-400">{t('anomaly_severity_breakdown')}</p>
                         </div>
                         <ReactECharts option={severityPieOption} style={{ height: '180px' }} />
                     </div>
@@ -334,26 +345,26 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Detected Anomalies</h3>
+                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('detected_anomalies')}</h3>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-start">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                 <tr>
-                                    <th className="px-5 py-3">Date</th>
-                                    <th className="px-5 py-3">Category</th>
-                                    <th className="px-5 py-3 text-right">Amount</th>
-                                    <th className="px-5 py-3 text-right">Deviation</th>
-                                    <th className="px-5 py-3 text-center">Flag</th>
+                                    <th className="px-5 py-3 text-start">{t('date')}</th>
+                                    <th className="px-5 py-3 text-start">{t('category')}</th>
+                                    <th className="px-5 py-3 text-end">{t('amount')}</th>
+                                    <th className="px-5 py-3 text-end">{t('deviation')}</th>
+                                    <th className="px-5 py-3 text-center">{t('flag')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {ANOMALIES_TABLE.map((row, index) => (
                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
-                                        <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.amount}</td>
-                                        <td className="px-5 py-3 text-right text-red-500 font-medium">{row.deviation}</td>
+                                        <td className="px-5 py-3 text-start text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
+                                        <td className="px-5 py-3 text-start font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                        <td className="px-5 py-3 text-end text-red-500 font-medium">{row.deviation}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.flag === 'Critical' ? 'bg-red-100 text-red-700' :
                                                 row.flag === 'High' ? 'bg-orange-100 text-orange-700' :

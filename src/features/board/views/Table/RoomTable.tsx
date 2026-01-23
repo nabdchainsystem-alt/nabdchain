@@ -203,9 +203,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 const parsed = JSON.parse(saved);
                 if (parsed.length > 0) {
                     // Ensure select and name are pinned (migration)
+                    // Also migrate "Data 2" label to Arabic
                     return parsed.map((col: Column) => {
                         if (col.id === 'select' || col.id === 'name') {
                             return { ...col, pinned: true };
+                        }
+                        if (col.id === 'data2' && col.label === 'Data 2') {
+                            return { ...col, label: 'بيانات 2' };
                         }
                         return col;
                     });

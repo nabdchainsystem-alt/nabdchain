@@ -7,6 +7,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { emailLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -81,7 +82,7 @@ router.get('/folders', requireAuth, async (req, res: Response) => {
                     allFolders = [...allFolders, ...relevantLabels];
 
                 } catch (e) {
-                    console.error(`Error fetching google folders for ${account.email}`, e);
+                    emailLogger.error(`Error fetching google folders for ${account.email}`, e);
                 }
             } else if (account.provider === 'outlook') {
                 try {
@@ -96,13 +97,13 @@ router.get('/folders', requireAuth, async (req, res: Response) => {
                     }));
                     allFolders = [...allFolders, ...folders];
                 } catch (e) {
-                    console.error(`Error fetching outlook folders for ${account.email}`, e);
+                    emailLogger.error(`Error fetching outlook folders for ${account.email}`, e);
                 }
             }
         }
         res.json(allFolders);
     } catch (e) {
-        console.error("Folder List Error", e);
+        emailLogger.error("Folder List Error", e);
         res.status(500).json({ error: "Failed to fetch folders" });
     }
 });
@@ -196,7 +197,7 @@ router.get('/list', requireAuth, async (req, res: Response) => {
 
                     allEmails = [...allEmails, ...details];
                 } catch (e) {
-                    console.error(`Error fetching google for ${account.email}`, e);
+                    emailLogger.error(`Error fetching google for ${account.email}`, e);
                 }
             } else if (account.provider === 'outlook') {
                 try {
@@ -226,7 +227,7 @@ router.get('/list', requireAuth, async (req, res: Response) => {
 
                     allEmails = [...allEmails, ...msgs];
                 } catch (e) {
-                    console.error(`Error fetching outlook for ${account.email}`, e);
+                    emailLogger.error(`Error fetching outlook for ${account.email}`, e);
                 }
             }
         }
@@ -235,7 +236,7 @@ router.get('/list', requireAuth, async (req, res: Response) => {
 
         res.json(allEmails);
     } catch (error) {
-        console.error("List Error", error);
+        emailLogger.error("List Error", error);
         res.status(500).json({ error: "Failed to fetch emails" });
     }
 });
@@ -324,7 +325,7 @@ router.post('/send', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Send Error", error);
+        emailLogger.error("Send Error", error);
         res.status(500).json({ error: "Failed to send email" });
     }
 });
@@ -358,7 +359,7 @@ router.post('/trash', requireAuth, async (req, res: Response) => {
         if (e instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input' });
         }
-        console.error(e);
+        emailLogger.error('Failed to trash email', e);
         res.status(500).json({ error: 'Failed to trash' });
     }
 });
@@ -394,7 +395,7 @@ router.post('/archive', requireAuth, async (req, res: Response) => {
         if (e instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input' });
         }
-        console.error(e);
+        emailLogger.error('Failed to archive email', e);
         res.status(500).json({ error: 'Failed to archive' });
     }
 });
@@ -428,7 +429,7 @@ router.post('/read', requireAuth, async (req, res: Response) => {
         if (e instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input' });
         }
-        console.error(e);
+        emailLogger.error('Failed to mark email as read', e);
         res.status(500).json({ error: 'Failed to mark read' });
     }
 });

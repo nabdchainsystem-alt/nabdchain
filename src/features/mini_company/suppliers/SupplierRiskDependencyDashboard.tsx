@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -7,6 +7,7 @@ import { ArrowsOut, Info, Warning, ShieldWarning, LinkBreak, TreeStructure, User
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { SupplierRiskDependencyInfo } from './SupplierRiskDependencyInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -93,6 +94,8 @@ const SUPPLIER_TABLE = [
 
 export const SupplierRiskDependencyDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t, dir } = useLanguage();
+    const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -107,6 +110,75 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
+    // Translated KPI data
+    const TRANSLATED_TOP_KPIS = useMemo(() => [
+        { id: '1', label: t('single_source'), subtitle: t('critical_components'), value: '4', change: '+1', trend: 'down' as const, icon: <LinkBreak size={18} />, sparklineData: [2, 3, 3, 3, 4, 4], color: 'blue' },
+        { id: '2', label: t('dependency_pct'), subtitle: t('max_concentration'), value: '38%', change: '+5%', trend: 'down' as const, icon: <Users size={18} />, sparklineData: [32, 33, 35, 36, 37, 38], color: 'blue' },
+        { id: '3', label: t('high_risk_suppliers'), subtitle: t('requires_action'), value: '7', change: '+2', trend: 'down' as const, icon: <Warning size={18} />, sparklineData: [4, 5, 5, 6, 6, 7], color: 'blue' },
+        { id: '4', label: t('risk_score'), subtitle: t('global_exposure'), value: '42', change: '-2', trend: 'down' as const, icon: <ShieldWarning size={18} />, sparklineData: [45, 44, 43, 42, 42, 42], color: 'blue' },
+    ], [t]);
+
+    const TRANSLATED_SIDE_KPIS = useMemo(() => [
+        { id: '5', label: t('disruption_events'), subtitle: t('last_12_months'), value: '3', change: '-1', trend: 'up' as const, icon: <Prohibit size={18} />, sparklineData: [1, 2, 2, 3, 3, 3], color: 'blue' },
+        { id: '6', label: t('backup_coverage'), subtitle: t('pct_critical_parts'), value: '65%', change: '+5%', trend: 'up' as const, icon: <TreeStructure size={18} />, sparklineData: [55, 60, 60, 62, 64, 65], color: 'blue' },
+        { id: '7', label: t('contract_expiry'), subtitle: t('next_90_days'), value: '5', change: '-3', trend: 'up' as const, icon: <Scales size={18} />, color: 'blue' },
+        { id: '8', label: t('mitigation_plans'), subtitle: t('active_strategies'), value: '12', change: '+2', trend: 'up' as const, icon: <ShieldWarning size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
+    ], [t]);
+
+    const TRANSLATED_SPEND_CONCENTRATION = useMemo(() => [
+        { name: 'Acme Mfg', [t('spend')]: 38 },
+        { name: 'Globex', [t('spend')]: 25 },
+        { name: 'Soylent', [t('spend')]: 15 },
+        { name: 'Initech', [t('spend')]: 12 },
+        { name: 'Umbrella', [t('spend')]: 10 },
+    ], [t]);
+
+    const TRANSLATED_RISK_SCORE_BY_SUPPLIER = useMemo(() => [
+        { name: 'Umbrella', [t('score')]: 85 },
+        { name: 'Cyberdyne', [t('score')]: 78 },
+        { name: 'Globex', [t('score')]: 60 },
+        { name: 'Acme Mfg', [t('score')]: 45 },
+        { name: 'Initech', [t('score')]: 20 },
+    ], [t]);
+
+    const TRANSLATED_DEPENDENCY_LEVELS = useMemo(() => [
+        { value: 15, name: t('critical_single_source'), itemStyle: { color: '#ef4444' } },
+        { value: 35, name: t('high_dual_source'), itemStyle: { color: '#f59e0b' } },
+        { value: 50, name: t('low_multi_source'), itemStyle: { color: '#10b981' } }
+    ], [t]);
+
+    const TRANSLATED_RISK_CATEGORIES = useMemo(() => [
+        { value: 40, name: t('geopolitical') },
+        { value: 30, name: t('financial') },
+        { value: 20, name: t('operational') },
+        { value: 10, name: t('compliance') }
+    ], [t]);
+
+    const TRANSLATED_MITIGATION_STATUS = useMemo(() => [
+        { value: 50, name: t('implemented') },
+        { value: 30, name: t('in_progress') },
+        { value: 20, name: t('planned') }
+    ], [t]);
+
+    const TRANSLATED_NETWORK_NODES = useMemo(() => [
+        { id: '0', name: t('our_company'), symbolSize: 50, category: 0 },
+        { id: '1', name: 'Acme Mfg', symbolSize: 30, category: 1 },
+        { id: '2', name: 'Globex', symbolSize: 25, category: 1 },
+        { id: '3', name: 'Umbrella', symbolSize: 20, category: 1 },
+        { id: '4', name: t('sub_1'), symbolSize: 15, category: 2 },
+        { id: '5', name: t('sub_2'), symbolSize: 15, category: 2 },
+        { id: '6', name: t('sub_3'), symbolSize: 15, category: 2 },
+    ], [t]);
+
+    const TRANSLATED_SUPPLIER_TABLE = useMemo(() => [
+        { name: 'Acme Mfg', dependency: '38%', risk: t('medium'), backup: t('approved'), status: t('stable') },
+        { name: 'Globex Corp', dependency: '25%', risk: t('medium'), backup: t('pending'), status: t('check') },
+        { name: 'Umbrella Corp', dependency: '10%', risk: t('high'), backup: t('none'), status: t('critical') },
+        { name: 'Cyberdyne', dependency: '5%', risk: t('high'), backup: t('none'), status: t('critical') },
+        { name: 'Soylent Corp', dependency: '15%', risk: t('low'), backup: t('approved'), status: t('stable') },
+        { name: 'Initech', dependency: '12%', risk: t('low'), backup: t('approved'), status: t('stable') },
+    ], [t]);
+
     // --- ECharts Options ---
 
     // Pie: Dependency
@@ -114,13 +186,13 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
         tooltip: { trigger: 'item' },
         legend: { show: false },
         series: [{
-            name: 'Dependency',
+            name: t('dependency'),
             type: 'pie',
             radius: ['40%', '70%'],
             avoidLabelOverlap: false,
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            data: DEPENDENCY_LEVELS
+            data: TRANSLATED_DEPENDENCY_LEVELS
         }]
     };
 
@@ -129,11 +201,11 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
         tooltip: { trigger: 'item' },
         legend: { show: false },
         series: [{
-            name: 'Risk Type',
+            name: t('risk_type'),
             type: 'pie',
             radius: '70%',
             center: ['50%', '50%'],
-            data: RISK_CATEGORIES
+            data: TRANSLATED_RISK_CATEGORIES
         }]
     };
 
@@ -147,7 +219,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            data: MITIGATION_STATUS,
+            data: TRANSLATED_MITIGATION_STATUS,
             color: ['#10b981', '#3b82f6', '#f59e0b']
         }]
     };
@@ -155,16 +227,16 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
     // Network Graph
     const networkOption: EChartsOption = {
         tooltip: {},
-        legend: [{ data: ['Company', 'Tier 1', 'Tier 2'] }],
+        legend: [{ data: [t('company'), t('tier_1'), t('tier_2')] }],
         animationDuration: 1500,
         animationEasingUpdate: 'quinticInOut',
         series: [{
             type: 'graph',
             layout: 'force',
-            data: NETWORK_NODES.map(node => ({ ...node, itemStyle: node.category === 0 ? { color: '#3b82f6' } : node.category === 1 ? { color: '#10b981' } : { color: '#9ca3af' } })),
+            data: TRANSLATED_NETWORK_NODES.map(node => ({ ...node, itemStyle: node.category === 0 ? { color: '#3b82f6' } : node.category === 1 ? { color: '#10b981' } : { color: '#9ca3af' } })),
             links: NETWORK_LINKS,
             roam: true,
-            label: { position: 'right', formatter: '{b}' },
+            label: { position: isRTL ? 'left' : 'right', formatter: '{b}' },
             force: { repulsion: 200 }
         }]
     };
@@ -178,15 +250,15 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <ShieldWarning size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Risk & Dependency</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sourcing & Procurement</p>
+                        <h1 className="text-2xl font-bold">{t('risk_dependency')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('sourcing_procurement')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -195,7 +267,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -203,7 +275,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {TOP_KPIS.map((kpi, index) => (
+                {TRANSLATED_TOP_KPIS.map((kpi, index) => (
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
@@ -217,48 +289,48 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                 {isLoading ? (
                     <>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Exposure Analysis" />
+                            <ChartSkeleton height="h-[300px]" title={t('exposure_analysis')} />
                         </div>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Risk Scores" />
+                            <ChartSkeleton height="h-[300px]" title={t('risk_scores')} />
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Exposure Analysis</h3>
-                                <p className="text-xs text-gray-400">Dependency (Left) vs Risk Score (Right)</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('exposure_analysis')}</h3>
+                                <p className="text-xs text-gray-400">{t('dependency_vs_risk')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SPEND_CONCENTRATION} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={TRANSLATED_SPEND_CONCENTRATION} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip cursor={{ fill: '#f9fafb' }} />
-                                        <Bar dataKey="Spend" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} name="Dependency %" animationDuration={1000} />
+                                        <Bar dataKey={t('spend')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} name={t('dependency_pct')} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Scores</h3>
-                                <p className="text-xs text-gray-400">By Supplier</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_scores')}</h3>
+                                <p className="text-xs text-gray-400">{t('by_supplier')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={RISK_SCORE_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={TRANSLATED_RISK_SCORE_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} domain={[0, 100]} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Score" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                        <Bar dataKey={t('score')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -271,13 +343,13 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2">
                             <div className="grid grid-cols-2 gap-4">
-                                <PieChartSkeleton title="Sourcing Mix" />
-                                <PieChartSkeleton title="Risk Types" />
+                                <PieChartSkeleton title={t('sourcing_mix')} />
+                                <PieChartSkeleton title={t('risk_types')} />
                             </div>
                         </div>
                         <div className="col-span-2 min-h-[250px]">
                             <div className="grid grid-cols-2 gap-4 h-full">
-                                {SIDE_KPIS.map((kpi, index) => (
+                                {TRANSLATED_SIDE_KPIS.map((kpi, index) => (
                                     <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                         <KPICard {...kpi} color="blue" loading={true} />
                                     </div>
@@ -289,17 +361,17 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Sourcing Mix</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('sourcing_mix')}</h3>
                                 <ReactECharts option={dependencyPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Risk Types</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('risk_types')}</h3>
                                 <ReactECharts option={riskPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
                         <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
-                            {SIDE_KPIS.map((kpi, index) => (
+                            {TRANSLATED_SIDE_KPIS.map((kpi, index) => (
                                 <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
@@ -319,36 +391,36 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                             <TableSkeleton rows={5} columns={5} />
                         </div>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Dependency Map" />
+                            <ChartSkeleton height="h-[300px]" title={t('dependency_map')} />
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Details</h3>
+                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('dependency_details')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table dir={dir} className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Supplier</th>
-                                            <th className="px-5 py-3 text-center">Dependency</th>
-                                            <th className="px-5 py-3 text-center">Risk</th>
-                                            <th className="px-5 py-3 text-center">Backup</th>
-                                            <th className="px-5 py-3 text-right">Status</th>
+                                            <th className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>{t('supplier')}</th>
+                                            <th className="px-5 py-3 text-center">{t('dependency')}</th>
+                                            <th className="px-5 py-3 text-center">{t('risk')}</th>
+                                            <th className="px-5 py-3 text-center">{t('backup')}</th>
+                                            <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {SUPPLIER_TABLE.map((row, index) => (
+                                        {TRANSLATED_SUPPLIER_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
+                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.dependency}</td>
                                                 <td className="px-5 py-3 text-center font-medium text-amber-500">{row.risk}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.backup}</td>
-                                                <td className="px-5 py-3 text-right">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Critical' ? 'bg-red-100 text-red-700' :
-                                                        row.status === 'Check' ? 'bg-yellow-100 text-yellow-700' :
+                                                <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === t('critical') ? 'bg-red-100 text-red-700' :
+                                                        row.status === t('check') ? 'bg-yellow-100 text-yellow-700' :
                                                             'bg-green-100 text-green-700'
                                                         }`}>
                                                         {row.status}
@@ -362,9 +434,9 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Dependency Map</h3>
-                                <p className="text-xs text-gray-400">Multi-Tier View</p>
+                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('dependency_map')}</h3>
+                                <p className="text-xs text-gray-400">{t('multi_tier_view')}</p>
                             </div>
                             <ReactECharts option={networkOption} style={{ height: '300px', width: '100%' }} />
                         </div>

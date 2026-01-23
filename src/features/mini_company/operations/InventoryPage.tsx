@@ -143,9 +143,16 @@ const InventoryPage: React.FC = () => {
         }
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('stock_inventory'),
+        description: t('manage_stock_levels')
+    }), [board, t]);
+
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

@@ -5,12 +5,20 @@ import { Board, Workspace, Task } from '../../../types';
 import { X, CalendarBlank, User, TextAlignLeft, Tag } from 'phosphor-react';
 import { useAppContext } from '../../../contexts/AppContext';
 
+interface EventData {
+    name: string;
+    priority: string;
+    date: string;
+    description: string;
+    attendees: string;
+}
+
 interface CreateEventModalProps {
     isOpen: boolean;
     onClose: () => void;
     boards: Board[];
     workspaces: Workspace[];
-    onSave: (eventData: any, boardId: string) => void;
+    onSave: (eventData: EventData, boardId: string) => void;
     activeWorkspaceId?: string;
 }
 

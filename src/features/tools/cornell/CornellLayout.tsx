@@ -20,14 +20,7 @@ export const CornellLayout: React.FC<CornellLayoutProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const isDragging = useRef(false);
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        isDragging.current = true;
-        document.body.style.cursor = 'col-resize';
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = React.useCallback((e: MouseEvent) => {
         if (!isDragging.current || !containerRef.current) return;
 
         const containerRect = containerRef.current.getBoundingClientRect();
@@ -37,14 +30,29 @@ export const CornellLayout: React.FC<CornellLayoutProps> = ({
         if (newLeftWidth > 15 && newLeftWidth < 60) {
             setLeftWidth(newLeftWidth);
         }
-    };
+    }, []);
 
-    const handleMouseUp = () => {
+    const handleMouseUp = React.useCallback(() => {
         isDragging.current = false;
         document.body.style.cursor = 'default';
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+    }, [handleMouseMove]);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        isDragging.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     };
+
+    // Cleanup event listeners on unmount
+    useEffect(() => {
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [handleMouseMove, handleMouseUp]);
 
     return (
         <div className={`flex flex-col h-full w-full bg-white dark:bg-monday-dark-bg border border-gray-200 dark:border-monday-dark-border rounded-lg shadow-sm overflow-hidden ${className}`}>

@@ -1,5 +1,5 @@
-
 import { Server, Socket } from 'socket.io';
+import { socketLogger } from '../utils/logger';
 
 interface RoomUser {
     socketId: string;
@@ -13,7 +13,7 @@ const rooms: Record<string, RoomUser[]> = {};
 
 export const initializeSocket = (io: Server) => {
     io.on('connection', (socket: Socket) => {
-        console.log(`[Socket] Client connected: ${socket.id}`);
+        socketLogger.info(`Client connected: ${socket.id}`);
 
         // --- Room Management ---
         socket.on('join-room', ({ roomId, userId, name, avatarUrl }: { roomId: string, userId: string, name?: string, avatarUrl?: string }) => {
@@ -28,7 +28,7 @@ export const initializeSocket = (io: Server) => {
                 rooms[roomId].push({ socketId: socket.id, userId, name, avatarUrl });
             }
 
-            console.log(`[Socket] User ${name || userId} joined room ${roomId}`);
+            socketLogger.info(`User ${name || userId} joined room ${roomId}`);
 
             // Notify others in room
             socket.to(roomId).emit('user-joined', { userId, name, avatarUrl, socketId: socket.id });
@@ -51,7 +51,7 @@ export const initializeSocket = (io: Server) => {
         });
 
         socket.on('disconnect', () => {
-            console.log(`[Socket] Client disconnected: ${socket.id}`);
+            socketLogger.info(`Client disconnected: ${socket.id}`);
         });
 
         // --- Real-time Features ---
@@ -64,7 +64,7 @@ export const initializeSocket = (io: Server) => {
 
         // Board Drawing/Updates
         socket.on('draw-data', ({ roomId, data }: { roomId: string, data: any }) => {
-            console.log(`[Socket] draw-data from ${socket.id} to room ${roomId}:`, data);
+            socketLogger.info(`draw-data from ${socket.id} to room ${roomId}:`, data);
             socket.to(roomId).emit('draw-data', data);
         });
 

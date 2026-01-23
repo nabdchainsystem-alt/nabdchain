@@ -4,6 +4,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { getEnv, isProduction } from '../utils/env';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -69,7 +70,7 @@ router.post('/create', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Invite Error:", error);
+        apiLogger.error("Invite Error:", error);
         res.status(500).json({ error: "Failed to create invitation" });
     }
 });
@@ -114,7 +115,7 @@ router.post('/accept', requireAuth, async (req, res: Response) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: 'Invalid input', details: error.issues });
         }
-        console.error("Accept Invite Error:", error);
+        apiLogger.error("Accept Invite Error:", error);
         res.status(500).json({ error: "Failed to accept invitation" });
     }
 });

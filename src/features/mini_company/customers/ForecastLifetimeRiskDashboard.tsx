@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -7,46 +7,9 @@ import { ArrowsOut, Info, TrendUp, Warning, Lightning, Sparkle, Target, ChartLin
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ForecastLifetimeRiskInfo } from './ForecastLifetimeRiskInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Forecasted CLV', subtitle: 'Next 12 Months', value: '$2.4M', change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'blue' },
-    { id: '2', label: 'Forecast Accuracy', subtitle: 'Model Precision', value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 91, 91, 92], color: 'blue' },
-    { id: '3', label: 'High-Risk Customers', subtitle: 'Churn Probability > 80%', value: '18', change: '-3', trend: 'up', icon: <Warning size={18} />, sparklineData: [25, 24, 22, 20, 19, 18], color: 'blue' },
-    { id: '4', label: 'Expected Churn %', subtitle: 'Projected Attrition', value: '5.2%', change: '-0.5%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [6.0, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Upsell Potential', subtitle: 'Extension Revenue', value: '$450k', change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'blue' },
-    { id: '6', label: 'LTV Growth', subtitle: 'Year-over-Year', value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
-    { id: '7', label: 'Confidence Level', subtitle: 'Statistical Certainty', value: 'High', change: 'Stable', trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
-    { id: '8', label: 'Prediction Horizon', subtitle: 'Forecast Window', value: '12mo', change: 'Stable', trend: 'neutral', icon: <Target size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
-];
-
-// --- Mock Data: Charts ---
-const FORECAST_BY_SEGMENT = [
-    { name: 'Enterprise', Value: 1200 },
-    { name: 'Mid-Market', Value: 850 },
-    { name: 'SMB', Value: 350 },
-    { name: 'Startup', Value: 150 }
-];
-
-const RISK_DISTRIBUTION = [
-    { value: 65, name: 'Low Risk' },
-    { value: 25, name: 'Medium Risk' },
-    { value: 10, name: 'High Risk' }
-];
-
-// Risk Table
-const RISK_TABLE = [
-    { customer: 'Omega Corp', currentCLV: '$120k', forecastCLV: '$150k', risk: 'Low', action: 'Upsell Gold Plan' },
-    { customer: 'Zeta Inc', currentCLV: '$85k', forecastCLV: '$90k', risk: 'Medium', action: 'Schedule QBR' },
-    { customer: 'Theta LLC', currentCLV: '$200k', forecastCLV: '$180k', risk: 'High', action: 'Exec Intervention' },
-    { customer: 'Sigma Co', currentCLV: '$45k', forecastCLV: '$60k', risk: 'Low', action: 'Nurture Campaign' },
-    { customer: 'Kappa Ltd', currentCLV: '$95k', forecastCLV: '$95k', risk: 'Medium', action: 'Monitor Usage' },
-];
-
-// Cone Data (Mocking a prediction interval)
+// Cone Data (Mocking a prediction interval) - static values don't need translation
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const BASE_VALUE = 100;
 const CONE_DATA = MONTHS.map((m, i) => {
@@ -60,23 +23,67 @@ const CONE_DATA = MONTHS.map((m, i) => {
     };
 });
 
-// Additional chart data
-const GROWTH_BY_COHORT = [
-    { name: 'Q1 2023', Growth: 15 },
-    { name: 'Q2 2023', Growth: 18 },
-    { name: 'Q3 2023', Growth: 22 },
-    { name: 'Q4 2023', Growth: 12 },
+// Raw table data with action keys for styling
+const RISK_TABLE_DATA = [
+    { customer: 'Omega Corp', currentCLV: '$120k', forecastCLV: '$150k', riskKey: 'low', actionKey: 'upsell_gold_plan' },
+    { customer: 'Zeta Inc', currentCLV: '$85k', forecastCLV: '$90k', riskKey: 'medium', actionKey: 'schedule_qbr' },
+    { customer: 'Theta LLC', currentCLV: '$200k', forecastCLV: '$180k', riskKey: 'high', actionKey: 'exec_intervention' },
+    { customer: 'Sigma Co', currentCLV: '$45k', forecastCLV: '$60k', riskKey: 'low', actionKey: 'nurture_campaign' },
+    { customer: 'Kappa Ltd', currentCLV: '$95k', forecastCLV: '$95k', riskKey: 'medium', actionKey: 'monitor_usage' },
 ];
-
-const FORECAST_ACCURACY = [
-    { value: 72, name: 'Accurate' },
-    { value: 20, name: 'Within Range' },
-    { value: 8, name: 'Missed' }
-];
-
 
 export const ForecastLifetimeRiskDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
+
+    // --- KPI Data with translations ---
+    const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
+        { id: '1', label: t('predicted_clv'), subtitle: t('ml_prediction'), value: '$2.4M', change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'blue' },
+        { id: '2', label: t('lifetime_forecast'), subtitle: t('projected_value'), value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 91, 91, 92], color: 'blue' },
+        { id: '3', label: t('churn_probability'), subtitle: t('likelihood_to_churn'), value: '18', change: '-3', trend: 'up', icon: <Warning size={18} />, sparklineData: [25, 24, 22, 20, 19, 18], color: 'blue' },
+        { id: '4', label: t('risk_score'), subtitle: t('composite_risk'), value: '5.2%', change: '-0.5%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [6.0, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'blue' },
+    ], [t]);
+
+    const SIDE_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
+        { id: '5', label: t('upsell_opportunity'), subtitle: t('cross_sell_potential'), value: '$450k', change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'blue' },
+        { id: '6', label: t('growth_potential'), subtitle: t('expansion_potential'), value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
+        { id: '7', label: t('revenue_at_risk'), subtitle: t('potential_loss'), value: t('high'), change: t('stable'), trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
+        { id: '8', label: t('next_purchase'), subtitle: t('expected_date'), value: '12mo', change: t('stable'), trend: 'neutral', icon: <Target size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
+    ], [t]);
+
+    // --- Chart Data with translations ---
+    const FORECAST_BY_SEGMENT = useMemo(() => [
+        { name: t('high_value'), Value: 1200 },
+        { name: t('mid_value'), Value: 850 },
+        { name: t('low_value'), Value: 350 },
+        { name: t('at_risk'), Value: 150 }
+    ], [t]);
+
+    const RISK_DISTRIBUTION = useMemo(() => [
+        { value: 65, name: t('low') },
+        { value: 25, name: t('medium') },
+        { value: 10, name: t('high') }
+    ], [t]);
+
+    const GROWTH_BY_COHORT = useMemo(() => [
+        { name: 'Q1 2023', Growth: 15 },
+        { name: 'Q2 2023', Growth: 18 },
+        { name: 'Q3 2023', Growth: 22 },
+        { name: 'Q4 2023', Growth: 12 },
+    ], []);
+
+    const FORECAST_ACCURACY = useMemo(() => [
+        { value: 72, name: t('high') },
+        { value: 20, name: t('medium') },
+        { value: 8, name: t('low') }
+    ], [t]);
+
+    // --- Table Data with translations ---
+    const RISK_TABLE = useMemo(() => RISK_TABLE_DATA.map(item => ({
+        ...item,
+        risk: t(item.riskKey),
+        action: t(item.actionKey)
+    })), [t]);
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -126,7 +133,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
 
     // Area Chart (Cone)
     const coneOption: EChartsOption = {
-        title: { text: 'LTV Probability Cone', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('revenue_projection'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'axis' },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'category', boundaryGap: false, data: MONTHS, axisLine: { show: false }, axisTick: { show: false } },
@@ -185,15 +192,15 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Sparkle size={28} className="text-purple-600 dark:text-purple-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Forecast & Lifetime Risk</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Predictive Analytics</p>
+                        <h1 className="text-2xl font-bold">{t('forecast_lifetime_risk')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('forecast_lifetime_risk_desc')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -202,7 +209,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-purple-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -230,8 +237,8 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                         {/* Recharts: Forecast CLV (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Projected CLV</h3>
-                                <p className="text-xs text-gray-400">By Segment</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('clv_forecast')}</h3>
+                                <p className="text-xs text-gray-400">{t('projected_values')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -252,8 +259,8 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                         {/* Recharts: Growth by Cohort (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Growth by Cohort</h3>
-                                <p className="text-xs text-gray-400">LTV Growth %</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('growth_vs_risk')}</h3>
+                                <p className="text-xs text-gray-400">{t('forecast_breakdown')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -286,8 +293,8 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                             {/* ECharts: Risk Distribution (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Profile</h3>
-                                    <p className="text-xs text-gray-400">Customer Base</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('churn_prediction')}</h3>
+                                    <p className="text-xs text-gray-400">{t('risk_over_time')}</p>
                                 </div>
                                 <ReactECharts option={pieOption} style={{ height: '180px' }} />
                             </div>
@@ -295,8 +302,8 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                             {/* ECharts: Forecast Accuracy (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast Accuracy</h3>
-                                    <p className="text-xs text-gray-400">Model Performance</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('opportunity_matrix')}</h3>
+                                    <p className="text-xs text-gray-400">{t('revenue_projection')}</p>
                                 </div>
                                 <ReactECharts option={accuracyPieOption} style={{ height: '180px' }} />
                             </div>
@@ -328,17 +335,17 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                         {/* Table (2 cols) */}
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Action Plan</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('at_risk_accounts')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Customer</th>
-                                            <th className="px-5 py-3">Current CLV</th>
-                                            <th className="px-5 py-3">Forecast CLV</th>
-                                            <th className="px-5 py-3">Risk</th>
-                                            <th className="px-5 py-3 text-right">Action</th>
+                                            <th className="px-5 py-3">{t('account')}</th>
+                                            <th className="px-5 py-3">{t('predicted_clv')}</th>
+                                            <th className="px-5 py-3">{t('lifetime_forecast')}</th>
+                                            <th className="px-5 py-3">{t('risk_score')}</th>
+                                            <th className="px-5 py-3 text-end">{t('action')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -348,14 +355,14 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.currentCLV}</td>
                                                 <td className="px-5 py-3 font-medium text-purple-600 dark:text-purple-400">{row.forecastCLV}</td>
                                                 <td className="px-5 py-3">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.risk === 'High' ? 'bg-red-100 text-red-700' :
-                                                        row.risk === 'Medium' ? 'bg-orange-100 text-orange-700' :
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.riskKey === 'high' ? 'bg-red-100 text-red-700' :
+                                                        row.riskKey === 'medium' ? 'bg-orange-100 text-orange-700' :
                                                             'bg-green-100 text-green-700'
                                                         }`}>
                                                         {row.risk}
                                                     </span>
                                                 </td>
-                                                <td className="px-5 py-3 text-right text-xs text-gray-500 dark:text-gray-400 italic">
+                                                <td className="px-5 py-3 text-end text-xs text-gray-500 dark:text-gray-400 italic">
                                                     {row.action}
                                                 </td>
                                             </tr>

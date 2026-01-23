@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -7,6 +7,7 @@ import { ArrowsOut, Info, Clock, Lightning, Warning, TrendUp, Chats, Timer, Char
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { SupplierLeadTimeResponsivenessInfo } from './SupplierLeadTimeResponsivenessInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -82,6 +83,8 @@ const SUPPLIER_TABLE = [
 
 export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t, dir } = useLanguage();
+    const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -96,6 +99,65 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
 
+    // Translated KPI data
+    const TRANSLATED_TOP_KPIS = useMemo(() => [
+        { id: '1', label: t('avg_lead_time'), subtitle: t('days'), value: '14.2', change: '-1.5', trend: 'down' as const, icon: <Clock size={18} />, sparklineData: [16, 15, 15.5, 15, 14.5, 14.2], color: 'blue' },
+        { id: '2', label: t('fastest_supplier'), subtitle: 'Acme Mfg', value: `5 ${t('days')}`, change: t('stable'), trend: 'neutral' as const, icon: <Lightning size={18} />, color: 'blue' },
+        { id: '3', label: t('response_time_rfq'), subtitle: t('avg_hours'), value: '24h', change: '-2h', trend: 'down' as const, icon: <Chats size={18} />, sparklineData: [28, 27, 26, 25, 24, 24], color: 'blue' },
+        { id: '4', label: t('responsiveness_score'), subtitle: t('index_0_100'), value: '88', change: '+3', trend: 'up' as const, icon: <Medal size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
+    ], [t]);
+
+    const TRANSLATED_SIDE_KPIS = useMemo(() => [
+        { id: '5', label: t('emergency_orders'), subtitle: t('past_30_days'), value: '12', change: '+2', trend: 'down' as const, icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 10, 12], color: 'blue' },
+        { id: '6', label: t('lead_time_variance'), subtitle: t('standard_dev'), value: '±2.1', change: '-0.3', trend: 'up' as const, icon: <TrendUp size={18} />, sparklineData: [2.8, 2.6, 2.5, 2.4, 2.2, 2.1], color: 'blue' },
+        { id: '7', label: t('slowest_supplier'), subtitle: 'Umbrella Corp', value: `35 ${t('days')}`, change: '+2', trend: 'down' as const, icon: <Hourglass size={18} />, color: 'blue' },
+        { id: '8', label: t('on_time_quote'), subtitle: t('rfq_response_rate'), value: '92%', change: '+4%', trend: 'up' as const, icon: <Timer size={18} />, sparklineData: [85, 87, 88, 89, 90, 92], color: 'blue' },
+    ], [t]);
+
+    const TRANSLATED_LEAD_TIME_BY_SUPPLIER = useMemo(() => [
+        { name: 'Acme Mfg', [t('lead_time')]: 5, [t('response_time')]: 4 },
+        { name: 'Globex', [t('lead_time')]: 12, [t('response_time')]: 24 },
+        { name: 'Soylent', [t('lead_time')]: 18, [t('response_time')]: 12 },
+        { name: 'Initech', [t('lead_time')]: 8, [t('response_time')]: 6 },
+        { name: 'Umbrella', [t('lead_time')]: 35, [t('response_time')]: 48 },
+    ], [t]);
+
+    const TRANSLATED_LEAD_TIME_BUCKETS = useMemo(() => [
+        { value: 45, name: t('less_than_7_days'), itemStyle: { color: '#10b981' } },
+        { value: 30, name: t('7_to_14_days'), itemStyle: { color: '#3b82f6' } },
+        { value: 15, name: t('15_to_30_days'), itemStyle: { color: '#f59e0b' } },
+        { value: 10, name: t('over_30_days'), itemStyle: { color: '#ef4444' } }
+    ], [t]);
+
+    const TRANSLATED_ORDER_URGENCY = useMemo(() => [
+        { value: 85, name: t('standard') },
+        { value: 15, name: t('expedited') }
+    ], [t]);
+
+    const TRANSLATED_RESPONSE_BY_SUPPLIER = useMemo(() => [
+        { name: 'Acme Mfg', [t('hours')]: 4 },
+        { name: 'Initech', [t('hours')]: 6 },
+        { name: 'Stark', [t('hours')]: 8 },
+        { name: 'Globex', [t('hours')]: 24 },
+        { name: 'Umbrella', [t('hours')]: 48 },
+    ], [t]);
+
+    const TRANSLATED_PERFORMANCE_TIER = useMemo(() => [
+        { value: 35, name: t('excellent') },
+        { value: 40, name: t('good') },
+        { value: 15, name: t('average') },
+        { value: 10, name: t('poor') }
+    ], [t]);
+
+    const TRANSLATED_SUPPLIER_TABLE = useMemo(() => [
+        { name: 'Acme Mfg', leadTime: `5 ${t('days')}`, response: '4h', variance: '±0.5', score: '98' },
+        { name: 'Initech', leadTime: `8 ${t('days')}`, response: '6h', variance: '±1.0', score: '95' },
+        { name: 'Globex Corp', leadTime: `12 ${t('days')}`, response: '24h', variance: '±2.5', score: '85' },
+        { name: 'Soylent Corp', leadTime: `18 ${t('days')}`, response: '12h', variance: '±3.0', score: '82' },
+        { name: 'Stark Ind', leadTime: `10 ${t('days')}`, response: '8h', variance: '±1.2', score: '92' },
+        { name: 'Umbrella Corp', leadTime: `35 ${t('days')}`, response: '48h', variance: '±5.0', score: '60' },
+    ], [t]);
+
     // --- ECharts Options ---
 
     // Pie Chart: Lead Time Buckets
@@ -103,14 +165,14 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0, left: 'center', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10 } },
         series: [{
-            name: 'Lead Time Range',
+            name: t('lead_time_range'),
             type: 'pie',
             radius: ['40%', '70%'],
             avoidLabelOverlap: false,
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
             emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
-            data: LEAD_TIME_BUCKETS
+            data: TRANSLATED_LEAD_TIME_BUCKETS
         }]
     };
 
@@ -119,11 +181,11 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         tooltip: { trigger: 'item' },
         legend: { show: false },
         series: [{
-            name: 'Urgency',
+            name: t('urgency'),
             type: 'pie',
             radius: ['0%', '70%'],
             center: ['50%', '50%'],
-            data: ORDER_URGENCY,
+            data: TRANSLATED_ORDER_URGENCY,
             color: ['#3b82f6', '#f59e0b']
         }]
     };
@@ -138,7 +200,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            data: PERFORMANCE_TIER,
+            data: TRANSLATED_PERFORMANCE_TIER,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
         }]
     };
@@ -159,12 +221,13 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         },
         yAxis: {
             type: 'value',
-            name: 'Days',
-            splitArea: { show: true }
+            name: t('days'),
+            splitArea: { show: true },
+            position: isRTL ? 'right' : 'left'
         },
         series: [
             {
-                name: 'Lead Time Range',
+                name: t('lead_time_range'),
                 type: 'boxplot',
                 datasetIndex: 1,
                 itemStyle: { color: '#8b5cf6', borderColor: '#7c3aed' },
@@ -182,15 +245,15 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Clock size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Lead Time & Speed</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sourcing & Procurement</p>
+                        <h1 className="text-2xl font-bold">{t('lead_time_speed')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('sourcing_procurement')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -199,7 +262,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -207,7 +270,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 {/* --- Row 1: Top 4 KPIs --- */}
-                {TOP_KPIS.map((kpi, index) => (
+                {TRANSLATED_TOP_KPIS.map((kpi, index) => (
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
@@ -221,53 +284,53 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                 {isLoading ? (
                     <>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Speed Analysis" />
+                            <ChartSkeleton height="h-[300px]" title={t('speed_analysis')} />
                         </div>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Response Times" />
+                            <ChartSkeleton height="h-[300px]" title={t('response_times')} />
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Speed Analysis</h3>
-                                <p className="text-xs text-gray-400">Lead Time (Days) vs Response (Hours)</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('speed_analysis')}</h3>
+                                <p className="text-xs text-gray-400">{t('lead_time_vs_response')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={LEAD_TIME_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={TRANSLATED_LEAD_TIME_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar yAxisId="left" dataKey="LeadTime" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} name="Lead Time (Days)" animationDuration={1000} />
-                                        <Bar yAxisId="right" dataKey="ResponseTime" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} name="Response (Hours)" animationDuration={1000} />
+                                        <Bar yAxisId="left" dataKey={t('lead_time')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} name={t('lead_time_days')} animationDuration={1000} />
+                                        <Bar yAxisId="right" dataKey={t('response_time')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} name={t('response_hours')} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Response Times</h3>
-                                <p className="text-xs text-gray-400">Hours to RFQ Response</p>
+                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('response_times')}</h3>
+                                <p className="text-xs text-gray-400">{t('hours_to_rfq_response')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={RESPONSE_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                    <BarChart data={TRANSLATED_RESPONSE_BY_SUPPLIER} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} reversed={isRTL} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} orientation={isRTL ? 'right' : 'left'} />
                                         <Tooltip
                                             cursor={{ fill: '#f9fafb' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
-                                        <Bar dataKey="Hours" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
+                                        <Bar dataKey={t('hours')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={28} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -280,13 +343,13 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2">
                             <div className="grid grid-cols-2 gap-4">
-                                <PieChartSkeleton title="Lead Time Mix" />
-                                <PieChartSkeleton title="Order Urgency" />
+                                <PieChartSkeleton title={t('lead_time_mix')} />
+                                <PieChartSkeleton title={t('order_urgency')} />
                             </div>
                         </div>
                         <div className="col-span-2 min-h-[250px]">
                             <div className="grid grid-cols-2 gap-4 h-full">
-                                {SIDE_KPIS.map((kpi, index) => (
+                                {TRANSLATED_SIDE_KPIS.map((kpi, index) => (
                                     <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                         <KPICard {...kpi} color="blue" loading={true} />
                                     </div>
@@ -298,17 +361,17 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Lead Time Mix</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('lead_time_mix')}</h3>
                                 <ReactECharts option={bucketsPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2">Order Urgency</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('order_urgency')}</h3>
                                 <ReactECharts option={urgencyPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
                         <div className="col-span-2 min-h-[250px] grid grid-cols-2 gap-4">
-                            {SIDE_KPIS.map((kpi, index) => (
+                            {TRANSLATED_SIDE_KPIS.map((kpi, index) => (
                                 <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
@@ -328,34 +391,34 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                             <TableSkeleton rows={5} columns={5} />
                         </div>
                         <div className="col-span-2">
-                            <ChartSkeleton height="h-[300px]" title="Predictability Analysis" />
+                            <ChartSkeleton height="h-[300px]" title={t('predictability_analysis')} />
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Speed Performance</h3>
+                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('speed_performance')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table dir={dir} className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Supplier</th>
-                                            <th className="px-5 py-3 text-center">Lead Time</th>
-                                            <th className="px-5 py-3 text-center">Response</th>
-                                            <th className="px-5 py-3 text-center">Variance</th>
-                                            <th className="px-5 py-3 text-right">Score</th>
+                                            <th className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>{t('supplier')}</th>
+                                            <th className="px-5 py-3 text-center">{t('lead_time')}</th>
+                                            <th className="px-5 py-3 text-center">{t('response')}</th>
+                                            <th className="px-5 py-3 text-center">{t('variance')}</th>
+                                            <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('score')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {SUPPLIER_TABLE.map((row, index) => (
+                                        {TRANSLATED_SUPPLIER_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
+                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.leadTime}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.response}</td>
                                                 <td className="px-5 py-3 text-center font-medium text-amber-500">{row.variance}</td>
-                                                <td className="px-5 py-3 text-right">
+                                                <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${Number(row.score) < 80 ? 'bg-red-100 text-red-700' :
                                                         Number(row.score) < 90 ? 'bg-blue-100 text-blue-700' :
                                                             'bg-green-100 text-green-700'
@@ -371,9 +434,9 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Predictability Analysis</h3>
-                                <p className="text-xs text-gray-400">Lead Time Variability (Box Plot)</p>
+                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('predictability_analysis')}</h3>
+                                <p className="text-xs text-gray-400">{t('lead_time_variability_boxplot')}</p>
                             </div>
                             <ReactECharts option={boxplotOption} style={{ height: '300px', width: '100%' }} />
                         </div>

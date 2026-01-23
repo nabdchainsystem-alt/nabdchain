@@ -5,7 +5,22 @@ import { VaultSidebar } from './components/VaultSidebar';
 import { VaultGrid } from './components/VaultGrid';
 import { VaultList } from './components/VaultList';
 import { VaultEmptyState } from './components/VaultEmptyState';
-import { VaultItem, FolderMetadata } from './types';
+import { VaultItem, FolderMetadata, VaultItemType } from './types';
+
+// API response item type (different from VaultItem state type)
+interface VaultApiItem {
+    id: string;
+    title?: string;
+    type?: string;
+    subtitle?: string;
+    updatedAt?: string;
+    isFavorite?: boolean;
+    folderId?: string;
+    color?: string;
+    metadata?: string;
+    previewUrl?: string;
+    content?: string;
+}
 import { CreateFolderModal } from './components/CreateFolderModal';
 import { CreateLinkModal } from './components/CreateLinkModal';
 import { CreateGroupModal } from './components/CreateGroupModal';
@@ -110,32 +125,32 @@ export const VaultView: React.FC = () => {
 
             // Calculate folder counts locally
             const folderCounts = new Map<string, number>();
-            data.forEach((item: any) => {
+            data.forEach((item: VaultApiItem) => {
                 if (item.folderId) {
                     folderCounts.set(item.folderId, (folderCounts.get(item.folderId) || 0) + 1);
                 }
             });
 
-            const transformedItems: VaultItem[] = data.map((i: any) => {
+            const transformedItems: VaultItem[] = data.map((i: VaultApiItem) => {
                 const count = folderCounts.get(i.id) || 0;
                 return {
                     id: i.id,
                     title: i.title || 'Untitled',
-                    type: i.type || 'file',
+                    type: (i.type || 'document') as VaultItemType,
                     subtitle: i.subtitle || (i.type === 'folder' ? `${count} item${count !== 1 ? 's' : ''}` : ''),
                     lastModified: i.updatedAt ? new Date(i.updatedAt).toLocaleDateString() : 'Just now',
                     isFavorite: !!i.isFavorite,
                     folderId: i.folderId,
                     color: i.color,
-                    metadata: i.metadata,
+                    metadata: i.metadata ? JSON.parse(i.metadata) : undefined,
                     // Removed icon from state to ensure serializability and avoid potential rendering issues
                     previewUrl: i.previewUrl || i.content
                 };
             });
             setItems(transformedItems);
-        } catch (error: any) {
+        } catch (error) {
             storageLogger.error("Failed to load vault items", error);
-            setError(error.message || "Failed to load items");
+            setError(error instanceof Error ? error.message : "Failed to load items");
         } finally {
             setIsLoading(false);
         }

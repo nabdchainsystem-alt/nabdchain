@@ -1,5 +1,6 @@
 import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
 import { Request, Response, NextFunction } from 'express';
+import { authLogger } from '../utils/logger';
 
 const clerkAuth = ClerkExpressRequireAuth({});
 
@@ -21,17 +22,17 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     // This double-gate prevents accidental token bypass in misconfigured environments
     if (isDevelopment && ALLOW_DEV_TOKENS && authHeader) {
         if (authHeader.includes('master-token')) {
-            console.warn('[AuthMiddleware] WARNING: Development master-token used');
+            authLogger.warn('WARNING: Development master-token used');
             (req as AuthRequest).auth = { userId: 'user_master_local_admin', sessionId: 'mock-session-master' };
             return next();
         }
         if (authHeader.includes('dev-token')) {
-            console.warn('[AuthMiddleware] WARNING: Development dev-token used');
+            authLogger.warn('WARNING: Development dev-token used');
             (req as AuthRequest).auth = { userId: 'user_developer_admin', sessionId: 'mock-session-dev' };
             return next();
         }
         if (authHeader.includes('google-token')) {
-            console.warn('[AuthMiddleware] WARNING: Development google-token used');
+            authLogger.warn('WARNING: Development google-token used');
             (req as AuthRequest).auth = { userId: 'user_google_simulated', sessionId: 'mock-session-google' };
             return next();
         }
@@ -41,7 +42,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     try {
         return clerkAuth(req as any, res as any, next);
     } catch (err) {
-        console.error('[AuthMiddleware] Clerk Auth Error:', err);
+        authLogger.error('Clerk Auth Error:', err);
         res.status(401).json({ error: 'Unauthenticated' });
     }
 };

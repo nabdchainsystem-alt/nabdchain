@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { encrypt, decrypt } from '../utils/encryption';
 import { prisma } from '../lib/prisma';
+import { authLogger } from '../utils/logger';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -107,7 +108,7 @@ export const saveGoogleToken = async (email: string, tokens: any, userId: string
         });
     } else {
         if (!tokens.refresh_token) {
-            console.warn("Verify Warning: No refresh token received for new connect. User needs to revoke access to get it again.");
+            authLogger.warn("Verify Warning: No refresh token received for new connect. User needs to revoke access to get it again.");
         }
         return prisma.emailAccount.create({
             data: {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { requireAuth } from '../middleware/auth';
 import { storageService } from '../services/storageService';
+import { uploadLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.post('/presign', requireAuth, async (req: AuthRequest, res: Response) => 
             expiresIn: 3600,
         });
     } catch (error) {
-        console.error('[Upload] Presign error:', error);
+        uploadLogger.error('Presign error:', error);
         const message = error instanceof Error ? error.message : 'Failed to generate upload URL';
         res.status(500).json({ error: message });
     }
@@ -126,7 +127,7 @@ router.post('/confirm', requireAuth, async (req: AuthRequest, res: Response) => 
             },
         });
     } catch (error) {
-        console.error('[Upload] Confirm error:', error);
+        uploadLogger.error('Confirm error:', error);
         const message = error instanceof Error ? error.message : 'Failed to confirm upload';
         res.status(500).json({ error: message });
     }
@@ -155,7 +156,7 @@ router.get('/list', requireAuth, async (req: AuthRequest, res: Response) => {
             files: files.map(key => storageService.getFileInfo(key)),
         });
     } catch (error) {
-        console.error('[Upload] List error:', error);
+        uploadLogger.error('List error:', error);
         const message = error instanceof Error ? error.message : 'Failed to list files';
         res.status(500).json({ error: message });
     }
@@ -188,7 +189,7 @@ router.delete('/file/{*path}', requireAuth, async (req: AuthRequest, res: Respon
 
         res.json({ success: true });
     } catch (error) {
-        console.error('[Upload] Delete error:', error);
+        uploadLogger.error('Delete error:', error);
         const message = error instanceof Error ? error.message : 'Failed to delete file';
         res.status(500).json({ error: message });
     }
@@ -233,7 +234,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
                 );
                 return res.json({ url: result.url, key: result.key });
             } catch (r2Error) {
-                console.error('[Upload] R2 upload failed, falling back to local:', r2Error);
+                uploadLogger.error('R2 upload failed, falling back to local:', r2Error);
                 // Fall through to local storage
             }
         }
@@ -247,7 +248,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
         res.json({ url: `/uploads/${uniqueName}` });
 
     } catch (e) {
-        console.error('Upload error', e);
+        uploadLogger.error('Upload error', e);
         res.status(500).json({ error: 'Failed to upload image' });
     }
 });

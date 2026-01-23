@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const INITIAL_BOARD: Board = {
     id: 'dept-reports',
@@ -8,10 +9,10 @@ const INITIAL_BOARD: Board = {
     description: 'Centralized access to all system reports',
     columns: [
         { id: 'name', title: 'Report Name', type: 'text' },
-        { id: 'type', title: 'Type', type: 'status' }, // Financial, Operational, Sales
+        { id: 'type', title: 'Type', type: 'status' },
         { id: 'generated', title: 'Last Generated', type: 'date' },
         { id: 'owner', title: 'Owner', type: 'person' },
-        { id: 'frequency', title: 'Frequency', type: 'status' } // Daily, Weekly, Monthly
+        { id: 'frequency', title: 'Frequency', type: 'status' }
     ],
     tasks: [],
     availableViews: ['datatable'],
@@ -19,6 +20,8 @@ const INITIAL_BOARD: Board = {
 };
 
 const ReportsPage: React.FC = () => {
+    const { t } = useLanguage();
+
     const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('dept-reports-data');
         return saved ? JSON.parse(saved) : INITIAL_BOARD;
@@ -40,9 +43,16 @@ const ReportsPage: React.FC = () => {
         });
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('reports'),
+        description: t('reports_desc')
+    }), [board, t]);
+
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

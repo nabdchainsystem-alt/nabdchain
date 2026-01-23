@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, Content, GenerativeModel, CachedContent } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
 import { getDepartmentPrompt } from './departmentPrompts';
+import { aiLogger } from '../utils/logger';
 
 // ============================================================================
 // Types & Interfaces
@@ -877,7 +878,7 @@ export async function routeRequest(request: AIRequest): Promise<AIResponse> {
             conversationId: request.conversationId,
         };
     } catch (error) {
-        console.error('[AIRouter] Error:', error);
+        aiLogger.error('[AIRouter] Error:', error);
 
         // Try fallback model if primary fails
         if (!useFallback) {
@@ -915,7 +916,7 @@ export async function routeRequest(request: AIRequest): Promise<AIResponse> {
                     },
                 };
             } catch (fallbackError) {
-                console.error('[AIRouter] Fallback error:', fallbackError);
+                aiLogger.error('[AIRouter] Fallback error:', fallbackError);
             }
         }
 
@@ -1000,7 +1001,7 @@ Output valid JSON only, no markdown formatting.`;
             summary: `Processed ${fileData.headers.length} columns from ${fileData.fileName}`,
         };
     } catch (parseError) {
-        console.error('[AIRouter] JSON parse error:', parseError);
+        aiLogger.error('[AIRouter] JSON parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse AI response as JSON',
@@ -1078,7 +1079,7 @@ Output valid JSON only, no markdown formatting.`;
             insights,
         };
     } catch (parseError) {
-        console.error('[AIRouter] Chart config parse error:', parseError);
+        aiLogger.error('[AIRouter] Chart config parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse chart configuration',
@@ -1147,7 +1148,7 @@ Output valid JSON only, no markdown formatting.`;
             tableData,
         };
     } catch (parseError) {
-        console.error('[AIRouter] Table parse error:', parseError);
+        aiLogger.error('[AIRouter] Table parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse table data',
@@ -1219,7 +1220,7 @@ Output valid JSON only, no markdown formatting.`;
             forecast,
         };
     } catch (parseError) {
-        console.error('[AIRouter] Forecast parse error:', parseError);
+        aiLogger.error('[AIRouter] Forecast parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse forecast data',
@@ -1287,7 +1288,7 @@ Output valid JSON only, no markdown formatting.`;
             tips: Array.isArray(tips) ? tips : tips.tips,
         };
     } catch (parseError) {
-        console.error('[AIRouter] Tips parse error:', parseError);
+        aiLogger.error('[AIRouter] Tips parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse tips',
@@ -1355,7 +1356,7 @@ Output valid JSON only, no markdown formatting.`;
             tasks: Array.isArray(tasks) ? tasks : tasks.tasks,
         };
     } catch (parseError) {
-        console.error('[AIRouter] GTD parse error:', parseError);
+        aiLogger.error('[AIRouter] GTD parse error:', parseError);
         return {
             success: false,
             error: 'Failed to parse tasks',

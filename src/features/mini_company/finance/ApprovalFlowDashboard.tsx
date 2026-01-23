@@ -7,48 +7,48 @@ import { ArrowsOut, Info, TrendUp, Warning, CheckCircle, Clock, XCircle, TreeStr
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ApprovalFlowInfo } from './ApprovalFlowInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Submitted', subtitle: 'This Month', value: '45', change: '+10', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [5, 8, 12, 15, 30, 45], color: 'blue' },
-    { id: '2', label: 'Approved', subtitle: 'Completed', value: '38', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [4, 7, 10, 14, 28, 38], color: 'blue' },
-    { id: '3', label: 'Rejected', subtitle: 'Returned', value: '5', change: '+2', trend: 'down', icon: <XCircle size={18} />, sparklineData: [0, 1, 1, 2, 4, 5], color: 'blue' },
-    { id: '4', label: 'Avg Approval Time', subtitle: 'Hours', value: '28h', change: '-4h', trend: 'up', icon: <Clock size={18} />, sparklineData: [32, 30, 29, 29, 28, 28], color: 'blue' },
+// --- KPI Data (as functions to support translation) ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('submitted'), subtitle: t('this_month'), value: '45', change: '+10', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [5, 8, 12, 15, 30, 45], color: 'blue' },
+    { id: '2', label: t('approved'), subtitle: t('completed'), value: '38', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [4, 7, 10, 14, 28, 38], color: 'blue' },
+    { id: '3', label: t('rejected'), subtitle: t('returned'), value: '5', change: '+2', trend: 'down', icon: <XCircle size={18} />, sparklineData: [0, 1, 1, 2, 4, 5], color: 'blue' },
+    { id: '4', label: t('avg_approval_time'), subtitle: t('hours'), value: '28h', change: '-4h', trend: 'up', icon: <Clock size={18} />, sparklineData: [32, 30, 29, 29, 28, 28], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Pending', subtitle: 'In Review', value: '2', change: '-1', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [5, 4, 6, 3, 3, 2], color: 'blue' },
-    { id: '6', label: 'Rejection Rate', subtitle: '% of Total', value: '11%', change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [10, 10, 12, 11, 10, 11], color: 'blue' },
-    { id: '7', label: 'Control Bottlenecks', subtitle: 'Slow Stages', value: '1', change: '0', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [1, 1, 1, 1, 1, 1], color: 'blue' },
-    { id: '8', label: 'Approval Efficiency', subtitle: 'Success Rate', value: '84%', change: '+3%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [78, 79, 81, 82, 83, 84], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('pending'), subtitle: t('in_review'), value: '2', change: '-1', trend: 'up', icon: <Hourglass size={18} />, sparklineData: [5, 4, 6, 3, 3, 2], color: 'blue' },
+    { id: '6', label: t('rejection_rate'), subtitle: t('percent_of_total'), value: '11%', change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [10, 10, 12, 11, 10, 11], color: 'blue' },
+    { id: '7', label: t('control_bottlenecks'), subtitle: t('slow_stages'), value: '1', change: '0', trend: 'neutral', icon: <TreeStructure size={18} />, sparklineData: [1, 1, 1, 1, 1, 1], color: 'blue' },
+    { id: '8', label: t('approval_efficiency'), subtitle: t('success_rate'), value: '84%', change: '+3%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [78, 79, 81, 82, 83, 84], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
-const DELAY_PER_STAGE = [
-    { name: 'Submission', Days: 0.2 },
-    { name: 'Direct Manager', Days: 1.5 },
-    { name: 'Dept Head', Days: 2.1 },
-    { name: 'Finance Review', Days: 0.8 },
-    { name: 'Payment', Days: 0.5 },
+// --- Translated Data Functions ---
+const getDelayPerStage = (t: (key: string) => string) => [
+    { name: t('submission'), Days: 0.2 },
+    { name: t('direct_manager'), Days: 1.5 },
+    { name: t('dept_head'), Days: 2.1 },
+    { name: t('finance_review'), Days: 0.8 },
+    { name: t('payment'), Days: 0.5 },
 ];
 
-const FUNNEL_DATA = [
-    { value: 100, name: 'Submitted' },
-    { value: 80, name: 'Manager Approved' },
-    { value: 60, name: 'Finance Approved' },
-    { value: 55, name: 'Paid' }
+const getFunnelData = (t: (key: string) => string) => [
+    { value: 100, name: t('submitted') },
+    { value: 80, name: t('manager_approved') },
+    { value: 60, name: t('finance_approved') },
+    { value: 55, name: t('paid') }
 ];
 
-// --- Mock Data: Table & Sankey ---
-const APPROVAL_QUEUE = [
-    { id: 'EXP-105', submittedBy: 'Alice Smith', stage: 'Direct Manager', days: 2, status: 'Pending' },
-    { id: 'EXP-106', submittedBy: 'Bob Jones', stage: 'Finance Review', days: 0.5, status: 'In Progress' },
-    { id: 'EXP-107', submittedBy: 'Charlie Day', stage: 'Dept Head', days: 3.5, status: 'Delayed' },
-    { id: 'EXP-108', submittedBy: 'Dana White', stage: 'Direct Manager', days: 1, status: 'Pending' },
-    { id: 'EXP-109', submittedBy: 'Eve Black', stage: 'Submission', days: 0.1, status: 'New' },
+const getApprovalQueue = (t: (key: string) => string) => [
+    { id: 'EXP-105', submittedBy: 'Alice Smith', stage: t('direct_manager'), days: 2, status: t('pending') },
+    { id: 'EXP-106', submittedBy: 'Bob Jones', stage: t('finance_review'), days: 0.5, status: t('in_progress') },
+    { id: 'EXP-107', submittedBy: 'Charlie Day', stage: t('dept_head'), days: 3.5, status: t('delayed') },
+    { id: 'EXP-108', submittedBy: 'Dana White', stage: t('direct_manager'), days: 1, status: t('pending') },
+    { id: 'EXP-109', submittedBy: 'Eve Black', stage: t('submission'), days: 0.1, status: t('new_status') },
 ];
 
-// Sankey Data (Mock)
+// Sankey Data needs to stay static as it uses string references for links
 const SANKEY_DATA = {
     nodes: [
         { name: 'Submitted' },
@@ -66,22 +66,22 @@ const SANKEY_DATA = {
     ]
 };
 
-// Additional chart data
-const APPROVALS_BY_TYPE = [
-    { name: 'Travel', Approved: 15, Rejected: 2 },
-    { name: 'Software', Approved: 10, Rejected: 1 },
-    { name: 'Marketing', Approved: 8, Rejected: 1 },
-    { name: 'Office', Approved: 5, Rejected: 1 },
+const getApprovalsByType = (t: (key: string) => string) => [
+    { name: t('travel'), Approved: 15, Rejected: 2 },
+    { name: t('software'), Approved: 10, Rejected: 1 },
+    { name: t('marketing'), Approved: 8, Rejected: 1 },
+    { name: t('office'), Approved: 5, Rejected: 1 },
 ];
 
-const APPROVAL_OUTCOME = [
-    { value: 84, name: 'Approved' },
-    { value: 11, name: 'Rejected' },
-    { value: 5, name: 'Pending' }
+const getApprovalOutcome = (t: (key: string) => string) => [
+    { value: 84, name: t('approved') },
+    { value: 11, name: t('rejected') },
+    { value: 5, name: t('pending') }
 ];
 
 export const ApprovalFlowDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -95,6 +95,17 @@ export const ApprovalFlowDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // Get translated KPI data
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+
+    // Get translated chart/table data
+    const DELAY_PER_STAGE = getDelayPerStage(t);
+    const FUNNEL_DATA = getFunnelData(t);
+    const APPROVAL_QUEUE = getApprovalQueue(t);
+    const APPROVALS_BY_TYPE = getApprovalsByType(t);
+    const APPROVAL_OUTCOME = getApprovalOutcome(t);
 
     // --- ECharts Options ---
 
@@ -142,7 +153,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
 
     // Sankey Chart
     const sankeyOption: EChartsOption = {
-        title: { text: 'Approval Flow', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('approval_flow'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', triggerOn: 'mousemove' },
         series: [
             {
@@ -169,15 +180,15 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <CheckCircle size={28} className="text-green-600 dark:text-green-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Approval & Control Flow</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track workflow efficiency</p>
+                        <h1 className="text-2xl font-bold">{t('approval_control')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('af_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -186,7 +197,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-green-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -210,8 +221,8 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Avg Delay per Stage</h3>
-                                <p className="text-xs text-gray-400">In Days</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('avg_delay_per_stage')}</h3>
+                                <p className="text-xs text-gray-400">{t('in_days')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -237,8 +248,8 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approvals by Type</h3>
-                                <p className="text-xs text-gray-400">Approved vs Rejected</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('approvals_by_type')}</h3>
+                                <p className="text-xs text-gray-400">{t('approved_vs_rejected')}</p>
                             </div>
                             <div className="h-[220px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -269,8 +280,8 @@ export const ApprovalFlowDashboard: React.FC = () => {
                         ) : (
                             <>
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Conversion Funnel</h3>
-                                    <p className="text-xs text-gray-400">Request Progression</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('conversion_funnel')}</h3>
+                                    <p className="text-xs text-gray-400">{t('request_progression')}</p>
                                 </div>
                                 <ReactECharts option={funnelOption} style={{ height: '180px' }} />
                             </>
@@ -284,8 +295,8 @@ export const ApprovalFlowDashboard: React.FC = () => {
                         ) : (
                             <>
                                 <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Outcome</h3>
-                                    <p className="text-xs text-gray-400">Overall success rate</p>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('approval_outcome')}</h3>
+                                    <p className="text-xs text-gray-400">{t('overall_success_rate')}</p>
                                 </div>
                                 <ReactECharts option={outcomePieOption} style={{ height: '180px' }} />
                             </>
@@ -321,26 +332,26 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     ) : (
                         <>
                             <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Approval Queue</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('approval_queue')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">Expense ID</th>
-                                            <th className="px-5 py-3">Submitted By</th>
-                                            <th className="px-5 py-3">Stage</th>
-                                            <th className="px-5 py-3 text-right">Age (Days)</th>
-                                            <th className="px-5 py-3 text-center">Status</th>
+                                            <th className="px-5 py-3 text-start">{t('expense_id')}</th>
+                                            <th className="px-5 py-3 text-start">{t('submitted_by')}</th>
+                                            <th className="px-5 py-3 text-start">{t('stage')}</th>
+                                            <th className="px-5 py-3 text-end">{t('age_days')}</th>
+                                            <th className="px-5 py-3 text-center">{t('status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {APPROVAL_QUEUE.map((row) => (
                                             <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.submittedBy}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.stage}</td>
-                                                <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.days}</td>
+                                                <td className="px-5 py-3 text-start font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
+                                                <td className="px-5 py-3 text-start text-gray-600 dark:text-gray-400">{row.submittedBy}</td>
+                                                <td className="px-5 py-3 text-start text-gray-600 dark:text-gray-400">{row.stage}</td>
+                                                <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.days}</td>
                                                 <td className="px-5 py-3 text-center">
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Delayed' ? 'bg-red-100 text-red-700' :
                                                         row.status === 'Pending' ? 'bg-amber-100 text-amber-700' :

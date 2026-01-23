@@ -54,6 +54,10 @@ export const emailLogger = createLogger({ prefix: 'Email' });
 export const aiLogger = createLogger({ prefix: 'AI' });
 export const uploadLogger = createLogger({ prefix: 'Upload' });
 export const cacheLogger = createLogger({ prefix: 'Cache' });
+export const roomLogger = createLogger({ prefix: 'Room' });
+
+// Default logger for general use
+export const logger = apiLogger;
 
 // Export createLogger for custom loggers
 export { createLogger };

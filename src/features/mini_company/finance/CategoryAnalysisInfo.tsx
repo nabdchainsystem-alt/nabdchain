@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Tag, Table, Calculator } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface CategoryAnalysisInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface CategoryAnalysisInfoProps {
 }
 
 export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
     }, []);
 
     const questions = [
-        { q: 'Which category costs the most?', a: '"Highest Cost Category" identifies the single largest spending bucket.' },
-        { q: 'Are we staying within budget?', a: 'Check "Category Variance %" and "Budget Breach Count". A high variance or breach count indicates overspending.' },
-        { q: 'Are expenses predictable?', a: '"Volatility Index" measures how much category spending fluctuates. High volatility suggests irregular or unexpected costs.' },
-        { q: 'How is control measured?', a: '"Control Score" is a composite metric (0-100) combining adherence to budget, variance stability, and policy compliance.' }
+        { q: t('ca_info_q1'), a: t('ca_info_a1') },
+        { q: t('ca_info_q2'), a: t('ca_info_a2') },
+        { q: t('ca_info_q3'), a: t('ca_info_a3') },
+        { q: t('ca_info_q4'), a: t('ca_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -60,63 +62,63 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Category Analysis
+                            {t('category_analysis')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Budget Control & Variance</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ca_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard focuses on granular expense control by analyzing spending against budgets per category, highlighting variances, and monitoring cost volatility.
+                            {t('ca_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,30 +128,31 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Highest Cost Cat" desc="Category with max total spend." />
-                                    <DetailItem title="Budget Breach Count" desc="Number of categories exceeding budget." />
-                                    <DetailItem title="Category Variance %" desc="Avg difference between actual & budget." />
-                                    <DetailItem title="Volatility Index" desc="Measure of spend fluctuation." />
-                                    <DetailItem title="Control Score" desc="0-100 rating of budget adherence." />
+                                    <DetailItem title={t('category_spending')} desc={t('ca_category_spending_desc')} />
+                                    <DetailItem title={t('variance_alert')} desc={t('ca_variance_alert_desc')} />
+                                    <DetailItem title={t('categories_count')} desc={t('ca_categories_count_desc')} />
+                                    <DetailItem title={t('budget_adherence')} desc={t('ca_budget_adherence_desc')} />
+                                    <DetailItem title={t('highest_category')} desc={t('ca_highest_category_desc')} />
+                                    <DetailItem title={t('over_budget_categories')} desc={t('ca_over_budget_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Spend per Category" desc="Bar chart comparing actual spend." />
-                                    <DetailItem title="Category Share" desc="Pie chart of departmental allocation." />
-                                    <DetailItem title="Budget Analysis" desc="Table showing budget vs actuals." />
-                                    <DetailItem title="Category Deviation" desc="Radar chart highlighting over-budget areas." />
+                                    <DetailItem title={t('budget_vs_actual')} desc={t('ca_budget_vs_actual_desc')} />
+                                    <DetailItem title={t('category_trend')} desc={t('ca_category_trend_desc')} />
+                                    <DetailItem title={t('category_distribution')} desc={t('ca_distribution_desc')} />
+                                    <DetailItem title={t('category_performance')} desc={t('ca_performance_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -158,26 +161,26 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="Categories"
-                                        desc="Budget configs."
-                                        columns={['CategoryID', 'Name', 'MonthlyBudget', 'AlertThreshold']}
+                                        name={t('eo_table_categories')}
+                                        desc={t('eo_table_categories_desc')}
+                                        columns={['CategoryID', t('name'), 'MonthlyBudget', 'AlertThreshold']}
                                     />
                                     <TableSchema
-                                        name="Expenses"
-                                        desc="Transaction data."
-                                        columns={['ExpenseID', 'CategoryID', 'Amount', 'Date']}
+                                        name={t('eo_table_expenses')}
+                                        desc={t('eo_table_expenses_desc')}
+                                        columns={['ExpenseID', 'CategoryID', t('amount'), t('date')]}
                                     />
                                 </div>
                             </div>
@@ -185,16 +188,12 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Variance</strong> = Actual Spend - Budgeted Amount.</span>
-                                    </li>
-                                    <li className="flex gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Control Score</strong> = 100 - (Total Variance % * Penalty Factor).</span>
+                                        <span><strong>{t('variance')}</strong> = {t('actual')} - {t('budget')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -207,7 +206,7 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -217,7 +216,7 @@ export const CategoryAnalysisInfo: React.FC<CategoryAnalysisInfoProps> = ({ isOp
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -228,7 +227,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

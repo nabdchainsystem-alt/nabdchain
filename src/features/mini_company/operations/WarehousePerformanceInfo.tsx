@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Package, Table, Calculator, Buildings } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface WarehousePerformanceInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface WarehousePerformanceInfoProps {
 }
 
 export const WarehousePerformanceInfo: React.FC<WarehousePerformanceInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -70,9 +72,9 @@ export const WarehousePerformanceInfo: React.FC<WarehousePerformanceInfoProps> =
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-violet-600 dark:text-violet-400" />
-                            Warehouse Performance
+                            {t('warehouse_perf')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Efficiency, Speed & Capacity</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('warehouse_perf_desc')}</p>
                     </div>
                     <button
                         onClick={onClose}

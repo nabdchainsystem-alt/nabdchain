@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface GTDInboxColumnProps {
     title: string;
@@ -9,6 +10,9 @@ interface GTDInboxColumnProps {
 }
 
 export const GTDInboxColumn: React.FC<GTDInboxColumnProps> = ({ title, subtitle, count, delay = 0, children }) => {
+    const { language, t } = useAppContext();
+    const isRTL = language === 'ar';
+
     return (
 
         <div
@@ -16,8 +20,8 @@ export const GTDInboxColumn: React.FC<GTDInboxColumnProps> = ({ title, subtitle,
         >
             <div className="flex justify-between items-start mb-2">
                 <div>
-                    <h3 className="text-xs font-bold tracking-[0.15em] text-[#1A1A1A] dark:text-white uppercase mb-1">{title}</h3>
-                    <p className="text-xs font-serif italic text-gray-400">{subtitle}</p>
+                    <h3 className={`text-xs font-bold ${isRTL ? '' : 'tracking-[0.15em]'} text-[#1A1A1A] dark:text-white uppercase mb-1`}>{title}</h3>
+                    <p className={`text-xs ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-400`}>{subtitle}</p>
                 </div>
                 {count > 0 && (
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-bold">
@@ -35,7 +39,7 @@ export const GTDInboxColumn: React.FC<GTDInboxColumnProps> = ({ title, subtitle,
                 {children ? (
                     children
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] tracking-widest uppercase opacity-40">Empty</div>
+                    <div className={`w-full h-full flex items-center justify-center text-[10px] ${isRTL ? '' : 'tracking-widest'} uppercase opacity-40`}>{t('empty')}</div>
                 )}
             </div>
 

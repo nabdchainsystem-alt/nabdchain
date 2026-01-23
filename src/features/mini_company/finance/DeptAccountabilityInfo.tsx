@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, UsersThree, ChartPieSlice, Scales } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface DeptAccountabilityInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface DeptAccountabilityInfoProps {
 }
 
 export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
     }, []);
 
     const questions = [
-        { q: 'Which department spends the most?', a: 'See "Highest Spending Dept" and the "Dept Share" pie chart for a clear breakdown.' },
-        { q: 'Who is over budget?', a: 'The "Department Performance" table highlights departments with a negative variance (Actual > Budget).' },
-        { q: 'What is "Accountability Index"?', a: 'A score derived from budget adherence, timely approvals, and policy compliance per department.' },
-        { q: 'How is "Efficiency Score" calculated?', a: 'Ratio of output (if measured) or budget utilization vs targets. Higher is better, indicating effective resource use.' }
+        { q: t('da_info_q1'), a: t('da_info_a1') },
+        { q: t('da_info_q2'), a: t('da_info_a2') },
+        { q: t('da_info_q3'), a: t('da_info_a3') },
+        { q: t('da_info_q4'), a: t('da_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -60,63 +62,63 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-orange-600 dark:text-orange-400" />
-                            Dept Accountability
+                            {t('dept_accountability')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cost Center Performance</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('da_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard breaks down expenses by department, assigning accountability for budget variances and tracking efficiency across the organization.
+                            {t('da_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-orange-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,30 +128,30 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Depts Count" desc="Number of active cost centers." />
-                                    <DetailItem title="Highest Spending" desc="Dept with max absolute spend." />
-                                    <DetailItem title="Budget Variance" desc="Total organization deviation." />
-                                    <DetailItem title="Over-Budget Depts" desc="Count of red-flagged teams." />
-                                    <DetailItem title="Efficiency Score" desc="Performance rating." />
+                                    <DetailItem title={t('depts_count')} desc={t('da_depts_count_desc')} />
+                                    <DetailItem title={t('highest_spending')} desc={t('da_highest_spending_desc')} />
+                                    <DetailItem title={t('budget_variance')} desc={t('da_budget_variance_desc')} />
+                                    <DetailItem title={t('over_budget_depts')} desc={t('da_over_budget_desc')} />
+                                    <DetailItem title={t('efficiency_score')} desc={t('da_efficiency_score_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Spend per Department" desc="Bar chart comparison." />
-                                    <DetailItem title="Dept Share" desc="Pie chart of cost distribution." />
-                                    <DetailItem title="Performance Table" desc="Detailed budget vs actuals." />
-                                    <DetailItem title="Spend Network" desc="Visualizes inter-dept cost relations." />
+                                    <DetailItem title={t('spend_per_dept')} desc={t('da_spend_per_dept_desc')} />
+                                    <DetailItem title={t('dept_share')} desc={t('da_dept_share_desc')} />
+                                    <DetailItem title={t('performance_table')} desc={t('da_performance_table_desc')} />
+                                    <DetailItem title={t('spend_network')} desc={t('da_spend_network_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -158,20 +160,20 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">04</span>
-                            Rules
+                            {t('rules')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Scales size={14} className="text-gray-500" />
-                                    <span>Cost Ownership</span>
+                                    <span>{t('cost_ownership')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">Shared Costs</div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">Headcounts usually determine shared facility cost allocation unless direct usage is measured.</p>
+                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">{t('shared_costs')}</div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('da_shared_costs_desc')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -184,7 +186,7 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
                         onClick={onClose}
                         className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -194,7 +196,7 @@ export const DeptAccountabilityInfo: React.FC<DeptAccountabilityInfoProps> = ({ 
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
             {title}
         </div>

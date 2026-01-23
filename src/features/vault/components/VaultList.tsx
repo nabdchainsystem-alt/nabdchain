@@ -39,7 +39,7 @@ export const VaultList: React.FC<VaultListProps> = ({ items, onNavigate, onDelet
         if (item.type === 'folder') {
             onNavigate(item.id);
         } else if (item.previewUrl) {
-            window.open(item.previewUrl, '_blank');
+            window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
         }
     };
 

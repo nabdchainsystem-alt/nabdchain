@@ -7,91 +7,83 @@ import { ArrowsOut, Info, TrendUp, Warning, Wallet, ChartBar, Receipt, CalendarB
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ExpensesOverviewInfo } from './ExpensesOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Expenses', subtitle: 'YTD', value: '$145,230', change: '+12%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [120, 125, 130, 135, 140, 145], color: 'blue' },
-    { id: '2', label: 'Monthly Expenses', subtitle: 'Current Month', value: '$12,450', change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'blue' },
-    { id: '3', label: 'Expense Growth %', subtitle: 'MoM', value: '4.2%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 3.5, 3.8, 4.0, 4.1, 4.2], color: 'blue' },
-    { id: '4', label: 'Expense Categories', subtitle: 'Active', value: '12', change: '0', trend: 'neutral', icon: <ChartBar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
+// --- KPI Data getter functions ---
+const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '1', label: t('total_expenses'), subtitle: t('ytd'), value: '$145,230', change: '+12%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [120, 125, 130, 135, 140, 145], color: 'blue' },
+    { id: '2', label: t('monthly_expenses'), subtitle: t('current_month'), value: '$12,450', change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'blue' },
+    { id: '3', label: t('expense_growth'), subtitle: t('mom'), value: '4.2%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 3.5, 3.8, 4.0, 4.1, 4.2], color: 'blue' },
+    { id: '4', label: t('expense_categories'), subtitle: t('active'), value: '12', change: '0', trend: 'neutral', icon: <ChartBar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Fixed vs Variable', subtitle: 'Ratio', value: '60/40', change: '0', trend: 'neutral', icon: <Receipt size={18} />, sparklineData: [60, 60, 60, 60, 60, 60], color: 'blue' },
-    { id: '6', label: 'Avg Expense / Day', subtitle: 'Based on 30 days', value: '$415', change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'blue' },
-    { id: '7', label: 'High-Cost Alerts', subtitle: 'Above Threshold', value: '3', change: '+1', trend: 'up', icon: <Warning size={18} />, sparklineData: [1, 1, 2, 2, 2, 3], color: 'blue' },
-    { id: '8', label: 'Budget Variance', subtitle: 'vs Plan', value: '-2.3%', change: '+0.5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [-4, -3.5, -3, -2.8, -2.5, -2.3], color: 'blue' },
+const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
+    { id: '5', label: t('fixed_vs_variable'), subtitle: t('ratio'), value: '60/40', change: '0', trend: 'neutral', icon: <Receipt size={18} />, sparklineData: [60, 60, 60, 60, 60, 60], color: 'blue' },
+    { id: '6', label: t('avg_expense_day'), subtitle: t('based_on_30_days'), value: '$415', change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'blue' },
+    { id: '7', label: t('high_cost_alerts'), subtitle: t('above_threshold'), value: '3', change: '+1', trend: 'up', icon: <Warning size={18} />, sparklineData: [1, 1, 2, 2, 2, 3], color: 'blue' },
+    { id: '8', label: t('budget_variance'), subtitle: t('vs_plan'), value: '-2.3%', change: '+0.5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [-4, -3.5, -3, -2.8, -2.5, -2.3], color: 'blue' },
 ];
 
-// --- Mock Data: Charts ---
-const EXPENSES_BY_CATEGORY = [
-    { name: 'Payroll', value: 45000 },
-    { name: 'Rent', value: 20000 },
-    { name: 'Marketing', value: 15000 },
-    { name: 'Software', value: 8000 },
-    { name: 'Travel', value: 5000 },
+// --- Chart Data getter functions ---
+const getExpensesByCategory = (t: (key: string) => string) => [
+    { name: t('payroll'), value: 45000 },
+    { name: t('rent'), value: 20000 },
+    { name: t('marketing'), value: 15000 },
+    { name: t('software'), value: 8000 },
+    { name: t('travel'), value: 5000 },
 ];
 
-const EXPENSES_BY_MONTH = [
-    { name: 'Jan', value: 10000 },
-    { name: 'Feb', value: 12000 },
-    { name: 'Mar', value: 11000 },
-    { name: 'Apr', value: 14000 },
-    { name: 'May', value: 13000 },
-    { name: 'Jun', value: 12450 },
+const getExpenseDistribution = (t: (key: string) => string) => [
+    { value: 45, name: t('payroll') },
+    { value: 20, name: t('rent') },
+    { value: 15, name: t('marketing') },
+    { value: 8, name: t('software') },
+    { value: 12, name: t('other') }
 ];
 
-const EXPENSE_DISTRIBUTION = [
-    { value: 45, name: 'Payroll' },
-    { value: 20, name: 'Rent' },
-    { value: 15, name: 'Marketing' },
-    { value: 8, name: 'Software' },
-    { value: 12, name: 'Other' }
+const getExpensesByDepartment = (t: (key: string) => string) => [
+    { name: t('engineering'), value: 35000 },
+    { name: t('sales'), value: 28000 },
+    { name: t('marketing'), value: 22000 },
+    { name: t('operations'), value: 18000 },
+    { name: t('hr'), value: 12000 },
 ];
 
-// Additional chart data
-const EXPENSES_BY_DEPARTMENT = [
-    { name: 'Engineering', value: 35000 },
-    { name: 'Sales', value: 28000 },
-    { name: 'Marketing', value: 22000 },
-    { name: 'Operations', value: 18000 },
-    { name: 'HR', value: 12000 },
+const getExpenseTypeSplit = (t: (key: string) => string) => [
+    { value: 60, name: t('fixed') },
+    { value: 40, name: t('variable') }
 ];
 
-const EXPENSE_TYPE_SPLIT = [
-    { value: 60, name: 'Fixed' },
-    { value: 40, name: 'Variable' }
+// --- Table Data getter function ---
+const getExpenseTable = (t: (key: string) => string) => [
+    { id: 'EXP-101', category: t('marketing'), amount: '$4,500', date: '2023-06-15', type: t('variable'), status: t('approved'), statusKey: 'approved' },
+    { id: 'EXP-102', category: t('software'), amount: '$299', date: '2023-06-16', type: t('fixed'), status: t('pending'), statusKey: 'pending' },
+    { id: 'EXP-103', category: t('travel'), amount: '$1,200', date: '2023-06-18', type: t('variable'), status: t('approved'), statusKey: 'approved' },
+    { id: 'EXP-104', category: t('office'), amount: '$150', date: '2023-06-20', type: t('variable'), status: t('pending'), statusKey: 'pending' },
+    { id: 'EXP-105', category: t('rent'), amount: '$5,000', date: '2023-06-01', type: t('fixed'), status: t('paid'), statusKey: 'paid' },
 ];
 
-// --- Mock Data: Table & Radial ---
-const EXPENSE_TABLE = [
-    { id: 'EXP-101', category: 'Marketing', amount: '$4,500', date: '2023-06-15', type: 'Variable', status: 'Approved' },
-    { id: 'EXP-102', category: 'Software', amount: '$299', date: '2023-06-16', type: 'Fixed', status: 'Pending' },
-    { id: 'EXP-103', category: 'Travel', amount: '$1,200', date: '2023-06-18', type: 'Variable', status: 'Approved' },
-    { id: 'EXP-104', category: 'Office', amount: '$150', date: '2023-06-20', type: 'Variable', status: 'Pending' },
-    { id: 'EXP-105', category: 'Rent', amount: '$5,000', date: '2023-06-01', type: 'Fixed', status: 'Paid' },
-];
-
-// Radial Data
-const RADIAL_DATA = {
+// Radial Data getter function
+const getRadialData = (t: (key: string) => string) => ({
     indicator: [
-        { name: 'Payroll', max: 100 },
-        { name: 'Rent', max: 100 },
-        { name: 'Marketing', max: 100 },
-        { name: 'Software', max: 100 },
-        { name: 'Travel', max: 100 },
-        { name: 'Office', max: 100 }
+        { name: t('payroll'), max: 100 },
+        { name: t('rent'), max: 100 },
+        { name: t('marketing'), max: 100 },
+        { name: t('software'), max: 100 },
+        { name: t('travel'), max: 100 },
+        { name: t('office'), max: 100 }
     ],
     series: [
         {
             value: [90, 80, 70, 40, 30, 20],
-            name: 'Spend Density'
+            name: t('spend_density')
         }
     ]
-};
+});
 
 export const ExpensesOverviewDashboard: React.FC = () => {
     const { currency } = useAppContext();
+    const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
 
     // Loading state for smooth entrance animation
@@ -108,6 +100,16 @@ export const ExpensesOverviewDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // Get translated data
+    const TOP_KPIS = getTopKPIs(t);
+    const SIDE_KPIS = getSideKPIs(t);
+    const EXPENSES_BY_CATEGORY = getExpensesByCategory(t);
+    const EXPENSES_BY_DEPARTMENT = getExpensesByDepartment(t);
+    const EXPENSE_DISTRIBUTION = getExpenseDistribution(t);
+    const EXPENSE_TYPE_SPLIT = getExpenseTypeSplit(t);
+    const EXPENSE_TABLE = getExpenseTable(t);
+    const RADIAL_DATA = getRadialData(t);
 
     // --- ECharts Options ---
 
@@ -143,7 +145,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
 
     // Radial (Radar) Chart - Using Radar primarily as requested "Radial Expense Density" usually implies radar or polar bar
     const radarOption: EChartsOption = {
-        title: { text: 'Spend Concentration', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('spend_concentration'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: {},
         radar: {
             indicator: RADIAL_DATA.indicator,
@@ -158,7 +160,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
             data: [
                 {
                     value: RADIAL_DATA.series[0].value,
-                    name: 'Spend Density',
+                    name: t('spend_density'),
                     areaStyle: { color: 'rgba(59, 130, 246, 0.4)' },
                     lineStyle: { color: '#3b82f6' },
                     itemStyle: { color: '#3b82f6' }
@@ -176,15 +178,15 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 <div className="flex items-start gap-2">
                     <Wallet size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Expenses Overview</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Operational spending snapshot</p>
+                        <h1 className="text-2xl font-bold">{t('expenses_overview')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('operational_spending_snapshot')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -193,7 +195,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -216,13 +218,13 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 {/* Recharts: By Category (Bar) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Expenses by Category" />
+                        <ChartSkeleton height="h-[300px]" title={t('expenses_by_category')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expenses by Category</h3>
-                            <p className="text-xs text-gray-400">Top cost centers</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('expenses_by_category')}</h3>
+                            <p className="text-xs text-gray-400">{t('top_cost_centers')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -244,13 +246,13 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 {/* Recharts: By Department (Bar) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Expenses by Department" />
+                        <ChartSkeleton height="h-[300px]" title={t('expenses_by_department')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expenses by Department</h3>
-                            <p className="text-xs text-gray-400">Departmental spending</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('expenses_by_department')}</h3>
+                            <p className="text-xs text-gray-400">{t('departmental_spending')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -276,13 +278,13 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                     {/* ECharts: Distribution (Pie) */}
                     {isLoading ? (
                         <div className="col-span-1">
-                            <PieChartSkeleton title="Cost Distribution" />
+                            <PieChartSkeleton title={t('cost_distribution')} />
                         </div>
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Distribution</h3>
-                                <p className="text-xs text-gray-400">Share of wallet</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_distribution')}</h3>
+                                <p className="text-xs text-gray-400">{t('share_of_wallet')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -291,13 +293,13 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                     {/* ECharts: Fixed vs Variable (Pie) */}
                     {isLoading ? (
                         <div className="col-span-1">
-                            <PieChartSkeleton title="Fixed vs Variable" />
+                            <PieChartSkeleton title={t('fixed_vs_variable')} />
                         </div>
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Fixed vs Variable</h3>
-                                <p className="text-xs text-gray-400">Cost structure split</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('fixed_vs_variable')}</h3>
+                                <p className="text-xs text-gray-400">{t('cost_structure_split')}</p>
                             </div>
                             <ReactECharts option={expenseTypePieOption} style={{ height: '180px' }} />
                         </div>
@@ -327,17 +329,17 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
                         <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Transactions</h3>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('recent_transactions')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Type</th>
-                                        <th className="px-5 py-3">Category</th>
-                                        <th className="px-5 py-3">Date</th>
-                                        <th className="px-5 py-3 text-right">Amount</th>
-                                        <th className="px-5 py-3 text-center">Status</th>
+                                        <th className="px-5 py-3">{t('type')}</th>
+                                        <th className="px-5 py-3">{t('category')}</th>
+                                        <th className="px-5 py-3">{t('date')}</th>
+                                        <th className="px-5 py-3 text-end">{t('amount')}</th>
+                                        <th className="px-5 py-3 text-center">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -346,9 +348,9 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                                             <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.type}</td>
                                             <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
                                             <td className="px-5 py-3 text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
-                                            <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                            <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
                                             <td className="px-5 py-3 text-center">
-                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === 'Approved' || row.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.statusKey === 'approved' || row.statusKey === 'paid' ? 'bg-emerald-100 text-emerald-700' :
                                                     'bg-amber-100 text-amber-700'
                                                     }`}>
                                                     {row.status}
@@ -365,7 +367,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                 {/* Companion Chart: Radar (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <PieChartSkeleton size={240} title="Spend Concentration" />
+                        <PieChartSkeleton size={240} title={t('spend_concentration')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">

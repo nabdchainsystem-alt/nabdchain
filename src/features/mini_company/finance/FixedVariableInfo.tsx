@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Receipt, Table, Calculator } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface FixedVariableInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface FixedVariableInfoProps {
 }
 
 export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
     }, []);
 
     const questions = [
-        { q: 'What is a "Fixed" expense?', a: 'Costs that remain constant regardless of business volume (e.g., Rent, Salaries, Insurance).' },
-        { q: 'What is a "Variable" expense?', a: 'Costs that fluctuate directly with business activity (e.g., Raw Materials, Shipping, Commissions).' },
-        { q: 'Why is "Flexibility Ratio" important?', a: 'It measures the proportion of costs you can quickly cut in a downturn. A higher ratio means more agility.' },
-        { q: 'What is "Cost Rigidity"?', a: 'The opposite of flexibility. High rigidity means your burn rate is hard to reduce without major restructuring.' }
+        { q: t('fv_info_q1'), a: t('fv_info_a1') },
+        { q: t('fv_info_q2'), a: t('fv_info_a2') },
+        { q: t('fv_info_q3'), a: t('fv_info_a3') },
+        { q: t('fv_info_q4'), a: t('fv_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -60,63 +62,63 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Fixed vs Variable
+                            {t('fixed_variable')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cost Structure Analysis</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('fv_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard dissects the company's cost structure, distinguishing between fixed overheads and variable operational costs to assess financial agility and break-even points.
+                            {t('fv_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,30 +128,31 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Fixed Expenses" desc="Total committed overhead costs." />
-                                    <DetailItem title="Variable Expenses" desc="Total output-dependent costs." />
-                                    <DetailItem title="Flexibility Ratio" desc="Variable Costs / Total Costs." />
-                                    <DetailItem title="Cost Rigidity" desc="Fixed Costs / Total Costs." />
-                                    <DetailItem title="Break-Even Impact" desc="Revenue needed to cover fixed costs." />
+                                    <DetailItem title={t('fixed_expenses')} desc={t('fv_fixed_expenses_desc')} />
+                                    <DetailItem title={t('variable_expenses')} desc={t('fv_variable_expenses_desc')} />
+                                    <DetailItem title={t('flexibility_ratio')} desc={t('fv_flexibility_ratio_desc')} />
+                                    <DetailItem title={t('total_controllable')} desc={t('fv_total_controllable_desc')} />
+                                    <DetailItem title={t('largest_fixed')} desc={t('fv_largest_fixed_desc')} />
+                                    <DetailItem title={t('largest_variable')} desc={t('fv_largest_variable_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Fixed vs Variable Trend" desc="Bar chart showing mix over time." />
-                                    <DetailItem title="Cost Structure" desc="Pie chart of Fixed/Variable split." />
-                                    <DetailItem title="Expense Detail" desc="Table classifying each cost line." />
-                                    <DetailItem title="Rigidity Matrix" desc="Chart plotting Impact vs Duration." />
+                                    <DetailItem title={t('fixed_breakdown')} desc={t('fv_fixed_breakdown_desc')} />
+                                    <DetailItem title={t('variable_breakdown')} desc={t('fv_variable_breakdown_desc')} />
+                                    <DetailItem title={t('fixed_vs_variable_trend')} desc={t('fv_trend_desc')} />
+                                    <DetailItem title={t('cost_type_summary')} desc={t('fv_summary_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -158,26 +161,26 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="Categories"
-                                        desc="Classification config."
-                                        columns={['CategoryID', 'Name', 'CostType (Fixed/Var)']}
+                                        name={t('eo_table_categories')}
+                                        desc={t('eo_table_categories_desc')}
+                                        columns={['CategoryID', t('name'), t('cost_type')]}
                                     />
                                     <TableSchema
-                                        name="Expenses"
-                                        desc="Transaction data."
-                                        columns={['ExpenseID', 'Amount', 'CategoryID']}
+                                        name={t('eo_table_expenses')}
+                                        desc={t('eo_table_expenses_desc')}
+                                        columns={['ExpenseID', t('amount'), 'CategoryID']}
                                     />
                                 </div>
                             </div>
@@ -185,12 +188,12 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Flexibility Ratio</strong> = Variable Costs / Total Costs.</span>
+                                        <span><strong>{t('flexibility_ratio')}</strong> = {t('variable')} / {t('total_expenses')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -203,7 +206,7 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -213,7 +216,7 @@ export const FixedVariableInfo: React.FC<FixedVariableInfoProps> = ({ isOpen, on
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -224,7 +227,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

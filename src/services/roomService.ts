@@ -1,8 +1,6 @@
 import { Room, CreateRoomData, Row, CreateRowData, UpdateRowData, Column } from './types';
-import { API_BASE_URL } from '../config/api';
+import { API_URL } from '../config/api';
 import { boardLogger } from '../utils/logger';
-
-const API_URL = API_BASE_URL;
 
 export const roomService = {
     // Rooms

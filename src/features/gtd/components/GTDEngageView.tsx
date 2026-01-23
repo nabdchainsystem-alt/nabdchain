@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Coffee, CheckCircle, Trash as Trash2 } from 'phosphor-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface EngageItem {
     id: string;
@@ -15,6 +16,8 @@ interface GTDEngageViewProps {
 }
 
 export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onComplete, onDelete }) => {
+    const { t, language } = useAppContext();
+    const isRTL = language === 'ar';
     const [filter, setFilter] = useState<'all' | 'completed'>('all');
 
     // For now, we only show active items in 'all'. 'completed' would need a separate list or state.
@@ -24,27 +27,27 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
 
         <div className="w-full max-w-3xl mx-auto flex flex-col items-center pb-12">
             <div className="text-center mb-8">
-                <h2 className="text-2xl font-black tracking-widest uppercase mb-6 text-[#1A1A1A] dark:text-white">Engage</h2>
+                <h2 className={`text-2xl font-black ${isRTL ? '' : 'tracking-widest'} uppercase mb-6 text-[#1A1A1A] dark:text-white`}>{t('engage')}</h2>
 
                 {/* Filter Tabs */}
                 <div className="inline-flex items-center gap-1 p-1 bg-[#1A1A1A] dark:bg-white/10 rounded-full">
                     <button
                         onClick={() => setFilter('all')}
-                        className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${filter === 'all'
+                        className={`px-6 py-2 rounded-full text-xs font-bold uppercase ${isRTL ? '' : 'tracking-widest'} transition-all ${filter === 'all'
                             ? 'bg-white dark:bg-black text-black dark:text-white shadow-sm'
                             : 'text-gray-400 hover:text-white'
                             }`}
                     >
-                        All
+                        {t('all')}
                     </button>
                     <button
                         onClick={() => setFilter('completed')}
-                        className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${filter === 'completed'
+                        className={`px-6 py-2 rounded-full text-xs font-bold uppercase ${isRTL ? '' : 'tracking-widest'} transition-all ${filter === 'completed'
                             ? 'bg-white dark:bg-black text-black dark:text-white shadow-sm'
                             : 'text-gray-400 hover:text-white'
                             }`}
                     >
-                        Completed
+                        {t('completed')}
                     </button>
                 </div>
             </div>
@@ -68,10 +71,10 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
                                                     onClick={() => onComplete(item.id)}
                                                     className="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all flex-shrink-0"
                                                 />
-                                                <span className="text-sm font-serif italic text-gray-800 dark:text-gray-200 truncate">{item.title}</span>
+                                                <span className={`text-sm ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-800 dark:text-gray-200 truncate`}>{item.title}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest hidden sm:block">Next Action</span>
+                                                <span className={`text-[10px] font-bold text-gray-300 uppercase ${isRTL ? '' : 'tracking-widest'} hidden sm:block`}>{t('next_action')}</span>
                                                 <button
                                                     onClick={() => onDelete(item.id)}
                                                     className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
@@ -86,8 +89,8 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 opacity-50">
                                     <Coffee className="w-10 h-10 text-gray-300 mb-4" />
-                                    <h3 className="text-lg font-serif italic text-gray-400 mb-2">Nothing here.</h3>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">Check other tabs or enjoy your break.</p>
+                                    <h3 className={`text-lg ${isRTL ? 'font-sans font-medium' : 'font-serif italic'} text-gray-400 mb-2`}>{t('nothing_here')}</h3>
+                                    <p className={`text-[10px] text-gray-400 uppercase ${isRTL ? '' : 'tracking-widest'}`}>{t('check_other_tabs')}</p>
                                 </div>
                             )}
                         </motion.div>
@@ -103,8 +106,8 @@ export const GTDEngageView: React.FC<GTDEngageViewProps> = ({ nextActions, onCom
                         >
                             <div className="text-center">
                                 <CheckCircle className="w-12 h-12 text-gray-300 mb-4 mx-auto" />
-                                <h3 className="text-xl font-serif italic text-gray-400 mb-2">No completed items yet.</h3>
-                                <p className="text-xs text-gray-400 uppercase tracking-widest">Get to work!</p>
+                                <h3 className={`text-xl ${isRTL ? 'font-sans font-medium' : 'font-serif italic'} text-gray-400 mb-2`}>{t('no_completed_items_yet')}</h3>
+                                <p className={`text-xs text-gray-400 uppercase ${isRTL ? '' : 'tracking-widest'}`}>{t('get_to_work')}</p>
                             </div>
                         </motion.div>
                     )}
