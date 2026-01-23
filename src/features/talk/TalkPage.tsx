@@ -573,7 +573,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             {/* New Conversation Modal */}
             {showNewConversationModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNewConversationModal(false)} />
+                    <div className="absolute inset-0" onClick={() => setShowNewConversationModal(false)} />
                     <div className="bg-white dark:bg-monday-dark-surface p-6 rounded-xl shadow-2xl max-w-md w-full m-4 border border-gray-200 dark:border-monday-dark-border relative z-10 transition-all">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold">
