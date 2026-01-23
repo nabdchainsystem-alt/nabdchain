@@ -4,6 +4,8 @@ import { Board } from '../../../types';
 import { ShippingDashboard } from './ShippingDashboard';
 import shippingMaster from './shipping_semantic_master.json';
 import { useAppContext } from '../../../contexts/AppContext';
+import { useAuth } from '../../../auth-adapter';
+import { boardLogger } from '../../../utils/logger';
 const INITIAL_BOARD: Board = {
     id: 'shipping-main-v2',
     name: 'Shipping',
@@ -16,7 +18,7 @@ const INITIAL_BOARD: Board = {
         { id: 'eta', title: 'ETA', type: 'date' }
     ],
     tasks: [],
-    availableViews: ['overview', 'sc_shipping', 'table', 'kanban'],
+    availableViews: ['overview', 'table', 'kanban'],
     defaultView: 'overview'
 };
 
@@ -24,15 +26,17 @@ import { boardService } from '../../../services/boardService';
 
 export const ShippingPage: React.FC = () => {
     const { t } = useAppContext();
+    const { getToken } = useAuth();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
     React.useEffect(() => {
         const loadBoard = async () => {
             try {
-                let data = await boardService.getBoard('shipping-main-v2');
+                const token = await getToken() || '';
+                let data = await boardService.getBoard(token, 'shipping-main-v2');
                 if (!data) {
-                    data = await boardService.createBoard(INITIAL_BOARD);
+                    data = await boardService.createBoard(token, INITIAL_BOARD);
                 }
 
                 // Ensure defaults
@@ -44,27 +48,28 @@ export const ShippingPage: React.FC = () => {
                 }
 
                 if (needsUpdate) {
-                    data = await boardService.updateBoard(data.id, { availableViews });
+                    data = await boardService.updateBoard(token, data.id, { availableViews });
                 }
 
                 setBoard(data);
             } catch (error) {
-                console.error('Failed to load board', error);
+                boardLogger.error('Failed to load board', error);
             } finally {
                 setIsLoading(false);
             }
         };
         loadBoard();
-    }, []);
+    }, [getToken]);
 
     const handleUpdateBoard = React.useCallback(async (boardId: string, updates: Partial<Board>) => {
         setBoard(prev => ({ ...prev, ...updates }));
         try {
-            await boardService.updateBoard(boardId, updates);
+            const token = await getToken() || '';
+            await boardService.updateBoard(token, boardId, updates);
         } catch (error) {
-            console.error('Failed to update board', error);
+            boardLogger.error('Failed to update board', error);
         }
-    }, []);
+    }, [getToken]);
 
     const handleUpdateTasks = React.useCallback((tasks: any[]) => {
         setBoard(prev => ({ ...prev, tasks }));

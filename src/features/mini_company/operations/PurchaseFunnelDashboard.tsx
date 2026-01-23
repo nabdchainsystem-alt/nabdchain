@@ -8,20 +8,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PurchaseFunnelInfo } from './PurchaseFunnelInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '1', label: 'Requests Submitted', subtitle: 'Total Intake', value: '142', change: '+12', trend: 'up', icon: <Funnel size={18} />, sparklineData: [100, 110, 115, 120, 130, 135, 142] },
-    { id: '2', label: 'Approved Requests', subtitle: 'Completed', value: '89', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [60, 65, 70, 75, 80, 85, 89] },
-    { id: '3', label: 'Avg Approval Time', subtitle: 'End-to-End', value: '42h', change: '-4h', trend: 'up', icon: <Timer size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] }, // Down is good
-    { id: '4', label: 'Approval Rate', subtitle: 'Conversion', value: '78%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 77, 78] },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Bottleneck Stage', subtitle: 'Highest Delay', value: 'Finance', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
-    { id: '6', label: 'Delayed Requests', subtitle: 'Over SLA', value: '14', change: '+3', trend: 'down', icon: <Timer size={18} />, sparklineData: [10, 11, 12, 11, 12, 13, 14] },
-    { id: '7', label: 'Rejected Requests', subtitle: 'Denied', value: '25', change: '-2', trend: 'up', icon: <XCircle size={18} />, sparklineData: [28, 27, 26, 26, 25, 25, 25] },
-    { id: '8', label: 'SLA Compliance', subtitle: 'On-Time Rate', value: '86%', change: '+3%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [80, 81, 82, 83, 84, 85, 86] },
-];
+// KPI type definition
+type KPIData = KPIConfig & { rawValue?: number, isCurrency?: boolean };
 
 // --- Mock Data: Charts ---
 const FUNNEL_DATA = [
@@ -89,9 +77,24 @@ const SANKEY_DATA = {
 };
 
 export const PurchaseFunnelDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- KPI Data ---
+    const TOP_KPIS: KPIData[] = [
+        { id: '1', label: t('requests_submitted'), subtitle: t('total_intake'), value: '142', change: '+12', trend: 'up', icon: <Funnel size={18} />, sparklineData: [100, 110, 115, 120, 130, 135, 142] },
+        { id: '2', label: t('approved_requests'), subtitle: t('completed'), value: '89', change: '+8', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [60, 65, 70, 75, 80, 85, 89] },
+        { id: '3', label: t('avg_approval_time'), subtitle: t('end_to_end'), value: '42h', change: '-4h', trend: 'up', icon: <Timer size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] },
+        { id: '4', label: t('approval_rate'), subtitle: t('conversion'), value: '78%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 77, 78] },
+    ];
+
+    const SIDE_KPIS: KPIData[] = [
+        { id: '5', label: t('bottleneck_stage'), subtitle: t('highest_delay'), value: t('finance'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
+        { id: '6', label: t('delayed_requests'), subtitle: t('over_sla'), value: '14', change: '+3', trend: 'down', icon: <Timer size={18} />, sparklineData: [10, 11, 12, 11, 12, 13, 14] },
+        { id: '7', label: t('rejected_requests'), subtitle: t('denied'), value: '25', change: '-2', trend: 'up', icon: <XCircle size={18} />, sparklineData: [28, 27, 26, 26, 25, 25, 25] },
+        { id: '8', label: t('sla_compliance'), subtitle: t('on_time_rate'), value: '86%', change: '+3%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [80, 81, 82, 83, 84, 85, 86] },
+    ];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -178,16 +181,16 @@ export const PurchaseFunnelDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <Funnel size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
-                    <div>
-                        <h1 className="text-2xl font-bold">Purchase Funnel & Approvals</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Flow efficiency and bottleneck tracking</p>
+                    <div className="text-start">
+                        <h1 className="text-2xl font-bold">{t('purchase_funnel_approvals')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('purchase_funnel_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -196,7 +199,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -219,12 +222,12 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 {/* Request Volume Trend (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Request Volume Trend" />
+                        <ChartSkeleton height="h-[280px]" title={t('request_volume_trend')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Request Volume Trend</h3>
-                                <p className="text-xs text-gray-400 mt-1">Monthly submission patterns</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('request_volume_trend')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('monthly_submission_patterns')}</p>
                             </div>
                             <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -247,12 +250,12 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 {/* Avg Hours per Stage (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Avg Hours per Stage" />
+                        <ChartSkeleton height="h-[280px]" title={t('avg_hours_per_stage')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Avg Hours per Stage</h3>
-                                <p className="text-xs text-gray-400 mt-1">Identifying bottlenecks</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('avg_hours_per_stage')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('identifying_bottlenecks')}</p>
                             </div>
                             <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -278,12 +281,12 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Conversion Funnel */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title="Conversion Funnel" />
+                        <ChartSkeleton height="h-[250px]" title={t('conversion_funnel')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Conversion Funnel</h3>
-                                <p className="text-xs text-gray-400 mt-1">Request progression</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('conversion_funnel')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('request_progression')}</p>
                             </div>
                             <ReactECharts option={funnelOption} style={{ height: '210px' }} />
                         </div>
@@ -291,12 +294,12 @@ export const PurchaseFunnelDashboard: React.FC = () => {
 
                     {/* Stage Status Distribution */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Stage Status Distribution" />
+                        <PieChartSkeleton title={t('stage_status_distribution')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Stage Status Distribution</h3>
-                                <p className="text-xs text-gray-400 mt-1">Request outcomes</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('stage_status_distribution')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('request_outcomes')}</p>
                             </div>
                             <ReactECharts option={stageStatusPieOption} style={{ height: '210px' }} />
                         </div>
@@ -321,35 +324,35 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <TableSkeleton rows={5} columns={5} title="Active Request Status" />
+                        <TableSkeleton rows={5} columns={5} title={t('active_request_status')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Active Request Status</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('active_request_status')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">ID</th>
-                                        <th className="px-5 py-3">Requester</th>
-                                        <th className="px-5 py-3">Stage</th>
-                                        <th className="px-5 py-3 text-right">Age (Days)</th>
-                                        <th className="px-5 py-3 text-right">Status</th>
+                                        <th className="px-5 py-3 text-start">{t('id')}</th>
+                                        <th className="px-5 py-3 text-start">{t('requester')}</th>
+                                        <th className="px-5 py-3 text-start">{t('stage')}</th>
+                                        <th className="px-5 py-3 text-end">{t('age_days')}</th>
+                                        <th className="px-5 py-3 text-end">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {REQUEST_STATUS.map((r) => (
                                         <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{r.id}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{r.requester}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{r.stage}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">{r.days}</td>
-                                            <td className="px-5 py-3 text-right">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{r.id}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{r.requester}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{r.stage}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">{r.days}</td>
+                                            <td className="px-5 py-3 text-end">
                                                 <span className={`inline-flex px-2 py-1 rounded text-xs font-medium border
-                                                    ${r.status === 'Delayed' || r.status === 'At Risk' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
-                                                    {r.status}
+                                                    ${r.status === 'Delayed' || r.status === 'At Risk' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' : 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'}`}>
+                                                    {r.status === 'Delayed' ? t('delayed') : r.status === 'At Risk' ? t('at_risk') : t('on_track')}
                                                 </span>
                                             </td>
                                         </tr>
@@ -363,7 +366,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 {/* Companion Chart: Sankey (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Approval Flow Analysis" />
+                        <ChartSkeleton height="h-[280px]" title={t('approval_flow_analysis')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { CurrencyDollar as DollarSign, ChartPie as PieChart, TrendDown as TrendingDown, CreditCard, ShoppingBag, WarningCircle as AlertCircle } from 'phosphor-react';
+import { CurrencyDollar as DollarSign, ChartPie as PieChart, TrendDown as TrendingDown, CreditCard, ShoppingBag, WarningCircle as AlertCircle, CheckCircle } from 'phosphor-react';
 
 export const SpendBudgetExposure: React.FC = () => {
     // R06: Spend & Budget Exposure
@@ -17,8 +17,7 @@ export const SpendBudgetExposure: React.FC = () => {
         { title: "Spend Variance", value: "-$5k", trend: "Under Budget", trendDirection: "up", icon: <DollarSign size={20} />, color: "green" },
     ];
 
-    // CheckCircle isn't imported, let me fix that import above
-    const CheckCircle = ({ size, color }: any) => <DollarSign size={size} />;
+    // CheckCircle is now imported from phosphor-react
 
     const spendByStatus = {
         title: { text: '' },

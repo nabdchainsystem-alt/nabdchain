@@ -57,6 +57,7 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
+    const { t } = useAppContext();
     const [activeMenu, setActiveMenu] = useState<'none' | 'priority' | 'tags' | 'context' | 'date' | 'assignee'>('none');
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameTitle, setRenameTitle] = useState(task.title);
@@ -129,8 +130,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                     />
                 ) : (
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {priorityKey !== 'none' && <span className={`w-2 h-2 rounded-full ${priorityMeta.dot}`} title={`${priorityMeta.label} priority`} />}
-                        <span className="font-medium font-serif text-stone-900 dark:text-stone-100 text-sm leading-snug block flex-1 pr-2 break-words">{task.title}</span>
+                        {priorityKey !== 'none' && <span className={`w-2 h-2 rounded-full ${priorityMeta.dot}`} title={`${t(priorityKey)} ${t('priority')}`} />}
+                        <span className="font-medium font-serif text-stone-900 dark:text-stone-100 text-sm leading-snug block flex-1 pe-2 break-words">{task.title}</span>
                     </div>
                 )}
 
@@ -151,7 +152,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                         setActiveMenu(activeMenu === 'assignee' ? 'none' : 'assignee');
                     }}
                     className={`w-6 h-6 flex items-center justify-center rounded-full border border-dashed text-gray-400 hover:text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors ${assigneePerson ? 'border-transparent p-0 overflow-hidden' : 'border-gray-300'}`}
-                    title={assigneePerson ? assigneePerson.name : "Assign"}
+                    title={assigneePerson ? assigneePerson.name : t('assign')}
                 >
                     {assigneePerson ? (
                         assigneePerson.showUserIcon ? (
@@ -179,7 +180,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                     <Calendar size={14} strokeWidth={2} />
                 </button>
                 {task.dueDate && (
-                    <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 -ml-1">
+                    <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 -ms-1">
                         {isValid(new Date(task.dueDate)) ? format(new Date(task.dueDate), 'MMM d') : task.dueDate}
                     </span>
                 )}
@@ -196,12 +197,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                 <button
                     onClick={(e) => { e.stopPropagation(); onOpenReminder(task.id, e.currentTarget.getBoundingClientRect()); }}
                     className={`w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors ${reminderTone}`}
-                    title={reminders.length ? 'Manage reminders' : 'Add reminder'}
+                    title={reminders.length ? t('manage_reminders') : t('add_reminder')}
                 >
                     <div className="relative flex items-center">
                         <Bell size={14} />
                         {reminders.length > 0 && (
-                            <span className={`absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full ${reminderState === 'triggered' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                            <span className={`absolute -top-1 -end-1 w-1.5 h-1.5 rounded-full ${reminderState === 'triggered' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                         )}
                     </div>
                 </button>
@@ -262,10 +263,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
             {activeMenu !== 'none' && activeMenu !== 'date' && activeMenu !== 'assignee' && (
                 <div
                     ref={menuRef}
-                    className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden"
+                    className="absolute start-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden"
                     style={{
                         top: '100%',
-                        left: '0',
+                        insetInlineStart: '0',
                         minWidth: activeMenu === 'date' || activeMenu === 'assignee' ? 'auto' : '16rem',
                         width: activeMenu === 'date' || activeMenu === 'assignee' ? 'auto' : '16rem'
                     }}
@@ -296,40 +297,40 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                     {activeMenu === 'context' && (
                         <div className="w-64">
                             <div className="flex items-center justify-between p-2 border-b border-gray-100">
-                                <button className="flex-1 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded text-center">Copy link</button>
+                                <button className="flex-1 py-1.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50 rounded text-center whitespace-nowrap">{t('copy_link')}</button>
                                 <div className="w-px h-4 bg-gray-200"></div>
-                                <button className="flex-1 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded text-center">Copy ID</button>
+                                <button className="flex-1 py-1.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50 rounded text-center whitespace-nowrap">{t('copy_id')}</button>
                                 <div className="w-px h-4 bg-gray-200"></div>
-                                <button className="flex-1 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded text-center">New tab</button>
+                                <button className="flex-1 py-1.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50 rounded text-center whitespace-nowrap">{t('new_tab')}</button>
                             </div>
                             <div className="py-1 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                <button onClick={() => { setActiveMenu('none'); setIsRenaming(true); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
-                                    <Pencil size={16} className="text-gray-400" /> Rename
+                                <button onClick={() => { setActiveMenu('none'); setIsRenaming(true); }} className="w-full text-start px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                                    <Pencil size={16} className="text-gray-400" /> {t('rename')}
                                 </button>
-                                <MenuItem icon={ArrowRight} label="Convert to" hasSubmenu />
-                                <MenuItem icon={LayoutTemplate} label="Task Type" hasSubmenu />
-                                <button onClick={() => { onDuplicateTask(task); setActiveMenu('none'); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
-                                    <Copy size={16} className="text-gray-400" /> Duplicate
+                                <MenuItem icon={ArrowRight} label={t('convert_to')} hasSubmenu />
+                                <MenuItem icon={LayoutTemplate} label={t('task_type')} hasSubmenu />
+                                <button onClick={() => { onDuplicateTask(task); setActiveMenu('none'); }} className="w-full text-start px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                                    <Copy size={16} className="text-gray-400" /> {t('duplicate')}
                                 </button>
-                                <MenuItem icon={Timer} label="Remind me" />
-                                <MenuItem icon={Bell} label="Follow task" />
-                                <MenuItem icon={Mail} label="Send email to task" />
-                                <MenuItem icon={PlusIcon} label="Add To" hasSubmenu />
-                                <MenuItem icon={GitMerge} label="Merge" />
-                                <MenuItem icon={Move} label="Move" />
-                                <MenuItem icon={Timer} label="Start timer" />
+                                <MenuItem icon={Timer} label={t('remind_me')} />
+                                <MenuItem icon={Bell} label={t('follow_task')} />
+                                <MenuItem icon={Mail} label={t('send_email_to_task')} />
+                                <MenuItem icon={PlusIcon} label={t('add_to')} hasSubmenu />
+                                <MenuItem icon={GitMerge} label={t('merge')} />
+                                <MenuItem icon={Move} label={t('move')} />
+                                <MenuItem icon={Timer} label={t('start_timer')} />
                                 <div className="h-px bg-gray-100 my-1"></div>
-                                <MenuItem icon={Link2} label="Dependencies" hasSubmenu />
-                                <MenuItem icon={LayoutTemplate} label="Templates" hasSubmenu />
+                                <MenuItem icon={Link2} label={t('dependencies')} hasSubmenu />
+                                <MenuItem icon={LayoutTemplate} label={t('templates')} hasSubmenu />
                                 <div className="h-px bg-gray-100 my-1"></div>
-                                <MenuItem icon={Archive} label="Archive" />
-                                <button onClick={() => onDeleteTask(task.id)} className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-3 text-sm text-red-600">
-                                    <Trash2 size={16} /> Delete
+                                <MenuItem icon={Archive} label={t('archive')} />
+                                <button onClick={() => onDeleteTask(task.id)} className="w-full text-start px-4 py-2 hover:bg-red-50 flex items-center gap-3 text-sm text-red-600">
+                                    <Trash2 size={16} /> {t('delete')}
                                 </button>
                             </div>
                             <div className="p-2 border-t border-gray-100">
                                 <button className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors">
-                                    Sharing & Permissions
+                                    {t('sharing_permissions')}
                                 </button>
                             </div>
                         </div>
@@ -337,8 +338,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                 </div>
             )}
             {/* Status Color Line */}
-            {/* Status Color Line */}
-            <div className={`absolute right-0 top-0 bottom-0 w-1.5 rounded-r-xl ${priorityKey === 'urgent' ? 'bg-red-500' :
+            <div className={`absolute end-0 top-0 bottom-0 w-1.5 rounded-e-xl ${priorityKey === 'urgent' ? 'bg-red-500' :
                 priorityKey === 'high' ? 'bg-orange-500' :
                     priorityKey === 'medium' ? 'bg-blue-500' :
                         priorityKey === 'low' ? 'bg-emerald-500' :
@@ -450,33 +450,33 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
                     onClick={handleSave}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors"
                 >
-                    Save <CornerDownLeft size={12} />
+                    {t('save')} <CornerDownLeft size={12} />
                 </button>
             </div>
 
-            <div className="flex gap-3 relative">
+            <div className="flex gap-2 relative flex-wrap">
                 <button
                     ref={dateBtnRef}
                     onClick={() => setActivePopup(activePopup === 'date' ? 'none' : 'date')}
-                    className={`flex items-center gap-2 text-xs font-medium transition-colors ${date ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors whitespace-nowrap ${date ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                    <Calendar size={14} />
+                    <Calendar size={13} />
                     {date ? (isValid(new Date(date)) ? format(new Date(date), 'MMM d') : date) : t('add_dates')}
                 </button>
 
                 <button
                     onClick={() => setActivePopup(activePopup === 'priority' ? 'none' : 'priority')}
-                    className={`flex items-center gap-2 text-xs font-medium transition-colors ${priority !== 'none' ? priorityConfig[priority].color : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors whitespace-nowrap ${priority !== 'none' ? priorityConfig[priority].color : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                    <Flag size={14} fill={priority !== 'none' && priority !== 'low' ? "currentColor" : "none"} />
+                    <Flag size={13} fill={priority !== 'none' && priority !== 'low' ? "currentColor" : "none"} />
                     {priority !== 'none' ? t(priority) : t('add_priority')}
                 </button>
 
                 <button
                     onClick={() => setActivePopup(activePopup === 'tags' ? 'none' : 'tags')}
-                    className={`flex items-center gap-2 text-xs font-medium transition-colors ${tags.length > 0 ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors whitespace-nowrap ${tags.length > 0 ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                    <Tag size={14} />
+                    <Tag size={13} />
                     {tags.length > 0 ? `${tags.length} ${t('tags_count')}` : t('add_tag')}
                 </button>
             </div>
@@ -497,7 +497,7 @@ const TaskCreationForm = ({ onSave, onCancel, columnColor = 'gray' }: { onSave: 
 
             {(activePopup === 'priority' || activePopup === 'tags') && (
                 <div
-                    className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden"
+                    className="absolute top-full start-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden"
                     style={{ minWidth: '16rem' }}
                 >
                     {activePopup === 'priority' && (
@@ -525,12 +525,30 @@ const Column: React.FC<ColumnProps> = ({
     column, tasks, boardId, onTaskMove, onAddTask, onUpdateTask,
     onDeleteTask, onDuplicateTask, onClearColumn, onRenameColumn, onColorChange, onDeleteColumn, remindersByItem, onOpenReminder
 }) => {
+    const { t } = useAppContext();
     const [isDragOver, setIsDragOver] = useState(false);
     const [isAddingTop, setIsAddingTop] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameTitle, setRenameTitle] = useState(column.title);
+
+    // Helper to translate standard column titles
+    const getTranslatedTitle = (title: string) => {
+        const titleLower = title.toLowerCase().replace(/\s+/g, '_');
+        const titleMap: Record<string, string> = {
+            'to_do': 'to_do',
+            'to do': 'to_do',
+            'in_progress': 'in_progress',
+            'in progress': 'in_progress',
+            'done': 'done',
+            'rejected': 'rejected',
+            'stuck': 'stuck',
+            'review': 'review',
+        };
+        const key = titleMap[titleLower] || titleMap[title.toLowerCase()];
+        return key ? t(key) : title;
+    };
 
     const menuRef = useRef<HTMLDivElement>(null);
     useClickOutside(menuRef, () => setShowMenu(false));
@@ -636,8 +654,8 @@ const Column: React.FC<ColumnProps> = ({
                     <ArrowLeftToLine size={20} className="rotate-180" />
                 </button>
                 <div className="writing-vertical-lr transform rotate-180 text-sm font-bold text-gray-500 tracking-wide uppercase">
-                    {column.title}
-                    <span className="ml-2 px-1.5 py-0.5 rounded-full bg-gray-200 text-xs text-gray-600">{tasks.length}</span>
+                    {getTranslatedTitle(column.title)}
+                    <span className="ms-2 px-1.5 py-0.5 rounded-full bg-gray-200 text-xs text-gray-600">{tasks.length}</span>
                 </div>
             </div>
         );
@@ -677,8 +695,8 @@ const Column: React.FC<ColumnProps> = ({
                                                             (column.color === 'emerald' ? '#22c55e' : column.color === 'blue' ? '#3b82f6' : '#94a3b8')
                             }}
                         ></div>
-                        {column.title}
-                        <span className="opacity-40 font-normal ml-1 font-sans text-stone-500">{tasks.length}</span>
+                        {getTranslatedTitle(column.title)}
+                        <span className="opacity-40 font-normal ms-1 font-sans text-stone-500">{tasks.length}</span>
                     </div>
                 )}
 
@@ -703,13 +721,12 @@ const Column: React.FC<ColumnProps> = ({
                             className="absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 w-60 bg-white dark:bg-stone-900 rounded-lg shadow-xl border border-stone-200 dark:border-stone-800 z-50 overflow-hidden"
                         >
                             <div className="py-2 text-stone-700 dark:text-stone-300">
-                                {/* ... Simplified for brevity, assume similar stone styling would apply ... */}
-                                <div className="px-4 py-2 text-xs font-semibold text-stone-500">Group options</div>
+                                <div className="px-4 py-2 text-xs font-semibold text-stone-500">{t('group_options')}</div>
                                 <button onClick={() => { setIsCollapsed(true); setShowMenu(false); }} className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm">
-                                    <ArrowLeftToLine size={16} className="text-stone-400" /> Collapse group
+                                    <ArrowLeftToLine size={16} className="text-stone-400" /> {t('collapse_group')}
                                 </button>
                                 <button onClick={() => { onClearColumn(column.id); setShowMenu(false); }} className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm">
-                                    <Archive size={16} className="text-stone-400" /> Archive all in this group
+                                    <Archive size={16} className="text-stone-400" /> {t('archive_all_in_group')}
                                 </button>
 
                                 {!['To Do', 'In Progress', 'Done'].includes(column.title) && !['To Do', 'In Progress', 'Done', 'to-do', 'in-progress', 'done'].includes(column.id) && (
@@ -717,9 +734,9 @@ const Column: React.FC<ColumnProps> = ({
                                         <div className="h-px bg-stone-100 dark:bg-stone-800 my-1"></div>
                                         <button
                                             onClick={() => { onDeleteColumn(column.id); setShowMenu(false); }}
-                                            className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm text-red-600 hover:text-red-700"
+                                            className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center gap-3 text-sm text-red-600 hover:text-red-700"
                                         >
-                                            <Trash2 size={16} /> Delete group
+                                            <Trash2 size={16} /> {t('delete_group')}
                                         </button>
                                     </>
                                 )}
@@ -735,10 +752,10 @@ const Column: React.FC<ColumnProps> = ({
                 {!isAddingTop && (
                     <button
                         onClick={() => setIsAddingTop(true)}
-                        className={`w-full py-2 flex items-center gap-2 text-sm font-medium pl-2 transition-colors rounded-lg mb-2 ${getButtonStyles(column.color)}`}
+                        className={`w-full py-2 flex items-center gap-2 text-sm font-medium ps-2 transition-colors rounded-lg mb-2 ${getButtonStyles(column.color)}`}
                     >
                         <PlusIcon size={18} />
-                        Add Task
+                        {t('add_task')}
                     </button>
                 )}
 
@@ -806,7 +823,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                 }));
                 setTeamMembers(people);
             } catch (error) {
-                console.error('Failed to fetch team members:', error);
+                boardLogger.error('Failed to fetch team members', error);
             }
         };
         fetchTeamMembers();
@@ -1118,19 +1135,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
             {/* Top Header */}
             <header className="flex-none px-8 py-5 flex items-center justify-between bg-white dark:bg-stone-900/80 backdrop-blur-xl z-20 relative border-b border-stone-200 dark:border-stone-800">
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-700/50 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 transition-colors shadow-sm">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-700/50 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 transition-colors shadow-sm whitespace-nowrap">
                         <Layout size={14} className="text-stone-400" />
-                        Group: Status
+                        {t('group_by_status')}
                     </button>
                 </div>
 
                 <div className="flex items-center gap-3" ref={headerMenuRef}>
-                    <div className="relative group mr-2">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-stone-600 transition-colors" />
+                    <div className="relative group me-2">
+                        <Search size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-stone-600 transition-colors" />
                         <input
                             type="text"
                             placeholder={t('search_placeholder')}
-                            className="pl-10 pr-4 py-2 text-sm bg-stone-100/50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 focus:border-stone-500/50 focus:bg-white dark:focus:bg-stone-900 rounded-lg outline-none w-56 transition-all font-sans text-stone-800 dark:text-stone-100 placeholder:text-stone-400"
+                            className="ps-10 pe-4 py-2 text-sm bg-stone-100/50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 focus:border-stone-500/50 focus:bg-white dark:focus:bg-stone-900 rounded-lg outline-none w-56 transition-all font-sans text-stone-800 dark:text-stone-100 placeholder:text-stone-400"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -1166,13 +1183,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                                         <div className="border-t border-stone-100 dark:border-stone-800 my-1" />
                                         <button
                                             onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
-                                            className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-stone-500 block"
+                                            className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-stone-500 block"
                                         >
                                             {t('toggle_direction')} ({sortDirection === 'asc' ? t('ascending') : t('descending')})
                                         </button>
                                         <button
                                             onClick={() => { setSortBy('none'); setActiveHeaderMenu('none'); }}
-                                            className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-rose-500 block"
+                                            className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-rose-500 block"
                                         >
                                             {t('clear')} {t('sort')}
                                         </button>
@@ -1214,7 +1231,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                                     <button
                                         key={person.id}
                                         onClick={() => setFilterAssignee(filterAssignee === person.id ? null : person.id)}
-                                        className={`w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 flex items-center gap-2 ${filterAssignee === person.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : ''}`}
+                                        className={`w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 flex items-center gap-2 ${filterAssignee === person.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : ''}`}
                                     >
                                         {person.showUserIcon ? (
                                             <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
@@ -1231,7 +1248,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                                         <div className="border-t border-stone-100 dark:border-stone-800 my-1" />
                                         <button
                                             onClick={() => { setFilterPriority(null); setFilterAssignee(null); setActiveHeaderMenu('none'); }}
-                                            className="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-rose-500 block"
+                                            className="w-full text-start px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800 text-sm text-rose-500 block"
                                         >
                                             {t('clear_all_filters')}
                                         </button>
@@ -1246,11 +1263,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                         className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${showClosedOnly ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800'}`}
                     >
                         <CheckCircle2 size={16} />
-                        Closed
+                        {t('closed')}
                     </button>
 
 
-                    <div className="flex items-center -space-x-2 ml-2">
+                    <div className="flex items-center -space-x-2 ms-2">
                         <div className="w-8 h-8 rounded-full bg-stone-800 dark:bg-stone-200 text-stone-100 dark:text-stone-900 border-2 border-white dark:border-stone-950 flex items-center justify-center text-xs font-bold font-serif">M</div>
                     </div>
                 </div>
@@ -1299,7 +1316,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                             <div className="w-6 h-6 rounded bg-stone-100 dark:bg-stone-800 text-stone-400 group-hover:bg-stone-200 dark:group-hover:bg-stone-700 flex items-center justify-center transition-colors">
                                 <PlusIcon size={16} />
                             </div>
-                            <span className="text-sm font-medium">Add Group</span>
+                            <span className="text-sm font-medium">{t('add_group')}</span>
                         </button>
                     </div>
                 </div>

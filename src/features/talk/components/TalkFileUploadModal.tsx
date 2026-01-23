@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { vaultService, VaultItem } from '../../../services/vaultService';
 import { useAuth } from '../../../auth-adapter';
-import { storageLogger } from '../../../utils/logger';
+import { storageLogger, talkLogger } from '../../../utils/logger';
 import { useAppContext } from '../../../contexts/AppContext';
 import { X, Upload, Folder, FileText, CheckCircle, Plus } from 'phosphor-react';
 
@@ -66,7 +66,7 @@ export const TalkFileUploadModal: React.FC<TalkFileUploadModalProps> = ({ isOpen
                     finalFolderId = newFolder.id;
                 }
             } catch (error) {
-                console.error('Failed to create folder:', error);
+                talkLogger.error('Failed to create folder:', error);
             }
         }
 

@@ -3,6 +3,7 @@ import { Check, X, User, CircleNotch, Bell, PaperPlaneTilt } from 'phosphor-reac
 import { useAuth } from '../../../auth-adapter';
 import { teamService, ConnectionRequest } from '../../../services/teamService';
 import { useAppContext } from '../../../contexts/AppContext';
+import { appLogger } from '../../../utils/logger';
 
 interface PendingRequestsPanelProps {
     onRequestHandled: () => void;
@@ -33,7 +34,7 @@ export const PendingRequestsPanel: React.FC<PendingRequestsPanelProps> = ({
             setReceivedRequests(received);
             setSentRequests(sent);
         } catch (error) {
-            console.error('Failed to fetch requests:', error);
+            appLogger.error('Failed to fetch requests:', error);
         } finally {
             setIsLoading(false);
         }
@@ -55,7 +56,7 @@ export const PendingRequestsPanel: React.FC<PendingRequestsPanelProps> = ({
             setReceivedRequests(prev => prev.filter(r => r.id !== connectionId));
             onRequestHandled();
         } catch (error) {
-            console.error('Failed to respond:', error);
+            appLogger.error('Failed to respond:', error);
         } finally {
             setProcessingId(null);
         }

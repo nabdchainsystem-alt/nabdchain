@@ -22,6 +22,7 @@ import {
     X,
 } from 'phosphor-react';
 import { sanitizeDocHTML } from '../../../../utils/sanitize';
+import { boardLogger } from '../../../../utils/logger';
 
 interface DocEditorProps {
     defaultTitle?: string;
@@ -62,7 +63,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
                 }
             }
         } catch (e) {
-            console.error('Failed to load doc data', e);
+            boardLogger.error('Failed to load doc data', e);
         }
         setIsLoaded(true);
     }, [storageKey]);
@@ -81,7 +82,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
             };
             localStorage.setItem(storageKey, JSON.stringify(data));
         } catch (e) {
-            console.error('Failed to save doc data', e);
+            boardLogger.error('Failed to save doc data', e);
         }
     }, [storageKey, isLoaded, title, icon, coverImage, hasStartedWriting]);
 
@@ -94,7 +95,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
             data.content = contentRef.current?.innerHTML || '';
             localStorage.setItem(storageKey, JSON.stringify(data));
         } catch (e) {
-            console.error('Failed to save content', e);
+            boardLogger.error('Failed to save content', e);
         }
     }, [storageKey, isLoaded]);
 

@@ -20,7 +20,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
 }) => (
     <button
         onClick={onClick}
-        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700 group"
+        className="w-full text-start px-4 py-2 hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700 group"
     >
         <div className="flex items-center gap-3">
             <Icon size={16} className="text-gray-400 group-hover:text-gray-600" />

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { useAuth } from '../auth-adapter';
+import { aiLogger } from '../utils/logger';
 
 // ============================================================================
 // Types
@@ -273,10 +274,10 @@ export function AIProvider({ children }: AIProviderProps) {
                 const data = await response.json();
                 setCredits(data.credits);
             } else {
-                console.error('[AIContext] Failed to fetch credits');
+                aiLogger.error('[AIContext] Failed to fetch credits');
             }
         } catch (err) {
-            console.error('[AIContext] Credits fetch error:', err);
+            aiLogger.error('[AIContext] Credits fetch error:', err);
         } finally {
             setCreditsLoading(false);
         }
@@ -678,7 +679,7 @@ export function AIProvider({ children }: AIProviderProps) {
         }
     }, [getAuthHeaders]);
 
-    const value: AIContextType = {
+    const value = useMemo<AIContextType>(() => ({
         credits,
         creditsLoading,
         refreshCredits,
@@ -705,7 +706,34 @@ export function AIProvider({ children }: AIProviderProps) {
         previewTier,
         analyzeComplexity,
         getUsageStats,
-    };
+    }), [
+        credits,
+        creditsLoading,
+        refreshCredits,
+        deepModeEnabled,
+        toggleDeepMode,
+        userDepartment,
+        setUserDepartment,
+        isProcessing,
+        currentTier,
+        error,
+        clearError,
+        currentBoardContext,
+        currentRoomContext,
+        setCurrentBoardContext,
+        setCurrentRoomContext,
+        processPrompt,
+        generateChart,
+        generateTable,
+        generateForecast,
+        generateTips,
+        extractGTDTasks,
+        uploadFile,
+        analyzeDeep,
+        previewTier,
+        analyzeComplexity,
+        getUsageStats,
+    ]);
 
     return (
         <AIContextReact.Provider value={value}>

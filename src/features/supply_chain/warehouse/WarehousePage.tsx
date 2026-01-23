@@ -5,6 +5,8 @@ import { WarehouseDashboard } from './WarehouseDashboard';
 import { WarehouseCapacityMap } from './WarehouseCapacityMap';
 import warehouseMaster from './warehouse_semantic_master.json';
 import { useAppContext } from '../../../contexts/AppContext';
+import { boardLogger } from '../../../utils/logger';
+import { useAuth } from '../../../auth-adapter';
 const INITIAL_BOARD: Board = {
     id: 'warehouse-main-v2',
     name: 'Warehouse',
@@ -17,7 +19,7 @@ const INITIAL_BOARD: Board = {
         { id: 'location', title: 'Location', type: 'text' }
     ],
     tasks: [],
-    availableViews: ['overview', 'sc_warehouse', 'warehouse_capacity_map', 'table', 'kanban'],
+    availableViews: ['overview', 'warehouse_capacity_map', 'table', 'kanban'],
     defaultView: 'overview'
 };
 
@@ -25,6 +27,7 @@ import { boardService } from '../../../services/boardService';
 
 export const WarehousePage: React.FC = () => {
     const { t } = useAppContext();
+    const { getToken } = useAuth();
     const [board, setBoard] = useState<Board>(INITIAL_BOARD);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -32,11 +35,12 @@ export const WarehousePage: React.FC = () => {
     React.useEffect(() => {
         const loadBoard = async () => {
             try {
-                let data = await boardService.getBoard('warehouse-main-v2');
+                const token = await getToken() || '';
+                let data = await boardService.getBoard(token, 'warehouse-main-v2');
                 if (!data) {
                     // Create if doesn't exist
-                    console.log('Board not found, creating...');
-                    data = await boardService.createBoard(INITIAL_BOARD);
+                    boardLogger.info('Board not found, creating...');
+                    data = await boardService.createBoard(token, INITIAL_BOARD);
                 }
 
                 // Ensure defaults
@@ -52,29 +56,30 @@ export const WarehousePage: React.FC = () => {
                 }
 
                 if (needsUpdate) {
-                    data = await boardService.updateBoard(data.id, { availableViews });
+                    data = await boardService.updateBoard(token, data.id, { availableViews });
                 }
 
                 setBoard(data);
             } catch (error) {
-                console.error('Failed to load board', error);
+                boardLogger.error('Failed to load board', error);
             } finally {
                 setIsLoading(false);
             }
         };
         loadBoard();
-    }, []);
+    }, [getToken]);
 
     const handleUpdateBoard = React.useCallback(async (boardId: string, updates: Partial<Board>) => {
         // Optimistic update
         setBoard(prev => ({ ...prev, ...updates }));
         try {
-            await boardService.updateBoard(boardId, updates);
+            const token = await getToken() || '';
+            await boardService.updateBoard(token, boardId, updates);
         } catch (error) {
-            console.error('Failed to update board', error);
+            boardLogger.error('Failed to update board', error);
             // Revert? For now just log
         }
-    }, []);
+    }, [getToken]);
 
     const handleUpdateTasks = React.useCallback((tasks: any[]) => {
         setBoard(prev => ({ ...prev, tasks }));

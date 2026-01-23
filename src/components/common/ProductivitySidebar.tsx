@@ -3,6 +3,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../auth-adapter';
 import { boardService } from '../../services/boardService';
 import { Plus, CheckCircle, Bell, Folder, CircleNotch, File, CaretRight } from 'phosphor-react';
+import { appLogger } from '../../utils/logger';
 
 interface QuickTask {
     id: string;
@@ -71,7 +72,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
             // Show only first 5 tasks
             setTasks(allTasks.slice(0, 5));
         } catch (error) {
-            console.error('Failed to load tasks:', error);
+            appLogger.error('Failed to load tasks:', error);
         } finally {
             setIsLoading(false);
         }
@@ -99,7 +100,7 @@ const ProductivitySidebar: React.FC<ProductivitySidebarProps> = ({ layout = 'rig
             setShowCreateBoard(false);
             loadTasks(); // Refresh
         } catch (error) {
-            console.error('Failed to create board:', error);
+            appLogger.error('Failed to create board:', error);
         } finally {
             setIsCreating(false);
         }

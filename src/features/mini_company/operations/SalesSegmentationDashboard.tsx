@@ -77,7 +77,7 @@ interface SalesSegmentationDashboardProps {
 }
 
 export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -126,20 +126,27 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Total Customers', subtitle: 'Lifetime registered base', value: '4,850', change: '+3.2%', trend: 'up', icon: <Users size={18} />, sparklineData: [4200, 4350, 4480, 4580, 4680, 4780, 4850] },
-        { id: '2', label: 'Active Customers', subtitle: 'Last 90 days activity', value: '3,240', change: '+5.4%', trend: 'up', icon: <Star size={18} />, sparklineData: [2800, 2920, 3020, 3080, 3140, 3200, 3240] },
-        { id: '3', label: 'Repeat Customer %', subtitle: 'Loyalty retention rate', value: '64.2%', change: '+1.5%', trend: 'up', icon: <Repeat size={18} />, sparklineData: [58, 59.5, 60.8, 62, 63, 63.8, 64.2] },
-        { id: '4', label: 'Avg. CLV', subtitle: 'Est. lifetime value', value: '0', rawValue: 12450, isCurrency: true, change: '+8.4%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [10.2, 10.8, 11.2, 11.6, 12, 12.2, 12.45] },
+        { id: '1', label: t('total_customers'), subtitle: t('lifetime_registered_base'), value: '4,850', change: '+3.2%', trend: 'up', icon: <Users size={18} />, sparklineData: [4200, 4350, 4480, 4580, 4680, 4780, 4850] },
+        { id: '2', label: t('active_customers'), subtitle: t('last_90_days_activity'), value: '3,240', change: '+5.4%', trend: 'up', icon: <Star size={18} />, sparklineData: [2800, 2920, 3020, 3080, 3140, 3200, 3240] },
+        { id: '3', label: t('repeat_customer_percent'), subtitle: t('loyalty_retention_rate'), value: '64.2%', change: '+1.5%', trend: 'up', icon: <Repeat size={18} />, sparklineData: [58, 59.5, 60.8, 62, 63, 63.8, 64.2] },
+        { id: '4', label: t('avg_clv'), subtitle: t('est_lifetime_value'), value: '0', rawValue: 12450, isCurrency: true, change: '+8.4%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [10.2, 10.8, 11.2, 11.6, 12, 12.2, 12.45] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Avg. Orders', subtitle: 'Per customer frequency', value: '4.2', change: '+0.5', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [3.5, 3.7, 3.8, 3.9, 4, 4.1, 4.2] },
-        { id: '6', label: 'Churn Rate %', subtitle: 'Lost customer ratio', value: '12.4%', change: '-0.8%', trend: 'up', icon: <Warning size={18} />, sparklineData: [15, 14.5, 14, 13.5, 13, 12.8, 12.4] },
-        { id: '7', label: 'Engagement Score', subtitle: 'Recency/Freq/Value avg', value: '78/100', change: '+4%', trend: 'up', icon: <Heart size={18} />, sparklineData: [68, 70, 72, 74, 75, 77, 78] },
-        { id: '8', label: 'New Customers', subtitle: 'Monthly acquisitions', value: '186', change: '+12%', trend: 'up', icon: <UserPlus size={18} />, sparklineData: [145, 152, 160, 168, 175, 180, 186] },
+        { id: '5', label: t('avg_orders'), subtitle: t('per_customer_frequency'), value: '4.2', change: '+0.5', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [3.5, 3.7, 3.8, 3.9, 4, 4.1, 4.2] },
+        { id: '6', label: t('churn_rate_percent'), subtitle: t('lost_customer_ratio'), value: '12.4%', change: '-0.8%', trend: 'up', icon: <Warning size={18} />, sparklineData: [15, 14.5, 14, 13.5, 13, 12.8, 12.4] },
+        { id: '7', label: t('engagement_score'), subtitle: t('rfv_avg'), value: '78/100', change: '+4%', trend: 'up', icon: <Heart size={18} />, sparklineData: [68, 70, 72, 74, 75, 77, 78] },
+        { id: '8', label: t('new_customers'), subtitle: t('monthly_acquisitions'), value: '186', change: '+12%', trend: 'up', icon: <UserPlus size={18} />, sparklineData: [145, 152, 160, 168, 175, 180, 186] },
     ];
 
-    // ECharts Revenue Pie Option
+    // ECharts Revenue Pie Option with translations
+    const translatedRevenueData = [
+        { value: 55, name: t('high_value') },
+        { value: 25, name: t('medium_value') },
+        { value: 12, name: t('low_value') },
+        { value: 8, name: t('at_risk') },
+    ];
+
     const revenuePieOption: EChartsOption = {
         tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
         legend: { bottom: '0%', left: 'center', textStyle: { fontSize: 10, color: '#94a3b8' } },
@@ -150,7 +157,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
             itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
-            data: REVENUE_BY_SEGMENT_DATA.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
+            data: translatedRevenueData.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
         }]
     };
 
@@ -161,21 +168,21 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
             formatter: (params: any) => {
                 return `<div class="p-2 font-sans">
                     <p class="font-bold text-gray-800">${params.data[2]}</p>
-                    <p class="text-xs text-gray-500 mt-1">Orders: ${params.data[0]}</p>
-                    <p class="text-xs text-gray-500">Revenue: ${formatCurrency(params.data[1], currency.code, currency.symbol)}</p>
+                    <p class="text-xs text-gray-500 mt-1">${t('orders')}: ${params.data[0]}</p>
+                    <p class="text-xs text-gray-500">${t('revenue')}: ${formatCurrency(params.data[1], currency.code, currency.symbol)}</p>
                 </div>`;
             }
         },
         grid: { top: '15%', bottom: '15%', left: '15%', right: '10%' },
-        xAxis: { name: 'Orders per Customer', nameLocation: 'middle', nameGap: 25 },
-        yAxis: { name: 'Revenue per Customer', nameLocation: 'middle', nameGap: 35 },
+        xAxis: { name: t('orders_per_customer'), nameLocation: 'middle', nameGap: 25 },
+        yAxis: { name: t('revenue_per_customer'), nameLocation: 'middle', nameGap: 35 },
         series: [{
             symbolSize: (data: any) => Math.sqrt(data[1]) / 2,
             data: [
-                [24, 15400, 'High Value Avg'],
-                [12, 8200, 'Medium Value Avg'],
-                [2, 1200, 'Low Value Avg'],
-                [8, 4500, 'At Risk Avg'],
+                [24, 15400, t('high_value_avg')],
+                [12, 8200, t('medium_value_avg')],
+                [2, 1200, t('low_value_avg')],
+                [8, 4500, t('at_risk_avg')],
             ],
             type: 'scatter',
             itemStyle: { color: '#8b5cf6' }
@@ -189,11 +196,11 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-start gap-2 text-left">
+                <div className="flex items-start gap-2 text-start">
                     <Users size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Customer Segmentation & Loyalty</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Personalizing campaigns and maximizing customer lifetime value</p>
+                        <h1 className="text-2xl font-bold">{t('segmentation_loyalty')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('segmentation_loyalty_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -201,7 +208,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -211,7 +218,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -235,12 +242,12 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                 {/* Customer Segmentation (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Customer Segmentation" />
+                        <ChartSkeleton height="h-[280px]" title={t('customer_segmentation')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Customer Segmentation</h3>
-                                <p className="text-xs text-gray-400 mt-1">Count per segment</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('customer_segmentation')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('count_per_segment')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -249,7 +256,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.5 }} />
-                                        <Bar dataKey="count" name="Customers" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
+                                        <Bar dataKey="count" name={t('customers')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -260,12 +267,12 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                 {/* Repeat vs One-Time (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Repeat vs One-Time" />
+                        <ChartSkeleton height="h-[280px]" title={t('repeat_vs_onetime')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Repeat vs One-Time</h3>
-                                <p className="text-xs text-gray-400 mt-1">Loyalty depth by segment</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('repeat_vs_onetime')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('loyalty_depth_segment')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -275,8 +282,8 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9', opacity: 0.5 }} />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="repeat" name="Repeat %" stackId="a" fill="#3b82f6" barSize={24} animationDuration={1000} />
-                                        <Bar dataKey="onetime" name="One-Time %" stackId="a" fill="#3b82f6" barSize={24} animationDuration={1000} />
+                                        <Bar dataKey="repeat" name={t('repeat_percent')} stackId="a" fill="#3b82f6" barSize={24} animationDuration={1000} />
+                                        <Bar dataKey="onetime" name={t('onetime_percent')} stackId="a" fill="#3b82f6" barSize={24} animationDuration={1000} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -290,12 +297,12 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Revenue by Segment Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Revenue by Segment" />
+                        <PieChartSkeleton title={t('revenue_by_segment')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue by Segment</h3>
-                                <p className="text-xs text-gray-400 mt-1">Contribution share</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('revenue_by_segment')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('contribution_share')}</p>
                             </div>
                             <ReactECharts option={revenuePieOption} style={{ height: '210px' }} />
                         </div>
@@ -303,12 +310,12 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
                     {/* Loyalty Curve Scatter */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title="Loyalty Curve" />
+                        <ChartSkeleton height="h-[250px]" title={t('loyalty_curve')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Loyalty Curve</h3>
-                                <p className="text-xs text-gray-400 mt-1">Orders vs revenue by segment</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('loyalty_curve')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('orders_vs_revenue_segment')}</p>
                             </div>
                             <ReactECharts option={loyaltyScatterOption} style={{ height: '210px' }} />
                         </div>
@@ -335,30 +342,30 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                 {isLoading ? (
                     <TableSkeleton rows={5} columns={5} />
                 ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-left animate-fade-in-up">
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-start animate-fade-in-up">
                         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Top Customers List</h3>
-                                <p className="text-xs text-gray-400 mt-1 italic">Segmentation and engagement monitoring</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('top_customers_list')}</h3>
+                                <p className="text-xs text-gray-400 mt-1 italic">{t('segmentation_engagement_monitoring')}</p>
                             </div>
                         </div>
 
                         <div className="flex-1 overflow-x-auto min-h-[350px]">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4">Customer</th>
-                                        <th className="px-6 py-4">Segment</th>
-                                        <th className="px-6 py-4 text-right">Orders</th>
-                                        <th className="px-6 py-4 text-right">Revenue</th>
-                                        <th className="px-6 py-4 text-right">Eng. Score</th>
+                                        <th className="px-6 py-4 text-start">{t('customer')}</th>
+                                        <th className="px-6 py-4 text-start">{t('segment')}</th>
+                                        <th className="px-6 py-4 text-end">{t('orders')}</th>
+                                        <th className="px-6 py-4 text-end">{t('revenue')}</th>
+                                        <th className="px-6 py-4 text-end">{t('eng_score')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
-                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white text-start">{row.name}</td>
+                                            <td className="px-6 py-5 text-start">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.segment === 'High Value' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                                     row.segment === 'Medium Value' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300' :
                                                         'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
@@ -366,9 +373,9 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                                     {row.segment}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 text-right font-medium text-gray-500">{row.orders}</td>
-                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5 text-right font-mono text-xs">{row.score}/100</td>
+                                            <td className="px-6 py-5 text-end font-medium text-gray-500">{row.orders}</td>
+                                            <td className="px-6 py-5 text-end font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end font-mono text-xs">{row.score}/100</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -377,7 +384,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
                             <span className="text-xs text-gray-500">
-                                Page <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> of {totalPages}
+                                {t('page')} <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> {t('of')} {totalPages}
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
@@ -401,14 +408,14 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
 
                 {/* Customer Value Companion Chart */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[450px]" title="Customer Value Distribution" />
+                    <ChartSkeleton height="h-[450px]" title={t('customer_value_distribution')} />
                 ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                         <div className="mb-4">
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                Customer Value Distribution
+                                {t('customer_value_distribution')}
                             </h3>
-                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Revenue contribution by segment tier</p>
+                            <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('revenue_contribution_tier')}</p>
                         </div>
                         <div className="flex-1 min-h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
@@ -418,13 +425,13 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                                     <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                    <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                    <Bar dataKey="revenue" name={t('revenue')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                             <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">
-                                <strong>Insight:</strong> The "High Value" segment accounts for 55% of revenue while making up only 7.5% of the total customer base.
+                                <strong>{t('insight')}:</strong> {t('segmentation_insight')}
                             </p>
                         </div>
                     </div>

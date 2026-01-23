@@ -489,6 +489,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     const [isWorkspaceIconPickerOpen, setIsWorkspaceIconPickerOpen] = useState(false);
     const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
 
+    // Workspace Search State
+    const [workspaceSearchTerm, setWorkspaceSearchTerm] = useState('');
+    const [isWorkspaceSearchOpen, setIsWorkspaceSearchOpen] = useState(false);
+    const workspaceSearchRef = useRef<HTMLInputElement>(null);
+
     // New Board State
     const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
     const [newBoardName, setNewBoardName] = useState('');
@@ -1192,10 +1197,49 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             <div className="mt-0 relative">
                                 {!isCollapsed && (
                                     <div className="flex items-center justify-between mb-2 px-3">
-                                        <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
-                                        <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
-                                            <MagnifyingGlass size={13} weight="light" className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300" />
-                                        </div>
+                                        {isWorkspaceSearchOpen ? (
+                                            <div className="flex items-center gap-1 flex-1">
+                                                <input
+                                                    ref={workspaceSearchRef}
+                                                    type="text"
+                                                    value={workspaceSearchTerm}
+                                                    onChange={(e) => setWorkspaceSearchTerm(e.target.value)}
+                                                    placeholder={t('search_workspaces')}
+                                                    autoFocus
+                                                    className="flex-1 text-xs bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-monday-blue dark:focus:border-monday-blue outline-none py-0.5 text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Escape') {
+                                                            setIsWorkspaceSearchOpen(false);
+                                                            setWorkspaceSearchTerm('');
+                                                        }
+                                                    }}
+                                                />
+                                                <X
+                                                    size={13}
+                                                    weight="light"
+                                                    className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                                                    onClick={() => {
+                                                        setIsWorkspaceSearchOpen(false);
+                                                        setWorkspaceSearchTerm('');
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-monday-dark-text-secondary truncate">{t('workspaces')}</span>
+                                                <div className="flex space-x-1 rtl:space-x-reverse flex-shrink-0">
+                                                    <MagnifyingGlass
+                                                        size={13}
+                                                        weight="light"
+                                                        className="text-gray-400 dark:text-gray-500 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                                                        onClick={() => {
+                                                            setIsWorkspaceSearchOpen(true);
+                                                            setTimeout(() => workspaceSearchRef.current?.focus(), 0);
+                                                        }}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
@@ -1447,13 +1491,54 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 {/* Workspace Dropdown - Rendered via Portal to escape stacking context */}
                                 {isWorkspaceMenuOpen && !isCollapsed && createPortal(
                                     <>
-                                        <div className="fixed inset-0 z-[9998]" onClick={() => setIsWorkspaceMenuOpen(false)} />
+                                        <div className="fixed inset-0 z-[9998]" onClick={() => {
+                                            setIsWorkspaceMenuOpen(false);
+                                            setWorkspaceSearchTerm('');
+                                        }} />
                                         <div
-                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-[9999] py-1 max-h-64 overflow-y-auto min-w-[200px] animate-in fade-in zoom-in-95 duration-100"
+                                            className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-100 dark:border-monday-dark-border z-[9999] py-1 max-h-80 overflow-hidden min-w-[220px] animate-in fade-in zoom-in-95 duration-100 flex flex-col"
                                             style={{ top: workspaceMenuPos.top, left: workspaceMenuPos.left }}
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            {workspaces.map(ws => (
+                                            {/* Search Input in Dropdown */}
+                                            <div className="px-3 py-2 border-b border-gray-100 dark:border-monday-dark-border">
+                                                <div className="flex items-center gap-2 bg-gray-50 dark:bg-monday-dark-bg rounded-md px-2 py-1.5">
+                                                    <MagnifyingGlass size={14} weight="light" className="text-gray-400 flex-shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        value={workspaceSearchTerm}
+                                                        onChange={(e) => setWorkspaceSearchTerm(e.target.value)}
+                                                        placeholder={t('search_workspaces')}
+                                                        autoFocus
+                                                        className="flex-1 text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Escape') {
+                                                                setIsWorkspaceMenuOpen(false);
+                                                                setWorkspaceSearchTerm('');
+                                                            }
+                                                        }}
+                                                    />
+                                                    {workspaceSearchTerm && (
+                                                        <X
+                                                            size={14}
+                                                            weight="light"
+                                                            className="text-gray-400 cursor-pointer hover:text-gray-600 flex-shrink-0"
+                                                            onClick={() => setWorkspaceSearchTerm('')}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="overflow-y-auto flex-1 max-h-52">
+                                            {(() => {
+                                                const filteredWorkspaces = workspaces.filter(ws => !workspaceSearchTerm || ws.name.toLowerCase().includes(workspaceSearchTerm.toLowerCase()));
+                                                if (filteredWorkspaces.length === 0) {
+                                                    return (
+                                                        <div className="px-3 py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                                                            {t('no_results_found')}
+                                                        </div>
+                                                    );
+                                                }
+                                                return filteredWorkspaces.map(ws => (
                                                 <div
                                                     key={ws.id}
                                                     className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer flex items-center justify-between group"
@@ -1505,12 +1590,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ))}
-                                            <div className="border-t border-gray-100 dark:border-monday-dark-border mt-1 pt-1">
+                                            ));
+                                            })()}
+                                            </div>
+                                            <div className="border-t border-gray-100 dark:border-monday-dark-border pt-1">
                                                 <button
                                                     onClick={() => {
                                                         setIsAddWorkspaceModalOpen(true);
                                                         setIsWorkspaceMenuOpen(false);
+                                                        setWorkspaceSearchTerm('');
                                                     }}
                                                     className="w-full text-start px-3 py-2 text-[14px] text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover hover:text-monday-blue flex items-center gap-2"
                                                 >

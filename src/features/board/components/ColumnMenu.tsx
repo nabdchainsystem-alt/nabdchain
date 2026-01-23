@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-
+import { useAppContext } from '../../../contexts/AppContext';
 
 import {
     TextT as Type,
@@ -86,37 +86,38 @@ interface ColumnType {
 }
 
 export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkMode }) => {
+    const { t, dir } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
 
 
     const essentials: ColumnType[] = [
-        { id: 'custom', label: 'Custom', icon: CircleDashed, color: 'bg-gray-400', description: 'Custom column' },
-        { id: 'status', label: 'Status', icon: CheckSquare, color: 'bg-emerald-500', description: 'Track task status' },
-        { id: 'priority', label: 'Priority', icon: Flag, color: 'bg-orange-500', description: 'Set task priority' },
-        { id: 'dropdown', label: 'Dropdown', icon: List, color: 'bg-emerald-500', description: 'Select options' },
-        { id: 'text', label: 'Text', icon: Type, color: 'bg-yellow-400', description: 'Free text' },
-        { id: 'date', label: 'Date', icon: Calendar, color: 'bg-purple-500', description: 'Dates' },
-        { id: 'files', label: 'Files', icon: Paperclip, color: 'bg-rose-400', description: 'Attach files' },
-        { id: 'people', label: 'People', icon: Users, color: 'bg-blue-400', description: 'Assign people' },
-        { id: 'number', label: 'Numbers', icon: Hash, color: 'bg-yellow-400', description: 'Count things' },
-        { id: 'currency', label: 'Currency', icon: CurrencyDollar, color: 'bg-emerald-500', description: 'Money with conversion' },
+        { id: 'custom', label: t('col_custom'), icon: CircleDashed, color: 'bg-gray-400', description: t('desc_custom') },
+        { id: 'status', label: t('col_status'), icon: CheckSquare, color: 'bg-emerald-500', description: t('desc_status') },
+        { id: 'priority', label: t('col_priority'), icon: Flag, color: 'bg-orange-500', description: t('desc_priority') },
+        { id: 'dropdown', label: t('col_dropdown'), icon: List, color: 'bg-emerald-500', description: t('desc_dropdown') },
+        { id: 'text', label: t('col_text'), icon: Type, color: 'bg-yellow-400', description: t('desc_text') },
+        { id: 'date', label: t('col_date'), icon: Calendar, color: 'bg-purple-500', description: t('desc_date') },
+        { id: 'files', label: t('col_files'), icon: Paperclip, color: 'bg-rose-400', description: t('desc_files') },
+        { id: 'people', label: t('col_people'), icon: Users, color: 'bg-blue-400', description: t('desc_people') },
+        { id: 'number', label: t('col_numbers'), icon: Hash, color: 'bg-yellow-400', description: t('desc_numbers') },
+        { id: 'currency', label: t('col_currency'), icon: CurrencyDollar, color: 'bg-emerald-500', description: t('desc_currency') },
     ];
 
     const superUseful: ColumnType[] = [
-        { id: 'timeline', label: 'Timeline', icon: Calendar, color: 'bg-purple-500', description: 'Visual timeline' },
-        { id: 'url', label: 'URL', icon: Link2, color: 'bg-slate-500', description: 'Add a URL' },
-        { id: 'checkbox', label: 'Checkbox', icon: CheckSquare, color: 'bg-orange-400', description: 'Check/Uncheck' },
-        { id: 'doc', label: 'NABD Doc', icon: FileText, color: 'bg-rose-400', description: 'Embed docs' },
-        { id: 'location', label: 'Location', icon: MapPin, color: 'bg-red-500', description: 'Add a location' },
-        { id: 'rating', label: 'Rating', icon: Star, color: 'bg-yellow-400', description: 'Rate items with stars' },
-        { id: 'voting', label: 'Voting', icon: ThumbsUp, color: 'bg-blue-400', description: 'Vote on items' },
+        { id: 'timeline', label: t('col_timeline'), icon: Calendar, color: 'bg-purple-500', description: t('desc_timeline') },
+        { id: 'url', label: t('col_url'), icon: Link2, color: 'bg-slate-500', description: t('desc_url') },
+        { id: 'checkbox', label: t('col_checkbox'), icon: CheckSquare, color: 'bg-orange-400', description: t('desc_checkbox') },
+        { id: 'doc', label: t('col_doc'), icon: FileText, color: 'bg-rose-400', description: t('desc_doc') },
+        { id: 'location', label: t('col_location'), icon: MapPin, color: 'bg-red-500', description: t('desc_location') },
+        { id: 'rating', label: t('col_rating'), icon: Star, color: 'bg-yellow-400', description: t('desc_rating') },
+        { id: 'voting', label: t('col_voting'), icon: ThumbsUp, color: 'bg-blue-400', description: t('desc_voting') },
     ];
 
     const powerUps: ColumnType[] = [
-        { id: 'email', label: 'Email', icon: Mail, color: 'bg-purple-400', description: 'Email address' },
-        { id: 'phone', label: 'Phone', icon: Phone, color: 'bg-blue-400', description: 'Phone number' },
-        { id: 'world_clock', label: 'World Clock', icon: Globe, color: 'bg-sky-400', description: 'See time in other zones' },
-        { id: 'tags', label: 'Tags', icon: Tags, color: 'bg-purple-500', description: 'Manage tags' },
+        { id: 'email', label: t('col_email'), icon: Mail, color: 'bg-purple-400', description: t('desc_email') },
+        { id: 'phone', label: t('col_phone'), icon: Phone, color: 'bg-blue-400', description: t('desc_phone') },
+        { id: 'world_clock', label: t('col_world_clock'), icon: Globe, color: 'bg-sky-400', description: t('desc_world_clock') },
+        { id: 'tags', label: t('col_tags'), icon: Tags, color: 'bg-purple-500', description: t('desc_tags') },
     ];
 
     const filteredEssentials = essentials.filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -267,7 +268,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
 
     const RenderItem: React.FC<{ type: ColumnType, showPlus?: boolean }> = ({ type, showPlus = true }) => (
         <div
-            className="flex items-center gap-3 w-full p-1.5 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors group text-left cursor-pointer"
+            className="flex items-center gap-3 w-full p-1.5 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors group text-start cursor-pointer"
+            dir={dir}
             onClick={() => {
                 handleSelect(type);
                 // For direct actions (not custom/dropdown/currency setup), close the menu
@@ -303,7 +305,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     if (view === 'custom_name') {
         return (
             <div
-                className={`flex flex-col w-[340px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                className={`flex flex-col min-w-[280px] w-max max-w-[420px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                dir={dir}
             >
                 <div className="p-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -313,13 +316,13 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         >
                             <ArrowUpRight className="rotate-[-135deg]" size={16} />
                         </button>
-                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Name your column</span>
+                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{t('name_your_column')}</span>
                     </div>
 
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Column name"
+                        placeholder={t('column_name_input')}
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
                         onKeyDown={(e) => {
@@ -337,7 +340,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             onClick={() => setView('list')}
                             className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
                         >
-                            Back
+                            {t('back')}
                         </button>
                         <button
                             onClick={() => {
@@ -347,7 +350,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             disabled={!customName.trim()}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Create Column
+                            {t('create_column')}
                         </button>
                     </div>
                 </div>
@@ -360,7 +363,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     if (view === 'custom_dropdown') {
         return (
             <div
-                className={`flex flex-col w-[340px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                className={`flex flex-col min-w-[280px] w-max max-w-[420px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                dir={dir}
             >
                 <div className="p-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -370,15 +374,15 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         >
                             <ArrowUpRight className="rotate-[-135deg]" size={16} />
                         </button>
-                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Configure Dropdown</span>
+                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{t('configure_dropdown')}</span>
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Field name <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">{t('field_name')} <span className="text-red-500">*</span></label>
                         <input
                             ref={dropdownInputRef}
                             type="text"
-                            placeholder="Enter name..."
+                            placeholder={t('enter_name')}
                             value={dropdownName}
                             onChange={(e) => setDropdownName(e.target.value)}
                             onKeyDown={(e) => {
@@ -394,20 +398,20 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
 
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-semibold text-stone-500 dark:text-stone-400">Dropdown options <span className="text-red-500">*</span></label>
+                            <label className="text-xs font-semibold text-stone-500 dark:text-stone-400">{t('dropdown_options')} <span className="text-red-500">*</span></label>
                             <button
                                 onClick={() => setShowPresets(!showPresets)}
                                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
                             >
                                 <BookmarkSimple size={14} />
-                                {showPresets ? 'Hide Presets' : 'Presets'}
+                                {showPresets ? t('hide_presets') : t('presets_label')}
                             </button>
                         </div>
 
                         {/* Presets Section */}
                         {showPresets && (
                             <div className="mb-3 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
-                                <div className="text-xs font-medium text-stone-600 dark:text-stone-300 mb-2">Saved Presets</div>
+                                <div className="text-xs font-medium text-stone-600 dark:text-stone-300 mb-2">{t('saved_presets')}</div>
                                 {presets.length > 0 ? (
                                     <div className="space-y-1 max-h-[120px] overflow-y-auto mb-2">
                                         {presets.map(preset => (
@@ -437,13 +441,13 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-xs text-stone-400 mb-2">No saved presets yet</div>
+                                    <div className="text-xs text-stone-400 mb-2">{t('no_saved_presets')}</div>
                                 )}
                                 {/* Save current as preset */}
                                 <div className="flex gap-1 pt-2 border-t border-stone-200 dark:border-stone-700">
                                     <input
                                         type="text"
-                                        placeholder="Preset name..."
+                                        placeholder={t('preset_name_placeholder')}
                                         value={presetName}
                                         onChange={(e) => setPresetName(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === 'Enter') handleSavePreset(); }}
@@ -457,12 +461,12 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                                         {saveSuccess ? (
                                             <>
                                                 <Check size={12} />
-                                                Saved!
+                                                {t('saved_label')}
                                             </>
                                         ) : (
                                             <>
                                                 <FloppyDisk size={12} />
-                                                Save
+                                                {t('save')}
                                             </>
                                         )}
                                     </button>
@@ -517,20 +521,20 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         </div>
 
                         <div className="relative mt-2">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500">
+                            <div className="absolute start-3 top-1/2 -translate-y-1/2 text-blue-500">
                                 <Plus size={14} />
                             </div>
                             <input
                                 type="text"
-                                placeholder="Type or paste options"
+                                placeholder={t('type_paste_options')}
                                 value={newOptionName}
                                 onChange={(e) => setNewOptionName(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') handleAddOption();
                                 }}
-                                className="w-full pl-8 pr-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
+                                className="w-full ps-8 pe-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
                             />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="absolute end-3 top-1/2 -translate-y-1/2">
                                 <span className="text-xs text-stone-400">⏎</span>
                             </div>
                         </div>
@@ -541,7 +545,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             onClick={() => setView('list')}
                             className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
                         >
-                            Back
+                            {t('back')}
                         </button>
                         <button
                             onClick={() => {
@@ -551,7 +555,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             disabled={!dropdownName.trim() || dropdownOptions.length === 0}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Create Column
+                            {t('create_column')}
                         </button>
                     </div>
                 </div>
@@ -562,7 +566,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     if (view === 'currency') {
         return (
             <div
-                className={`flex flex-col w-[340px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                className={`flex flex-col min-w-[280px] w-max max-w-[420px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+                dir={dir}
             >
                 <div className="p-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -572,15 +577,15 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         >
                             <ArrowUpRight className="rotate-[-135deg]" size={16} />
                         </button>
-                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Configure Currency Column</span>
+                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{t('configure_currency')}</span>
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">Column name <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-1">{t('column_name_input')} <span className="text-red-500">*</span></label>
                         <input
                             ref={currencyInputRef}
                             type="text"
-                            placeholder="e.g. Budget, Price, Cost..."
+                            placeholder={t('currency_name_placeholder')}
                             value={currencyName}
                             onChange={(e) => setCurrencyName(e.target.value)}
                             onKeyDown={(e) => {
@@ -595,25 +600,25 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">Select Currency</label>
+                        <label className="block text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">{t('select_currency')}</label>
 
                         {/* Selected Currency Display */}
                         <div className="flex items-center gap-2 p-2 mb-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
                             <span className="text-lg">{selectedCurrency.flag}</span>
                             <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{selectedCurrency.symbol}</span>
                             <span className="text-sm text-stone-600 dark:text-stone-300">{selectedCurrency.name}</span>
-                            <span className="text-xs text-stone-400 ml-auto">{selectedCurrency.code}</span>
+                            <span className="text-xs text-stone-400 ms-auto">{selectedCurrency.code}</span>
                         </div>
 
                         {/* Currency Search */}
                         <div className="relative mb-2">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                            <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-stone-400" />
                             <input
                                 type="text"
-                                placeholder="Search currencies..."
+                                placeholder={t('search_currencies')}
                                 value={currencySearch}
                                 onChange={(e) => setCurrencySearch(e.target.value)}
-                                className="w-full pl-9 pr-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
+                                className="w-full ps-9 pe-3 py-2 text-sm bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-stone-800 dark:text-stone-200"
                             />
                         </div>
 
@@ -623,7 +628,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                                 <button
                                     key={currency.code}
                                     onClick={() => setSelectedCurrency(currency)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${selectedCurrency.code === currency.code ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-start hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${selectedCurrency.code === currency.code ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 >
                                     <span className="text-base">{currency.flag}</span>
                                     <span className="text-sm font-medium text-stone-700 dark:text-stone-200 w-8">{currency.symbol}</span>
@@ -639,7 +644,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             onClick={() => setView('list')}
                             className="px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
                         >
-                            Back
+                            {t('back')}
                         </button>
                         <button
                             onClick={() => {
@@ -649,7 +654,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                             disabled={!currencyName.trim()}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Create Column
+                            {t('create_column')}
                         </button>
                     </div>
                 </div>
@@ -659,19 +664,20 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
 
     return (
         <div
-            className={`flex flex-col w-[340px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
+            className={`flex flex-col min-w-[280px] w-max max-w-[420px] bg-white dark:bg-stone-900 shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-stone-800 ${darkMode ? 'dark' : ''}`}
             style={{ maxHeight: '600px' }} // Let it grow but cap it
+            dir={dir}
         >
             {/* Search */}
             <div className="p-4 pb-2">
                 <div className="relative group">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500" />
+                    <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500" />
                     <input
                         type="text"
-                        placeholder="Search or describe your column"
+                        placeholder={t('search_describe_column')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 text-[13px] bg-white border border-gray-300 dark:border-stone-700 rounded transition-all placeholder:text-gray-400 text-gray-700 dark:text-stone-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="w-full ps-9 pe-3 py-2 text-[13px] bg-white dark:bg-stone-800 border border-gray-300 dark:border-stone-700 rounded transition-all placeholder:text-gray-400 text-gray-700 dark:text-stone-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                 </div>
             </div>
@@ -682,7 +688,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                 {/* Essentials */}
                 {hasEssentials && (
                     <div className="mb-4">
-                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Essentials</div>
+                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">{t('section_essentials')}</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredEssentials.map(type => (
                                 <RenderItem key={type.id} type={type} showPlus={true} />
@@ -694,7 +700,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                 {/* Super Useful */}
                 {hasUseful && (
                     <div className="mb-4">
-                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Super useful</div>
+                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">{t('section_super_useful')}</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredUseful.map(type => (
                                 <RenderItem key={type.id} type={type} showPlus={true} />
@@ -706,7 +712,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                 {/* Power Ups */}
                 {hasPowerUps && (
                     <div className="mb-2">
-                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">Board Power Ups</div>
+                        <div className="text-[13px] text-gray-500 dark:text-gray-400 mb-2 font-medium">{t('section_power_ups')}</div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                             {filteredPowerUps.map(type => (
                                 <RenderItem key={type.id} type={type} showPlus={true} />
@@ -717,14 +723,14 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
 
 
                 {(!hasEssentials && !hasUseful && !hasPowerUps) && (
-                    <div className="text-center py-4 text-gray-400 text-sm">No columns found</div>
+                    <div className="text-center py-4 text-gray-400 text-sm">{t('no_columns_found')}</div>
                 )}
             </div>
 
             {/* Footer */}
             <div className="p-3 border-t border-gray-100 dark:border-stone-800 text-center">
                 <button className="text-[13px] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:underline transition-all">
-                    More columns
+                    {t('more_columns')}
                 </button>
             </div>
         </div>

@@ -5,6 +5,7 @@ import { useAuth, useUser } from '../../auth-adapter';
 import { talkService, Conversation, Message } from '../../services/talkService';
 import { teamService, TeamMember } from '../../services/teamService';
 import ConversationSidebar from './components/ConversationSidebar';
+import { talkLogger } from '../../utils/logger';
 
 interface TalkPageProps {
     onNavigate?: (view: string, boardId?: string) => void;
@@ -46,7 +47,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             const convs = await talkService.getConversations(token);
             setConversations(convs);
         } catch (error) {
-            console.error('Failed to load conversations:', error);
+            talkLogger.error('Failed to load conversations:', error);
         }
     }, [getToken]);
 
@@ -61,7 +62,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             const msgs = await talkService.getMessages(token, selectedConversation.id);
             setMessages(msgs);
         } catch (error) {
-            console.error('Failed to load messages:', error);
+            talkLogger.error('Failed to load messages:', error);
         }
     }, [getToken, selectedConversation]);
 
@@ -74,7 +75,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             const members = await teamService.getTeamMembers(token);
             setTeamMembers(members);
         } catch (error) {
-            console.error('Failed to load team members:', error);
+            talkLogger.error('Failed to load team members:', error);
         }
     }, [getToken]);
 
@@ -132,7 +133,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             setNewMessage('');
             await loadConversations(); // Refresh last message in sidebar
         } catch (error) {
-            console.error('Failed to send message:', error);
+            talkLogger.error('Failed to send message:', error);
         } finally {
             setIsSending(false);
         }
@@ -154,7 +155,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             const updated = updatedConvs.find(c => c.id === selectedConversation.id);
             if (updated) setSelectedConversation(updated);
         } catch (error) {
-            console.error('Failed to close chat:', error);
+            talkLogger.error('Failed to close chat:', error);
         }
     };
 
@@ -171,7 +172,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             setMessages([]);
             await loadConversations();
         } catch (error) {
-            console.error('Failed to delete chat:', error);
+            talkLogger.error('Failed to delete chat:', error);
         }
     };
 
@@ -189,7 +190,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             setNewConvStep(1);
             setNewConvType(null);
         } catch (error) {
-            console.error('Failed to create DM:', error);
+            talkLogger.error('Failed to create DM:', error);
         } finally {
             setIsCreating(false);
         }
@@ -211,7 +212,7 @@ const TalkPage: React.FC<TalkPageProps> = ({ onNavigate }) => {
             setNewConvType(null);
             setNewChannelName('');
         } catch (error) {
-            console.error('Failed to create channel:', error);
+            talkLogger.error('Failed to create channel:', error);
         } finally {
             setIsCreating(false);
         }

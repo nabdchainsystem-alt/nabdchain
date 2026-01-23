@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, memo } from 'react';
+import React, { useState, useEffect, Suspense, memo, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SignedIn, SignedOut, SignIn, useUser, useAuth } from './auth-adapter';
 import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem, Task } from './types';
@@ -511,7 +511,7 @@ const AppContent: React.FC = () => {
 
       appLogger.info('[App] Admin status:', adminStatus.isAdmin, 'Visibility loaded:', Object.keys(visibility).length);
     } catch (error) {
-      console.error('Failed to fetch admin data:', error);
+      appLogger.error('Failed to fetch admin data:', error);
       setIsPermissionsLoaded(true); // Still mark as loaded to avoid infinite loading
     }
   }, [isSignedIn, getToken]);
@@ -1417,7 +1417,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* Main Content Area */}
-        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] ml-0.5`}>
+        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ltr:shadow-[-4px_0_24px_rgba(0,0,0,0.08)] rtl:shadow-[4px_0_24px_rgba(0,0,0,0.08)] ms-0.5`}>
           <React.Suspense fallback={<FullScreenLoader />}>
             {activeView === 'dashboard' ? (
               <FeatureErrorBoundary featureName="Dashboard">
@@ -1568,16 +1568,19 @@ const AppContent: React.FC = () => {
 };
 
 // Error boundary for the entire app content
-class AppErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
 
-  static getDerivedStateFromError(error: Error) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
@@ -1586,11 +1589,14 @@ class AppErrorBoundary extends React.Component<
   }
 
   render() {
-    if (this.state.hasError) {
+    const { hasError, error } = this.state;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { children } = (this as any).props as ErrorBoundaryProps;
+    if (hasError) {
       return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-white p-8">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-          <p className="text-gray-600 mb-4">{this.state.error?.message}</p>
+          <p className="text-gray-600 mb-4">{error?.message}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -1600,7 +1606,7 @@ class AppErrorBoundary extends React.Component<
         </div>
       );
     }
-    return this.props.children;
+    return children;
   }
 }
 

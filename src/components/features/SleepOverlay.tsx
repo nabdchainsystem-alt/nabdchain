@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { CaretLeft, CaretRight } from 'phosphor-react';
+import { appLogger } from '../../utils/logger';
 
 interface SleepOverlayProps {
     onCheck: () => void;
@@ -128,8 +129,8 @@ export const SleepOverlay: React.FC<SleepOverlayProps> = ({ onCheck }) => {
         rainAudio.volume = 0;
         rainAudioRef.current = rainAudio;
 
-        audio.play().catch(e => console.log('Thunder audio play failed:', e));
-        rainAudio.play().catch(e => console.log('Rain audio play failed:', e));
+        audio.play().catch(e => appLogger.debug('Thunder audio play failed:', e));
+        rainAudio.play().catch(e => appLogger.debug('Rain audio play failed:', e));
 
         let volume = 0;
         const fadeIn = setInterval(() => {

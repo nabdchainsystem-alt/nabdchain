@@ -5,6 +5,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { useUser } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
 import { Phone, PhoneSlash, Microphone, MicrophoneSlash, VideoCamera, VideoCameraSlash, Monitor, MonitorPlay } from 'phosphor-react';
+import { videoLogger } from '../../utils/logger';
 
 // Free STUN/TURN servers for WebRTC connectivity
 const ICE_SERVERS = {
@@ -80,7 +81,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
             userVideo.current.srcObject = stream;
             // Ensure video plays (needed for some browsers)
             userVideo.current.play().catch(err => {
-                console.log('Video autoplay prevented:', err);
+                videoLogger.debug('Video autoplay prevented:', err);
             });
         }
     }, [stream, isJoined, isScreenSharing]);
@@ -104,7 +105,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
     const joinCall = async () => {
         setIsJoining(true);
         try {
-            console.log('[VideoChat] Joining call, socket status:', socket ? 'connected' : 'not connected');
+            videoLogger.info('[VideoChat] Joining call, socket status:', socket ? 'connected' : 'not connected');
 
             if (!socket) {
                 alert('Socket not connected. Please refresh the page.');
@@ -113,7 +114,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
             }
 
             const currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            console.log('[VideoChat] Got media stream:', currentStream.getTracks().map(t => t.kind));
+            videoLogger.info('[VideoChat] Got media stream:', currentStream.getTracks().map(t => t.kind));
 
             setStream(currentStream);
             setIsJoined(true);
@@ -123,7 +124,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
             setTimeout(() => {
                 if (userVideo.current) {
                     userVideo.current.srcObject = currentStream;
-                    userVideo.current.play().catch(console.log);
+                    userVideo.current.play().catch(e => videoLogger.debug('Video play error:', e));
                 }
             }, 100);
 
@@ -201,7 +202,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
             });
 
         } catch (err: any) {
-            console.error("[VideoChat] Failed to join call:", err);
+            videoLogger.error("[VideoChat] Failed to join call:", err);
             setIsJoining(false);
             if (err.name === 'NotAllowedError') {
                 alert('Camera/microphone access denied. Please allow access and try again.');
@@ -320,7 +321,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
 
                 setIsScreenSharing(true);
             } catch (err) {
-                console.error('Failed to start screen sharing:', err);
+                videoLogger.error('Failed to start screen sharing:', err);
             }
         }
     };

@@ -19,6 +19,7 @@ import { ColumnMenu } from '../../../components/ColumnMenu';
 import { DropdownCell } from '../../../components/cells/DropdownCell';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../../../components/ui/PortalPopup';
+import { boardLogger } from '../../../../../utils/logger';
 
 
 // --- Helpers ---
@@ -165,7 +166,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
                 }));
             }
         } catch (e) {
-            console.error("Failed to load tasks", e);
+            boardLogger.error("Failed to load tasks", e);
         }
         return [];
     });
@@ -185,7 +186,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({ roomId, viewId }) =>
             const saved = localStorage.getItem(columnsStorageKey);
             if (saved) return JSON.parse(saved);
         } catch (e) {
-            console.error("Failed to load columns", e);
+            boardLogger.error("Failed to load columns", e);
         }
         return [
             { id: 'select', label: '', width: 48, minWidth: 40, resizable: false },

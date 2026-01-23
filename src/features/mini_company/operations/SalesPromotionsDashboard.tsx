@@ -72,7 +72,7 @@ interface SalesPromotionsDashboardProps {
 }
 
 export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> = ({ hideFullscreen = false }) => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -119,19 +119,33 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
         setSortConfig({ key, direction });
     };
 
+    // Translated data arrays
+    const translatedRevenueTypeData = [
+        { value: 45, name: t('direct_discount') },
+        { value: 25, name: t('coupon_code') },
+        { value: 20, name: t('bogo') },
+        { value: 10, name: t('free_shipping') },
+    ];
+
+    const statusTranslations: Record<string, string> = {
+        'Active': t('active'),
+        'Completed': t('completed'),
+        'Pending': t('pending'),
+    };
+
     // KPI Config
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '1', label: 'Campaigns Active', subtitle: 'Live promotional events', value: '4', change: 'Stable', trend: 'neutral', icon: <Megaphone size={18} />, sparklineData: [3, 4, 5, 4, 3, 4, 4] },
-        { id: '2', label: 'Total Spend', subtitle: 'Marketing budget used', value: '0', rawValue: 42500, isCurrency: true, change: '+12%', trend: 'down', icon: <Tag size={18} />, sparklineData: [32, 35, 38, 40, 41, 42, 42.5] },
-        { id: '3', label: 'Revenue from Promo', subtitle: 'Attributed gross volume', value: '0', rawValue: 284500, isCurrency: true, change: '+24%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [180, 200, 220, 245, 260, 275, 284.5] },
-        { id: '4', label: 'Overall ROI', subtitle: 'Campaign profitability', value: '569%', change: '+45%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [380, 420, 460, 500, 530, 550, 569] },
+        { id: '1', label: t('campaigns_active'), subtitle: t('live_promotional_events'), value: '4', change: t('stable'), trend: 'neutral', icon: <Megaphone size={18} />, sparklineData: [3, 4, 5, 4, 3, 4, 4] },
+        { id: '2', label: t('total_spend'), subtitle: t('marketing_budget_used'), value: '0', rawValue: 42500, isCurrency: true, change: '+12%', trend: 'down', icon: <Tag size={18} />, sparklineData: [32, 35, 38, 40, 41, 42, 42.5] },
+        { id: '3', label: t('revenue_from_promo'), subtitle: t('attributed_gross_volume'), value: '0', rawValue: 284500, isCurrency: true, change: '+24%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [180, 200, 220, 245, 260, 275, 284.5] },
+        { id: '4', label: t('overall_roi'), subtitle: t('campaign_profitability'), value: '569%', change: '+45%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [380, 420, 460, 500, 530, 550, 569] },
     ];
 
     const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-        { id: '5', label: 'Promo Conversion', subtitle: 'Engaged vs Purchased', value: '18.4%', change: '+3.2%', trend: 'up', icon: <Percent size={18} />, sparklineData: [12, 13.5, 15, 16, 17, 17.8, 18.4] },
-        { id: '6', label: 'Incremental Sales', subtitle: 'Above organic baseline', value: '0', rawValue: 105000, isCurrency: true, change: '+18%', trend: 'up', icon: <RocketLaunch size={18} />, sparklineData: [75, 80, 85, 90, 95, 100, 105] },
-        { id: '7', label: 'Engagement Rate', subtitle: 'Clicks/Engagement avg', value: '4.2%', change: '+1.1%', trend: 'up', icon: <Users size={18} />, sparklineData: [2.8, 3.2, 3.5, 3.8, 4, 4.1, 4.2] },
-        { id: '8', label: 'Coupon Redemption', subtitle: 'Codes used vs issued', value: '32.5%', change: '+5.2%', trend: 'up', icon: <Tag size={18} />, sparklineData: [22, 24, 26, 28, 30, 31, 32.5] },
+        { id: '5', label: t('promo_conversion'), subtitle: t('engaged_vs_purchased'), value: '18.4%', change: '+3.2%', trend: 'up', icon: <Percent size={18} />, sparklineData: [12, 13.5, 15, 16, 17, 17.8, 18.4] },
+        { id: '6', label: t('incremental_sales'), subtitle: t('above_organic_baseline'), value: '0', rawValue: 105000, isCurrency: true, change: '+18%', trend: 'up', icon: <RocketLaunch size={18} />, sparklineData: [75, 80, 85, 90, 95, 100, 105] },
+        { id: '7', label: t('engagement_rate'), subtitle: t('clicks_engagement_avg'), value: '4.2%', change: '+1.1%', trend: 'up', icon: <Users size={18} />, sparklineData: [2.8, 3.2, 3.5, 3.8, 4, 4.1, 4.2] },
+        { id: '8', label: t('coupon_redemption'), subtitle: t('codes_used_issued'), value: '32.5%', change: '+5.2%', trend: 'up', icon: <Tag size={18} />, sparklineData: [22, 24, 26, 28, 30, 31, 32.5] },
     ];
 
     // ECharts Revenue Type Pie Option
@@ -145,7 +159,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
             itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
             label: { show: false, position: 'center' },
             emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
-            data: REVENUE_BY_TYPE_DATA.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
+            data: translatedRevenueTypeData.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
         }]
     };
 
@@ -156,14 +170,14 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
             formatter: (params: any) => {
                 return `<div class="p-2 font-sans">
                     <p class="font-bold text-gray-800">${params.data[2]}</p>
-                    <p class="text-xs text-gray-500 mt-1">ROI: ${params.data[0]}%</p>
-                    <p class="text-xs text-gray-500">Conv: ${params.data[1]}%</p>
+                    <p class="text-xs text-gray-500 mt-1">${t('roi')}: ${params.data[0]}%</p>
+                    <p class="text-xs text-gray-500">${t('conv_percent')}: ${params.data[1]}%</p>
                 </div>`;
             }
         },
         grid: { top: '15%', bottom: '15%', left: '15%', right: '10%' },
-        xAxis: { name: 'ROI %', nameLocation: 'middle', nameGap: 25 },
-        yAxis: { name: 'Conversion %', nameLocation: 'middle', nameGap: 35 },
+        xAxis: { name: t('roi_percent'), nameLocation: 'middle', nameGap: 25 },
+        yAxis: { name: t('conv_percent'), nameLocation: 'middle', nameGap: 35 },
         series: [{
             symbolSize: (data: any) => Math.sqrt(data[0]) * 2,
             data: [
@@ -185,11 +199,11 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-start gap-2 text-left">
+                <div className="flex items-start gap-2 text-start">
                     <Megaphone size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Promotions & Campaign Effectiveness</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Measuring ROI and optimizing marketing spend impact</p>
+                        <h1 className="text-2xl font-bold">{t('promotions_effectiveness')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{t('promotions_effectiveness_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -197,7 +211,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                         <button
                             onClick={toggleFullScreen}
                             className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                            title="Full Screen"
+                            title={t('full_screen')}
                         >
                             <ArrowsOut size={18} />
                         </button>
@@ -207,7 +221,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -231,12 +245,12 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                 {/* Campaign Performance (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Campaign Performance" />
+                        <ChartSkeleton height="h-[280px]" title={t('campaign_performance')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Campaign Performance</h3>
-                                <p className="text-xs text-gray-400 mt-1">Revenue per campaign</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('campaign_performance')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('revenue_per_campaign')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -256,12 +270,12 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                 {/* Conversion by Campaign (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Conversion by Campaign" />
+                        <ChartSkeleton height="h-[280px]" title={t('conversion_by_campaign')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Conversion by Campaign</h3>
-                                <p className="text-xs text-gray-400 mt-1">Conversion efficiency</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('conversion_by_campaign')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('conversion_efficiency')}</p>
                             </div>
                             <div className="h-[260px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -284,12 +298,12 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Revenue by Type Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Revenue by Type" />
+                        <PieChartSkeleton title={t('revenue_by_type')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue by Type</h3>
-                                <p className="text-xs text-gray-400 mt-1">Promotion type breakdown</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('revenue_by_type')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('promotion_type_breakdown')}</p>
                             </div>
                             <ReactECharts option={typePieOption} style={{ height: '210px' }} />
                         </div>
@@ -297,12 +311,12 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
                     {/* Campaign Impact Bubble */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title="Campaign Impact Matrix" />
+                        <ChartSkeleton height="h-[250px]" title={t('campaign_impact')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Campaign Impact</h3>
-                                <p className="text-xs text-gray-400 mt-1">ROI vs Conversion</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('campaign_impact')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('roi_vs_conversion')}</p>
                             </div>
                             <ReactECharts option={impactBubbleOption} style={{ height: '210px' }} />
                         </div>
@@ -327,44 +341,44 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                 <div className="lg:col-span-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Campaign Table (Col 1) */}
                 {isLoading ? (
-                    <TableSkeleton rows={5} columns={6} title="Campaign Audit Table" />
+                    <TableSkeleton rows={5} columns={6} title={t('campaign_audit_table')} />
                 ) : (
-                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-left animate-fade-in-up">
+                    <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col text-start animate-fade-in-up">
                         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Campaign Audit Table</h3>
-                                <p className="text-xs text-gray-400 mt-1 italic">Detailed ROI and budget tracking</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('campaign_audit_table')}</h3>
+                                <p className="text-xs text-gray-400 mt-1 italic">{t('detailed_roi_tracking')}</p>
                             </div>
                         </div>
 
                         <div className="flex-1 overflow-x-auto min-h-[350px]">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4">Campaign</th>
-                                        <th className="px-6 py-4">Type</th>
-                                        <th className="px-6 py-4 text-right">Budget</th>
-                                        <th className="px-6 py-4 text-right">Revenue</th>
-                                        <th className="px-6 py-4 text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('roi')}>ROI %</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-start">{t('campaign')}</th>
+                                        <th className="px-6 py-4 text-start">{t('type')}</th>
+                                        <th className="px-6 py-4 text-end">{t('budget')}</th>
+                                        <th className="px-6 py-4 text-end">{t('revenue')}</th>
+                                        <th className="px-6 py-4 text-end cursor-pointer hover:text-blue-600" onClick={() => handleSort('roi')}>{t('roi_percent')}</th>
+                                        <th className="px-6 py-4 text-start">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none">
-                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white">{row.name}</td>
-                                            <td className="px-6 py-5 text-gray-500">{row.type}</td>
-                                            <td className="px-6 py-5 text-right font-medium text-gray-500">{formatCurrency(row.budget, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5 text-right">
+                                            <td className="px-6 py-5 font-semibold text-gray-900 dark:text-white text-start">{row.name}</td>
+                                            <td className="px-6 py-5 text-gray-500 text-start">{row.type}</td>
+                                            <td className="px-6 py-5 text-end font-medium text-gray-500">{formatCurrency(row.budget, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end font-bold text-gray-900 dark:text-white">{formatCurrency(row.revenue, currency.code, currency.symbol)}</td>
+                                            <td className="px-6 py-5 text-end">
                                                 <span className={`font-bold ${row.roi > 300 ? 'text-emerald-500' : 'text-amber-500'}`}>{row.roi}%</span>
                                             </td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-5 text-start">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.status === 'Active' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                                     row.status === 'Completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                                                         'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
                                                     }`}>
-                                                    {row.status}
+                                                    {statusTranslations[row.status] || row.status}
                                                 </span>
                                             </td>
                                         </tr>
@@ -375,7 +389,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
                         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/10 mt-auto">
                             <span className="text-xs text-gray-500">
-                                Page <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> of {totalPages}
+                                {t('page')} <span className="font-bold text-gray-700 dark:text-gray-300">{currentPage}</span> {t('of')} {totalPages}
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
@@ -399,14 +413,14 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
                     {/* Campaign ROI Companion */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[450px]" title="Campaign ROI Analysis" />
+                        <ChartSkeleton height="h-[450px]" title={t('campaign_roi_analysis')} />
                     ) : (
-                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-left animate-fade-in-up">
+                        <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                    Campaign ROI Analysis
+                                    {t('campaign_roi_analysis')}
                                 </h3>
-                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">Budget vs Revenue comparison</p>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('budget_vs_revenue')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -416,14 +430,14 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                                         <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
-                                        <Bar dataKey="conversion" name="Conv %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <Bar dataKey="revenue" name={t('revenue')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <Bar dataKey="conversion" name={t('conv_percent')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                                <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">
-                                    <strong>Insight:</strong> "Flash Deal" shows the highest conversion (22.4%) and ROI (800%), suggesting high-intensity short-term deals are most effective for immediate revenue.
+                                <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal text-start">
+                                    <strong>{t('insight')}:</strong> {t('promotions_insight')}
                                 </p>
                             </div>
                         </div>

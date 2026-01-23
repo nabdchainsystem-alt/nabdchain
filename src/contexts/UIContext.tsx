@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, SetStateAction, Dispatch } from 'react';
+import React, { createContext, useContext, useState, ReactNode, SetStateAction, Dispatch, useMemo } from 'react';
 
 interface UIContextType {
     isSidebarCollapsed: boolean;
@@ -21,10 +21,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
         localStorage.setItem('app-sidebar-collapsed', isSidebarCollapsed ? 'true' : 'false');
     }, [isSidebarCollapsed]);
 
-    const value: UIContextType = {
+    // Memoize context value to prevent unnecessary re-renders
+    const value = useMemo<UIContextType>(() => ({
         isSidebarCollapsed,
         setIsSidebarCollapsed
-    };
+    }), [isSidebarCollapsed]);
 
     return (
         <UIContext.Provider value={value}>

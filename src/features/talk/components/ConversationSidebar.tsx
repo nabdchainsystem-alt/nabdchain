@@ -3,6 +3,7 @@ import { useAppContext } from '../../../contexts/AppContext';
 import { useAuth } from '../../../auth-adapter';
 import { boardService } from '../../../services/boardService';
 import { talkService } from '../../../services/talkService';
+import { talkLogger } from '../../../utils/logger';
 import {
     Plus,
     CheckSquare,
@@ -112,7 +113,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             setReminders(data.reminders);
             setFiles(data.files);
         } catch (error) {
-            console.error('Failed to load conversation data:', error);
+            talkLogger.error('Failed to load conversation data:', error);
         }
     }, [conversationId, getToken]);
 
@@ -139,7 +140,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             const boardsList = await boardService.getAllBoards(token, activeWorkspaceId || undefined);
             setBoards(boardsList);
         } catch (error) {
-            console.error('Failed to load boards:', error);
+            talkLogger.error('Failed to load boards:', error);
         } finally {
             setLoadingBoards(false);
         }
@@ -158,7 +159,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             setNewTaskName('');
             setShowAddTask(false);
         } catch (error) {
-            console.error('Failed to create task:', error);
+            talkLogger.error('Failed to create task:', error);
         }
     };
 
@@ -181,7 +182,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             setNewReminderDate('');
             setShowAddReminder(false);
         } catch (error) {
-            console.error('Failed to create reminder:', error);
+            talkLogger.error('Failed to create reminder:', error);
         }
     };
 
@@ -195,7 +196,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             const updated = await talkService.updateTask(token, taskId, { status: newStatus });
             setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
         } catch (error) {
-            console.error('Failed to toggle task:', error);
+            talkLogger.error('Failed to toggle task:', error);
         }
     };
 
@@ -208,7 +209,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             const updated = await talkService.updateReminder(token, reminderId, { completed: !currentCompleted });
             setReminders(prev => prev.map(r => r.id === reminderId ? updated : r));
         } catch (error) {
-            console.error('Failed to toggle reminder:', error);
+            talkLogger.error('Failed to toggle reminder:', error);
         }
     };
 
@@ -221,7 +222,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             await talkService.deleteTask(token, taskId);
             setTasks(prev => prev.filter(t => t.id !== taskId));
         } catch (error) {
-            console.error('Failed to delete task:', error);
+            talkLogger.error('Failed to delete task:', error);
         }
     };
 
@@ -234,7 +235,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             await talkService.deleteReminder(token, reminderId);
             setReminders(prev => prev.filter(r => r.id !== reminderId));
         } catch (error) {
-            console.error('Failed to delete reminder:', error);
+            talkLogger.error('Failed to delete reminder:', error);
         }
     };
 
@@ -283,7 +284,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             setSelectedTask(null);
             setSelectedBoardId('');
         } catch (error) {
-            console.error('Failed to send task to board:', error);
+            talkLogger.error('Failed to send task to board:', error);
         } finally {
             setIsSending(false);
         }
@@ -329,7 +330,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         });
                         fileUrl = vaultItem.previewUrl || ''; // Use vault preview URL if available
                     } catch (vaultError) {
-                        console.error('Failed to save to vault:', vaultError);
+                        talkLogger.error('Failed to save to vault:', vaultError);
                     }
                 }
 
@@ -350,7 +351,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
             reader.readAsDataURL(selectedFile);
         } catch (error) {
-            console.error('Failed to upload file:', error);
+            talkLogger.error('Failed to upload file:', error);
         }
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser } from '../../auth-adapter';
 import { useAppContext } from '../../contexts/AppContext';
+import { boardLogger } from '../../utils/logger';
 import {
     Layout,
     CalendarBlank as CalendarIcon,
@@ -210,7 +211,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
 
     const handleTaskInputKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && newTaskName.trim()) {
-            console.log("Enter pressed, opening modal");
+            boardLogger.debug("Enter pressed, opening modal");
             setIsModalOpen(true);
         }
     };
@@ -228,7 +229,7 @@ export const MyWorkPage: React.FC<MyWorkPageProps> = ({ boards, onNavigateToBoar
                 person: CURRENT_USER_ID
             };
 
-            console.log("Adding task to board:", board.name, newTask);
+            boardLogger.debug("Adding task to board:", board.name, newTask);
             onUpdateTasks(boardId, newTask);
 
             // Reset Input

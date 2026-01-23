@@ -41,6 +41,7 @@ import { useAppContext } from '../../../../contexts/AppContext';
 import { PersonCell } from '../ListBoard/components/cells/PersonCell';
 import { LongTextCell } from '../ListBoard/components/cells/LongTextCell';
 import { DropdownCell } from '../ListBoard/components/cells/DropdownCell';
+import { boardLogger } from '../../../../utils/logger';
 
 // ----------------------------------------------------------------------
 // 1. TYPES & CONSTANTS
@@ -615,6 +616,7 @@ const TaskRow: React.FC<{ task: Task; level: number; statusColor?: string; onTog
 };
 
 const TaskDetailModal: React.FC<{ task: Task; onClose: () => void }> = ({ task, onClose }) => {
+    const { t } = useAppContext();
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="bg-white w-full h-full max-w-[1400px] max-h-[95vh] rounded-xl shadow-2xl flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -872,7 +874,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
             }
             return INITIAL_STATUSES;
         } catch (e) {
-            console.warn("Failed to parse statuses", e);
+            boardLogger.warn('Failed to parse statuses', e);
             return INITIAL_STATUSES;
         }
     });
@@ -887,7 +889,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
             }));
             localStorage.setItem(storageKeyStatuses, JSON.stringify(sharedFormat));
         } catch (e) {
-            console.error("Failed to save shared statuses", e);
+            boardLogger.error('Failed to save shared statuses', e);
         }
     }, [statuses, storageKeyStatuses]);
 
@@ -1111,7 +1113,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
                 });
             }
         } catch (error) {
-            console.error("Failed to generate subtasks", error);
+            boardLogger.error('Failed to generate subtasks', error);
         }
     };
 

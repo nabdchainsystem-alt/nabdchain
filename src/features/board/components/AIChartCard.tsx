@@ -1,4 +1,4 @@
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { ChartBar as BarChart3, ChartPie as PieChart, ChartLine as LineChart, PlusCircle, X } from 'phosphor-react';
 import { Column, Row } from '../views/Table/RoomTable';
@@ -13,10 +13,27 @@ interface AIChartCardProps {
     onDelete?: () => void;
 }
 
+// Deep comparison for memo
+const arePropsEqual = (prev: AIChartCardProps, next: AIChartCardProps) => {
+    if (prev.onAdd !== next.onAdd || prev.onDelete !== next.onDelete) return false;
+    return JSON.stringify(prev.config) === JSON.stringify(next.config) &&
+           JSON.stringify(prev.rows) === JSON.stringify(next.rows) &&
+           JSON.stringify(prev.columns) === JSON.stringify(next.columns);
+};
+
 export const AIChartCard: React.FC<AIChartCardProps> = memo(({ config, columns, rows, onAdd, onDelete }) => {
+    // Cache chart options to prevent unnecessary re-renders
+    const cacheRef = useRef<{ key: string; option: any }>({ key: '', option: null });
+
     const chartOption = useMemo(() => {
+        const cacheKey = JSON.stringify({ config, rowsLen: rows.length, rowsData: rows.slice(0, 100) });
+        if (cacheRef.current.key === cacheKey) {
+            return cacheRef.current.option;
+        }
         const data = ChartDataTransformer.transformData(rows, config);
-        return ChartDataTransformer.generateOption(data, config);
+        const option = ChartDataTransformer.generateOption(data, config);
+        cacheRef.current = { key: cacheKey, option };
+        return option;
     }, [config, rows]);
 
     const Icon = useMemo(() => {
@@ -68,6 +85,8 @@ export const AIChartCard: React.FC<AIChartCardProps> = memo(({ config, columns, 
                         grid: { ...((chartOption as any).grid || {}), top: 10, bottom: 40, left: 10, right: 10, containLabel: true }
                     }}
                     style={{ height: '100%', width: '100%' }}
+                    notMerge={false}
+                    lazyUpdate={true}
                 />
             </div>
             <div className="px-4 py-2 text-[10px] text-stone-400 dark:text-stone-500 bg-stone-50/30 dark:bg-stone-800/30 flex justify-between">
@@ -76,6 +95,6 @@ export const AIChartCard: React.FC<AIChartCardProps> = memo(({ config, columns, 
             </div>
         </div>
     );
-});
+}, arePropsEqual);
 
 AIChartCard.displayName = 'AIChartCard';

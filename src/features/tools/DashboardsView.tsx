@@ -114,7 +114,7 @@ const DashboardsView: React.FC<DashboardsViewProps> = ({ boardId, boardName = 'B
                     </div>
                     <div className="space-y-2">
                         {topStatuses.length === 0 && <p className="text-sm text-gray-500">{t('no_status_data')}</p>}
-                        {topStatuses.map(([status, count]) => {
+                        {topStatuses.map(([status, count]: [string, number]) => {
                             const ratio = metrics.total ? (count / metrics.total) * 100 : 0;
                             return (
                                 <div key={status} className="flex items-center gap-3">
@@ -210,7 +210,7 @@ const DashboardsView: React.FC<DashboardsViewProps> = ({ boardId, boardName = 'B
                     </div>
                     <div className="space-y-2">
                         {Object.entries(metrics.priorities).length === 0 && <p className="text-sm text-gray-500">{t('no_priority_data')}</p>}
-                        {Object.entries(metrics.priorities).map(([priority, count]) => {
+                        {Object.entries(metrics.priorities).map(([priority, count]: [string, number]) => {
                             const ratio = metrics.total ? (count / metrics.total) * 100 : 0;
                             return (
                                 <div key={priority} className="flex items-center gap-3">

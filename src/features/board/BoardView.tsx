@@ -91,6 +91,7 @@ const ExpensesInsights = React.lazy(() => import('../mini_company/finance/Expens
 import { useUI } from '../../contexts/UIContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAI } from '../../contexts/AIContext';
+import { boardLogger } from '../../utils/logger';
 import { SortableTab } from './components/SortableTab';
 
 // Delayed spinner - prevents flash on fast loads
@@ -669,7 +670,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
 
             keys.forEach(k => localStorage.removeItem(k));
         } catch (e) {
-            console.error('Failed to clear view storage', e);
+            boardLogger.error('Failed to clear view storage', e);
         }
     };
 

@@ -4,6 +4,7 @@ import { FloppyDisk as Save, Plus, FileText, Trash as Trash2, MagnifyingGlass as
 import { SharedDatePicker } from '../../../components/ui/SharedDatePicker';
 import { PortalPopup } from '../../../components/ui/PortalPopup';
 import { useAppContext } from '../../../contexts/AppContext';
+import { appLogger } from '../../../utils/logger';
 
 // --- Types ---
 interface ActionItem {
@@ -150,7 +151,7 @@ const CornellNotesPage: React.FC<CornellNotesPageProps> = ({ roomId = 'default' 
                     handleCreateNewNote();
                 }
             } catch (e) {
-                console.error("Failed to load notes list", e);
+                appLogger.error("Failed to load notes list", e);
                 handleCreateNewNote();
             }
         } else {

@@ -2,6 +2,7 @@ import React, { useRef, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Palette } from 'phosphor-react';
 import { useClickOutside } from '../../../../../hooks/useClickOutside';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 interface TextCellContextMenuProps {
     onClose: () => void;
@@ -37,6 +38,7 @@ const TEXT_COLORS = [
 ];
 
 export const TextCellContextMenu: React.FC<TextCellContextMenuProps> = ({ onClose, onColorSelect, onColumnColorSelect, currentColor, currentColumnColor, position }) => {
+    const { t } = useAppContext();
     const menuRef = useRef<HTMLDivElement>(null);
     useClickOutside(menuRef, onClose);
 
@@ -107,7 +109,7 @@ export const TextCellContextMenu: React.FC<TextCellContextMenuProps> = ({ onClos
                         onSelect(e.target.value);
                         onClose();
                     }}
-                    title="Custom Color"
+                    title={t('custom_color')}
                 />
                 <div className={`
                     w-full h-full rounded-md flex items-center justify-center transition-all border shadow-sm bg-stone-100 dark:bg-stone-800
@@ -127,14 +129,14 @@ export const TextCellContextMenu: React.FC<TextCellContextMenuProps> = ({ onClos
             style={menuStyle}
         >
             <div className="px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800 mb-1">
-                <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Text Color</span>
+                <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">{t('text_color')}</span>
             </div>
             {renderColorGrid(currentColor, onColorSelect, true)}
 
             {onColumnColorSelect && (
                 <>
                     <div className="px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-y border-stone-100 dark:border-stone-800 my-1 mt-2">
-                        <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Column Color</span>
+                        <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">{t('column_bg_color')}</span>
                     </div>
                     {/* For column background, we reuse the same colors but apply as background */}
                     {renderColorGrid(currentColumnColor, onColumnColorSelect, false)}

@@ -1,4 +1,5 @@
 import { API_URL } from '../config/api';
+import { serviceLogger } from '../utils/logger';
 
 const API_BASE = API_URL;
 
@@ -16,7 +17,7 @@ export const inviteService = {
             if (!res.ok) throw new Error('Failed to create invite');
             return res.json();
         } catch (error) {
-            console.error("Create Invite Failed:", error);
+            serviceLogger.error("Create Invite Failed:", error);
             throw error;
         }
     },

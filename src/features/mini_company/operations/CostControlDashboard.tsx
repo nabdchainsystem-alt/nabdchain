@@ -9,21 +9,6 @@ import { CostControlInfo } from './CostControlInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { formatCurrency } from '../../../utils/formatters';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '1', label: 'Total Cost', subtitle: 'Actual Spend', value: '142,500', isCurrency: true, rawValue: 142500, change: '+5.2%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [130, 132, 135, 138, 140, 141, 142.5] },
-    { id: '2', label: 'Budget Variance', subtitle: 'vs Plan', value: '+8.4%', change: '+1.2%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [5, 6, 7, 7.5, 8, 8.2, 8.4] }, // Trend down because high variance is bad
-    { id: '3', label: 'Avg Category Cost', subtitle: 'Per Category', value: '28,500', isCurrency: true, rawValue: 28500, change: '+2%', trend: 'up', icon: <ChartPie size={18} />, sparklineData: [26, 26.5, 27, 27.5, 28, 28.2, 28.5] },
-    { id: '4', label: 'Negotiation Savings', subtitle: 'Total Saved', value: '12,400', isCurrency: true, rawValue: 12400, change: '+15%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [8, 9, 9.5, 10, 11, 12, 12.4] },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Volatility Index', subtitle: 'Price Stability', value: '42', change: '-5', trend: 'up', icon: <TrendDown size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] },
-    { id: '6', label: 'High-Risk Items', subtitle: 'Over Budget / Volatile', value: '12', change: '+2', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 10, 10, 11, 11, 12, 12] },
-    { id: '7', label: 'Optimization Opps', subtitle: 'Potential Savings', value: '8', change: '0', trend: 'neutral', icon: <CurrencyDollar size={18} />, sparklineData: [6, 7, 7, 8, 8, 8, 8] },
-    { id: '8', label: 'Cost Efficiency', subtitle: 'Savings Rate %', value: '8.7%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [6.5, 7, 7.3, 7.8, 8.2, 8.5, 8.7] },
-];
-
 // --- Mock Data: Charts ---
 const COST_VS_BUDGET = [
     { name: 'Electronics', cost: 45000, budget: 40000 },
@@ -41,7 +26,7 @@ const COST_ALLOCATION = [
     { name: 'Furniture', value: 12000 },
 ];
 
-// New: Monthly Cost Trend
+// Monthly Cost Trend
 const MONTHLY_COST_TREND = [
     { name: 'Jan', value: 22000 },
     { name: 'Feb', value: 24500 },
@@ -51,7 +36,7 @@ const MONTHLY_COST_TREND = [
     { name: 'Jun', value: 23500 },
 ];
 
-// New: Savings Breakdown
+// Savings Breakdown
 const SAVINGS_BREAKDOWN = [
     { name: 'Negotiation', value: 5200 },
     { name: 'Volume Discount', value: 3800 },
@@ -77,7 +62,7 @@ const RADAR_INDICATORS = [
 ];
 
 export const CostControlDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -91,6 +76,21 @@ export const CostControlDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '1', label: t('total_cost'), subtitle: t('actual_spend'), value: '142,500', isCurrency: true, rawValue: 142500, change: '+5.2%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [130, 132, 135, 138, 140, 141, 142.5] },
+        { id: '2', label: t('budget_variance'), subtitle: t('vs_plan'), value: '+8.4%', change: '+1.2%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [5, 6, 7, 7.5, 8, 8.2, 8.4] },
+        { id: '3', label: t('avg_category_cost'), subtitle: t('per_category'), value: '28,500', isCurrency: true, rawValue: 28500, change: '+2%', trend: 'up', icon: <ChartPie size={18} />, sparklineData: [26, 26.5, 27, 27.5, 28, 28.2, 28.5] },
+        { id: '4', label: t('negotiation_savings'), subtitle: t('total_saved'), value: '12,400', isCurrency: true, rawValue: 12400, change: '+15%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [8, 9, 9.5, 10, 11, 12, 12.4] },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '5', label: t('volatility_index'), subtitle: t('price_stability'), value: '42', change: '-5', trend: 'up', icon: <TrendDown size={18} />, sparklineData: [50, 48, 46, 45, 44, 43, 42] },
+        { id: '6', label: t('high_risk_items'), subtitle: t('over_budget_volatile'), value: '12', change: '+2', trend: 'down', icon: <Warning size={18} />, sparklineData: [9, 10, 10, 11, 11, 12, 12] },
+        { id: '7', label: t('optimization_opps'), subtitle: t('potential_savings'), value: '8', change: '0', trend: 'neutral', icon: <CurrencyDollar size={18} />, sparklineData: [6, 7, 7, 8, 8, 8, 8] },
+        { id: '8', label: t('cost_efficiency'), subtitle: t('savings_rate_pct'), value: '8.7%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [6.5, 7, 7.3, 7.8, 8.2, 8.5, 8.7] },
+    ];
 
     // --- ECharts Options ---
 
@@ -127,9 +127,9 @@ export const CostControlDashboard: React.FC = () => {
 
     // Radar Chart
     const radarOption: EChartsOption = {
-        title: { text: 'Deviation Radar', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('deviation_radar'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', data: ['Budget', 'Actual Cost'], itemWidth: 10, itemHeight: 10 },
+        legend: { bottom: 0, left: 'center', data: [t('budget'), t('actual_cost')], itemWidth: 10, itemHeight: 10 },
         radar: {
             indicator: RADAR_INDICATORS,
             radius: '60%',
@@ -143,13 +143,13 @@ export const CostControlDashboard: React.FC = () => {
             data: [
                 {
                     value: [40000, 18000, 22000, 50000, 15000],
-                    name: 'Budget',
+                    name: t('budget'),
                     itemStyle: { color: '#10b981' },
                     areaStyle: { opacity: 0.2 }
                 },
                 {
                     value: [45000, 15000, 25000, 55000, 12000],
-                    name: 'Actual Cost',
+                    name: t('actual_cost'),
                     itemStyle: { color: '#ef4444' },
                     areaStyle: { opacity: 0.2 }
                 }
@@ -163,18 +163,18 @@ export const CostControlDashboard: React.FC = () => {
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 text-start">
                     <CurrencyDollar size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Cost Control & Optimization</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Identify overspending and efficiency gaps</p>
+                        <h1 className="text-2xl font-bold">{t('cost_control_optimization')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('cost_control_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -183,7 +183,7 @@ export const CostControlDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -207,13 +207,13 @@ export const CostControlDashboard: React.FC = () => {
                 {/* Recharts - Cost vs Budget */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Cost vs Budget" />
+                        <ChartSkeleton height="h-[300px]" title={t('cost_vs_budget')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost vs Budget</h3>
-                            <p className="text-xs text-gray-400">Actual vs Planned Spend</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_vs_budget')}</h3>
+                            <p className="text-xs text-gray-400">{t('actual_vs_planned_spend')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -227,8 +227,8 @@ export const CostControlDashboard: React.FC = () => {
                                         formatter={(val: number) => formatCurrency(val, currency.code, currency.symbol)}
                                     />
                                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                    <Bar dataKey="budget" name="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
-                                    <Bar dataKey="cost" name="Actual Cost" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="budget" name={t('budget')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="cost" name={t('actual_cost')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -238,13 +238,13 @@ export const CostControlDashboard: React.FC = () => {
                 {/* Recharts - Monthly Cost Trend */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Monthly Cost Trend" />
+                        <ChartSkeleton height="h-[300px]" title={t('monthly_cost_trend')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Monthly Cost Trend</h3>
-                            <p className="text-xs text-gray-400">Cost fluctuation over time</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('monthly_cost_trend')}</h3>
+                            <p className="text-xs text-gray-400">{t('cost_fluctuation_over_time')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -270,12 +270,12 @@ export const CostControlDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts - Cost Allocation */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Cost Allocation" />
+                        <PieChartSkeleton title={t('cost_allocation')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Cost Allocation</h3>
-                                <p className="text-xs text-gray-400">Spend breakdown by category</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_allocation')}</h3>
+                                <p className="text-xs text-gray-400">{t('spend_breakdown_by_category')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -283,12 +283,12 @@ export const CostControlDashboard: React.FC = () => {
 
                     {/* ECharts - Savings Breakdown */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Savings Breakdown" />
+                        <PieChartSkeleton title={t('savings_breakdown')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Savings Breakdown</h3>
-                                <p className="text-xs text-gray-400">Cost optimization sources</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('savings_breakdown')}</h3>
+                                <p className="text-xs text-gray-400">{t('cost_optimization_sources')}</p>
                             </div>
                             <ReactECharts option={savingsPieOption} style={{ height: '180px' }} />
                         </div>
@@ -318,32 +318,32 @@ export const CostControlDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Item Cost Variance</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('item_cost_variance')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Item</th>
-                                        <th className="px-5 py-3">Supplier</th>
-                                        <th className="px-5 py-3 text-right">Cost</th>
-                                        <th className="px-5 py-3 text-right">Budget</th>
-                                        <th className="px-5 py-3 text-right">Variance %</th>
+                                        <th className="px-5 py-3 text-start">{t('item')}</th>
+                                        <th className="px-5 py-3 text-start">{t('supplier')}</th>
+                                        <th className="px-5 py-3 text-end">{t('cost')}</th>
+                                        <th className="px-5 py-3 text-end">{t('budget')}</th>
+                                        <th className="px-5 py-3 text-end">{t('variance_pct')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {ITEM_VARIANCE.map((i) => (
                                         <tr key={i.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{i.item}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{i.supplier}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{i.item}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{i.supplier}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">
                                                 {formatCurrency(i.cost, currency.code, currency.symbol)}
                                             </td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">
                                                 {formatCurrency(i.budget, currency.code, currency.symbol)}
                                             </td>
-                                            <td className={`px-5 py-3 text-right font-medium ${i.variance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                            <td className={`px-5 py-3 text-end font-medium ${i.variance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                                 {i.variance > 0 ? '+' : ''}{i.variance}%
                                             </td>
                                         </tr>
@@ -357,7 +357,7 @@ export const CostControlDashboard: React.FC = () => {
                 {/* Companion Chart: Radar (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Deviation Radar" />
+                        <ChartSkeleton height="h-[280px]" title={t('deviation_radar')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

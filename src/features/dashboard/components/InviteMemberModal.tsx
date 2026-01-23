@@ -5,6 +5,7 @@ import { X, UserPlus, EnvelopeSimple, Link as LinkIcon, Check, Copy, PaperPlaneT
 import { useAppContext } from '../../../contexts/AppContext';
 import { useAuth } from '../../../auth-adapter';
 import { inviteService } from '../../../services/inviteService';
+import { appLogger } from '../../../utils/logger';
 
 interface InviteMemberModalProps {
     isOpen: boolean;
@@ -66,7 +67,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             setInviteSent(true);
         } catch (err) {
             setError(t('invite_failed') || 'Failed to send invitation. Please try again.');
-            console.error('Invite error:', err);
+            appLogger.error('Invite error:', err);
         } finally {
             setIsLoading(false);
         }
@@ -78,7 +79,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-            console.error('Copy failed:', err);
+            appLogger.error('Copy failed:', err);
         }
     };
 

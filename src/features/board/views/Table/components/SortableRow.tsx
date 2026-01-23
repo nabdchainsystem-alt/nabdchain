@@ -27,7 +27,7 @@ export const SortableRow: React.FC<SortableRowProps> = ({ row, children, classNa
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={className} {...attributes}>
+        <div ref={setNodeRef} style={style} className={className} role="row" {...attributes}>
             {children(listeners, isDragging)}
         </div>
     );

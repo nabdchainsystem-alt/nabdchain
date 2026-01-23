@@ -3,6 +3,7 @@ import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import procurementMaster from './Procurement Dashboard/requests_orders_semantic_master.json';
 import { lazyWithRetry } from '../../../utils/lazyWithRetry';
+import { boardLogger } from '../../../utils/logger';
 
 // Lazy load dashboards
 const DailyRequestsControl = lazyWithRetry(() => import('../../board/views/SupplyChain/RequestsOrders/DailyRequestsControl').then(m => ({ default: m.DailyRequestsControl })));
@@ -42,7 +43,7 @@ const ProcurementPage: React.FC = () => {
             localStorage.removeItem('room-table-columns-v4-procurement-main-table');
             localStorage.removeItem('room-table-columns-v4-procurement-main-undefined');
             localStorage.setItem('procurement-table-migrated-v2', 'true');
-            console.log('✅ Procurement table reset to standard layout');
+            boardLogger.info('Procurement table reset to standard layout');
         }
     }, []);
 
@@ -56,7 +57,7 @@ const ProcurementPage: React.FC = () => {
             try {
                 initial.tasks = JSON.parse(savedTasks);
             } catch (e) {
-                console.error("Failed to load global tasks", e);
+                boardLogger.error("Failed to load global tasks", e);
             }
         }
 
@@ -78,7 +79,7 @@ const ProcurementPage: React.FC = () => {
     };
 
     const handleUpdateTasks = React.useCallback((tasks: any[]) => {
-        console.log('ProcurementPage: Received tasks update', tasks);
+        boardLogger.debug('ProcurementPage: Received tasks update', tasks);
         setBoard(prev => {
             const updated = { ...prev, tasks };
             // Persist to the standard shared key

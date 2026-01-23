@@ -2,7 +2,7 @@ import React from "react";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { DashboardChart } from "../../../components/dashboard/DashboardChart";
 import { DashboardTable } from "../../../components/dashboard/DashboardTable";
-import { WarningCircle as AlertCircle, ShieldWarning as ShieldAlert, PauseCircle, Clock, TrendUp as TrendingUp, Warning as AlertTriangle, WarningOctagon as AlertOctagon, XCircle } from 'phosphor-react';
+import { WarningCircle as AlertCircle, ShieldWarning as ShieldAlert, PauseCircle, Clock, TrendUp as TrendingUp, Warning as AlertTriangle, WarningOctagon as AlertOctagon, XCircle, ArrowsClockwise as RefreshCw } from 'phosphor-react';
 
 export const OrderRisksDashboard: React.FC = () => {
     // O05: Order Risks & Exceptions
@@ -17,7 +17,7 @@ export const OrderRisksDashboard: React.FC = () => {
         { title: "Critical Risks", value: "6", trend: "Immediate", trendDirection: "down", icon: <ShieldAlert size={20} />, color: "red" },
     ];
 
-    const RefreshCw = ({ size, color }: any) => <AlertCircle size={size} />; // Quick fix for missing import above if needed or use AlertCircle
+    // RefreshCw is now imported from phosphor-react
 
     const riskByType = {
         title: { text: '' },

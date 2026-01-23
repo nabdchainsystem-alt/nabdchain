@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Row } from '../Table/RoomTable';
+import { useAppContext } from '../../../../contexts/AppContext';
 import {
     CaretDown as ChevronDown,
     Plus,
@@ -20,6 +21,10 @@ interface TimelineViewProps {
 }
 
 export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 'Board', tasks, onUpdateTasks }) => {
+    // RTL Support
+    const { dir } = useAppContext();
+    const isRTL = dir === 'rtl';
+
     // State
     const [currentDate, setCurrentDate] = useState(new Date());
     const [zoom, setZoom] = useState(1);
@@ -129,10 +134,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
 
         if (dragState.current.type === 'pan' && containerRef.current) {
             const dx = e.clientX - dragState.current.startX;
-            containerRef.current.scrollLeft = (dragState.current.scrollLeft || 0) - dx;
+            // In RTL, scroll direction is inverted
+            const scrollDelta = isRTL ? dx : -dx;
+            containerRef.current.scrollLeft = (dragState.current.scrollLeft || 0) + scrollDelta;
         } else if ((dragState.current.type === 'resize' || dragState.current.type === 'move') && dragState.current.taskId) {
             const dx = e.clientX - dragState.current.startX;
-            const daysDelta = Math.round(dx / CELL_WIDTH);
+            // In RTL, dragging right moves tasks earlier (negative days)
+            const daysDelta = Math.round((isRTL ? -dx : dx) / CELL_WIDTH);
 
             if (daysDelta === 0) return;
 
@@ -146,7 +154,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                 newStart = addDays(initialStart, daysDelta);
                 newEnd = addDays(initialEnd, daysDelta);
             } else if (type === 'resize') {
-                if (edge === 'left') {
+                // In RTL, visual left/right edges are swapped
+                const effectiveEdge = isRTL ? (edge === 'left' ? 'right' : 'left') : edge;
+                if (effectiveEdge === 'left') {
                     newStart = addDays(initialStart, daysDelta);
                     // Prevent start > end
                     if (newStart > newEnd) newStart = new Date(newEnd);
@@ -177,24 +187,40 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
     const getPosition = (date: Date) => {
         const diffTime = date.getTime() - timelineStart.getTime();
         const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        return diffDays * CELL_WIDTH;
+        const pos = diffDays * CELL_WIDTH;
+        // In RTL, positions are calculated from the right
+        if (isRTL) {
+            const totalWidth = days.length * CELL_WIDTH;
+            return totalWidth - pos;
+        }
+        return pos;
     };
 
     // Scroll to "Today" on mount
     useEffect(() => {
         if (containerRef.current) {
             const today = new Date();
-            const pos = getPosition(today);
+            const diffTime = today.getTime() - timelineStart.getTime();
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            const pos = diffDays * CELL_WIDTH;
             const containerWidth = containerRef.current.clientWidth;
-            containerRef.current.scrollLeft = pos - (containerWidth / 2) + (CELL_WIDTH / 2);
+
+            if (isRTL) {
+                // In RTL, scroll from the right side
+                const totalWidth = days.length * CELL_WIDTH;
+                const scrollPos = totalWidth - pos - (containerWidth / 2) + (CELL_WIDTH / 2);
+                containerRef.current.scrollLeft = scrollPos;
+            } else {
+                containerRef.current.scrollLeft = pos - (containerWidth / 2) + (CELL_WIDTH / 2);
+            }
         }
-    }, [timelineStart]); // Run when range regenerates
+    }, [timelineStart, isRTL, days.length, CELL_WIDTH]); // Run when range regenerates or RTL changes
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface text-gray-900 dark:text-gray-100 overflow-hidden font-sans relative">
+        <div className="flex flex-col h-full bg-white dark:bg-monday-dark-surface text-gray-900 dark:text-gray-100 overflow-hidden font-sans relative" dir={dir}>
 
             {/* Top Toolbar */}
-            <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-50 bg-white dark:bg-monday-dark-surface">
+            <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-50 bg-white dark:bg-monday-dark-surface" dir={dir}>
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
                     <button
@@ -218,8 +244,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500">
                         <Filter size={18} />
                     </button>
-                    <div className="flex items-center bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full text-xs font-medium ml-1">
-                        <CheckCircle2 size={12} className="mr-1" />
+                    <div className="flex items-center bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full text-xs font-medium ml-1 rtl:ml-0 rtl:mr-1">
+                        <CheckCircle2 size={12} className="mr-1 rtl:mr-0 rtl:ml-1" />
                         <span>M</span>
                     </div>
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500">
@@ -228,7 +254,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500">
                         <Settings size={18} />
                     </button>
-                    <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-md text-sm font-medium shadow-sm hover:opacity-90 flex items-center gap-2 ml-2">
+                    <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-md text-sm font-medium shadow-sm hover:opacity-90 flex items-center gap-2 ml-2 rtl:ml-0 rtl:mr-2">
                         <Plus size={16} /> Task
                         <ChevronDown size={14} className="opacity-50" />
                     </button>
@@ -244,7 +270,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                 <div className="h-full flex flex-col relative" style={{ width: days.length * CELL_WIDTH }}>
 
                     {/* Header Row (Months & Days) */}
-                    <div className="flex flex-col h-[70px] border-b border-gray-100 dark:border-gray-800 absolute top-0 left-0 right-0 bg-white dark:bg-monday-dark-surface z-20 pointer-events-none">
+                    <div className="flex flex-col h-[70px] border-b border-gray-100 dark:border-gray-800 absolute top-0 left-0 right-0 bg-white dark:bg-monday-dark-surface z-20 pointer-events-none" dir={dir}>
                         {/* Month Row */}
                         <div className="flex-1 relative">
                             {days.map((d, i) => {
@@ -252,9 +278,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                                 const isFirstOfMonth = d.getDate() === 1;
                                 const isStartOfView = i === 0;
                                 if (isFirstOfMonth || isStartOfView) {
+                                    const posStyle = isRTL
+                                        ? { right: i * CELL_WIDTH + 10 }
+                                        : { left: i * CELL_WIDTH + 10 };
                                     return (
-                                        <div key={`month-${i}`} className="absolute top-2 text-lg font-semibold text-gray-800 dark:text-gray-100" style={{ left: i * CELL_WIDTH + 10 }}>
-                                            {d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                        <div key={`month-${i}`} className="absolute top-2 text-lg font-semibold text-gray-800 dark:text-gray-100" style={posStyle}>
+                                            {d.toLocaleDateString(isRTL ? 'ar' : 'en-US', { month: 'long', year: 'numeric' })}
                                         </div>
                                     )
                                 }
@@ -263,14 +292,14 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                         </div>
 
                         {/* Days Row */}
-                        <div className="h-8 flex border-t border-transparent">
+                        <div className={`h-8 flex border-t border-transparent ${isRTL ? 'flex-row-reverse' : ''}`}>
                             {days.map((d, i) => (
                                 <div
                                     key={`day-header-${i}`}
                                     className="flex-shrink-0 flex items-center justify-center text-xs text-gray-500"
                                     style={{ width: CELL_WIDTH }}
                                 >
-                                    <span className="mr-1">{d.getDate()}</span>
+                                    <span className="mr-1 rtl:mr-0 rtl:ml-1">{d.getDate()}</span>
                                     {/* Only show initial if enough space or zoom? pure number looks cleaner as per image reference often */}
                                 </div>
                             ))}
@@ -280,7 +309,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                     {/* Grid Body */}
                     <div className="flex-1 relative mt-[70px]">
                         {/* Vertical Grid Lines */}
-                        <div className="absolute inset-0 flex pointer-events-none z-0">
+                        <div className={`absolute inset-0 flex pointer-events-none z-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             {days.map((d, i) => {
                                 const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                                 const isToday = d.toDateString() === new Date().toDateString();
@@ -298,9 +327,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                                     >
                                         {/* Today Line */}
                                         {isToday && (
-                                            <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-red-500 z-10 flex flex-col items-center">
+                                            <div className="absolute left-1/2 rtl:left-auto rtl:right-1/2 top-0 bottom-0 w-[1px] bg-red-500 z-10 flex flex-col items-center">
                                                 <div className="w-[7px] h-[7px] bg-red-500 rounded-full -mt-[3px]" />
-                                                <div className="mt-1 bg-red-500 text-white text-[9px] px-1 rounded-sm font-bold">15</div>
+                                                <div className="mt-1 bg-red-500 text-white text-[9px] px-1 rounded-sm font-bold">{new Date().getDate()}</div>
                                             </div>
                                         )}
                                     </div>
@@ -311,35 +340,40 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
                         {/* Tasks Layer (Floating) */}
                         <div className="absolute inset-0 pt-4 z-10">
                             {processedTasks.map((task, idx) => {
-                                const left = getPosition(task._start);
-                                const right = getPosition(addDays(task._end, 1)); // inclusive end
-                                const width = Math.max(right - left - 4, 10);
+                                const startPos = getPosition(task._start);
+                                const endPos = getPosition(addDays(task._end, 1)); // inclusive end
+                                const width = Math.max(Math.abs(endPos - startPos) - 4, 10);
                                 const top = idx * 40 + 10; // Simple vertical stacking for now
+                                // In RTL, position from right; in LTR, position from left
+                                const positionStyle = isRTL
+                                    ? { right: startPos, width, top }
+                                    : { left: startPos, width, top };
 
                                 return (
                                     <div
                                         key={task.id}
                                         className="absolute h-8 rounded-lg shadow-sm border border-black/5 flex items-center px-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-md transition-shadow cursor-pointer task-item group"
-                                        style={{ left, width, top }}
+                                        style={positionStyle}
                                         onMouseDown={(e) => handleTaskMouseDown(e, task, 'move')}
+                                        dir={dir}
                                     >
-                                        {/* Resize Handle Left */}
+                                        {/* Resize Handle Start (Left in LTR, Right in RTL) */}
                                         <div
-                                            className="absolute left-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-black/10 z-20 rounded-l-lg"
+                                            className="absolute left-0 rtl:left-auto rtl:right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-black/10 z-20 rounded-l-lg rtl:rounded-l-none rtl:rounded-r-lg"
                                             onMouseDown={(e) => handleTaskMouseDown(e, task, 'resize', 'left')}
                                         ></div>
 
-                                        <div className={`w-2 h-2 rounded-full mr-2 ml-1 flex-shrink-0 ${task.status === 'Done' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                                        <div className={`w-2 h-2 rounded-full mr-2 rtl:mr-0 rtl:ml-2 ml-1 rtl:ml-0 rtl:mr-1 flex-shrink-0 ${task.status === 'Done' ? 'bg-green-500' : 'bg-yellow-500'}`} />
                                         <span className="text-xs font-medium truncate text-gray-700 dark:text-gray-200 select-none">{task.name}</span>
 
-                                        {/* Hover Details */}
-                                        <div className="absolute left-full ml-2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                                            {new Date(task._start).toLocaleDateString()} - {new Date(task._end).toLocaleDateString()}
+                                        {/* Hover Details - Position on outer edge */}
+                                        <div className="absolute left-full rtl:left-auto rtl:right-full ml-2 rtl:ml-0 rtl:mr-2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                            {new Date(task._start).toLocaleDateString(isRTL ? 'ar' : undefined)} - {new Date(task._end).toLocaleDateString(isRTL ? 'ar' : undefined)}
                                         </div>
 
-                                        {/* Resize Handle Right */}
+                                        {/* Resize Handle End (Right in LTR, Left in RTL) */}
                                         <div
-                                            className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-black/10 z-20 rounded-r-lg"
+                                            className="absolute right-0 rtl:right-auto rtl:left-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-black/10 z-20 rounded-r-lg rtl:rounded-r-none rtl:rounded-l-lg"
                                             onMouseDown={(e) => handleTaskMouseDown(e, task, 'resize', 'right')}
                                         ></div>
                                     </div>
@@ -352,15 +386,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ roomId, boardName = 
             </div>
 
             {/* Bottom Overlay Controls */}
-            <div className="absolute bottom-5 left-5 z-50">
+            <div className="absolute bottom-5 left-5 rtl:left-auto rtl:right-5 z-50">
                 <button className="flex items-center gap-2 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors text-gray-700 dark:text-gray-200">
                     <span className="w-3 h-4 border border-gray-300 rounded-sm"></span>
                     Draft
                 </button>
             </div>
 
-            {/* Zoom Controls (Floating Top Right) */}
-            <div className="absolute right-5 top-20 flex flex-col gap-1 z-50 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1">
+            {/* Zoom Controls (Floating Top Right, or Top Left in RTL) */}
+            <div className="absolute right-5 rtl:right-auto rtl:left-5 top-20 flex flex-col gap-1 z-50 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-1">
                 <button onClick={() => setZoom(z => Math.min(z + 0.2, 2))} className="p-1 hover:bg-gray-100 rounded text-gray-500">
                     <Plus size={16} />
                 </button>

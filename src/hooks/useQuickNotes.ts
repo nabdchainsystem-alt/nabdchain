@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { storageLogger } from '../utils/logger';
 
 export interface QuickNote {
     id: string;
@@ -22,7 +23,7 @@ export const useQuickNotes = () => {
                     setNotes(JSON.parse(saved));
                 }
             } catch (e) {
-                console.error('Failed to load notes', e);
+                storageLogger.error('Failed to load notes', e);
             }
         };
 

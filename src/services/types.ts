@@ -114,8 +114,8 @@ export interface Column {
 // ============ Procurement Service Types ============
 
 export type ProcurementStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Cancelled';
-export type RFQStatus = 'Draft' | 'Sent' | 'Received' | 'Awarded' | 'Cancelled';
-export type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
+export type RFQStatus = 'Draft' | 'Sent' | 'Received' | 'Awarded' | 'Cancelled' | 'Sent to PO';
+export type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Received';
 
 export interface ProcurementRequest {
     id: string;
@@ -141,13 +141,22 @@ export interface ProcurementItem {
 }
 
 export interface CreateProcurementRequestData {
-    title: string;
+    id?: string;
+    title?: string;
+    name?: string;
     description?: string;
     requestedBy?: string;
     department?: string;
-    priority?: 'Low' | 'Medium' | 'High' | 'Urgent';
+    priority?: 'Low' | 'Medium' | 'High' | 'Urgent' | string;
     items?: ProcurementItem[];
     budget?: number;
+    date?: string;
+    warehouse?: string;
+    relatedTo?: string;
+    status?: string;
+    isUrgent?: boolean;
+    approvalStatus?: string;
+    rfqSent?: boolean;
 }
 
 export interface UpdateProcurementRequestData {
@@ -157,6 +166,9 @@ export interface UpdateProcurementRequestData {
     priority?: 'Low' | 'Medium' | 'High' | 'Urgent';
     items?: ProcurementItem[];
     budget?: number;
+    approvalStatus?: string;
+    isDeleted?: boolean;
+    rfqSent?: boolean;
 }
 
 export interface RFQ {
@@ -197,6 +209,9 @@ export interface UpdateRFQData {
     dueDate?: string;
     items?: ProcurementItem[];
     responses?: RFQResponse[];
+    isDeleted?: boolean;
+    sentToOrder?: boolean;
+    orderId?: string;
 }
 
 export interface Order {
@@ -240,4 +255,6 @@ export interface UpdateOrderData {
     expectedDelivery?: string;
     actualDelivery?: string;
     trackingNumber?: string;
+    isDeleted?: boolean;
+    approvals?: string | Record<string, unknown>;
 }

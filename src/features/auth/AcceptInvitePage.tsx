@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth, useUser } from '../../auth-adapter';
+import { authLogger } from '../../utils/logger';
 import { inviteService } from '../../services/inviteService';
 import { CheckCircle, Warning as AlertTriangle, CircleNotch as Loader } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
@@ -47,7 +48,7 @@ export const AcceptInvitePage: React.FC = () => {
                 }, 2000);
 
             } catch (e: any) {
-                console.error("Invite Error", e);
+                authLogger.error('Invite Error:', e);
                 setStatus('error');
                 setErrorMsg(e.message || t('failed_to_join'));
             }

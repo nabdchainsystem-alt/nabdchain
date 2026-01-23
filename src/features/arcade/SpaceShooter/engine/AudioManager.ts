@@ -3,6 +3,8 @@
  * Uses Web Audio API for low-latency sound playback
  */
 
+import { appLogger } from '../../../../utils/logger';
+
 export type SoundType =
   | 'shoot'
   | 'explosion'
@@ -91,7 +93,7 @@ export class AudioManager {
       this.masterGain.gain.value = 0.5;
       this.initialized = true;
     } catch (e) {
-      console.warn('Web Audio API not supported:', e);
+      appLogger.warn('Web Audio API not supported:', e);
       this.enabled = false;
     }
   }

@@ -151,21 +151,21 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
                         >
                             <span className="text-lg">{targetCurrency.flag}</span>
                             <span className="font-medium text-stone-700 dark:text-stone-200">{targetCurrency.symbol}</span>
-                            <span className="text-sm text-stone-500 dark:text-stone-400 flex-1 text-left">{targetCurrency.name}</span>
+                            <span className="text-sm text-stone-500 dark:text-stone-400 flex-1 text-start">{targetCurrency.name}</span>
                             <span className="text-xs text-stone-400">{targetCurrency.code}</span>
                         </button>
 
                         {showCurrencyList && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-10 max-h-[200px] overflow-hidden flex flex-col">
+                            <div className="absolute top-full inset-x-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-10 max-h-[200px] overflow-hidden flex flex-col">
                                 <div className="p-2 border-b border-stone-100 dark:border-stone-700">
                                     <div className="relative">
-                                        <MagnifyingGlass size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400" />
+                                        <MagnifyingGlass size={14} className="absolute start-2 top-1/2 -translate-y-1/2 text-stone-400" />
                                         <input
                                             type="text"
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
                                             placeholder="Search..."
-                                            className="w-full pl-7 pr-2 py-1.5 text-sm bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500"
+                                            className="w-full ps-7 pe-2 py-1.5 text-sm bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
                                 </div>
@@ -182,7 +182,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
                                         >
                                             <span>{currency.flag}</span>
                                             <span className="text-sm font-medium text-stone-700 dark:text-stone-200 w-6">{currency.symbol}</span>
-                                            <span className="text-sm text-stone-600 dark:text-stone-300 flex-1 text-left truncate">{currency.name}</span>
+                                            <span className="text-sm text-stone-600 dark:text-stone-300 flex-1 text-start truncate">{currency.name}</span>
                                             <span className="text-xs text-stone-400">{currency.code}</span>
                                         </button>
                                     ))}

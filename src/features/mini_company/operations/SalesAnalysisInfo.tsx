@@ -51,7 +51,7 @@ export const SalesAnalysisInfo: React.FC<SalesAnalysisInfoProps> = ({ isOpen, on
     ];
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 bg-black/5 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}

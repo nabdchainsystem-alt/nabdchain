@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../auth-adapter';
 import { useAppContext } from '../contexts/AppContext';
 import { userService } from '../services/userService';
+import { serviceLogger } from '../utils/logger';
 
 /**
  * Hook to sync user preferences (display name, etc.) with the server.
@@ -39,7 +40,7 @@ export function useUserPreferences() {
 
                 initialFetchDone.current = true;
             } catch (error) {
-                console.error('[useUserPreferences] Failed to fetch profile:', error);
+                serviceLogger.error('[useUserPreferences] Failed to fetch profile:', error);
                 // Still mark as done to prevent retry loops
                 initialFetchDone.current = true;
             }
@@ -59,7 +60,7 @@ export function useUserPreferences() {
             await userService.updateProfile(token, { name });
             lastSavedName.current = name;
         } catch (error) {
-            console.error('[useUserPreferences] Failed to sync name:', error);
+            serviceLogger.error('[useUserPreferences] Failed to sync name:', error);
         }
     }, [isSignedIn, getToken]);
 

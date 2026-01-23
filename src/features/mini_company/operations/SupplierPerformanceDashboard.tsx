@@ -4,28 +4,13 @@ import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
 import { Users, Truck, Clock, CurrencyDollar, ShieldWarning, Warning, Star, Info, ArrowsOut, ChartPieSlice } from 'phosphor-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SupplierPerformanceInfo } from './SupplierPerformanceInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { formatCurrency } from '../../../utils/formatters';
 
 // --- Visual Constants ---
 const COLORS_SEQUENCE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
-
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '1', label: 'Total Suppliers', subtitle: 'Active Suppliers', value: '38', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [32, 34, 34, 35, 36, 37, 38] },
-    { id: '2', label: 'On-Time Delivery %', subtitle: 'Performance', value: '92.4%', change: '-1.2%', trend: 'down', icon: <Truck size={18} />, sparklineData: [95, 94, 93, 94, 93, 92, 92.4] },
-    { id: '3', label: 'Avg Lead Time', subtitle: 'Days to Deliver', value: '14.2d', change: '-0.5d', trend: 'up', icon: <Clock size={18} />, sparklineData: [16, 15.5, 15, 14.8, 14.5, 14.3, 14.2] },
-    { id: '4', label: 'Cost Variance', subtitle: 'Actual vs Std', value: '+3.5%', change: '+0.5%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [2, 2.5, 3, 2.8, 3.2, 3.4, 3.5] },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Dependency Index', subtitle: 'Risk (0-100)', value: '65', change: '+5', trend: 'down', icon: <ShieldWarning size={18} />, sparklineData: [55, 58, 60, 62, 63, 64, 65] },
-    { id: '6', label: 'Dispute Rate', subtitle: 'Issues / Orders', value: '2.1%', change: '-0.4%', trend: 'up', icon: <Warning size={18} />, sparklineData: [3.5, 3, 2.8, 2.5, 2.4, 2.2, 2.1] },
-    { id: '7', label: 'Preferred Suppliers', subtitle: 'Strategic Partners', value: '8', change: '0', trend: 'neutral', icon: <Star size={18} />, sparklineData: [6, 6, 7, 7, 8, 8, 8] },
-    { id: '8', label: 'Supplier Concentration', subtitle: 'Top 3 Spend %', value: '73%', change: '-2%', trend: 'up', icon: <ChartPieSlice size={18} />, sparklineData: [78, 77, 76, 75, 74, 73.5, 73] },
-];
 
 // --- Mock Data: Charts ---
 const SPEND_PER_SUPPLIER = [
@@ -44,12 +29,6 @@ const LEAD_TIME_PER_SUPPLIER = [
     { name: 'BuildIt', value: 25 },
 ];
 
-const RISK_DISTRIBUTION = [
-    { name: 'Low Risk', value: 25 },
-    { name: 'Medium Risk', value: 10 },
-    { name: 'High Risk', value: 3 },
-];
-
 // --- Mock Data: Table & Scatter ---
 const SUPPLIER_DETAILS = [
     { id: 1, name: 'TechCorp', spend: 125000, leadTime: 12, onTime: 95, risk: 'Low', riskScore: 20 },
@@ -63,7 +42,7 @@ const SUPPLIER_DETAILS = [
 ];
 
 export const SupplierPerformanceDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -77,6 +56,27 @@ export const SupplierPerformanceDashboard: React.FC = () => {
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
     };
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '1', label: t('total_suppliers'), subtitle: t('active_suppliers'), value: '38', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [32, 34, 34, 35, 36, 37, 38] },
+        { id: '2', label: t('on_time_delivery_pct'), subtitle: t('performance'), value: '92.4%', change: '-1.2%', trend: 'down', icon: <Truck size={18} />, sparklineData: [95, 94, 93, 94, 93, 92, 92.4] },
+        { id: '3', label: t('avg_lead_time'), subtitle: t('days_to_deliver'), value: '14.2d', change: '-0.5d', trend: 'up', icon: <Clock size={18} />, sparklineData: [16, 15.5, 15, 14.8, 14.5, 14.3, 14.2] },
+        { id: '4', label: t('cost_variance'), subtitle: t('actual_vs_std'), value: '+3.5%', change: '+0.5%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [2, 2.5, 3, 2.8, 3.2, 3.4, 3.5] },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '5', label: t('dependency_index'), subtitle: t('risk_0_100'), value: '65', change: '+5', trend: 'down', icon: <ShieldWarning size={18} />, sparklineData: [55, 58, 60, 62, 63, 64, 65] },
+        { id: '6', label: t('dispute_rate'), subtitle: t('issues_per_orders'), value: '2.1%', change: '-0.4%', trend: 'up', icon: <Warning size={18} />, sparklineData: [3.5, 3, 2.8, 2.5, 2.4, 2.2, 2.1] },
+        { id: '7', label: t('preferred_suppliers'), subtitle: t('strategic_partners'), value: '8', change: '0', trend: 'neutral', icon: <Star size={18} />, sparklineData: [6, 6, 7, 7, 8, 8, 8] },
+        { id: '8', label: t('supplier_concentration'), subtitle: t('top_3_spend_pct'), value: '73%', change: '-2%', trend: 'up', icon: <ChartPieSlice size={18} />, sparklineData: [78, 77, 76, 75, 74, 73.5, 73] },
+    ];
+
+    const RISK_DISTRIBUTION = [
+        { name: t('low_risk'), value: 25 },
+        { name: t('medium_risk'), value: 10 },
+        { name: t('high_risk'), value: 3 },
+    ];
 
     // --- ECharts Options ---
 
@@ -95,8 +95,8 @@ export const SupplierPerformanceDashboard: React.FC = () => {
             data: RISK_DISTRIBUTION.map((d) => ({
                 ...d,
                 itemStyle: {
-                    color: d.name === 'Low Risk' ? '#10b981' :
-                        d.name === 'Medium Risk' ? '#f59e0b' : '#ef4444'
+                    color: d.name === t('low_risk') ? '#10b981' :
+                        d.name === t('medium_risk') ? '#f59e0b' : '#ef4444'
                 }
             }))
         }]
@@ -107,12 +107,12 @@ export const SupplierPerformanceDashboard: React.FC = () => {
         tooltip: {
             trigger: 'item',
             formatter: (params: any) => {
-                return `<b>${params.data[3]}</b><br/>Spend: ${formatCurrency(params.data[0], currency.code, currency.symbol)}<br/>Lead Time: ${params.data[1]} days<br/>Risk Score: ${params.data[2]}`;
+                return `<b>${params.data[3]}</b><br/>${t('spend')}: ${formatCurrency(params.data[0], currency.code, currency.symbol)}<br/>${t('lead_time')}: ${params.data[1]} ${t('days')}<br/>${t('risk_score')}: ${params.data[2]}`;
             }
         },
         grid: { top: 10, right: 20, bottom: 5, left: 10, containLabel: true },
-        xAxis: { type: 'value', name: 'Spend', nameLocation: 'middle', nameGap: 20, splitLine: { lineStyle: { type: 'dashed' } } },
-        yAxis: { type: 'value', name: 'Lead Time (Days)', nameLocation: 'middle', nameGap: 25, splitLine: { lineStyle: { type: 'dashed' } } },
+        xAxis: { type: 'value', name: t('spend'), nameLocation: 'middle', nameGap: 20, splitLine: { lineStyle: { type: 'dashed' } } },
+        yAxis: { type: 'value', name: t('lead_time_days'), nameLocation: 'middle', nameGap: 25, splitLine: { lineStyle: { type: 'dashed' } } },
         series: [{
             type: 'scatter',
             symbolSize: (data: any) => Math.max(10, data[2] / 2), // Bubble size based on Risk Score
@@ -134,24 +134,33 @@ export const SupplierPerformanceDashboard: React.FC = () => {
         }]
     };
 
+    const getRiskLabel = (risk: string) => {
+        switch (risk) {
+            case 'Low': return t('low');
+            case 'Medium': return t('medium');
+            case 'High': return t('high');
+            default: return risk;
+        }
+    };
+
     return (
         <div className="p-6 bg-white dark:bg-monday-dark-surface min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
             <SupplierPerformanceInfo isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 text-start">
                     <Truck size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
-                        <h1 className="text-2xl font-bold">Supplier Performance</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Evaluate reliability, cost, and risk</p>
+                        <h1 className="text-2xl font-bold">{t('supplier_performance')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('supplier_performance_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -160,7 +169,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -184,13 +193,13 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 {/* Recharts: Spend per Supplier */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Spend per Supplier" />
+                        <ChartSkeleton height="h-[300px]" title={t('spend_per_supplier')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend per Supplier</h3>
-                            <p className="text-xs text-gray-400">Total volume by partner</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_per_supplier')}</h3>
+                            <p className="text-xs text-gray-400">{t('total_volume_by_partner')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -213,13 +222,13 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 {/* Recharts: Lead Time per Supplier */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Lead Time (Days)" />
+                        <ChartSkeleton height="h-[300px]" title={t('lead_time_days')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time (Days)</h3>
-                            <p className="text-xs text-gray-400">Speed of delivery breakdown</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('lead_time_days')}</h3>
+                            <p className="text-xs text-gray-400">{t('speed_of_delivery_breakdown')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -244,12 +253,12 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts: Risk Distribution */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Risk Distribution" />
+                        <PieChartSkeleton title={t('risk_distribution')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk Distribution</h3>
-                                <p className="text-xs text-gray-400">Suppliers by risk category</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_distribution')}</h3>
+                                <p className="text-xs text-gray-400">{t('suppliers_by_risk_category')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -257,19 +266,19 @@ export const SupplierPerformanceDashboard: React.FC = () => {
 
                     {/* Performance Status Card */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Performance Status" />
+                        <PieChartSkeleton title={t('performance_status')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px] flex flex-col">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Performance Status</h3>
-                                <p className="text-xs text-gray-400">Overall supplier health summary</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('performance_status')}</h3>
+                                <p className="text-xs text-gray-400">{t('overall_supplier_health_summary')}</p>
                             </div>
                             <div className="flex flex-col items-center justify-center text-center flex-1">
                                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-2">
                                     <Star className="text-blue-500" size={28} weight="duotone" />
                                 </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 px-4">
-                                    Overall supplier health is stable. <br /> 8 Preferred Suppliers are maintaining 95%+ performance.
+                                    {t('supplier_health_stable_msg')}
                                 </p>
                             </div>
                         </div>
@@ -299,35 +308,35 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Supplier Performance Metrics</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_performance_metrics')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Supplier Name</th>
-                                        <th className="px-5 py-3 text-right">Total Spend</th>
-                                        <th className="px-5 py-3 text-right">Avg Del (Days)</th>
-                                        <th className="px-5 py-3 text-right">On-Time %</th>
-                                        <th className="px-5 py-3 text-center">Risk Level</th>
+                                        <th className="px-5 py-3 text-start">{t('supplier_name')}</th>
+                                        <th className="px-5 py-3 text-end">{t('total_spend')}</th>
+                                        <th className="px-5 py-3 text-end">{t('avg_del_days')}</th>
+                                        <th className="px-5 py-3 text-end">{t('on_time_pct')}</th>
+                                        <th className="px-5 py-3 text-center">{t('risk_level')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {SUPPLIER_DETAILS.map((s) => (
                                         <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{s.name}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{s.name}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">
                                                 {formatCurrency(s.spend, currency.code, currency.symbol)}
                                             </td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{s.leadTime}</td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{s.onTime}%</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{s.leadTime}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{s.onTime}%</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium border ${s.risk === 'Low' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                                                     s.risk === 'Medium' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                                         'bg-red-50 text-red-700 border-red-100'
                                                     }`}>
-                                                    {s.risk}
+                                                    {getRiskLabel(s.risk)}
                                                 </span>
                                             </td>
                                         </tr>
@@ -341,13 +350,13 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 {/* Companion Chart: Scatter Matrix (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Risk vs Value Matrix" />
+                        <ChartSkeleton height="h-[280px]" title={t('risk_vs_value_matrix')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up h-full flex flex-col">
-                        <div className="p-4 mb-1">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Risk vs Value Matrix</h3>
-                            <p className="text-xs text-gray-400">Spend vs lead time with risk indicators</p>
+                        <div className="p-4 mb-1 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_vs_value_matrix')}</h3>
+                            <p className="text-xs text-gray-400">{t('spend_vs_lead_time_risk')}</p>
                         </div>
                         <div className="flex-1 w-full min-h-0 px-2 pb-2">
                             <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />

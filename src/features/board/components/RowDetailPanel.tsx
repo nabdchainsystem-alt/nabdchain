@@ -4,6 +4,7 @@ import { X, Chat as MessageSquare, FileText, Activity, TextBolder as Bold, TextI
 import { useAuth } from '../../../auth-adapter';
 import { teamService, TeamMember } from '../../../services/teamService';
 import { assignmentService } from '../../../services/assignmentService';
+import { boardLogger } from '../../../utils/logger';
 
 interface RowDetailPanelProps {
     isOpen: boolean;
@@ -51,7 +52,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
             const members = await teamService.getTeamMembers(token);
             setTeamMembers(members);
         } catch (error) {
-            console.error('Failed to fetch team members:', error);
+            boardLogger.error('Failed to fetch team members:', error);
         } finally {
             setIsLoadingMembers(false);
         }
@@ -60,7 +61,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
     // Handle assigning task to a team member
     const handleAssignTo = async (member: TeamMember) => {
         if (!boardId || !row?.id) {
-            console.error('Missing boardId or row id');
+            boardLogger.error('Missing boardId or row id');
             return;
         }
 
@@ -82,7 +83,7 @@ export const RowDetailPanel: React.FC<RowDetailPanelProps> = ({ isOpen, onClose,
                 setIsAssignModalOpen(false);
             }, 2000);
         } catch (error) {
-            console.error('Failed to assign task:', error);
+            boardLogger.error('Failed to assign task:', error);
             alert('Failed to assign task. Make sure you are connected to this team member.');
         } finally {
             setIsAssigning(false);

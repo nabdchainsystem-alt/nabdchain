@@ -9,6 +9,7 @@ import { GTDOrganizeView } from './components/GTDOrganizeView';
 import { GTDReflectView } from './components/GTDReflectView';
 import { GTDEngageView } from './components/GTDEngageView';
 import { AnimatePresence, motion } from 'framer-motion';
+import { appLogger } from '../../utils/logger';
 
 interface DashboardProps {
   boardId: string;
@@ -30,7 +31,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
       const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : null;
     } catch (e) {
-      console.error('Failed to load GTD data', e);
+      appLogger.error('Failed to load GTD data', e);
       return null;
     }
   };

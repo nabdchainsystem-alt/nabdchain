@@ -15,6 +15,7 @@ import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { GroupContainer } from './components/GroupContainer';
 import { TaskRow } from './components/TaskRow';
 import { GroupData, Status, StatusOption, TaskItem, ColumnWidths } from './types';
+import { boardLogger } from '../../../../utils/logger';
 
 interface ListBoardProps {
     roomId: string; // Changed to require roomId for sync
@@ -126,7 +127,7 @@ const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
                 setGroups([mainGroup]);
 
             } catch (e) {
-                console.error("Failed to load ListBoard data", e);
+                boardLogger.error('Failed to load ListBoard data', e);
             }
         };
 
@@ -165,7 +166,7 @@ const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
             localStorage.setItem(storageKeyTasks, JSON.stringify(newRows));
 
         } catch (e) {
-            console.error("Failed to save ListBoard data", e);
+            boardLogger.error('Failed to save ListBoard data', e);
         }
     };
 

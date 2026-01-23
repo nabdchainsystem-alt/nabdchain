@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, CaretRight, CaretDown, ShoppingCart, Table, Calculator } from 'phosphor-react';
+import { X, Info, CaretRight, CaretDown, ShoppingCart, Table as TableIcon, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface PurchaseOverviewInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface PurchaseOverviewInfoProps {
 }
 
 export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,11 +21,11 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
     }, []);
 
     const questions = [
-        { q: 'Are purchases increasing?', a: 'Check "Monthly Spend Change %" and the historical trend in charts. High increase requires budget review.' },
-        { q: 'Who are our main suppliers?', a: 'Look at "Top Supplier Spend %" and the Supplier Share charts to identify concentration risks.' },
-        { q: 'How diversified is our spending?', a: 'Review the Spend Concentration chart. Even distribution across categories with low primary supplier % indicates healthy diversification; high concentration indicates dependency risk.' },
-        { q: 'Are we optimizing order frequency?', a: 'Check "Purchase Frequency" vs "Total Purchase Orders". High frequency with low value might suggest consolidation opportunities.' },
-        { q: 'Is spending aligned with categories?', a: 'Analyze "Spend by Category" to ensure budget allocation matches strategic priorities.' }
+        { q: t('po_info_q1'), a: t('po_info_a1') },
+        { q: t('po_info_q2'), a: t('po_info_a2') },
+        { q: t('po_info_q3'), a: t('po_info_a3') },
+        { q: t('po_info_q4'), a: t('po_info_a4') },
+        { q: t('po_info_q5'), a: t('po_info_a5') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -61,63 +63,63 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Purchase Overview
+                            <ShoppingCart size={24} className="text-blue-600 dark:text-blue-400" />
+                            {t('purchase_overview')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Snapshot of purchasing activity & health</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('po_info_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard provides a high-level snapshot of purchasing activity, spending patterns, and supplier engagement for small businesses.
+                            {t('po_info_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -127,35 +129,35 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Total Purchase Spend" desc="Total value of approved purchase orders in the current period." />
-                                    <DetailItem title="Total Purchase Orders" desc="Count of all purchase orders placed." />
-                                    <DetailItem title="Active Suppliers" desc="Number of unique suppliers engaged in the period." />
-                                    <DetailItem title="Average Purchase Value" desc="Total Spend / Total Orders. Indicates typical deal size." />
-                                    <DetailItem title="Monthly Spend Change %" desc="Percentage difference in spend compared to the previous month." />
-                                    <DetailItem title="Top Supplier Spend %" desc="Percentage of total spend going to the #1 supplier." />
-                                    <DetailItem title="Purchase Frequency" desc="Average number of purchases per active interval." />
-                                    <DetailItem title="Unplanned Purchase Rate %" desc="Percentage of purchase orders created outside the approved purchasing plan or budget." />
+                                    <DetailItem title={t('total_purchase_spend')} desc={t('po_info_total_spend_desc')} />
+                                    <DetailItem title={t('total_purchase_orders')} desc={t('po_info_total_orders_desc')} />
+                                    <DetailItem title={t('active_suppliers')} desc={t('po_info_active_suppliers_desc')} />
+                                    <DetailItem title={t('avg_purchase_value')} desc={t('po_info_avg_value_desc')} />
+                                    <DetailItem title={t('monthly_spend_change')} desc={t('po_info_monthly_change_desc')} />
+                                    <DetailItem title={t('top_supplier_spend')} desc={t('po_info_top_supplier_desc')} />
+                                    <DetailItem title={t('purchase_frequency')} desc={t('po_info_frequency_desc')} />
+                                    <DetailItem title={t('unplanned_purchase_rate')} desc={t('po_info_unplanned_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Spend by Supplier" desc="Bar chart (Recharts) verifying top partners by volume." />
-                                    <DetailItem title="Spend by Category" desc="Bar chart (Recharts) identifying cost centers (e.g. IT, Office)." />
-                                    <DetailItem title="Spend Distribution" desc="Pie chart (ECharts) showing category split." />
-                                    <DetailItem title="Supplier Share" desc="Pie chart (ECharts) showing market share of suppliers." />
-                                    <DetailItem title="Recent Orders" desc="Table listing details of recent approved purchases." />
-                                    <DetailItem title="Spend Concentration Chart" desc="Marimekko chart showing how total purchasing is distributed across categories, highlighting dependency risk and diversification balance." />
+                                    <DetailItem title={t('spend_by_supplier')} desc={t('po_info_supplier_chart_desc')} />
+                                    <DetailItem title={t('spend_by_category')} desc={t('po_info_category_chart_desc')} />
+                                    <DetailItem title={t('spend_distribution')} desc={t('po_info_distribution_desc')} />
+                                    <DetailItem title={t('supplier_share')} desc={t('po_info_share_desc')} />
+                                    <DetailItem title={t('recent_orders')} desc={t('po_info_orders_table_desc')} />
+                                    <DetailItem title={t('spend_concentration_category')} desc={t('po_info_concentration_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -164,26 +166,26 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
-                                    <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <TableIcon size={14} className="text-gray-500" />
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. PurchaseOrders"
-                                        desc="Main source for spend and counts."
-                                        columns={['PO Number', 'Supplier ID', 'Date', 'Total Amount', 'Status']}
+                                        name={t('po_table_purchase_orders')}
+                                        desc={t('po_table_purchase_orders_desc')}
+                                        columns={[t('po_number'), t('supplier_id'), t('date'), t('total_amount'), t('status')]}
                                     />
                                     <TableSchema
-                                        name="2. Suppliers"
-                                        desc="Supplier names and categories."
-                                        columns={['Supplier ID', 'Name', 'Category', 'Active Status']}
+                                        name={t('po_table_suppliers')}
+                                        desc={t('po_table_suppliers_desc')}
+                                        columns={[t('supplier_id'), t('name'), t('category'), t('active_status')]}
                                     />
                                 </div>
                             </div>
@@ -191,20 +193,20 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Includes</strong> only approved purchases.</span>
+                                        <span><strong>{t('includes')}:</strong> {t('po_info_includes_desc')}</span>
                                     </li>
-                                    <li className="flex gap-2">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Excludes</strong> drafts and test data (flagged items).</span>
+                                        <span><strong>{t('excludes')}:</strong> {t('po_info_excludes_desc')}</span>
                                     </li>
-                                    <li className="flex gap-2">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Date Range</strong> currently reflects YTD or rolling 12 months.</span>
+                                        <span><strong>{t('date_range')}:</strong> {t('po_info_date_range_desc')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -217,7 +219,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -227,7 +229,7 @@ export const PurchaseOverviewInfo: React.FC<PurchaseOverviewInfoProps> = ({ isOp
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -238,7 +240,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

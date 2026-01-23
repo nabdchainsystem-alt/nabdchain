@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
+import { appLogger } from '../../../utils/logger';
 
 const INITIAL_BOARD: Board = {
     id: 'dept-sales',
@@ -30,7 +31,7 @@ const SalesPage: React.FC = () => {
                 );
                 return { ...parsed, columns: updatedCols };
             } catch (e) {
-                console.error("Failed to parse saved board", e);
+                appLogger.error("Failed to parse saved board", e);
                 return INITIAL_BOARD;
             }
         }

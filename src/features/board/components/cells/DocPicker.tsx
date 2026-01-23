@@ -77,7 +77,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
                                         // We need workspaceId. If missing, we might not be able to place it correctly.
                                         // But often local boards have workspaceId.
                                         if (parsed.workspaceId && Array.isArray(boards)) {
-                                            boards.push(parsed as DocPickerBoard);
+                                            boards.push(parsed as any);
                                         }
                                     }
                                 }
@@ -234,7 +234,7 @@ export const DocPicker: React.FC<DocPickerProps> = ({ onSelect, onClose, trigger
         }
     };
 
-    const renderBoardItem = (board: Board) => {
+    const renderBoardItem = (board: DocPickerBoard) => {
         const isExpanded = expandedIds.has(board.id);
         const hasDocView = board.availableViews?.includes('doc');
 

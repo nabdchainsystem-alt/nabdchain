@@ -14,7 +14,7 @@ const INITIAL_BOARD: Board = {
         { id: 'status', title: 'Status', type: 'status' } // Pending, Approved, Paid
     ],
     tasks: [],
-    availableViews: ['table', 'kanban', 'overview', 'data'],
+    availableViews: ['table', 'kanban', 'overview', 'datatable'],
     defaultView: 'table'
 };
 

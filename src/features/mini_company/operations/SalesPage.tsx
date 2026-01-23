@@ -95,6 +95,13 @@ const SalesPage: React.FC = () => {
         });
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('sales_page_title'),
+        description: t('sales_page_desc')
+    }), [board, t]);
+
     // Render custom dashboard views
     const renderCustomView = (viewId: string) => {
         switch (viewId) {
@@ -119,7 +126,7 @@ const SalesPage: React.FC = () => {
 
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

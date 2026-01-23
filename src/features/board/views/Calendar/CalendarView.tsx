@@ -26,6 +26,7 @@ import { ITask, Status, PEOPLE, IBoard, STATUS_COLORS } from '../../types/boardT
 import { useRoomBoardData } from '../../hooks/useRoomBoardData';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { CalendarEventModal } from './components/CalendarEventModal';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 
 type CalendarViewMode = 'day' | '2days' | '3days' | 'workweek' | 'week' | 'month';
 
@@ -55,7 +56,10 @@ const MiniCalendar: React.FC<{
     selectedDate: Date;
     onDateSelect: (date: Date) => void;
     onMonthChange: (date: Date) => void;
-}> = ({ currentDate, selectedDate, onDateSelect, onMonthChange }) => {
+    locale: string;
+    isRTL: boolean;
+    showHijri?: boolean;
+}> = ({ currentDate, selectedDate, onDateSelect, onMonthChange, locale, isRTL, showHijri }) => {
     const [viewDate, setViewDate] = useState(currentDate);
 
     const year = viewDate.getFullYear();
@@ -80,26 +84,38 @@ const MiniCalendar: React.FC<{
         setViewDate(newDate);
     };
 
+    const getLocalizedWeekdayShort = (dayIndex: number) => {
+        const date = new Date(2024, 0, dayIndex); // Jan 2024, day 0 = Sunday
+        return date.toLocaleDateString(locale, { weekday: 'narrow' });
+    };
+
+    const hijriDate = showHijri ? viewDate.toLocaleDateString('ar-SA-u-ca-islamic', { year: 'numeric', month: 'short' }) : '';
+
     return (
         <div className="w-full">
             {/* Mini Calendar Header */}
             <div className="flex items-center justify-between mb-2">
                 <button onClick={prevMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
-                    <ChevronLeft size={14} className="text-stone-500" />
+                    {isRTL ? <ChevronRight size={14} className="text-stone-500" /> : <ChevronLeft size={14} className="text-stone-500" />}
                 </button>
-                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                    {viewDate.toLocaleString('default', { year: 'numeric', month: 'long' })}
-                </span>
+                <div className="text-center">
+                    <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 tracking-tight" style={{ fontFeatureSettings: '"tnum"' }}>
+                        {viewDate.toLocaleString(locale, { year: 'numeric', month: 'long' })}
+                    </span>
+                    {showHijri && (
+                        <div className="text-[10px] font-medium text-stone-400" style={{ fontFeatureSettings: '"tnum"' }}>{hijriDate}</div>
+                    )}
+                </div>
                 <button onClick={nextMonth} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
-                    <ChevronRight size={14} className="text-stone-500" />
+                    {isRTL ? <ChevronLeft size={14} className="text-stone-500" /> : <ChevronRight size={14} className="text-stone-500" />}
                 </button>
             </div>
 
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 mb-1">
-                {WEEKDAY_SHORT.map((d, i) => (
-                    <div key={i} className="text-center text-[10px] font-medium text-stone-400 py-1">
-                        {d}
+                {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
+                    <div key={dayIndex} className="text-center text-[10px] font-medium text-stone-400 py-1">
+                        {getLocalizedWeekdayShort(dayIndex)}
                     </div>
                 ))}
             </div>
@@ -120,11 +136,12 @@ const MiniCalendar: React.FC<{
                                 onMonthChange(date);
                             }}
                             className={`
-                                w-6 h-6 text-[11px] rounded-full flex items-center justify-center transition-colors
+                                w-6 h-6 text-[11px] rounded-full flex items-center justify-center transition-colors font-medium
                                 ${isToday ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900 font-semibold' : ''}
                                 ${isSelected && !isToday ? 'ring-1 ring-stone-400' : ''}
                                 ${!isToday && !isSelected ? 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400' : ''}
                             `}
+                            style={{ fontFeatureSettings: '"tnum"' }}
                         >
                             {date.getDate()}
                         </button>
@@ -187,7 +204,7 @@ const DroppableDayCell: React.FC<{
             ref={setNodeRef}
             onClick={onClick}
             className={`
-                relative flex flex-col min-h-[100px] border-r border-b border-stone-200 dark:border-stone-700
+                relative flex flex-col min-h-[100px] border-e border-b border-stone-200 dark:border-stone-700
                 cursor-pointer transition-colors
                 ${isOver ? 'bg-stone-100 dark:bg-stone-800' : 'hover:bg-stone-50 dark:hover:bg-stone-800/50'}
                 ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
@@ -195,12 +212,15 @@ const DroppableDayCell: React.FC<{
         >
             {/* Date Number */}
             <div className="p-1.5">
-                <span className={`
-                    inline-flex items-center justify-center w-6 h-6 text-xs rounded-sm
-                    ${isToday ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900 font-semibold' : ''}
-                    ${!isToday && isCurrentMonth ? 'text-stone-700 dark:text-stone-300' : ''}
-                    ${!isCurrentMonth ? 'text-stone-300 dark:text-stone-600' : ''}
-                `}>
+                <span
+                    className={`
+                        inline-flex items-center justify-center w-7 h-7 text-sm rounded-md font-medium
+                        ${isToday ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900 font-semibold' : ''}
+                        ${!isToday && isCurrentMonth ? 'text-stone-700 dark:text-stone-300' : ''}
+                        ${!isCurrentMonth ? 'text-stone-300 dark:text-stone-600' : ''}
+                    `}
+                    style={{ fontFeatureSettings: '"tnum"' }}
+                >
                     {date.getDate()}
                 </span>
             </div>
@@ -232,15 +252,27 @@ const TimeGridView: React.FC<{
     tasksByDate: Record<string, { task: ITask; groupId: string }[]>;
     onDateClick: (date: Date) => void;
     onTaskClick: (task: ITask, groupId: string) => void;
-}> = ({ days, tasksByDate, onDateClick, onTaskClick }) => {
+    locale: string;
+    isRTL: boolean;
+}> = ({ days, tasksByDate, onDateClick, onTaskClick, locale, isRTL }) => {
     const today = new Date();
+
+    const getLocalizedWeekday = (date: Date) => {
+        return date.toLocaleDateString(locale, { weekday: 'long' });
+    };
+
+    const getLocalizedHour = (hour: number) => {
+        const date = new Date();
+        date.setHours(hour, 0, 0, 0);
+        return date.toLocaleTimeString(locale, { hour: 'numeric', hour12: true });
+    };
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             {/* Day Headers */}
             <div className="flex border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
                 {/* Time Column Spacer */}
-                <div className="w-16 flex-shrink-0 border-r border-stone-200 dark:border-stone-700" />
+                <div className="w-16 flex-shrink-0 border-e border-stone-200 dark:border-stone-700" />
 
                 {/* Day Columns */}
                 {days.map((day, i) => {
@@ -248,13 +280,16 @@ const TimeGridView: React.FC<{
                     return (
                         <div
                             key={i}
-                            className={`flex-1 p-3 text-center border-r border-stone-200 dark:border-stone-700 ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                            className={`flex-1 p-3 text-center border-e border-stone-200 dark:border-stone-700 ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                         >
-                            <div className={`text-2xl font-light ${isToday ? 'text-stone-900 dark:text-white' : 'text-stone-400'}`}>
+                            <div
+                                className={`text-2xl font-medium tracking-tight ${isToday ? 'text-stone-900 dark:text-white' : 'text-stone-400'}`}
+                                style={{ fontFeatureSettings: '"tnum"' }}
+                            >
                                 {day.getDate()}
                             </div>
                             <div className={`text-xs ${isToday ? 'text-stone-700 dark:text-stone-300 font-medium' : 'text-stone-400'}`}>
-                                {WEEKDAY_LABELS[day.getDay()]}
+                                {getLocalizedWeekday(day)}
                             </div>
                         </div>
                     );
@@ -266,9 +301,9 @@ const TimeGridView: React.FC<{
                 <div className="flex">
                     {/* Time Labels Column */}
                     <div className="w-16 flex-shrink-0">
-                        {HOUR_LABELS.map((label, i) => (
-                            <div key={i} className="h-14 border-b border-stone-100 dark:border-stone-800 flex items-start justify-end pr-2 pt-0">
-                                <span className="text-[11px] text-stone-400 -mt-2">{label}</span>
+                        {HOURS.map((hour, i) => (
+                            <div key={i} className="h-14 border-b border-stone-100 dark:border-stone-800 flex items-start justify-end pe-2 pt-0">
+                                <span className="text-[11px] text-stone-400 -mt-2">{getLocalizedHour(hour + 12)}</span>
                             </div>
                         ))}
                     </div>
@@ -283,10 +318,10 @@ const TimeGridView: React.FC<{
                             <div
                                 key={dayIdx}
                                 onClick={() => onDateClick(day)}
-                                className={`flex-1 border-r border-stone-200 dark:border-stone-700 cursor-pointer relative ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/5' : ''}`}
+                                className={`flex-1 border-e border-stone-200 dark:border-stone-700 cursor-pointer relative ${isToday ? 'bg-blue-50/30 dark:bg-blue-900/5' : ''}`}
                             >
                                 {/* Hour Rows */}
-                                {HOUR_LABELS.map((_, i) => (
+                                {HOURS.map((_, i) => (
                                     <div
                                         key={i}
                                         className="h-14 border-b border-dashed border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/30"
@@ -296,12 +331,12 @@ const TimeGridView: React.FC<{
                                 {/* Current Time Indicator */}
                                 {isToday && (
                                     <div
-                                        className="absolute left-0 right-0 border-t-2 border-blue-500 z-10"
+                                        className="absolute inset-x-0 border-t-2 border-blue-500 z-10"
                                         style={{
                                             top: `${((new Date().getHours() - 13) * 56) + (new Date().getMinutes() / 60 * 56)}px`
                                         }}
                                     >
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full -mt-1 -ml-1" />
+                                        <div className={`w-2 h-2 bg-blue-500 rounded-full -mt-1 ${isRTL ? '-me-1' : '-ms-1'}`} />
                                     </div>
                                 )}
 
@@ -340,6 +375,11 @@ interface CalendarViewProps {
 
 export const CalendarView: React.FC<CalendarViewProps> = (props) => {
     const { roomId, storageKey, board: propBoard, onUpdateTask, onAddTask } = props;
+    const { language, t, dir } = useLanguage();
+    const isRTL = dir === 'rtl';
+    // Use Gregorian calendar for both languages, but with Arabic numerals/text for Arabic
+    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
+    const hijriLocale = 'ar-SA-u-ca-islamic';
 
     const effectiveKey = propBoard
         ? `shadow-${roomId || 'calendar'}`
@@ -516,33 +556,43 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
         setIsModalOpen(false);
     };
 
-    const getHeaderTitle = () => {
+    // Get Hijri date for Arabic display
+    const getHijriDate = (date: Date) => {
+        return date.toLocaleDateString(hijriLocale, { year: 'numeric', month: 'long' });
+    };
+
+    const getGregorianTitle = () => {
         if (calendarView === 'month') {
-            return currentDate.toLocaleString('default', { year: 'numeric', month: 'long' });
+            return currentDate.toLocaleString(locale, { year: 'numeric', month: 'long' });
         }
         if (viewDays.length === 1) {
-            return viewDays[0].toLocaleDateString('default', { year: 'numeric', month: 'long', day: 'numeric' });
+            return viewDays[0].toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
         }
         const first = viewDays[0];
         const last = viewDays[viewDays.length - 1];
         if (first.getMonth() === last.getMonth()) {
-            return `${first.toLocaleString('default', { year: 'numeric', month: 'long' })} ${first.getDate()}-${last.getDate()}`;
+            return `${first.toLocaleString(locale, { year: 'numeric', month: 'long' })} ${first.getDate()}-${last.getDate()}`;
         }
-        return `${first.toLocaleString('default', { month: 'short', day: 'numeric' })} - ${last.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        return `${first.toLocaleString(locale, { month: 'short', day: 'numeric' })} - ${last.toLocaleString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    };
+
+    const getLocalizedWeekday = (dayIndex: number, format: 'short' | 'long' | 'narrow' = 'long') => {
+        const date = new Date(2024, 0, dayIndex); // Jan 2024, day 0 = Sunday
+        return date.toLocaleDateString(locale, { weekday: format });
     };
 
     const viewOptions: { label: string; value: CalendarViewMode }[] = [
-        { label: 'Day', value: 'day' },
-        { label: 'Work week', value: 'workweek' },
-        { label: 'Week', value: 'week' },
-        { label: 'Month', value: 'month' },
+        { label: t('calendar_day'), value: 'day' },
+        { label: t('calendar_work_week'), value: 'workweek' },
+        { label: t('calendar_week'), value: 'week' },
+        { label: t('calendar_month'), value: 'month' },
     ];
 
     return (
-        <div className="flex h-full bg-white dark:bg-stone-900">
+        <div className="flex h-full bg-white dark:bg-stone-900" dir={dir}>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                {/* Left Sidebar */}
-                <div className={`${sidebarCollapsed ? 'w-0' : 'w-52'} flex-shrink-0 border-r border-stone-200 dark:border-stone-700 flex flex-col transition-all overflow-hidden`}>
+                {/* Sidebar */}
+                <div className={`${sidebarCollapsed ? 'w-0' : 'w-52'} flex-shrink-0 border-e border-stone-200 dark:border-stone-700 flex flex-col transition-all overflow-hidden`}>
                     <div className="p-4">
                         {/* New Event Button */}
                         <button
@@ -554,7 +604,7 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 rounded-md hover:bg-stone-700 dark:hover:bg-stone-300 transition-colors text-sm font-medium"
                         >
                             <Plus size={16} />
-                            New event
+                            {t('calendar_new_event')}
                         </button>
                     </div>
 
@@ -565,6 +615,9 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             selectedDate={currentDate}
                             onDateSelect={(date) => setCurrentDate(date)}
                             onMonthChange={(date) => setCurrentDate(date)}
+                            locale={locale}
+                            isRTL={isRTL}
+                            showHijri={language === 'ar'}
                         />
                     </div>
 
@@ -573,13 +626,13 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                     {/* My Calendars */}
                     <div className="p-4 flex-1">
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide">My calendars</span>
+                            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide">{t('calendar_my_calendars')}</span>
                             <ChevronDown size={14} className="text-stone-400" />
                         </div>
                         <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer">
                             <div className="w-3 h-3 rounded-sm bg-blue-500" />
-                            <span className="text-sm text-stone-700 dark:text-stone-300">Calendar</span>
-                            <Check size={14} className="text-stone-400 ml-auto" />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{t('calendar_calendar')}</span>
+                            <Check size={14} className="text-stone-400 ms-auto" />
                         </div>
                     </div>
                 </div>
@@ -594,26 +647,30 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             className="flex items-center gap-1.5 px-3 py-1.5 border border-stone-300 dark:border-stone-600 rounded text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                         >
                             <CalendarIcon size={14} />
-                            Today
+                            {t('calendar_today')}
                         </button>
 
                         {/* Navigation */}
                         <div className="flex items-center gap-1">
                             <button onClick={prev} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 transition-colors">
-                                <ChevronLeft size={18} />
+                                {isRTL ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                             </button>
                             <button onClick={next} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-500 transition-colors">
-                                <ChevronRight size={18} />
+                                {isRTL ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
                             </button>
                         </div>
 
                         {/* Title */}
-                        <h1 className="text-lg font-medium text-stone-900 dark:text-white">
-                            {getHeaderTitle()}
+                        <h1 className="text-lg font-semibold text-stone-900 dark:text-white tracking-tight" style={{ fontFeatureSettings: '"tnum"' }}>
+                            {getGregorianTitle()}
+                            {language === 'ar' && calendarView === 'month' && (
+                                <span className="mx-2 text-stone-400">•</span>
+                            )}
+                            {language === 'ar' && calendarView === 'month' && getHijriDate(currentDate)}
                         </h1>
 
                         {/* View Switcher */}
-                        <div className="flex items-center gap-1 ml-auto border border-stone-200 dark:border-stone-700 rounded-md p-0.5">
+                        <div className="flex items-center gap-1 ms-auto border border-stone-200 dark:border-stone-700 rounded-md p-0.5">
                             {viewOptions.map((opt) => (
                                 <button
                                     key={opt.value}
@@ -638,14 +695,16 @@ export const CalendarView: React.FC<CalendarViewProps> = (props) => {
                             tasksByDate={tasksByDate}
                             onDateClick={onDateClick}
                             onTaskClick={onTaskClick}
+                            locale={locale}
+                            isRTL={isRTL}
                         />
                     ) : (
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* Weekday Headers */}
                             <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
-                                {WEEKDAY_LABELS.map((day, i) => (
-                                    <div key={i} className="px-2 py-2 text-xs font-medium text-stone-500 dark:text-stone-400 border-r border-stone-200 dark:border-stone-700 last:border-r-0">
-                                        {day}
+                                {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
+                                    <div key={dayIndex} className="px-2 py-2 text-xs font-medium text-stone-500 dark:text-stone-400 border-e border-stone-200 dark:border-stone-700 last:border-e-0">
+                                        {getLocalizedWeekday(dayIndex)}
                                     </div>
                                 ))}
                             </div>

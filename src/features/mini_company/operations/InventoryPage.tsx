@@ -9,78 +9,81 @@ import { StockAccuracyDashboard } from './StockAccuracyDashboard';
 import { ReorderPlanningDashboard } from './ReorderPlanningDashboard';
 import { WarehousePerformanceDashboard } from './WarehousePerformanceDashboard';
 import { InventoryForecastDashboard } from './InventoryForecastDashboard';
-
-const INITIAL_BOARD: Board = {
-    id: 'dept-inventory',
-    name: 'Stock / Inventory',
-    description: 'Manage stock levels and inventory',
-    columns: [
-        { id: 'name', title: 'Item Name', type: 'text' },
-        { id: 'sku', title: 'SKU', type: 'text' },
-        { id: 'quantity', title: 'Quantity', type: 'text' },
-        { id: 'status', title: 'Status', type: 'status' }, // In Stock, Low Stock, Out of Stock
-        { id: 'location', title: 'Location', type: 'text' }
-    ],
-    tasks: [],
-    availableViews: [
-        'inventory_overview', 'stock_movement', 'inventory_aging',
-        'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast',
-        'datatable'
-    ],
-    defaultView: 'overview'
-};
+import { useAppContext } from '../../../contexts/AppContext';
 
 const InventoryPage: React.FC = () => {
+    const { t } = useAppContext();
+
+    const INITIAL_BOARD: Board = useMemo(() => ({
+        id: 'dept-inventory',
+        name: t('stock_inventory'),
+        description: t('manage_stock_levels'),
+        columns: [
+            { id: 'name', title: t('item_name'), type: 'text' },
+            { id: 'sku', title: t('sku'), type: 'text' },
+            { id: 'quantity', title: t('quantity'), type: 'text' },
+            { id: 'status', title: t('status'), type: 'status' },
+            { id: 'location', title: t('location'), type: 'text' }
+        ],
+        tasks: [],
+        availableViews: [
+            'inventory_overview', 'stock_movement', 'inventory_aging',
+            'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast',
+            'datatable'
+        ],
+        defaultView: 'overview'
+    }), [t]);
+
     // Dashboard sections for the Add View menu
     const dashboardSections = useMemo(() => [
         {
-            title: 'Dashboards',
+            title: t('dashboards'),
             options: [
                 {
                     id: 'inventory_overview',
-                    label: 'Inventory Overview',
+                    label: t('inventory_overview'),
                     icon: Package,
-                    description: 'Real-time stock levels and health'
+                    description: t('inventory_overview_desc')
                 },
                 {
                     id: 'stock_movement',
-                    label: 'Stock Movement',
+                    label: t('stock_movement'),
                     icon: ArrowsLeftRight,
-                    description: 'Track in/out flow and bottlenecks'
+                    description: t('stock_movement_desc')
                 },
                 {
                     id: 'inventory_aging',
-                    label: 'Aging & Dead Stock',
+                    label: t('aging_dead_stock'),
                     icon: Clock,
-                    description: 'Identify slow-moving items'
+                    description: t('aging_dead_stock_desc')
                 },
                 {
                     id: 'stock_accuracy',
-                    label: 'Accuracy & Shrinkage',
+                    label: t('accuracy_shrinkage'),
                     icon: Target,
-                    description: 'Audit variances and loss prevention'
+                    description: t('accuracy_shrinkage_desc')
                 },
                 {
                     id: 'reorder_planning',
-                    label: 'Reorder & Planning',
+                    label: t('reorder_planning'),
                     icon: ShoppingCart,
-                    description: 'Replenishment and safety stock'
+                    description: t('reorder_planning_desc')
                 },
                 {
                     id: 'warehouse_performance',
-                    label: 'Warehouse Perf.',
+                    label: t('warehouse_perf'),
                     icon: Buildings,
-                    description: 'Efficiency and utilization metrics'
+                    description: t('warehouse_perf_desc')
                 },
                 {
                     id: 'inventory_forecast',
-                    label: 'Forecast & Risk',
+                    label: t('forecast_risk'),
                     icon: TrendUp,
-                    description: 'Predictive demand and supply risk'
+                    description: t('forecast_risk_desc')
                 }
             ]
         }
-    ], []);
+    ], [t]);
 
     const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('dept-inventory-data');

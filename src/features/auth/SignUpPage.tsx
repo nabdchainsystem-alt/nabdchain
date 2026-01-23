@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSignUp } from '../../auth-adapter';
+import { authLogger } from '../../utils/logger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../../components/Logo';
 import {
@@ -196,7 +197,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
             setStep('verification');
         } catch (err: any) {
-            console.error(JSON.stringify(err, null, 2));
+            authLogger.error('Sign up failed:', JSON.stringify(err, null, 2));
             setError(err.errors?.[0]?.message || t('something_went_wrong_retry'));
         } finally {
             setLoading(false);
@@ -220,7 +221,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
                 await setActive({ session: completeSignUp.createdSessionId });
             }
         } catch (err: any) {
-            console.error(JSON.stringify(err, null, 2));
+            authLogger.error('Email verification failed:', JSON.stringify(err, null, 2));
             setError(err.errors?.[0]?.message || t('invalid_code'));
         } finally {
             setLoading(false);

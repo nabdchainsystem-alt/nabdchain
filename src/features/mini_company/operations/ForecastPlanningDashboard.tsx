@@ -8,21 +8,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ForecastPlanningInfo } from './ForecastPlanningInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '1', label: 'Forecasted Spend', subtitle: 'Next 30 Days', value: '$42k', change: '+5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [38, 39, 40, 40, 41, 41, 42] },
-    { id: '2', label: 'Forecast Accuracy', subtitle: 'Last Period', value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 90, 91, 91, 92] },
-    { id: '3', label: 'Est. Cat. Growth', subtitle: 'Highest: Office', value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 11, 12] },
-    { id: '4', label: 'Confidence Level', subtitle: 'Model Certainty', value: 'High', change: '', trend: 'neutral', icon: <Target size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
-    { id: '5', label: 'Supply Risk Ahead', subtitle: 'Potential Issues', value: 'Low', change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 1, 1, 1, 0, 0, 0] },
-    { id: '6', label: 'Planned Orders', subtitle: 'Drafted', value: '8', change: '+2', trend: 'up', icon: <ListChecks size={18} />, sparklineData: [5, 6, 6, 7, 7, 8, 8] },
-    { id: '7', label: 'Budget Impact', subtitle: '% of Annual Limit', value: '15%', change: '+1%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [12, 13, 13, 14, 14, 14, 15] },
-    { id: '8', label: 'Variance Trend', subtitle: 'Forecast vs Actual', value: '-2.1%', change: '-0.5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [4, 3.5, 3.2, 2.8, 2.5, 2.3, 2.1] },
-];
-
 // --- Mock Data: Charts ---
 const FORECAST_VS_LAST = [
     { name: 'Electronics', last: 12000, forecast: 14500 },
@@ -77,9 +62,24 @@ const CONE_DATA = {
 };
 
 export const ForecastPlanningDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- KPI Data (inside component for translations) ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '1', label: t('forecasted_spend'), subtitle: t('next_30_days'), value: '$42k', change: '+5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [38, 39, 40, 40, 41, 41, 42] },
+        { id: '2', label: t('forecast_accuracy'), subtitle: t('last_period'), value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 90, 91, 91, 92] },
+        { id: '3', label: t('est_cat_growth'), subtitle: t('highest_office'), value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 11, 12] },
+        { id: '4', label: t('confidence_level'), subtitle: t('model_certainty'), value: t('high'), change: '', trend: 'neutral', icon: <Target size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
+        { id: '5', label: t('supply_risk_ahead'), subtitle: t('potential_issues'), value: t('low'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [0, 1, 1, 1, 0, 0, 0] },
+        { id: '6', label: t('planned_orders'), subtitle: t('drafted'), value: '8', change: '+2', trend: 'up', icon: <ListChecks size={18} />, sparklineData: [5, 6, 6, 7, 7, 8, 8] },
+        { id: '7', label: t('budget_impact'), subtitle: t('pct_of_annual_limit'), value: '15%', change: '+1%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [12, 13, 13, 14, 14, 14, 15] },
+        { id: '8', label: t('variance_trend'), subtitle: t('forecast_vs_actual'), value: '-2.1%', change: '-0.5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [4, 3.5, 3.2, 2.8, 2.5, 2.3, 2.1] },
+    ];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -127,21 +127,21 @@ export const ForecastPlanningDashboard: React.FC = () => {
 
     // Confidence Cone Chart
     const coneOption: EChartsOption = {
-        title: { text: 'Spend Projection (k$)', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('spend_projection_k'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'axis' },
         grid: { top: 30, right: 20, bottom: 20, left: 30, containLabel: true },
         xAxis: { type: 'category', data: CONE_DATA.months },
         yAxis: { type: 'value' },
         series: [
             {
-                name: 'Actual',
+                name: t('actual'),
                 type: 'line',
                 data: CONE_DATA.actual,
                 smooth: true,
                 itemStyle: { color: '#3b82f6' }
             },
             {
-                name: 'Forecast',
+                name: t('forecast'),
                 type: 'line',
                 data: CONE_DATA.forecast,
                 smooth: true,
@@ -149,7 +149,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 itemStyle: { color: '#10b981' }
             },
             {
-                name: 'Confidence Interval',
+                name: t('confidence_interval'),
                 type: 'line',
                 data: CONE_DATA.upper,
                 smooth: true,
@@ -179,16 +179,16 @@ export const ForecastPlanningDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <Target size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
-                    <div>
-                        <h1 className="text-2xl font-bold">Forecast & Planning</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Future spend & budget impact</p>
+                    <div className="text-start">
+                        <h1 className="text-2xl font-bold">{t('forecast_planning')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('future_spend_budget_impact')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -197,7 +197,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -220,13 +220,13 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 {/* Recharts - Forecast per Category */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Forecast per Category" />
+                        <ChartSkeleton height="h-[300px]" title={t('forecast_per_category')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Forecast per Category</h3>
-                            <p className="text-xs text-gray-400">Previous vs Projected</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('forecast_per_category')}</h3>
+                            <p className="text-xs text-gray-400">{t('previous_vs_projected')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -239,8 +239,8 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
                                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                    <Bar dataKey="last" name="Last Period" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
-                                    <Bar dataKey="forecast" name="Forecast" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="last" name={t('last_period')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
+                                    <Bar dataKey="forecast" name={t('forecast')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} animationDuration={1000} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -250,13 +250,13 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 {/* Recharts - Spend Projection */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[300px]" title="Spend Projection" />
+                        <ChartSkeleton height="h-[300px]" title={t('spend_projection')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Projection</h3>
-                            <p className="text-xs text-gray-400">Monthly forecast (k$)</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_projection')}</h3>
+                            <p className="text-xs text-gray-400">{t('monthly_forecast_k')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -281,12 +281,12 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* ECharts - Future Allocation */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Future Allocation" />
+                        <PieChartSkeleton title={t('future_allocation')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Future Allocation</h3>
-                                <p className="text-xs text-gray-400">Budget distribution</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('future_allocation')}</h3>
+                                <p className="text-xs text-gray-400">{t('budget_distribution')}</p>
                             </div>
                             <ReactECharts option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -294,12 +294,12 @@ export const ForecastPlanningDashboard: React.FC = () => {
 
                     {/* ECharts - Budget Utilization */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Budget Utilization" />
+                        <PieChartSkeleton title={t('budget_utilization')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
-                            <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Budget Utilization</h3>
-                                <p className="text-xs text-gray-400">Quarterly spending progress</p>
+                            <div className="mb-2 text-start">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_utilization')}</h3>
+                                <p className="text-xs text-gray-400">{t('quarterly_spending_progress')}</p>
                             </div>
                             <ReactECharts option={budgetPieOption} style={{ height: '180px' }} />
                         </div>
@@ -324,30 +324,30 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 {/* Table (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <TableSkeleton rows={5} columns={4} title="Projected Changes" />
+                        <TableSkeleton rows={5} columns={4} title={t('projected_changes')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Projected Changes</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('projected_changes')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Category</th>
-                                        <th className="px-5 py-3 text-right">Last Period</th>
-                                        <th className="px-5 py-3 text-right">Forecast</th>
-                                        <th className="px-5 py-3 text-right">Delta</th>
+                                        <th className="px-5 py-3 text-start">{t('category')}</th>
+                                        <th className="px-5 py-3 text-end">{t('last_period')}</th>
+                                        <th className="px-5 py-3 text-end">{t('forecast')}</th>
+                                        <th className="px-5 py-3 text-end">{t('delta')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {FORECAST_DETAILS.map((r) => (
                                         <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{r.category}</td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{r.last}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">{r.forecast}</td>
-                                            <td className={`px-5 py-3 text-right font-medium ${r.delta.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{r.category}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{r.last}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">{r.forecast}</td>
+                                            <td className={`px-5 py-3 text-end font-medium ${r.delta.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
                                                 {r.delta}
                                             </td>
                                         </tr>
@@ -361,7 +361,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                 {/* Companion Chart: Confidence Cone (2 cols) */}
                 {isLoading ? (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                        <ChartSkeleton height="h-[280px]" title="Spend Projection" />
+                        <ChartSkeleton height="h-[280px]" title={t('spend_projection')} />
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">

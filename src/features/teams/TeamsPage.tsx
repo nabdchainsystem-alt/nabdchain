@@ -13,6 +13,7 @@ import { TeamRole, TeamStatus } from './types';
 import { TeamMemberProfile } from './TeamMemberProfile';
 import { ConnectMemberModal } from './components/ConnectMemberModal';
 import { PendingRequestsPanel } from './components/PendingRequestsPanel';
+import { appLogger } from '../../utils/logger';
 
 // Components
 const StatCard = ({ icon, label, value, trend, color }: any) => (
@@ -57,7 +58,7 @@ export const TeamsPage: React.FC = () => {
                 const members = await teamService.getTeamMembers(token);
                 setConnectedMembers(members);
             } catch (error) {
-                console.error('Failed to fetch team members:', error);
+                appLogger.error('Failed to fetch team members:', error);
             } finally {
                 setIsLoadingMembers(false);
             }
@@ -87,7 +88,7 @@ export const TeamsPage: React.FC = () => {
             const data = await inviteService.createInvite(token); // No email needed for generic link
             setInviteLink(data.link);
         } catch (e) {
-            console.error("Invite Gen Failed", e);
+            appLogger.error("Invite Gen Failed", e);
             alert("Failed to generate link");
         } finally {
             setIsGenerating(false);

@@ -227,7 +227,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                         <span className="text-[13px] font-medium">Person</span>
                     </div>
                     {isPersonFilterOpen && (
-                        <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
+                        <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                             <div className="mb-3">
                                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">
                                     Filter by person
@@ -275,7 +275,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                         )}
                     </div>
                     {isFilterPanelOpen && (
-                        <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
+                        <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">
                                     Advanced Filters
@@ -352,7 +352,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                         )}
                     </div>
                     {isSortPanelOpen && (
-                        <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[400px]">
+                        <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[400px]">
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">Sort by</span>
                                 <button
@@ -417,7 +417,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                         )}
                     </div>
                     {isHideColumnsOpen && (
-                        <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
+                        <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                             <div className="mb-3">
                                 <input
                                     type="text"

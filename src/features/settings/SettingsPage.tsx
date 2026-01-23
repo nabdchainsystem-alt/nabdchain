@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
+import { appLogger } from '../../utils/logger';
 import { useAppContext } from '../../contexts/AppContext';
 import { COUNTRIES } from '../../config/currency';
 import {
@@ -121,7 +122,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             setFeatureFlags(flags);
             setAdminUsers(users);
         } catch (error) {
-            console.error('Failed to fetch admin data:', error);
+            appLogger.error('Failed to fetch admin data:', error);
         } finally {
             setIsLoadingFeatures(false);
             setIsLoadingUsers(false);
@@ -150,7 +151,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             // Notify parent to refresh feature flags
             onFeatureFlagsChange?.();
         } catch (error) {
-            console.error('Failed to toggle feature:', error);
+            appLogger.error('Failed to toggle feature:', error);
             alert('Failed to toggle feature');
         } finally {
             setTogglingFeature(null);
@@ -170,7 +171,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 u.id === userId ? { ...u, role: newRole } : u
             ));
         } catch (error) {
-            console.error('Failed to change user role:', error);
+            appLogger.error('Failed to change user role:', error);
             alert(error instanceof Error ? error.message : 'Failed to change user role');
         } finally {
             setChangingRole(null);
@@ -196,7 +197,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             const response = await adminService.getUserPermissions(token, userId);
             setUserPermissions(response.permissions);
         } catch (error) {
-            console.error('Failed to load user permissions:', error);
+            appLogger.error('Failed to load user permissions:', error);
             alert('Failed to load user permissions');
         } finally {
             setIsLoadingUserPerms(false);
@@ -228,7 +229,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     : p
             ));
         } catch (error) {
-            console.error('Failed to update user permission:', error);
+            appLogger.error('Failed to update user permission:', error);
             alert('Failed to update permission');
         } finally {
             setSavingUserPerm(null);
@@ -256,7 +257,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                     : p
             ));
         } catch (error) {
-            console.error('Failed to reset user permission:', error);
+            appLogger.error('Failed to reset user permission:', error);
             alert('Failed to reset permission');
         } finally {
             setSavingUserPerm(null);
@@ -283,7 +284,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 source: 'global'
             })));
         } catch (error) {
-            console.error('Failed to reset user permissions:', error);
+            appLogger.error('Failed to reset user permissions:', error);
             alert('Failed to reset permissions');
         } finally {
             setIsLoadingUserPerms(false);
@@ -313,7 +314,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 source: 'user' as const
             })));
         } catch (error) {
-            console.error('Failed to enable all permissions:', error);
+            appLogger.error('Failed to enable all permissions:', error);
             alert('Failed to enable all permissions');
         } finally {
             setIsLoadingUserPerms(false);
@@ -345,7 +346,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 source: 'user' as const
             })));
         } catch (error) {
-            console.error('Failed to disable all permissions:', error);
+            appLogger.error('Failed to disable all permissions:', error);
             alert('Failed to disable all permissions');
         } finally {
             setIsLoadingUserPerms(false);
@@ -378,7 +379,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         lastName: lastName
                     });
                 } catch (error) {
-                    console.error('Failed to update user profile:', error);
+                    appLogger.error('Failed to update user profile:', error);
                     // Minimal error handling for strictly visual preference
                 }
             }
@@ -447,7 +448,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
 
                 window.dispatchEvent(new Event('profile-image-updated'));
             } catch (error) {
-                console.error('Failed to sync profile image:', error);
+                appLogger.error('Failed to sync profile image:', error);
 
                 if (error instanceof Error && error.message.includes('quota')) {
                     alert('Image is too large to save locally. Please try a smaller image.');

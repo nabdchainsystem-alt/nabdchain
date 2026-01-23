@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../../../contexts/AppContext';
 import { X, Upload, FilePdf, DownloadSimple, Eye, Plus, Trash } from 'phosphor-react';
 import { PaymentRequestDocument, PaymentRequestData, generatePrintHTML } from './PaymentRequestDocument';
+import { appLogger } from '../../../utils/logger';
 
 interface MaterialItem {
     id: string;
@@ -220,7 +221,7 @@ export const PaymentRequestPanel: React.FC<PaymentRequestPanelProps> = ({
             return imageData;
         } catch (error) {
             document.body.removeChild(container);
-            console.error('Failed to generate materials table image:', error);
+            appLogger.error('Failed to generate materials table image:', error);
             return null;
         }
     };

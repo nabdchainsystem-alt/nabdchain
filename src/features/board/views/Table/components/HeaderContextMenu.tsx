@@ -2,6 +2,7 @@ import React, { useRef, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useClickOutside } from '../../../../../hooks/useClickOutside';
 import { Palette, ArrowUp, ArrowDown } from 'phosphor-react';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 interface HeaderContextMenuProps {
     onClose: () => void;
@@ -36,6 +37,7 @@ const COLORS = [
 ];
 
 export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, onHeaderColorSelect, onColumnColorSelect, onRename, onSortAsc, onSortDesc, currentHeaderColor, currentColumnColor, position }) => {
+    const { t } = useAppContext();
     const menuRef = useRef<HTMLDivElement>(null);
     useClickOutside(menuRef, onClose);
 
@@ -105,7 +107,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                         onSelect(e.target.value);
                         onClose();
                     }}
-                    title="Custom Color"
+                    title={t('custom_color')}
                 />
                 <div className={`
                     w-full h-full rounded-md flex items-center justify-center transition-all border shadow-sm bg-stone-100 dark:bg-stone-800
@@ -132,10 +134,10 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                             onSortAsc();
                             onClose();
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
+                        className="w-full text-start px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
                     >
                         <ArrowUp size={16} className="text-stone-400" />
-                        <span className="font-medium">Sort Ascending</span>
+                        <span className="font-medium">{t('sort_ascending')}</span>
                     </button>
                 )}
                 {onSortDesc && (
@@ -144,10 +146,10 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                             onSortDesc();
                             onClose();
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
+                        className="w-full text-start px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
                     >
                         <ArrowDown size={16} className="text-stone-400" />
-                        <span className="font-medium">Sort Descending</span>
+                        <span className="font-medium">{t('sort_descending')}</span>
                     </button>
                 )}
             </div>
@@ -161,9 +163,9 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                             onRename();
                             onClose();
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
+                        className="w-full text-start px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
                     >
-                        <span className="font-medium">Rename Column</span>
+                        <span className="font-medium">{t('rename')}</span>
                     </button>
                     <div className="h-px bg-stone-100 dark:bg-stone-800 my-1 mx-2" />
                 </div>
@@ -178,7 +180,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                         : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
                         }`}
                 >
-                    Header Use
+                    {t('header_color')}
                 </button>
                 <button
                     onClick={() => setActiveTab('column')}
@@ -187,7 +189,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                         : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
                         }`}
                 >
-                    Column Color
+                    {t('column_bg_color')}
                 </button>
             </div>
 

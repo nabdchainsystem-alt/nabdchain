@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
 
 interface NavigationContextType {
     isImmersive: boolean;
@@ -14,13 +14,17 @@ interface NavigationProviderProps {
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
     const [isImmersive, setIsImmersive] = useState(false);
-    const [activePage, setActivePage] = useState('board');
+    const [activePage, setActivePageState] = useState('board');
 
-    const value: NavigationContextType = {
+    const setActivePage = useCallback((page: string) => {
+        setActivePageState(page);
+    }, []);
+
+    const value = useMemo<NavigationContextType>(() => ({
         isImmersive,
         activePage,
         setActivePage
-    };
+    }), [isImmersive, activePage, setActivePage]);
 
     return (
         <NavigationContext.Provider value={value}>

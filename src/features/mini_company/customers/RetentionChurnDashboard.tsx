@@ -163,13 +163,14 @@ export const RetentionChurnDashboard: React.FC = () => {
         series: [{
             name: 'Risk Concentration',
             type: 'heatmap',
-            coordinateSystem: 'polar',
+            coordinateSystem: 'polar' as const,
             data: SPIRAL_DATA,
             itemStyle: {
                 borderColor: '#fff',
                 borderWidth: 1
             }
-        }]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }] as any
     };
 
     return (

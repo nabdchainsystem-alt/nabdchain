@@ -11,6 +11,7 @@ import {
     PencilSimple as Edit2
 } from 'phosphor-react';
 import { useClickOutside } from '../../../../../hooks/useClickOutside';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 interface ColumnContextMenuProps {
     onClose: () => void;
@@ -19,19 +20,20 @@ interface ColumnContextMenuProps {
 }
 
 export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({ onClose, onAction, columnId }) => {
+    const { t } = useAppContext();
     const wrapperRef = useRef<HTMLDivElement>(null);
     useClickOutside(wrapperRef, onClose);
 
     const menuItems = [
-        { id: 'sort', label: 'Sort', icon: ArrowUpDown },
-        { id: 'insert_left', label: 'Insert left', icon: ArrowLeftToLine },
-        { id: 'insert_right', label: 'Insert right', icon: ArrowRightToLine },
-        { id: 'autosize', label: 'Autosize this column', icon: MoveHorizontal },
-        { id: 'pin', label: 'Pin column', icon: Pin },
-        { id: 'rename', label: 'Rename column', icon: Edit2 },
+        { id: 'sort', label: t('sort'), icon: ArrowUpDown },
+        { id: 'insert_left', label: t('insert_left'), icon: ArrowLeftToLine },
+        { id: 'insert_right', label: t('insert_right'), icon: ArrowRightToLine },
+        { id: 'autosize', label: t('autosize_column'), icon: MoveHorizontal },
+        { id: 'pin', label: t('pin_column'), icon: Pin },
+        { id: 'rename', label: t('rename_column'), icon: Edit2 },
         { separator: true },
-        { id: 'move_start', label: 'Move to start', icon: ArrowLeft },
-        { id: 'move_end', label: 'Move to end', icon: ArrowRight },
+        { id: 'move_start', label: t('move_to_start'), icon: ArrowLeft },
+        { id: 'move_end', label: t('move_to_end'), icon: ArrowRight },
     ];
 
     return (

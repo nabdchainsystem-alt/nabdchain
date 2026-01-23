@@ -52,7 +52,7 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
     ];
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 bg-black/5 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -126,44 +126,44 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('top_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Expected Revenue" desc="Projected revenue for the next 90 days based on historical weighted trends." />
-                                    <DetailItem title="Forecast Accuracy" desc="Percentage of how closely past predictions matched actual sales outcomes." />
-                                    <DetailItem title="Risk Level" desc="Overall potential for falling short of forecasted targets (Low/Medium/High)." />
-                                    <DetailItem title="Exp. Profit Margin" desc="Projected efficiency ratio indicating expected profit percentage." />
+                                    <DetailItem title={t('expected_revenue')} desc={t('expected_revenue_desc')} />
+                                    <DetailItem title={t('forecast_accuracy')} desc={t('forecast_accuracy_desc')} />
+                                    <DetailItem title={t('risk_level')} desc={t('risk_level_desc')} />
+                                    <DetailItem title={t('exp_profit_margin')} desc={t('exp_profit_margin_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('side_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Growth Rate" desc="Year-over-year projected growth percentage for sales." />
-                                    <DetailItem title="Pipeline Value" desc="Total potential revenue from opportunities in the sales pipeline." />
-                                    <DetailItem title="Confidence Score" desc="Statistical confidence level of the forecast model reliability." />
-                                    <DetailItem title="Deviation Avg" desc="Average forecast error expressed as percentage deviation from actuals." />
+                                    <DetailItem title={t('growth_rate')} desc={t('growth_rate_desc')} />
+                                    <DetailItem title={t('pipeline_value')} desc={t('pipeline_value_desc')} />
+                                    <DetailItem title={t('confidence_score')} desc={t('confidence_score_desc')} />
+                                    <DetailItem title={t('deviation_avg')} desc={t('deviation_avg_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Actual vs Forecast" desc="ECharts line comparison showing how reality aligns with projections over time." />
-                                    <DetailItem title="Forecast per Product" desc="Bar chart comparing current vs projected spend by product category." />
-                                    <DetailItem title="Risk Distribution" desc="Pie chart visualizing where potential shortfalls are concentrated." />
-                                    <DetailItem title="Regional Forecast" desc="Horizontal bar chart showing territory performance projections." />
-                                    <DetailItem title="Decision Table" desc="Actionable log highlighting deviations between current and predicted sales." />
-                                    <DetailItem title="Deviation Scatter" desc="Companion chart visualizing forecast value vs actual deviation percentage." />
+                                    <DetailItem title={t('actual_vs_forecast')} desc={t('actual_vs_forecast_desc')} />
+                                    <DetailItem title={t('forecast_per_product')} desc={t('forecast_per_product_desc')} />
+                                    <DetailItem title={t('risk_distribution')} desc={t('risk_distribution_desc')} />
+                                    <DetailItem title={t('regional_forecast')} desc={t('regional_forecast_desc')} />
+                                    <DetailItem title={t('decision_table')} desc={t('decision_table_desc')} />
+                                    <DetailItem title={t('deviation_scatter')} desc={t('deviation_scatter_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -171,44 +171,44 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">04</span>
-                            Data Sources & Logic
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Prediction Logic</span>
+                                    <span>{t('prediction_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2 text-left">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Forecast Model:</strong> Uses a weighted moving average of historical sales data.</span>
+                                        <span><strong>{t('forecast_model')}:</strong> {t('forecast_model_desc')}</span>
                                     </li>
-                                    <li className="flex gap-2 text-left">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Trend Lines:</strong> Derived using linear regression and exponential smoothing algorithms.</span>
+                                        <span><strong>{t('trend_lines')}:</strong> {t('trend_lines_desc')}</span>
                                     </li>
                                 </ul>
                             </div>
 
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
-                                    <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables</span>
+                                    <TableIcon size={14} className="text-gray-500" />
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. Orders & Items"
-                                        desc="Primary volume data for trend extrapolation."
-                                        columns={['Order ID', 'Items', 'Total Amount', 'Completed Date']}
+                                        name={t('orders_items_table')}
+                                        desc={t('orders_items_desc')}
+                                        columns={[t('order_id'), t('items'), t('total_amount'), t('completed_date')]}
                                     />
                                     <TableSchema
-                                        name="2. Product Metadata"
-                                        desc="Historical performance and category trends."
-                                        columns={['Product ID', 'Category', 'Launch Date', 'Stock History']}
+                                        name={t('product_metadata_table')}
+                                        desc={t('product_metadata_desc')}
+                                        columns={[t('product_id'), t('category'), t('launch_date'), t('stock_history')]}
                                     />
                                 </div>
                             </div>
@@ -216,12 +216,12 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
                     </section>
                 </div>
 
-                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10 text-left">
+                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -231,7 +231,7 @@ export const SalesForecastInfo: React.FC<SalesForecastInfoProps> = ({ isOpen, on
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -242,7 +242,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-left">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

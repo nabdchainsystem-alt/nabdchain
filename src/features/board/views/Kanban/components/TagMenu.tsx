@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 export interface TagMenuProps {
     tags: string[];
@@ -10,6 +11,7 @@ export interface TagMenuProps {
  * Allows adding, viewing, and removing tags
  */
 export const TagMenu: React.FC<TagMenuProps> = ({ tags, onUpdateTags }) => {
+    const { t } = useAppContext();
     const [tagInput, setTagInput] = useState('');
 
     const handleAddTag = (e: React.FormEvent) => {
@@ -29,7 +31,7 @@ export const TagMenu: React.FC<TagMenuProps> = ({ tags, onUpdateTags }) => {
             <input
                 autoFocus
                 type="text"
-                placeholder="Search or add tags..."
+                placeholder={t('search_or_add_tags')}
                 className="w-full px-3 py-2 bg-gray-50 rounded-md border-none text-sm focus:ring-1 focus:ring-indigo-500 outline-none mb-2"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
@@ -38,7 +40,7 @@ export const TagMenu: React.FC<TagMenuProps> = ({ tags, onUpdateTags }) => {
             <div className="max-h-48 overflow-y-auto">
                 {tags.length === 0 && !tagInput ? (
                     <div className="text-center py-6 text-gray-400 text-sm italic">
-                        No tags created
+                        {t('no_tags_created')}
                     </div>
                 ) : (
                     <div className="flex flex-wrap gap-2">

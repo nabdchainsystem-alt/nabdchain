@@ -231,7 +231,7 @@ const LocalMarketplacePage: React.FC = () => {
 
                             {/* Grouped Categories */}
                             <div className="space-y-1">
-                                {Object.entries(groupedCategories).map(([group, categories]) => (
+                                {Object.entries(groupedCategories).map(([group, categories]: [string, string[]]) => (
                                     <div key={group} className="mb-1">
                                         <div
                                             className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"

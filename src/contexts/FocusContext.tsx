@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 
 interface FocusContextType {
     isActive: boolean;
@@ -20,36 +20,36 @@ export const FocusProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [isSessionActive, setIsSessionActive] = useState(false); // Timer UI is visible
     const [timeLeft, setTimeLeft] = useState(25 * 60);
 
-    const startFocus = (durationMinutes: number) => {
+    const startFocus = useCallback((durationMinutes: number) => {
         setTimeLeft(durationMinutes * 60);
         setIsActive(true);
         setIsSessionActive(true);
-    };
+    }, []);
 
-    const stopFocus = () => {
+    const stopFocus = useCallback(() => {
         setIsActive(false);
-    };
+    }, []);
 
-    const toggleFocus = () => {
+    const toggleFocus = useCallback(() => {
         setIsActive(prev => !prev);
-    };
+    }, []);
 
-    const resetFocus = () => {
+    const resetFocus = useCallback(() => {
         setIsActive(false);
         setTimeLeft(25 * 60);
-    };
+    }, []);
 
-    const cancelFocus = () => {
+    const cancelFocus = useCallback(() => {
         setIsActive(false);
         setIsSessionActive(false);
         setTimeLeft(25 * 60);
-    };
+    }, []);
 
-    const formatTime = (seconds: number) => {
+    const formatTime = useCallback((seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
+    }, []);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -71,8 +71,20 @@ export const FocusProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return () => clearInterval(interval);
     }, [isActive, timeLeft]);
 
+    const value = useMemo(() => ({
+        isActive,
+        isSessionActive,
+        timeLeft,
+        startFocus,
+        stopFocus,
+        toggleFocus,
+        resetFocus,
+        cancelFocus,
+        formatTime
+    }), [isActive, isSessionActive, timeLeft, startFocus, stopFocus, toggleFocus, resetFocus, cancelFocus, formatTime]);
+
     return (
-        <FocusContext.Provider value={{ isActive, isSessionActive, timeLeft, startFocus, stopFocus, toggleFocus, resetFocus, cancelFocus, formatTime }}>
+        <FocusContext.Provider value={value}>
             {children}
         </FocusContext.Provider>
     );

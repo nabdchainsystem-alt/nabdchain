@@ -58,7 +58,7 @@ export const SalesDashboardInfo: React.FC<SalesDashboardInfoProps> = ({ isOpen, 
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end rtl:justify-start overflow-hidden pointer-events-none font-sans">
+        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
             {/* Transparent backdrop for click-outside dismissal - only active when open */}
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}

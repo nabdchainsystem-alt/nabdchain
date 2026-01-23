@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, ChartLineUp, Database, Table, Lightbulb, Target, CaretRight, CaretDown, Calculator, Funnel } from 'phosphor-react';
+import { X, Info, ChartLineUp, Database, Table as TableIcon, Lightbulb, Target, CaretRight, CaretDown, Calculator, Funnel } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SalesFunnelInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface SalesFunnelInfoProps {
 }
 
 export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClose }) => {
+    const { t } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -43,9 +45,9 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
     const portalTarget = document.fullscreenElement || document.body;
 
     const questions = [
-        { q: 'Where are we losing the most leads?', a: 'Check the Funnel Chart drop-off percentages between stages. High leakage after "Quotes Sent" usually indicates pricing or follow-up issues.' },
-        { q: 'Which sales reps have higher drop-off?', a: 'The "Drop-off by Sales Rep" bar chart identifies team members who may need additional training on closing or qualifying leads.' },
-        { q: 'Which products have highest leakage?', a: 'The Leakage Heatmap highlights specific products that frequently enter the funnel but fail to reach the "Won" status.' }
+        { q: t('funnel_q1'), a: t('funnel_a1') },
+        { q: t('funnel_q2'), a: t('funnel_a2') },
+        { q: t('funnel_q3'), a: t('funnel_a3') }
     ];
 
     return ReactDOM.createPortal(
@@ -59,19 +61,19 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <Funnel size={24} className="text-blue-600 dark:text-blue-400" />
-                            Funnel & Leakage
+                            {t('funnel_and_leakage')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Understanding Funnel & Leakage</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('understanding_funnel_leakage')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -81,40 +83,40 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            Tracks the sales funnel stages and identifies leakage points. This dashboard helps you visualize the journey from Lead to Order, allowing for data-driven optimizations to improve overall conversion.
+                            {t('funnel_overview_text')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">02</span>
-                            Key Questions
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('key_questions')}
                         </h3>
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 text-start">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -123,44 +125,44 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Top KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('top_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Leads Entered" desc="Total number of potential customers entering the top of the funnel." />
-                                    <DetailItem title="Leads Contacted" desc="Number of leads that received first outreach from sales team." />
-                                    <DetailItem title="Quotes Sent" desc="Number of price proposals delivered to qualified prospects." />
-                                    <DetailItem title="Orders Placed" desc="Total closed won deals that converted to actual orders." />
+                                    <DetailItem title={t('leads_entered')} desc={t('leads_entered_desc')} />
+                                    <DetailItem title={t('leads_contacted')} desc={t('leads_contacted_desc')} />
+                                    <DetailItem title={t('quotes_sent')} desc={t('quotes_sent_desc')} />
+                                    <DetailItem title={t('orders_placed')} desc={t('orders_placed_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Side KPIs</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('side_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Conversion Rate" desc="Percentage of leads that successfully transition into confirmed orders." />
-                                    <DetailItem title="Funnel Drop-Off" desc="Average stage leakage rate across all funnel transitions." />
-                                    <DetailItem title="Potential Revenue Lost" desc="Financial value of deals that were marked as Lost or dropped out." />
-                                    <DetailItem title="Avg Deal Size" desc="Average value of won deals indicating deal quality." />
+                                    <DetailItem title={t('conversion_rate')} desc={t('conversion_rate_desc')} />
+                                    <DetailItem title={t('funnel_dropoff')} desc={t('funnel_dropoff_desc')} />
+                                    <DetailItem title={t('potential_revenue_lost')} desc={t('potential_revenue_lost_desc')} />
+                                    <DetailItem title={t('avg_deal_size')} desc={t('avg_deal_size_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Main Sales Funnel" desc="ECharts funnel visualization showing lead volume through conversion stages." />
-                                    <DetailItem title="Drop-off by Sales Rep" desc="Bar chart identifying team members with highest leakage rates." />
-                                    <DetailItem title="Won vs Lost Deals" desc="Pie chart showing success rate breakdown between won and lost." />
-                                    <DetailItem title="Leakage Heatmap" desc="Matrix view showing stage vs category value loss intensity." />
-                                    <DetailItem title="Lead Tracking Table" desc="Detailed log of leads with stage, date, value and status." />
-                                    <DetailItem title="Stage Velocity Analysis" desc="Companion chart showing average time and conversion by stage." />
+                                    <DetailItem title={t('main_sales_funnel')} desc={t('main_sales_funnel_desc')} />
+                                    <DetailItem title={t('dropoff_by_sales_rep')} desc={t('dropoff_by_sales_rep_desc')} />
+                                    <DetailItem title={t('won_vs_lost_deals')} desc={t('won_vs_lost_deals_desc')} />
+                                    <DetailItem title={t('leakage_heatmap')} desc={t('leakage_heatmap_desc')} />
+                                    <DetailItem title={t('lead_tracking_table')} desc={t('lead_tracking_table_desc')} />
+                                    <DetailItem title={t('stage_velocity_analysis')} desc={t('stage_velocity_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -168,44 +170,44 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs text-left">04</span>
-                            Data Sources & Logic
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Funnel Logic</span>
+                                    <span>{t('funnel_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2 text-left">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Active Tracking:</strong> Includes all leads with 'Won', 'Lost', or 'Pending' status.</span>
+                                        <span><strong>{t('active_tracking')}:</strong> {t('active_tracking_desc')}</span>
                                     </li>
-                                    <li className="flex gap-2 text-left">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Data Sanitation:</strong> Excludes test, draft or invalid entries to maintain accuracy.</span>
+                                        <span><strong>{t('data_sanitation')}:</strong> {t('data_sanitation_desc')}</span>
                                     </li>
                                 </ul>
                             </div>
 
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
-                                    <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables</span>
+                                    <TableIcon size={14} className="text-gray-500" />
+                                    <span>{t('source_tables')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. CRM Leads"
-                                        desc="Entry point for all potential customer interactions."
-                                        columns={['Lead ID', 'Source', 'Entry Date', 'Initial Status']}
+                                        name={t('crm_leads_table')}
+                                        desc={t('crm_leads_desc')}
+                                        columns={[t('lead_id'), t('source'), t('entry_date'), t('initial_status')]}
                                     />
                                     <TableSchema
-                                        name="2. Sales Orders"
-                                        desc="Fulfillment and completion data for the final stage."
-                                        columns={['Order ID', 'Total Amount', 'Status', 'Closing Date']}
+                                        name={t('sales_orders_table')}
+                                        desc={t('sales_orders_desc')}
+                                        columns={[t('order_id'), t('total_amount'), t('status'), t('closing_date')]}
                                     />
                                 </div>
                             </div>
@@ -213,12 +215,12 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
                     </section>
                 </div>
 
-                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10 text-left">
+                <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -228,7 +230,7 @@ export const SalesFunnelInfo: React.FC<SalesFunnelInfoProps> = ({ isOpen, onClos
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -239,7 +241,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-left">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

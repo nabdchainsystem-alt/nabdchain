@@ -200,17 +200,19 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
     const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
     const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
     const goToToday = () => setCurrentMonth(new Date());
-    const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    const weekDays = language === 'ar'
+        ? ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب']
+        : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
     const shortcuts = [
-        { key: 'today', label: 'Today' },
-        { key: 'later', label: 'Later' },
-        { key: 'tomorrow', label: 'Tomorrow' },
-        { key: 'nextWeek', label: 'Next week' },
-        { key: 'nextWeekend', label: 'Next weekend' },
-        { key: '2weeks', label: '2 weeks' },
-        { key: '4weeks', label: '4 weeks' },
-        { key: '8weeks', label: '8 weeks' },
+        { key: 'today', label: language === 'ar' ? 'اليوم' : 'Today' },
+        { key: 'later', label: language === 'ar' ? 'لاحقاً' : 'Later' },
+        { key: 'tomorrow', label: language === 'ar' ? 'غداً' : 'Tomorrow' },
+        { key: 'nextWeek', label: language === 'ar' ? 'الأسبوع القادم' : 'Next week' },
+        { key: 'nextWeekend', label: language === 'ar' ? 'نهاية الأسبوع' : 'Next weekend' },
+        { key: '2weeks', label: language === 'ar' ? 'أسبوعين' : '2 weeks' },
+        { key: '4weeks', label: language === 'ar' ? '4 أسابيع' : '4 weeks' },
+        { key: '8weeks', label: language === 'ar' ? '8 أسابيع' : '8 weeks' },
     ];
 
     return (

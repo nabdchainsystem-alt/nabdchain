@@ -12,6 +12,7 @@ import {
     Calculator as Sigma
 } from 'phosphor-react';
 import { PortalPopup } from '../../../../components/ui/PortalPopup';
+import { boardLogger } from '../../../../utils/logger';
 
 interface PivotTableProps {
     roomId: string;
@@ -108,7 +109,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                 setRows(parsed);
             }
         } catch (e) {
-            console.error('Failed to load tasks for pivot table', e);
+            boardLogger.error('Failed to load tasks for pivot table', e);
         }
     }, [storageKeyRows]);
 
@@ -352,7 +353,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ roomId }) => {
                     }
 
                 } catch (error) {
-                    console.error('Error reading excel file:', error);
+                    boardLogger.error('Error reading excel file', error);
                     alert('Failed to read Excel file.');
                 }
             };

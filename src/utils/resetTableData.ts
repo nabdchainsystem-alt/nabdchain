@@ -1,13 +1,15 @@
 /**
  * EMERGENCY RESET UTILITY
  * Run this in browser console to clear all corrupted table data:
- * 
+ *
  * ```
  * import('/utils/resetTableData').then(m => m.resetAllTableData())
  * ```
- * 
+ *
  * Or add a button in the UI that calls this function.
  */
+
+import { storageLogger } from './logger';
 
 export function resetAllTableData(roomId?: string) {
     const keys = Object.keys(localStorage);
@@ -18,18 +20,18 @@ export function resetAllTableData(roomId?: string) {
         k.includes('datatable-rows')
     );
 
-    console.log('[RESET] Found table keys:', tableKeys);
+    storageLogger.info('[RESET] Found table keys:', tableKeys);
 
     tableKeys.forEach(key => {
         if (roomId && !key.includes(roomId)) {
-            console.log('[RESET] Skipping (different room):', key);
+            storageLogger.debug('[RESET] Skipping (different room):', key);
             return;
         }
-        console.log('[RESET] Clearing:', key);
+        storageLogger.info('[RESET] Clearing:', key);
         localStorage.removeItem(key);
     });
 
-    console.log('[RESET] Reset complete. Reload the page.');
+    storageLogger.info('[RESET] Reset complete. Reload the page.');
     return tableKeys;
 }
 

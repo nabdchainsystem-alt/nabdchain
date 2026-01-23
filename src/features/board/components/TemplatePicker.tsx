@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { BOARD_TEMPLATES, BoardTemplate } from '../data/templates';
 import { Layout, Briefcase, User, Gear as Settings, CheckCircle } from 'phosphor-react';
+import { boardLogger } from '../../../utils/logger';
 
 interface TemplatePickerProps {
     onSelect: (template: BoardTemplate) => void;
@@ -56,7 +57,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ onSelect, select
                             <div
                                 key={template.id}
                                 onClick={() => {
-                                    console.log('Template clicked:', template);
+                                    boardLogger.debug('Template clicked:', template);
                                     onSelect(template);
                                 }}
                                 className={`

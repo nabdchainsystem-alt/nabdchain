@@ -12,20 +12,8 @@ import { formatCurrency } from '../../../utils/formatters';
 // --- Visual Constants ---
 const COLORS_SEQUENCE = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Total Purchase Spend', subtitle: 'YTD Approved', value: '$1.2M', rawValue: 1245000, isCurrency: true, change: '+8.5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [90, 95, 100, 98, 105, 110, 120], color: 'blue' },
-    { id: '2', label: 'Total Purchase Orders', subtitle: 'All time', value: '145', change: '+12', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [120, 125, 130, 128, 135, 140, 145], color: 'blue' },
-    { id: '3', label: 'Active Suppliers', subtitle: 'Engaged this month', value: '24', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [20, 21, 21, 22, 22, 23, 24], color: 'blue' },
-    { id: '4', label: 'Avg Purchase Value', subtitle: 'Per Order', value: '$8.5k', rawValue: 8586, isCurrency: true, change: '-1.2%', trend: 'down', icon: <Hash size={18} />, sparklineData: [8.8, 8.7, 8.6, 8.9, 8.7, 8.6, 8.5], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Monthly Spend Change', subtitle: 'MoM Variance', value: '+5.4%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 4, 3.5, 4.2, 4.8, 5.0, 5.4], color: 'blue' },
-    { id: '6', label: 'Top Supplier Spend %', subtitle: 'Concentration Risk', value: '18%', change: '-2%', trend: 'down', icon: <ChartPieSlice size={18} />, sparklineData: [22, 21, 20, 19.5, 19, 18.5, 18], color: 'blue' },
-    { id: '7', label: 'Purchase Frequency', subtitle: 'Days between orders', value: '3.2d', change: '-0.5d', trend: 'up', icon: <Activity size={18} />, sparklineData: [4, 3.8, 3.6, 3.5, 3.4, 3.3, 3.2], color: 'blue' },
-    { id: '8', label: 'Unplanned Purchase Rate', subtitle: 'Outside approved plan', value: '12%', change: '-3%', trend: 'up', icon: <Warning size={18} />, sparklineData: [18, 16, 15, 14, 13, 12.5, 12], color: 'blue' },
-];
+// KPI type definition
+type KPIData = KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string };
 
 // --- Mock Data: Charts ---
 const SPEND_BY_SUPPLIER = [
@@ -65,9 +53,24 @@ const RECENT_ORDERS = [
 ];
 
 export const PurchaseOverviewDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- KPI Data ---
+    const TOP_KPIS: KPIData[] = [
+        { id: '1', label: t('total_purchase_spend'), subtitle: t('ytd_approved'), value: '$1.2M', rawValue: 1245000, isCurrency: true, change: '+8.5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [90, 95, 100, 98, 105, 110, 120], color: 'blue' },
+        { id: '2', label: t('total_purchase_orders'), subtitle: t('all_time'), value: '145', change: '+12', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [120, 125, 130, 128, 135, 140, 145], color: 'blue' },
+        { id: '3', label: t('active_suppliers'), subtitle: t('engaged_this_month'), value: '24', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [20, 21, 21, 22, 22, 23, 24], color: 'blue' },
+        { id: '4', label: t('avg_purchase_value'), subtitle: t('per_order'), value: '$8.5k', rawValue: 8586, isCurrency: true, change: '-1.2%', trend: 'down', icon: <Hash size={18} />, sparklineData: [8.8, 8.7, 8.6, 8.9, 8.7, 8.6, 8.5], color: 'blue' },
+    ];
+
+    const SIDE_KPIS: KPIData[] = [
+        { id: '5', label: t('monthly_spend_change'), subtitle: t('mom_variance'), value: '+5.4%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 4, 3.5, 4.2, 4.8, 5.0, 5.4], color: 'blue' },
+        { id: '6', label: t('top_supplier_spend'), subtitle: t('concentration_risk'), value: '18%', change: '-2%', trend: 'down', icon: <ChartPieSlice size={18} />, sparklineData: [22, 21, 20, 19.5, 19, 18.5, 18], color: 'blue' },
+        { id: '7', label: t('purchase_frequency'), subtitle: t('days_between_orders'), value: '3.2d', change: '-0.5d', trend: 'up', icon: <Activity size={18} />, sparklineData: [4, 3.8, 3.6, 3.5, 3.4, 3.3, 3.2], color: 'blue' },
+        { id: '8', label: t('unplanned_purchase_rate'), subtitle: t('outside_approved_plan'), value: '12%', change: '-3%', trend: 'up', icon: <Warning size={18} />, sparklineData: [18, 16, 15, 14, 13, 12.5, 12], color: 'blue' },
+    ];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -182,16 +185,16 @@ export const PurchaseOverviewDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-start gap-2">
                     <ShoppingCart size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
-                    <div>
-                        <h1 className="text-2xl font-bold">Purchase Overview</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Snapshot of purchasing activity and supplier engagement</p>
+                    <div className="text-start">
+                        <h1 className="text-2xl font-bold">{t('purchase_overview')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('purchase_overview_subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
-                        title="Full Screen"
+                        title={t('full_screen')}
                     >
                         <ArrowsOut size={18} />
                     </button>
@@ -200,7 +203,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors bg-white dark:bg-monday-dark-elevated px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
                     >
                         <Info size={18} className="text-blue-500" />
-                        About Dashboard
+                        {t('about_dashboard')}
                     </button>
                 </div>
             </div>
@@ -224,12 +227,12 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                 {/* Spend by Supplier (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Spend by Supplier" />
+                        <ChartSkeleton height="h-[280px]" title={t('spend_by_supplier')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend by Supplier</h3>
-                                <p className="text-xs text-gray-400 mt-1">Top 5 suppliers by volume</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('spend_by_supplier')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('top_suppliers_volume')}</p>
                             </div>
                             <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -253,12 +256,12 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                 {/* Spend by Category (Right) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title="Spend by Category" />
+                        <ChartSkeleton height="h-[280px]" title={t('spend_by_category')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend by Category</h3>
-                                <p className="text-xs text-gray-400 mt-1">Departmental allocation</p>
+                            <div className="flex flex-col gap-0.5 mb-5 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('spend_by_category')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('departmental_allocation')}</p>
                             </div>
                             <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -285,12 +288,12 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
                     {/* Spend Distribution Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Spend Distribution" />
+                        <PieChartSkeleton title={t('spend_distribution')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spend Distribution</h3>
-                                <p className="text-xs text-gray-400 mt-1">Breakdown by purchase type</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('spend_distribution')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('breakdown_purchase_type')}</p>
                             </div>
                             <ReactECharts option={pieOption1} style={{ height: '210px' }} />
                         </div>
@@ -298,12 +301,12 @@ export const PurchaseOverviewDashboard: React.FC = () => {
 
                     {/* Supplier Share Pie */}
                     {isLoading ? (
-                        <PieChartSkeleton title="Supplier Share" />
+                        <PieChartSkeleton title={t('supplier_share')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Supplier Share</h3>
-                                <p className="text-xs text-gray-400 mt-1">Market share of top suppliers</p>
+                            <div className="flex flex-col gap-0.5 mb-4 text-start">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('supplier_share')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('market_share_suppliers')}</p>
                             </div>
                             <ReactECharts option={pieOption2} style={{ height: '210px' }} />
                         </div>
@@ -331,35 +334,35 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                     <TableSkeleton rows={5} columns={5} />
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Recent Orders</h3>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-700 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('recent_orders')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">PO #</th>
-                                        <th className="px-5 py-3">Supplier</th>
-                                        <th className="px-5 py-3">Category</th>
-                                        <th className="px-5 py-3 text-right">Amount</th>
-                                        <th className="px-5 py-3 text-center">Status</th>
+                                        <th className="px-5 py-3 text-start">{t('po_number')}</th>
+                                        <th className="px-5 py-3 text-start">{t('supplier')}</th>
+                                        <th className="px-5 py-3 text-start">{t('category')}</th>
+                                        <th className="px-5 py-3 text-end">{t('amount')}</th>
+                                        <th className="px-5 py-3 text-center">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {RECENT_ORDERS.map((order) => (
                                         <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{order.id}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{order.supplier}</td>
-                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">{order.category}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{order.id}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{order.supplier}</td>
+                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-start">{order.category}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">
                                                 {formatCurrency(order.amount, currency.code, currency.symbol)}
                                             </td>
                                             <td className="px-5 py-3 text-center">
-                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium border ${order.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                    order.status === 'Processing' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                        'bg-gray-50 text-gray-600 border-gray-100'
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium border ${order.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800' :
+                                                    order.status === 'Processing' ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' :
+                                                        'bg-gray-50 text-gray-600 border-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
                                                     }`}>
-                                                    {order.status}
+                                                    {order.status === 'Approved' ? t('approved') : order.status === 'Processing' ? t('processing') : t('pending')}
                                                 </span>
                                             </td>
                                         </tr>
@@ -372,12 +375,12 @@ export const PurchaseOverviewDashboard: React.FC = () => {
 
                 {/* Companion Chart (2 cols) */}
                 {isLoading ? (
-                    <ChartSkeleton height="h-[280px]" title="Concentration vs Diversification" />
+                    <ChartSkeleton height="h-[280px]" title={t('spend_concentration_category')} />
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Spend Concentration by Category</h3>
-                            <p className="text-xs text-gray-400">Distribution across categories and supplier dependency</p>
+                        <div className="mb-4 text-start">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_concentration_category')}</h3>
+                            <p className="text-xs text-gray-400">{t('distribution_category_dependency')}</p>
                         </div>
                         <ReactECharts option={marimekkoOption} style={{ height: '280px', width: '100%' }} />
                     </div>

@@ -4,6 +4,7 @@ import { X, UserCircle, ArrowRight, Clock, CheckCircle, EnvelopeSimple, Envelope
 import { Assignment } from '../../services/assignmentService';
 import { teamService, ConnectionRequest } from '../../services/teamService';
 import { useAuth } from '../../auth-adapter';
+import { appLogger } from '../../utils/logger';
 
 interface NotificationPanelProps {
     isOpen: boolean;
@@ -85,7 +86,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 onRespondToRequest(connectionId, action);
             }
         } catch (error) {
-            console.error('Failed to respond to request:', error);
+            appLogger.error('Failed to respond to request:', error);
         }
     };
 

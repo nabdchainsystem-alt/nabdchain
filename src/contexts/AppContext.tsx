@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, CountryConfig, CurrencyConfig } from '../config/currency';
 
 type Theme = 'light' | 'dark';
@@ -21,6 +21,8 @@ const translations: Translations = {
   favorites: { en: 'Favorites', ar: 'المفضلة' },
   workspaces: { en: 'Workspaces', ar: 'مساحات العمل' },
   search: { en: 'Search', ar: 'بحث' },
+  search_workspaces: { en: 'Search workspaces...', ar: 'البحث في مساحات العمل...' },
+  no_results_found: { en: 'No results found', ar: 'لا توجد نتائج' },
   add_workspace: { en: 'Add Workspace', ar: 'إضافة مساحة عمل' },
   or_create_workspace: { en: 'or create workspace', ar: 'أو إنشاء مساحة عمل' },
   create_workspace: { en: 'Create Workspace', ar: 'إنشاء مساحة عمل' },
@@ -691,6 +693,22 @@ const translations: Translations = {
   start_timer: { en: 'Start timer', ar: 'بدء المؤقت' },
   dependencies: { en: 'Dependencies', ar: 'التبعيات' },
 
+  // Kanban Board - Additional
+  copy_link: { en: 'Copy link', ar: 'نسخ الرابط' },
+  copy_id: { en: 'Copy ID', ar: 'نسخ المعرف' },
+  sharing_permissions: { en: 'Sharing & Permissions', ar: 'المشاركة والصلاحيات' },
+  group_options: { en: 'Group options', ar: 'خيارات المجموعة' },
+  collapse_group: { en: 'Collapse group', ar: 'طي المجموعة' },
+  archive_all_in_group: { en: 'Archive all in this group', ar: 'أرشفة الكل في هذه المجموعة' },
+  delete_group: { en: 'Delete group', ar: 'حذف المجموعة' },
+  group_by_status: { en: 'Group: Status', ar: 'تجميع: الحالة' },
+  closed: { en: 'Closed', ar: 'مغلق' },
+  add_group: { en: 'Add Group', ar: 'إضافة مجموعة' },
+  no_tags_created: { en: 'No tags created', ar: 'لا توجد وسوم' },
+  task_priority: { en: 'Task Priority', ar: 'أولوية المهمة' },
+  no_priority: { en: 'No priority', ar: 'بدون أولوية' },
+  add_to_personal_priorities: { en: 'Add to Personal Priorities', ar: 'إضافة للأولويات الشخصية' },
+
   // Table View
   search_this_board: { en: 'Search this board', ar: 'البحث في هذه اللوحة' },
   find_columns: { en: 'Find columns to show/hide', ar: 'البحث عن أعمدة لإظهارها/إخفائها' },
@@ -980,6 +998,8 @@ const translations: Translations = {
   overview_coming_soon: { en: 'Overview Dashboard Coming Soon', ar: 'لوحة النظرة العامة قادمة قريباً' },
   overview_coming_soon_desc: { en: 'This will be the general sales overview with aggregated insights from all dashboards. Use the other tabs to view detailed sales dashboards.', ar: 'ستكون هذه نظرة عامة على المبيعات مع رؤى مجمعة من جميع لوحات المعلومات. استخدم علامات التبويب الأخرى لعرض لوحات المبيعات التفصيلية.' },
   sales_dashboards: { en: 'Sales Dashboards', ar: 'لوحات المبيعات' },
+  sales_page_title: { en: 'Sales', ar: 'المبيعات' },
+  sales_page_desc: { en: 'Track sales opportunities and deals', ar: 'تتبع فرص المبيعات والصفقات' },
   performance: { en: 'Performance', ar: 'الأداء' },
   efficiency_analysis: { en: 'Efficiency analysis', ar: 'تحليل الكفاءة' },
   analysis: { en: 'Analysis', ar: 'التحليل' },
@@ -993,6 +1013,407 @@ const translations: Translations = {
   campaign_effectiveness: { en: 'Campaign effectiveness', ar: 'فعالية الحملة' },
   key_metrics_overview: { en: 'Key metrics overview', ar: 'نظرة عامة على المقاييس الرئيسية' },
 
+  // Purchases Dashboard
+  purchases_dashboards: { en: 'Purchases Dashboards', ar: 'لوحات المشتريات' },
+  purchases_page_title: { en: 'Purchases', ar: 'المشتريات' },
+  purchases_page_desc: { en: 'Track purchase orders and requisitions', ar: 'تتبع أوامر الشراء والمتطلبات' },
+  purchase_overview: { en: 'Purchase Overview', ar: 'نظرة عامة على المشتريات' },
+  purchase_overview_desc: { en: 'High-level snapshot of purchasing activity', ar: 'لمحة عامة عن نشاط الشراء' },
+  purchase_overview_subtitle: { en: 'Snapshot of purchasing activity and supplier engagement', ar: 'لمحة عن نشاط الشراء والتعامل مع الموردين' },
+  supplier_performance: { en: 'Supplier Performance', ar: 'أداء الموردين' },
+  supplier_performance_menu_desc: { en: 'Evaluate reliability, cost, and risk', ar: 'تقييم الموثوقية والتكلفة والمخاطر' },
+  purchase_behavior: { en: 'Purchase Behavior', ar: 'سلوك الشراء' },
+  purchase_behavior_desc: { en: 'Reveal hidden patterns and anomalies', ar: 'كشف الأنماط الخفية والشذوذات' },
+  purchase_behavior_subtitle: { en: 'Patterns, cycles, and anomalies', ar: 'الأنماط والدورات والشذوذات' },
+  cost_control: { en: 'Cost Control', ar: 'التحكم بالتكاليف' },
+  cost_control_desc: { en: 'Identify overspending and efficiency gaps', ar: 'تحديد الإنفاق الزائد وفجوات الكفاءة' },
+  purchase_funnel: { en: 'Purchase Funnel', ar: 'قمع المشتريات' },
+  purchase_funnel_desc: { en: 'Track flows and approval bottlenecks', ar: 'تتبع التدفقات واختناقات الموافقة' },
+  purchase_funnel_subtitle: { en: 'Flow efficiency and bottleneck tracking', ar: 'كفاءة التدفق وتتبع الاختناقات' },
+  dependency_risk: { en: 'Dependency & Risk', ar: 'التبعية والمخاطر' },
+  dependency_risk_desc: { en: 'Measure reliance and operational risk', ar: 'قياس الاعتماد والمخاطر التشغيلية' },
+  forecast_planning: { en: 'Forecast & Planning', ar: 'التنبؤ والتخطيط' },
+  forecast_planning_desc: { en: 'Predict future needs and budget impact', ar: 'التنبؤ بالاحتياجات المستقبلية وتأثير الميزانية' },
+
+  // Purchase Overview KPIs
+  total_purchase_spend: { en: 'Total Purchase Spend', ar: 'إجمالي إنفاق المشتريات' },
+  ytd_approved: { en: 'YTD Approved', ar: 'المعتمد منذ بداية العام' },
+  total_purchase_orders: { en: 'Total Purchase Orders', ar: 'إجمالي أوامر الشراء' },
+  all_time: { en: 'All time', ar: 'كل الأوقات' },
+  active_suppliers: { en: 'Active Suppliers', ar: 'الموردون النشطون' },
+  engaged_this_month: { en: 'Engaged this month', ar: 'المتعاملون هذا الشهر' },
+  avg_purchase_value: { en: 'Avg Purchase Value', ar: 'متوسط قيمة الشراء' },
+  per_order: { en: 'Per Order', ar: 'لكل طلب' },
+  monthly_spend_change: { en: 'Monthly Spend Change', ar: 'تغير الإنفاق الشهري' },
+  mom_variance: { en: 'MoM Variance', ar: 'التباين الشهري' },
+  top_supplier_spend: { en: 'Top Supplier Spend %', ar: 'نسبة إنفاق أكبر مورد' },
+  concentration_risk: { en: 'Concentration Risk', ar: 'مخاطر التركيز' },
+  purchase_frequency: { en: 'Purchase Frequency', ar: 'تكرار الشراء' },
+  days_between_orders: { en: 'Days between orders', ar: 'الأيام بين الطلبات' },
+  unplanned_purchase_rate: { en: 'Unplanned Purchase Rate', ar: 'معدل الشراء غير المخطط' },
+  outside_approved_plan: { en: 'Outside approved plan', ar: 'خارج الخطة المعتمدة' },
+
+  // Purchase Charts
+  spend_by_supplier: { en: 'Spend by Supplier', ar: 'الإنفاق حسب المورد' },
+  top_suppliers_volume: { en: 'Top 5 suppliers by volume', ar: 'أكبر 5 موردين حسب الحجم' },
+  // spend_by_category - defined earlier
+  departmental_allocation: { en: 'Departmental allocation', ar: 'توزيع الأقسام' },
+  spend_distribution: { en: 'Spend Distribution', ar: 'توزيع الإنفاق' },
+  breakdown_purchase_type: { en: 'Breakdown by purchase type', ar: 'التفصيل حسب نوع الشراء' },
+  supplier_share: { en: 'Supplier Share', ar: 'حصة المورد' },
+  market_share_suppliers: { en: 'Market share of top suppliers', ar: 'حصة السوق لأكبر الموردين' },
+  recent_orders: { en: 'Recent Orders', ar: 'الطلبات الأخيرة' },
+  po_number: { en: 'PO #', ar: 'رقم أمر الشراء' },
+  supplier: { en: 'Supplier', ar: 'المورد' },
+  spend_concentration_category: { en: 'Spend Concentration by Category', ar: 'تركيز الإنفاق حسب الفئة' },
+  distribution_category_dependency: { en: 'Distribution across categories and supplier dependency', ar: 'التوزيع عبر الفئات وتبعية الموردين' },
+  primary_supplier: { en: 'Primary Supplier', ar: 'المورد الرئيسي' },
+  other_suppliers: { en: 'Other Suppliers', ar: 'موردون آخرون' },
+
+  // Purchase Overview Info Panel
+  po_info_subtitle: { en: 'Snapshot of purchasing activity & health', ar: 'لمحة عن نشاط الشراء وصحته' },
+  po_info_overview_text: { en: 'This dashboard provides a high-level snapshot of purchasing activity, spending patterns, and supplier engagement for small businesses.', ar: 'توفر لوحة المعلومات هذه لمحة عامة عن نشاط الشراء وأنماط الإنفاق والتعامل مع الموردين للشركات الصغيرة.' },
+  key_questions: { en: 'Key Questions Answered', ar: 'الأسئلة الرئيسية المجاب عنها' },
+  po_info_q1: { en: 'Are purchases increasing?', ar: 'هل المشتريات في ازدياد؟' },
+  po_info_a1: { en: 'Check "Monthly Spend Change %" and the historical trend in charts. High increase requires budget review.', ar: 'تحقق من "نسبة تغير الإنفاق الشهري" والاتجاه التاريخي في الرسوم البيانية. الزيادة العالية تتطلب مراجعة الميزانية.' },
+  po_info_q2: { en: 'Who are our main suppliers?', ar: 'من هم موردونا الرئيسيون؟' },
+  po_info_a2: { en: 'Look at "Top Supplier Spend %" and the Supplier Share charts to identify concentration risks.', ar: 'انظر إلى "نسبة إنفاق أكبر مورد" ومخططات حصة الموردين لتحديد مخاطر التركيز.' },
+  po_info_q3: { en: 'How diversified is our spending?', ar: 'ما مدى تنوع إنفاقنا؟' },
+  po_info_a3: { en: 'Review the Spend Concentration chart. Even distribution across categories with low primary supplier % indicates healthy diversification; high concentration indicates dependency risk.', ar: 'راجع مخطط تركيز الإنفاق. التوزيع المتساوي عبر الفئات مع نسبة منخفضة للمورد الرئيسي يشير إلى تنويع صحي؛ التركيز العالي يشير إلى مخاطر التبعية.' },
+  po_info_q4: { en: 'Are we optimizing order frequency?', ar: 'هل نحسن تكرار الطلبات؟' },
+  po_info_a4: { en: 'Check "Purchase Frequency" vs "Total Purchase Orders". High frequency with low value might suggest consolidation opportunities.', ar: 'تحقق من "تكرار الشراء" مقابل "إجمالي أوامر الشراء". التكرار العالي مع القيمة المنخفضة قد يشير إلى فرص للدمج.' },
+  po_info_q5: { en: 'Is spending aligned with categories?', ar: 'هل الإنفاق متوافق مع الفئات؟' },
+  po_info_a5: { en: 'Analyze "Spend by Category" to ensure budget allocation matches strategic priorities.', ar: 'حلل "الإنفاق حسب الفئة" للتأكد من توافق توزيع الميزانية مع الأولويات الاستراتيجية.' },
+  // detailed_breakdown - defined later
+  key_performance_indicators: { en: 'Key Performance Indicators', ar: 'مؤشرات الأداء الرئيسية' },
+  po_info_total_spend_desc: { en: 'Total value of approved purchase orders in the current period.', ar: 'القيمة الإجمالية لأوامر الشراء المعتمدة في الفترة الحالية.' },
+  po_info_total_orders_desc: { en: 'Count of all purchase orders placed.', ar: 'عدد جميع أوامر الشراء المقدمة.' },
+  po_info_active_suppliers_desc: { en: 'Number of unique suppliers engaged in the period.', ar: 'عدد الموردين الفريدين المتعاملين خلال الفترة.' },
+  po_info_avg_value_desc: { en: 'Total Spend / Total Orders. Indicates typical deal size.', ar: 'إجمالي الإنفاق / إجمالي الطلبات. يشير إلى حجم الصفقة النموذجي.' },
+  po_info_monthly_change_desc: { en: 'Percentage difference in spend compared to the previous month.', ar: 'نسبة الفرق في الإنفاق مقارنة بالشهر السابق.' },
+  po_info_top_supplier_desc: { en: 'Percentage of total spend going to the #1 supplier.', ar: 'نسبة إجمالي الإنفاق التي تذهب للمورد رقم 1.' },
+  po_info_frequency_desc: { en: 'Average number of purchases per active interval.', ar: 'متوسط عدد المشتريات لكل فترة نشطة.' },
+  po_info_unplanned_desc: { en: 'Percentage of purchase orders created outside the approved purchasing plan or budget.', ar: 'نسبة أوامر الشراء المنشأة خارج خطة الشراء أو الميزانية المعتمدة.' },
+  // charts_tables - defined later
+  po_info_supplier_chart_desc: { en: 'Bar chart verifying top partners by volume.', ar: 'مخطط شريطي يتحقق من أكبر الشركاء حسب الحجم.' },
+  po_info_category_chart_desc: { en: 'Bar chart identifying cost centers (e.g. IT, Office).', ar: 'مخطط شريطي يحدد مراكز التكلفة (مثل تقنية المعلومات، المكتب).' },
+  po_info_distribution_desc: { en: 'Pie chart showing category split.', ar: 'مخطط دائري يوضح توزيع الفئات.' },
+  po_info_share_desc: { en: 'Pie chart showing market share of suppliers.', ar: 'مخطط دائري يوضح حصة السوق للموردين.' },
+  po_info_orders_table_desc: { en: 'Table listing details of recent approved purchases.', ar: 'جدول يعرض تفاصيل المشتريات المعتمدة الأخيرة.' },
+  po_info_concentration_desc: { en: 'Marimekko chart showing how total purchasing is distributed across categories, highlighting dependency risk and diversification balance.', ar: 'مخطط ماريمكو يوضح كيفية توزيع إجمالي المشتريات عبر الفئات، مع تسليط الضوء على مخاطر التبعية وتوازن التنويع.' },
+  // data_sources_logic - defined later
+  source_tables: { en: 'Source Tables & Fields', ar: 'الجداول والحقول المصدرية' },
+  po_table_purchase_orders: { en: '1. PurchaseOrders', ar: '1. أوامر الشراء' },
+  po_table_purchase_orders_desc: { en: 'Main source for spend and counts.', ar: 'المصدر الرئيسي للإنفاق والأعداد.' },
+  po_table_suppliers: { en: '2. Suppliers', ar: '2. الموردون' },
+  po_table_suppliers_desc: { en: 'Supplier names and categories.', ar: 'أسماء الموردين وفئاتهم.' },
+  supplier_id: { en: 'Supplier ID', ar: 'معرف المورد' },
+  total_amount: { en: 'Total Amount', ar: 'المبلغ الإجمالي' },
+  active_status: { en: 'Active Status', ar: 'حالة النشاط' },
+  // core_calculation_logic - defined later
+  includes: { en: 'Includes', ar: 'يشمل' },
+  excludes: { en: 'Excludes', ar: 'يستثني' },
+  date_range: { en: 'Date Range', ar: 'نطاق التاريخ' },
+  po_info_includes_desc: { en: 'Only approved purchases.', ar: 'المشتريات المعتمدة فقط.' },
+  po_info_excludes_desc: { en: 'Drafts and test data (flagged items).', ar: 'المسودات وبيانات الاختبار (العناصر المعلمة).' },
+  po_info_date_range_desc: { en: 'Currently reflects YTD or rolling 12 months.', ar: 'يعكس حاليًا منذ بداية العام أو آخر 12 شهرًا.' },
+
+  // Purchase Behavior KPIs
+  repeat_purchase_rate: { en: 'Repeat Purchase Rate', ar: 'معدل تكرار الشراء' },
+  recurring_items: { en: 'Recurring Items', ar: 'العناصر المتكررة' },
+  seasonal_index: { en: 'Seasonal Index', ar: 'المؤشر الموسمي' },
+  peak_deviation: { en: 'Peak Deviation', ar: 'انحراف الذروة' },
+  category_concentration: { en: 'Category Concentration', ar: 'تركيز الفئات' },
+  top_3_share: { en: 'Top 3 Share', ar: 'حصة أكبر 3' },
+  avg_order_gap: { en: 'Avg Order Gap', ar: 'متوسط الفجوة بين الطلبات' },
+  days_between: { en: 'Days Between', ar: 'الأيام بين' },
+  spike_detection: { en: 'Spike Detection', ar: 'كشف الارتفاعات' },
+  anomalies: { en: 'Anomalies', ar: 'الشذوذات' },
+  irregular_purchases: { en: 'Irregular Purchases', ar: 'المشتريات غير المنتظمة' },
+  out_of_pattern: { en: 'Out of Pattern', ar: 'خارج النمط' },
+  orders_per_month: { en: 'Orders / Month', ar: 'طلبات / شهر' },
+  peak_purchase_day: { en: 'Peak Purchase Day', ar: 'يوم ذروة الشراء' },
+  highest_activity: { en: 'Highest Activity', ar: 'أعلى نشاط' },
+
+  // Purchase Behavior Charts
+  orders_per_category: { en: 'Orders per Category', ar: 'الطلبات لكل فئة' },
+  volume_breakdown: { en: 'Volume breakdown', ar: 'تفصيل الحجم' },
+  purchase_velocity: { en: 'Purchase Velocity', ar: 'سرعة الشراء' },
+  monthly_order_frequency: { en: 'Monthly order frequency', ar: 'تكرار الطلبات الشهري' },
+  category_mix_spend: { en: 'Category Mix (Spend)', ar: 'مزيج الفئات (الإنفاق)' },
+  portfolio_diversity: { en: 'Portfolio diversity', ar: 'تنوع المحفظة' },
+  order_source_distribution: { en: 'Order Source Distribution', ar: 'توزيع مصدر الطلبات' },
+  purchase_initiation_types: { en: 'Purchase initiation types', ar: 'أنواع بدء الشراء' },
+  category_performance: { en: 'Category Performance', ar: 'أداء الفئات' },
+  // orders_count - defined later
+  avg_value: { en: 'Avg Value', ar: 'متوسط القيمة' },
+  last_purchase: { en: 'Last Purchase', ar: 'آخر شراء' },
+  temporal_purchase_wave: { en: 'Temporal Purchase Wave', ar: 'موجة الشراء الزمنية' },
+  activity_density_time: { en: 'Activity density over time', ar: 'كثافة النشاط عبر الزمن' },
+  weekly_purchasing_intensity: { en: 'Weekly Purchasing Intensity', ar: 'كثافة الشراء الأسبوعية' },
+  direct_purchase: { en: 'Direct Purchase', ar: 'شراء مباشر' },
+  auto_reorder: { en: 'Auto-Reorder', ar: 'إعادة طلب تلقائي' },
+  requisition: { en: 'Requisition', ar: 'طلب شراء' },
+  emergency: { en: 'Emergency', ar: 'طوارئ' },
+
+  // Purchase Behavior Info Panel
+  pb_info_subtitle: { en: 'Patterns & Anomalies', ar: 'الأنماط والشذوذات' },
+  pb_info_overview_text: { en: 'This dashboard uncovers hidden purchasing behaviors and patterns.', ar: 'تكشف لوحة المعلومات هذه عن سلوكيات وأنماط الشراء الخفية.' },
+  pb_info_q1: { en: 'Is our purchasing reactive or planned?', ar: 'هل شراؤنا تفاعلي أم مخطط؟' },
+  pb_info_a1: { en: 'Check Purchase Frequency and Avg Order Gap.', ar: 'تحقق من تكرار الشراء ومتوسط الفجوة.' },
+  pb_info_q2: { en: 'Are we consolidating orders effectively?', ar: 'هل نوحد الطلبات بفعالية؟' },
+  pb_info_a2: { en: 'Look at Category Concentration.', ar: 'انظر إلى تركيز الفئات.' },
+  pb_info_q3: { en: 'Do we have seasonal spending spikes?', ar: 'هل لدينا ارتفاعات موسمية؟' },
+  pb_info_a3: { en: 'Review Seasonal Index and Temporal Purchase Wave.', ar: 'راجع المؤشر الموسمي وموجة الشراء.' },
+  pb_info_q4: { en: 'Are there anomalies in our spending?', ar: 'هل هناك شذوذات في إنفاقنا؟' },
+  pb_info_a4: { en: 'Spike Detection and Irregular Purchase highlight unusual transactions.', ar: 'كشف الارتفاعات تبرز المعاملات غير العادية.' },
+  pb_info_q5: { en: 'Which categories dominate our activity?', ar: 'أي الفئات تسيطر على نشاطنا؟' },
+  pb_info_a5: { en: 'Category Mix and Orders per Category charts reveal administrative effort.', ar: 'مخططات مزيج الفئات تكشف الجهد الإداري.' },
+  pb_info_frequency_desc: { en: 'Average purchase orders created per month.', ar: 'متوسط أوامر الشراء شهرياً.' },
+  pb_info_repeat_desc: { en: 'Percentage of items ordered more than once.', ar: 'نسبة العناصر المطلوبة أكثر من مرة.' },
+  pb_info_seasonal_desc: { en: 'Spending deviation during peak seasons.', ar: 'انحراف الإنفاق خلال المواسم القصوى.' },
+  pb_info_concentration_desc: { en: 'Market share of top 3 categories.', ar: 'حصة أكبر 3 فئات.' },
+  pb_info_gap_desc: { en: 'Average time between consecutive orders.', ar: 'متوسط الوقت بين الطلبات.' },
+  pb_info_spike_desc: { en: 'Days where spending exceeded 3x average.', ar: 'الأيام التي تجاوز فيها الإنفاق 3 أضعاف.' },
+  pb_info_irregular_desc: { en: 'Orders outside standard buying patterns.', ar: 'طلبات خارج أنماط الشراء المعتادة.' },
+  pb_info_peak_desc: { en: 'Day with highest purchasing activity.', ar: 'يوم أعلى نشاط شراء.' },
+  pb_info_orders_chart_desc: { en: 'Bar chart showing volume by category.', ar: 'مخطط شريطي يوضح الحجم حسب الفئة.' },
+  pb_info_velocity_chart_desc: { en: 'Bar chart showing monthly order trends.', ar: 'مخطط شريطي يوضح اتجاهات الطلبات.' },
+  pb_info_mix_chart_desc: { en: 'Donut chart illustrating spend diversity.', ar: 'مخطط دائري يوضح تنوع الإنفاق.' },
+  pb_info_source_chart_desc: { en: 'Donut chart showing purchase initiation types.', ar: 'مخطط دائري يوضح أنواع بدء الشراء.' },
+  pb_info_table_desc: { en: 'Breakdown of order count and value by category.', ar: 'تفصيل عدد الطلبات والقيمة حسب الفئة.' },
+  pb_info_heatmap_desc: { en: 'Heatmap of weekly order density patterns.', ar: 'مخطط حراري لأنماط كثافة الطلبات.' },
+  pb_table_orders: { en: '1. PurchaseOrders', ar: '1. أوامر الشراء' },
+  pb_table_orders_desc: { en: 'Main transaction log.', ar: 'سجل المعاملات الرئيسي.' },
+  pb_table_items: { en: '2. PurchaseOrderItems', ar: '2. عناصر أوامر الشراء' },
+  pb_table_items_desc: { en: 'Line item details for category analysis.', ar: 'تفاصيل العناصر لتحليل الفئات.' },
+  po_date: { en: 'PO Date', ar: 'تاريخ أمر الشراء' },
+  item_id: { en: 'Item ID', ar: 'معرف العنصر' },
+  // quantity - defined earlier (line ~957)
+  unit_price: { en: 'Unit Price', ar: 'سعر الوحدة' },
+  seasonality: { en: 'Seasonality', ar: 'الموسمية' },
+  pb_calc_seasonality: { en: 'Monthly Spend / Average Monthly Spend.', ar: 'الإنفاق الشهري / متوسط الإنفاق الشهري.' },
+  order_gap: { en: 'Order Gap', ar: 'فجوة الطلب' },
+  pb_calc_order_gap: { en: 'Date(Order N) - Date(Order N-1).', ar: 'تاريخ(الطلب ن) - تاريخ(الطلب ن-1).' },
+  spike: { en: 'Spike', ar: 'الارتفاع المفاجئ' },
+  pb_calc_spike: { en: 'Daily Total > (Avg Daily Total * 3).', ar: 'الإجمالي اليومي > (متوسط الإجمالي اليومي * 3).' },
+
+  // Purchase Funnel KPIs
+  requests_submitted: { en: 'Requests Submitted', ar: 'الطلبات المقدمة' },
+  total_intake: { en: 'Total Intake', ar: 'إجمالي المدخلات' },
+  approved_requests: { en: 'Approved Requests', ar: 'الطلبات المعتمدة' },
+  avg_approval_time: { en: 'Avg Approval Time', ar: 'متوسط وقت الموافقة' },
+  end_to_end: { en: 'End-to-End', ar: 'من البداية للنهاية' },
+  approval_rate: { en: 'Approval Rate', ar: 'معدل الموافقة' },
+  bottleneck_stage: { en: 'Bottleneck Stage', ar: 'مرحلة الاختناق' },
+  highest_delay: { en: 'Highest Delay', ar: 'أعلى تأخير' },
+  delayed_requests: { en: 'Delayed Requests', ar: 'الطلبات المتأخرة' },
+  over_sla: { en: 'Over SLA', ar: 'تجاوز SLA' },
+  rejected_requests: { en: 'Rejected Requests', ar: 'الطلبات المرفوضة' },
+  denied: { en: 'Denied', ar: 'مرفوض' },
+  sla_compliance: { en: 'SLA Compliance', ar: 'الامتثال لـ SLA' },
+  on_time_rate: { en: 'On-Time Rate', ar: 'معدل الالتزام بالوقت' },
+  purchase_funnel_approvals: { en: 'Purchase Funnel & Approvals', ar: 'قمع المشتريات والموافقات' },
+  id: { en: 'ID', ar: 'المعرف' },
+
+  // Purchase Funnel Charts
+  request_volume_trend: { en: 'Request Volume Trend', ar: 'اتجاه حجم الطلبات' },
+  monthly_submission_patterns: { en: 'Monthly submission patterns', ar: 'أنماط التقديم الشهرية' },
+  avg_hours_per_stage: { en: 'Avg Hours per Stage', ar: 'متوسط الساعات لكل مرحلة' },
+  identifying_bottlenecks: { en: 'Identifying bottlenecks', ar: 'تحديد الاختناقات' },
+  conversion_funnel: { en: 'Conversion Funnel', ar: 'قمع التحويل' },
+  request_progression: { en: 'Request progression', ar: 'تقدم الطلب' },
+  stage_status_distribution: { en: 'Stage Status Distribution', ar: 'توزيع حالة المرحلة' },
+  request_outcomes: { en: 'Request outcomes', ar: 'نتائج الطلبات' },
+  active_request_status: { en: 'Active Request Status', ar: 'حالة الطلبات النشطة' },
+  requester: { en: 'Requester', ar: 'مقدم الطلب' },
+  age_days: { en: 'Age (Days)', ar: 'العمر (أيام)' },
+  approval_flow_analysis: { en: 'Approval Flow Analysis', ar: 'تحليل تدفق الموافقة' },
+  submitted: { en: 'Submitted', ar: 'مقدم' },
+  manager_review: { en: 'Manager Review', ar: 'مراجعة المدير' },
+  finance_review: { en: 'Finance Review', ar: 'مراجعة المالية' },
+  approved: { en: 'Approved', ar: 'معتمد' },
+  ordered: { en: 'Ordered', ar: 'مطلوب' },
+  manager_approved: { en: 'Manager Approved', ar: 'موافقة المدير' },
+  manager_rejected: { en: 'Manager Rejected', ar: 'رفض المدير' },
+  finance_approved: { en: 'Finance Approved', ar: 'موافقة المالية' },
+  finance_rejected: { en: 'Finance Rejected', ar: 'رفض المالية' },
+  cancelled: { en: 'Cancelled', ar: 'ملغى' },
+  // delayed - defined earlier
+  // on_track - defined earlier
+  at_risk: { en: 'At Risk', ar: 'في خطر' },
+  // finance - defined earlier
+  consistent: { en: 'Consistent', ar: 'ثابت' },
+  tuesday: { en: 'Tuesday', ar: 'الثلاثاء' },
+  hours: { en: 'Hours', ar: 'ساعات' },
+
+  // Supplier Performance Dashboard
+  supplier_performance: { en: 'Supplier Performance', ar: 'أداء الموردين' },
+  supplier_performance_subtitle: { en: 'Evaluate reliability, cost, and risk', ar: 'تقييم الموثوقية والتكلفة والمخاطر' },
+  total_suppliers: { en: 'Total Suppliers', ar: 'إجمالي الموردين' },
+  on_time_delivery_pct: { en: 'On-Time Delivery %', ar: 'نسبة التسليم في الوقت' },
+  avg_lead_time: { en: 'Avg Lead Time', ar: 'متوسط وقت التسليم' },
+  days_to_deliver: { en: 'Days to Deliver', ar: 'أيام التسليم' },
+  cost_variance: { en: 'Cost Variance', ar: 'تباين التكلفة' },
+  actual_vs_std: { en: 'Actual vs Std', ar: 'الفعلي مقابل المعياري' },
+  dependency_index: { en: 'Dependency Index', ar: 'مؤشر التبعية' },
+  risk_0_100: { en: 'Risk (0-100)', ar: 'المخاطر (0-100)' },
+  dispute_rate: { en: 'Dispute Rate', ar: 'معدل النزاعات' },
+  issues_per_orders: { en: 'Issues / Orders', ar: 'المشاكل / الطلبات' },
+  preferred_suppliers: { en: 'Preferred Suppliers', ar: 'الموردون المفضلون' },
+  strategic_partners: { en: 'Strategic Partners', ar: 'الشركاء الاستراتيجيون' },
+  supplier_concentration: { en: 'Supplier Concentration', ar: 'تركز الموردين' },
+  top_3_spend_pct: { en: 'Top 3 Spend %', ar: 'نسبة إنفاق أعلى 3' },
+  spend_per_supplier: { en: 'Spend per Supplier', ar: 'الإنفاق لكل مورد' },
+  total_volume_by_partner: { en: 'Total volume by partner', ar: 'الحجم الإجمالي حسب الشريك' },
+  lead_time_days: { en: 'Lead Time (Days)', ar: 'وقت التسليم (أيام)' },
+  speed_of_delivery_breakdown: { en: 'Speed of delivery breakdown', ar: 'تفصيل سرعة التسليم' },
+  risk_distribution: { en: 'Risk Distribution', ar: 'توزيع المخاطر' },
+  suppliers_by_risk_category: { en: 'Suppliers by risk category', ar: 'الموردون حسب فئة المخاطر' },
+  low_risk: { en: 'Low Risk', ar: 'مخاطر منخفضة' },
+  medium_risk: { en: 'Medium Risk', ar: 'مخاطر متوسطة' },
+  high_risk: { en: 'High Risk', ar: 'مخاطر عالية' },
+  performance_status: { en: 'Performance Status', ar: 'حالة الأداء' },
+  overall_supplier_health_summary: { en: 'Overall supplier health summary', ar: 'ملخص صحة الموردين العامة' },
+  supplier_health_stable_msg: { en: 'Overall supplier health is stable. 8 Preferred Suppliers are maintaining 95%+ performance.', ar: 'صحة الموردين العامة مستقرة. 8 موردين مفضلين يحافظون على أداء أعلى من 95%.' },
+  supplier_performance_metrics: { en: 'Supplier Performance Metrics', ar: 'مقاييس أداء الموردين' },
+  supplier_name: { en: 'Supplier Name', ar: 'اسم المورد' },
+  total_spend: { en: 'Total Spend', ar: 'إجمالي الإنفاق' },
+  avg_del_days: { en: 'Avg Del (Days)', ar: 'متوسط التسليم (أيام)' },
+  on_time_pct: { en: 'On-Time %', ar: 'نسبة الالتزام بالوقت' },
+  risk_level: { en: 'Risk Level', ar: 'مستوى المخاطر' },
+  low: { en: 'Low', ar: 'منخفض' },
+  medium: { en: 'Medium', ar: 'متوسط' },
+  high: { en: 'High', ar: 'عالي' },
+  risk_vs_value_matrix: { en: 'Risk vs Value Matrix', ar: 'مصفوفة المخاطر مقابل القيمة' },
+  spend_vs_lead_time_risk: { en: 'Spend vs lead time with risk indicators', ar: 'الإنفاق مقابل وقت التسليم مع مؤشرات المخاطر' },
+  spend: { en: 'Spend', ar: 'الإنفاق' },
+  lead_time: { en: 'Lead Time', ar: 'وقت التسليم' },
+  risk_score: { en: 'Risk Score', ar: 'درجة المخاطر' },
+  days: { en: 'days', ar: 'أيام' },
+
+  // Purchase Funnel Info Panel
+
+  // Cost Control Dashboard
+  cost_control_optimization: { en: 'Cost Control & Optimization', ar: 'التحكم في التكاليف والتحسين' },
+  cost_control_subtitle: { en: 'Identify overspending and efficiency gaps', ar: 'تحديد الإنفاق الزائد وفجوات الكفاءة' },
+  total_cost: { en: 'Total Cost', ar: 'إجمالي التكلفة' },
+  actual_spend: { en: 'Actual Spend', ar: 'الإنفاق الفعلي' },
+  budget_variance: { en: 'Budget Variance', ar: 'انحراف الميزانية' },
+  vs_plan: { en: 'vs Plan', ar: 'مقابل الخطة' },
+  avg_category_cost: { en: 'Avg Category Cost', ar: 'متوسط تكلفة الفئة' },
+  per_category: { en: 'Per Category', ar: 'لكل فئة' },
+  negotiation_savings: { en: 'Negotiation Savings', ar: 'وفورات التفاوض' },
+  total_saved: { en: 'Total Saved', ar: 'إجمالي الوفورات' },
+  volatility_index: { en: 'Volatility Index', ar: 'مؤشر التقلب' },
+  price_stability: { en: 'Price Stability', ar: 'استقرار الأسعار' },
+  high_risk_items: { en: 'High-Risk Items', ar: 'العناصر عالية المخاطر' },
+  over_budget_volatile: { en: 'Over Budget / Volatile', ar: 'تجاوز الميزانية / متقلب' },
+  optimization_opps: { en: 'Optimization Opps', ar: 'فرص التحسين' },
+  potential_savings: { en: 'Potential Savings', ar: 'الوفورات المحتملة' },
+  cost_efficiency: { en: 'Cost Efficiency', ar: 'كفاءة التكلفة' },
+  savings_rate_pct: { en: 'Savings Rate %', ar: 'نسبة الوفورات' },
+  cost_vs_budget: { en: 'Cost vs Budget', ar: 'التكلفة مقابل الميزانية' },
+  actual_vs_planned_spend: { en: 'Actual vs Planned Spend', ar: 'الإنفاق الفعلي مقابل المخطط' },
+  budget: { en: 'Budget', ar: 'الميزانية' },
+  actual_cost: { en: 'Actual Cost', ar: 'التكلفة الفعلية' },
+  monthly_cost_trend: { en: 'Monthly Cost Trend', ar: 'اتجاه التكلفة الشهرية' },
+  cost_fluctuation_over_time: { en: 'Cost fluctuation over time', ar: 'تقلب التكلفة عبر الزمن' },
+  cost_allocation: { en: 'Cost Allocation', ar: 'توزيع التكاليف' },
+  spend_breakdown_by_category: { en: 'Spend breakdown by category', ar: 'تفصيل الإنفاق حسب الفئة' },
+  savings_breakdown: { en: 'Savings Breakdown', ar: 'تفصيل الوفورات' },
+  cost_optimization_sources: { en: 'Cost optimization sources', ar: 'مصادر تحسين التكلفة' },
+  item_cost_variance: { en: 'Item Cost Variance', ar: 'انحراف تكلفة العنصر' },
+  item: { en: 'Item', ar: 'العنصر' },
+  supplier: { en: 'Supplier', ar: 'المورد' },
+  cost: { en: 'Cost', ar: 'التكلفة' },
+  variance_pct: { en: 'Variance %', ar: 'نسبة الانحراف' },
+  deviation_radar: { en: 'Deviation Radar', ar: 'رادار الانحراف' },
+  pf_info_subtitle: { en: 'Approval Flow & Bottlenecks', ar: 'تدفق الموافقة والاختناقات' },
+  pf_info_overview_text: { en: 'This dashboard tracks the lifecycle of purchase requests from submission to final approval, highlighting bottlenecks, delays, and approval efficiency.', ar: 'تتتبع هذه اللوحة دورة حياة طلبات الشراء من التقديم إلى الموافقة النهائية، مع إبراز الاختناقات والتأخيرات وكفاءة الموافقة.' },
+
+  // Dependency Risk Dashboard
+  dependency_risk: { en: 'Dependency & Risk', ar: 'التبعية والمخاطر' },
+  dependency_risk_subtitle: { en: 'Resilience and network analysis', ar: 'تحليل المرونة والشبكة' },
+  dependency_ratio: { en: 'Dependency Ratio', ar: 'نسبة التبعية' },
+  top_5_concentration: { en: 'Top 5 Concentration', ar: 'تركز أعلى 5' },
+  single_source_cats: { en: 'Single-Source Cats', ar: 'فئات مورد واحد' },
+  no_backup: { en: 'No Backup', ar: 'بدون احتياطي' },
+  risk_exposure: { en: 'Risk Exposure', ar: 'التعرض للمخاطر' },
+  high_risk_spend: { en: 'High Risk Spend', ar: 'الإنفاق عالي المخاطر' },
+  stability_score: { en: 'Stability Score', ar: 'درجة الاستقرار' },
+  supply_chain_health: { en: 'Supply Chain Health', ar: 'صحة سلسلة التوريد' },
+  backup_suppliers: { en: 'Backup Suppliers', ar: 'الموردون الاحتياطيون' },
+  avg_per_category: { en: 'Avg per Category', ar: 'المتوسط لكل فئة' },
+  avg_switching_cost: { en: 'Avg Switching Cost', ar: 'متوسط تكلفة التبديل' },
+  est_impact: { en: 'Est. Impact', ar: 'التأثير المقدر' },
+  active_risk_alerts: { en: 'Active Risk Alerts', ar: 'تنبيهات المخاطر النشطة' },
+  critical_issues: { en: 'Critical Issues', ar: 'المشاكل الحرجة' },
+  mitigation_progress: { en: 'Mitigation Progress', ar: 'تقدم التخفيف' },
+  actions_completed: { en: 'Actions Completed', ar: 'الإجراءات المكتملة' },
+  dependency_by_category: { en: 'Dependency by Category', ar: 'التبعية حسب الفئة' },
+  primary_vs_secondary_share: { en: 'Primary vs Secondary Share', ar: 'الحصة الأساسية مقابل الثانوية' },
+  primary: { en: 'Primary', ar: 'أساسي' },
+  backup: { en: 'Backup', ar: 'احتياطي' },
+  risk_trend: { en: 'Risk Trend', ar: 'اتجاه المخاطر' },
+  monthly_risk_distribution: { en: 'Monthly risk distribution', ar: 'توزيع المخاطر الشهري' },
+  supplier_classification: { en: 'Supplier classification', ar: 'تصنيف الموردين' },
+  diversification_score: { en: 'Diversification Score', ar: 'درجة التنويع' },
+  by_category_coverage: { en: 'By category coverage', ar: 'حسب تغطية الفئة' },
+  diversified: { en: 'diversified', ar: 'متنوع' },
+  high_risk_concentrations: { en: 'High Risk Concentrations', ar: 'التركزات عالية المخاطر' },
+  dependency: { en: 'Dependency', ar: 'التبعية' },
+  level: { en: 'Level', ar: 'المستوى' },
+  critical: { en: 'Critical', ar: 'حرج' },
+  supply_chain_network: { en: 'Supply Chain Network', ar: 'شبكة سلسلة التوريد' },
+  categories: { en: 'Categories', ar: 'الفئات' },
+  suppliers: { en: 'Suppliers', ar: 'الموردون' },
+  pf_info_q1: { en: 'Where are requests getting stuck?', ar: 'أين تتعطل الطلبات؟' },
+  pf_info_a1: { en: 'Check the "Bottleneck Stage" KPI and the "Avg Time per Stage" chart. High durations indicate process inefficiencies.', ar: 'تحقق من مؤشر "مرحلة الاختناق" ومخطط "متوسط الوقت لكل مرحلة". المدد الطويلة تشير إلى عدم كفاءة العملية.' },
+  pf_info_q2: { en: 'How many requests are we rejecting?', ar: 'كم عدد الطلبات التي نرفضها؟' },
+  pf_info_a2: { en: 'Monitor "Rejected Requests" and "Approval Rate". A high rejection rate suggests clarity issues with initial requests.', ar: 'راقب "الطلبات المرفوضة" و"معدل الموافقة". معدل الرفض المرتفع يشير إلى مشاكل في وضوح الطلبات الأولية.' },
+  pf_info_q3: { en: 'Are we meeting approval SLAs?', ar: 'هل نلتزم باتفاقيات مستوى الخدمة للموافقات؟' },
+  pf_info_a3: { en: 'Look at "Avg Approval Time". If it exceeds internal targets (e.g., 2 days), the process needs optimization.', ar: 'انظر إلى "متوسط وقت الموافقة". إذا تجاوز الأهداف الداخلية (مثل يومين)، فإن العملية تحتاج تحسين.' },
+  pf_info_q4: { en: 'What is the volume of our pipeline?', ar: 'ما هو حجم خط الأنابيب لدينا؟' },
+  pf_info_a4: { en: '"Requests Submitted" gives the total intake volume, while the Funnel Chart visualizes the conversion to orders.', ar: '"الطلبات المقدمة" تعطي إجمالي حجم المدخلات، بينما يوضح مخطط القمع التحويل إلى طلبات.' },
+  pf_info_q5: { en: 'How do requests flow through the system?', ar: 'كيف تتدفق الطلبات عبر النظام؟' },
+  pf_info_a5: { en: 'The "Approval Flow Sankey" shows the complex movement, including re-routes and rejections.', ar: 'يظهر "مخطط سانكي لتدفق الموافقات" الحركة المعقدة، بما في ذلك إعادة التوجيه والرفض.' },
+  pf_info_requests_desc: { en: 'Total number of new purchase requests initiated.', ar: 'إجمالي عدد طلبات الشراء الجديدة المقدمة.' },
+  pf_info_approved_desc: { en: 'Requests that have successfully passed all approval stages.', ar: 'الطلبات التي اجتازت جميع مراحل الموافقة بنجاح.' },
+  pf_info_rejected_desc: { en: 'Requests denied by approvers.', ar: 'الطلبات المرفوضة من المعتمدين.' },
+  pf_info_approval_time_desc: { en: 'Average duration from submission to final decision.', ar: 'متوسط المدة من التقديم إلى القرار النهائي.' },
+  pf_info_approval_rate_desc: { en: 'Percentage of submitted requests that get approved.', ar: 'نسبة الطلبات المقدمة التي تتم الموافقة عليها.' },
+  pf_info_bottleneck_desc: { en: 'The approval stage with the highest average delay.', ar: 'مرحلة الموافقة ذات أعلى متوسط تأخير.' },
+  pf_info_delayed_desc: { en: 'Count of active requests exceeding the SLA time limit.', ar: 'عدد الطلبات النشطة التي تجاوزت الحد الزمني لاتفاقية مستوى الخدمة.' },
+  pf_info_sla_desc: { en: 'Percentage of requests approved within target timeframes.', ar: 'نسبة الطلبات المعتمدة ضمن الإطار الزمني المستهدف.' },
+  request_funnel: { en: 'Request Funnel', ar: 'قمع الطلبات' },
+  pf_info_funnel_chart_desc: { en: 'Funnel chart showing volume drop-off at each stage.', ar: 'مخطط قمعي يوضح انخفاض الحجم في كل مرحلة.' },
+  pf_info_hours_chart_desc: { en: 'Bar chart showing average processing time at each step.', ar: 'مخطط شريطي يوضح متوسط وقت المعالجة في كل خطوة.' },
+  pf_info_volume_chart_desc: { en: 'Bar chart showing monthly request submission patterns.', ar: 'مخطط شريطي يوضح أنماط تقديم الطلبات الشهرية.' },
+  pf_info_status_chart_desc: { en: 'Pie chart showing breakdown of approved, pending, rejected, and cancelled requests.', ar: 'مخطط دائري يوضح توزيع الطلبات المعتمدة والمعلقة والمرفوضة والملغاة.' },
+  request_status_table: { en: 'Request Status Table', ar: 'جدول حالة الطلبات' },
+  pf_info_status_table_desc: { en: 'Detailed list of active requests and their current aging.', ar: 'قائمة تفصيلية بالطلبات النشطة وعمرها الحالي.' },
+  approval_flow_sankey: { en: 'Approval Flow Sankey', ar: 'مخطط سانكي لتدفق الموافقات' },
+  pf_info_sankey_desc: { en: 'Sankey diagram visualizing the multi-path flow of approvals.', ar: 'مخطط سانكي يوضح مسارات تدفق الموافقات المتعددة.' },
+  pf_table_requests: { en: '1. PurchaseRequests', ar: '1. طلبات الشراء' },
+  pf_table_requests_desc: { en: 'Initial request records.', ar: 'سجلات الطلبات الأولية.' },
+  request_id: { en: 'Request ID', ar: 'معرف الطلب' },
+  submission_date: { en: 'Submission Date', ar: 'تاريخ التقديم' },
+  pf_table_approval_logs: { en: '2. ApprovalLogs', ar: '2. سجلات الموافقات' },
+  pf_table_approval_logs_desc: { en: 'History of approval actions.', ar: 'سجل إجراءات الموافقة.' },
+  log_id: { en: 'Log ID', ar: 'معرف السجل' },
+  stage: { en: 'Stage', ar: 'المرحلة' },
+  action_date: { en: 'Action Date', ar: 'تاريخ الإجراء' },
+  outcome: { en: 'Outcome', ar: 'النتيجة' },
+  pf_table_workflows: { en: '3. ApprovalWorkflows', ar: '3. سير عمل الموافقات' },
+  pf_table_workflows_desc: { en: 'Configuration of stages.', ar: 'إعدادات المراحل.' },
+  stage_name: { en: 'Stage Name', ar: 'اسم المرحلة' },
+  sla_days: { en: 'SLA (Days)', ar: 'اتفاقية مستوى الخدمة (أيام)' },
+  approver_role: { en: 'Approver Role', ar: 'دور المعتمد' },
+  approval_time: { en: 'Approval Time', ar: 'وقت الموافقة' },
+  pf_calc_approval_time: { en: 'Final Decision Date - Submission Date.', ar: 'تاريخ القرار النهائي - تاريخ التقديم.' },
+  pf_calc_delayed: { en: 'Current Date - Stage Entry Date > Stage SLA.', ar: 'التاريخ الحالي - تاريخ دخول المرحلة > اتفاقية مستوى الخدمة للمرحلة.' },
+
   // Sales Dashboard
   about_dashboard: { en: 'About Dashboard', ar: 'حول لوحة المعلومات' },
   key_sales_metrics_desc: { en: 'Key sales metrics and revenue distribution overview', ar: 'نظرة عامة على مقاييس المبيعات الرئيسية وتوزيع الإيرادات' },
@@ -1000,7 +1421,7 @@ const translations: Translations = {
   gross_sales_revenue: { en: 'Gross sales revenue', ar: 'إجمالي إيرادات المبيعات' },
   net_revenue: { en: 'Net Revenue', ar: 'صافي الإيرادات' },
   after_deductions: { en: 'After deductions', ar: 'بعد الخصومات' },
-  orders_count: { en: 'Orders Count', ar: 'عدد الطلبات' },
+  // orders_count - defined later
   total_processed: { en: 'Total processed', ar: 'إجمالي المعالج' },
   avg_order_value: { en: 'Avg Order Value', ar: 'متوسط قيمة الطلب' },
   per_transaction: { en: 'Per transaction', ar: 'لكل معاملة' },
@@ -1472,7 +1893,7 @@ const translations: Translations = {
   // ========================================
   sales_insights_patterns: { en: 'Sales Insights & Patterns', ar: 'رؤى وأنماط المبيعات' },
   sales_insights_patterns_subtitle: { en: 'Deep sales performance analysis and pattern detection', ar: 'تحليل معمق لأداء المبيعات واكتشاف الأنماط' },
-  understanding_sales_insights: { en: 'Understanding Sales Insights & Patterns', ar: 'فهم رؤى وأنماط المبيعات' },
+  // understanding_sales_insights - defined earlier
 
   // Analysis KPIs
   total_sales_value: { en: 'Total Sales Value', ar: 'إجمالي قيمة المبيعات' },
@@ -1532,7 +1953,7 @@ const translations: Translations = {
   gross_revenue_desc: { en: 'Gross revenue generated before deductions. The top-line health metric.', ar: 'إجمالي الإيرادات المحققة قبل الخصومات. مؤشر الصحة الرئيسي.' },
   total_orders_desc: { en: 'Number of transactions processed in the selected period.', ar: 'عدد المعاملات المعالجة في الفترة المحددة.' },
   avg_order_desc: { en: 'Average revenue per transaction. Indicates pricing efficiency.', ar: 'متوسط الإيرادات لكل معاملة. يشير إلى كفاءة التسعير.' },
-  sales_growth_desc: { en: 'Percentage increase in revenue compared to previous period.', ar: 'نسبة الزيادة في الإيرادات مقارنة بالفترة السابقة.' },
+  // sales_growth_desc - defined earlier
   top_agent_desc: { en: 'Best performing salesperson based on closed revenue.', ar: 'أفضل مندوب مبيعات بناءً على الإيرادات المغلقة.' },
   top_product_desc: { en: 'Revenue leader among all products sold.', ar: 'الرائد في الإيرادات بين جميع المنتجات المباعة.' },
   top_region_desc: { en: 'Highest volume region driving sales.', ar: 'المنطقة الأعلى حجماً في دفع المبيعات.' },
@@ -1554,7 +1975,7 @@ const translations: Translations = {
   // Forecast KPIs
   expected_revenue: { en: 'Expected Revenue', ar: 'الإيرادات المتوقعة' },
   next_90_days_projection: { en: 'Next 90 Days projection', ar: 'توقعات الـ 90 يوماً القادمة' },
-  forecast_accuracy: { en: 'Forecast Accuracy', ar: 'دقة التنبؤ' },
+  // forecast_accuracy - defined earlier
   historical_performance: { en: 'Historical performance', ar: 'الأداء التاريخي' },
   risk_level: { en: 'Risk Level', ar: 'مستوى المخاطر' },
   operational_risk_status: { en: 'Operational risk status', ar: 'حالة المخاطر التشغيلية' },
@@ -1814,7 +2235,7 @@ const translations: Translations = {
   // ========================================
   promotions_effectiveness: { en: 'Promotions & Campaign Effectiveness', ar: 'العروض الترويجية وفعالية الحملات' },
   promotions_effectiveness_subtitle: { en: 'Measuring ROI and optimizing marketing spend impact', ar: 'قياس العائد على الاستثمار وتحسين تأثير الإنفاق التسويقي' },
-  campaign_effectiveness: { en: 'Campaign Effectiveness', ar: 'فعالية الحملة' },
+  // campaign_effectiveness - defined earlier
   understanding_promotions: { en: 'Understanding Promotion ROI', ar: 'فهم عائد الاستثمار للعروض' },
 
   // Promotions KPIs
@@ -1860,7 +2281,7 @@ const translations: Translations = {
   campaign_audit_table: { en: 'Campaign Audit Table', ar: 'جدول تدقيق الحملات' },
   detailed_roi_tracking: { en: 'Detailed ROI and budget tracking', ar: 'تتبع تفصيلي للعائد والميزانية' },
   campaign: { en: 'Campaign', ar: 'الحملة' },
-  type: { en: 'Type', ar: 'النوع' },
+  // type - defined earlier
   budget: { en: 'Budget', ar: 'الميزانية' },
   roi_percent: { en: 'ROI %', ar: 'نسبة العائد' },
   campaign_roi_analysis: { en: 'Campaign ROI Analysis', ar: 'تحليل عائد الحملة' },
@@ -1902,6 +2323,183 @@ const translations: Translations = {
   campaign_impact_desc: { en: 'Scatter chart showing ROI vs Conversion.', ar: 'مخطط مبعثر يوضح العائد مقابل التحويل.' },
   campaign_audit_desc: { en: 'Detailed ROI and budget tracking per campaign.', ar: 'تتبع تفصيلي للعائد والميزانية لكل حملة.' },
   campaign_roi_desc: { en: 'Companion chart comparing budget vs revenue.', ar: 'مخطط مرافق يقارن الميزانية مقابل الإيرادات.' },
+
+  // Table Component Translations
+  export_data: { en: 'Export', ar: 'تصدير' },
+  import_data_btn: { en: 'Import', ar: 'استيراد' },
+  advanced_filters: { en: 'Advanced filters', ar: 'تصفية متقدمة' },
+  showing_items: { en: 'Showing {0} of {1} items', ar: 'عرض {0} من {1} عنصر' },
+  clear_all: { en: 'Clear all', ar: 'مسح الكل' },
+  save_as_new_view: { en: 'Save as new view', ar: 'حفظ كعرض جديد' },
+  where: { en: 'Where', ar: 'حيث' },
+  and_condition: { en: 'And', ar: 'و' },
+  column_label: { en: 'Column', ar: 'عمود' },
+  condition_label: { en: 'Condition', ar: 'شرط' },
+  value_label: { en: 'Value', ar: 'قيمة' },
+  new_filter: { en: '+ New filter', ar: '+ تصفية جديدة' },
+  choose_column: { en: 'Choose column', ar: 'اختر عمود' },
+  new_sort: { en: '+ New sort', ar: '+ ترتيب جديد' },
+  display_columns: { en: 'Display columns', ar: 'عرض الأعمدة' },
+  all_columns: { en: 'All columns', ar: 'جميع الأعمدة' },
+  x_selected: { en: '{0} selected', ar: '{0} محدد' },
+  new_group: { en: 'New Group', ar: 'مجموعة جديدة' },
+  group_1: { en: 'Group 1', ar: 'المجموعة 1' },
+  item_singular: { en: 'item', ar: 'عنصر' },
+  items_plural: { en: 'items', ar: 'عناصر' },
+  pin_group: { en: 'Pin Group', ar: 'تثبيت المجموعة' },
+  unpin_group: { en: 'Unpin Group', ar: 'إلغاء تثبيت المجموعة' },
+  stuck: { en: 'Stuck', ar: 'متوقف' },
+  rejected: { en: 'Rejected', ar: 'مرفوض' },
+  none_priority: { en: 'None', ar: 'بدون' },
+  no_data_to_export: { en: 'No data to export.', ar: 'لا توجد بيانات للتصدير.' },
+  table_cleared_successfully: { en: 'Table cleared successfully', ar: 'تم مسح الجدول بنجاح' },
+  cannot_delete_last_group: { en: 'Cannot delete the last group.', ar: 'لا يمكن حذف المجموعة الأخيرة.' },
+  delete_x_items: { en: 'Delete {0} items?', ar: 'حذف {0} عنصر؟' },
+  this_action_cannot_be_undone: { en: 'This action cannot be undone.', ar: 'لا يمكن التراجع عن هذا الإجراء.' },
+  export_selected_rows: { en: 'Export {0} selected rows', ar: 'تصدير {0} صف محدد' },
+  export_all_rows: { en: 'Export all rows', ar: 'تصدير جميع الصفوف' },
+  import_from_file: { en: 'Import from CSV or Excel file', ar: 'استيراد من ملف CSV أو Excel' },
+  clear_all_data: { en: 'Clear all data?', ar: 'مسح جميع البيانات؟' },
+  file_appears_empty: { en: 'The file appears to be empty.', ar: 'يبدو أن الملف فارغ.' },
+  found_headers_no_data: { en: 'Found headers at row {0}, but no data rows.', ar: 'تم العثور على العناوين في الصف {0}، لكن لا توجد بيانات.' },
+  delete_group_confirm: { en: 'Delete "{0}" and all its items?', ar: 'حذف "{0}" وجميع عناصرها؟' },
+  delete_group_description: { en: 'This will permanently remove the group and all tasks within it.', ar: 'سيؤدي هذا إلى إزالة المجموعة وجميع المهام بداخلها نهائياً.' },
+  text_type: { en: 'Text', ar: 'نص' },
+  number_type: { en: 'Number', ar: 'رقم' },
+  link_type: { en: 'Link', ar: 'رابط' },
+  column_type: { en: 'Column Type', ar: 'نوع العمود' },
+  rows_per_page: { en: 'Rows per page', ar: 'صفوف في الصفحة' },
+  page_x_of_y: { en: 'Page {0} of {1}', ar: 'صفحة {0} من {1}' },
+  sort_ascending: { en: 'Sort Ascending', ar: 'ترتيب تصاعدي' },
+  sort_descending: { en: 'Sort Descending', ar: 'ترتيب تنازلي' },
+  pin_column: { en: 'Pin Column', ar: 'تثبيت العمود' },
+  unpin_column: { en: 'Unpin Column', ar: 'إلغاء تثبيت العمود' },
+  delete_column: { en: 'Delete Column', ar: 'حذف العمود' },
+  paste: { en: 'Paste', ar: 'لصق' },
+  clear_cell: { en: 'Clear cell', ar: 'مسح الخلية' },
+  add_new_item: { en: '+ Add new item', ar: '+ إضافة عنصر جديد' },
+  type_to_add: { en: 'Type to add...', ar: 'اكتب للإضافة...' },
+  // select_all - defined earlier (line ~1588)
+  deselect_all: { en: 'Deselect all', ar: 'إلغاء تحديد الكل' },
+
+  // Filter Conditions
+  contains: { en: 'Contains', ar: 'يحتوي على' },
+  does_not_contain: { en: 'Does not contain', ar: 'لا يحتوي على' },
+  is_equal_to: { en: 'Is equal to', ar: 'يساوي' },
+  is_not_equal_to: { en: 'Is not equal to', ar: 'لا يساوي' },
+  is_empty: { en: 'Is empty', ar: 'فارغ' },
+  is_not_empty: { en: 'Is not empty', ar: 'غير فارغ' },
+  starts_with: { en: 'Starts with', ar: 'يبدأ بـ' },
+  ends_with: { en: 'Ends with', ar: 'ينتهي بـ' },
+  is_before: { en: 'Is before', ar: 'قبل' },
+  is_after: { en: 'Is after', ar: 'بعد' },
+  is_between: { en: 'Is between', ar: 'بين' },
+  greater_than: { en: 'Greater than', ar: 'أكبر من' },
+  less_than: { en: 'Less than', ar: 'أصغر من' },
+
+  // Header Context Menu
+  header_color: { en: 'Header Color', ar: 'لون العنوان' },
+  column_bg_color: { en: 'Column Color', ar: 'لون العمود' },
+  custom_color: { en: 'Custom Color', ar: 'لون مخصص' },
+  text_color: { en: 'Text Color', ar: 'لون النص' },
+
+  // Column Context Menu
+  insert_left: { en: 'Insert left', ar: 'إدراج يسار' },
+  insert_right: { en: 'Insert right', ar: 'إدراج يمين' },
+  autosize_column: { en: 'Autosize this column', ar: 'ضبط عرض العمود تلقائياً' },
+  rename_column: { en: 'Rename column', ar: 'إعادة تسمية العمود' },
+  move_to_start: { en: 'Move to start', ar: 'نقل إلى البداية' },
+  move_to_end: { en: 'Move to end', ar: 'نقل إلى النهاية' },
+
+  // Add Column Menu - Column Types
+  col_custom: { en: 'Custom', ar: 'مخصص' },
+  col_status: { en: 'Status', ar: 'الحالة' },
+  col_priority: { en: 'Priority', ar: 'الأولوية' },
+  col_dropdown: { en: 'Dropdown', ar: 'قائمة منسدلة' },
+  col_text: { en: 'Text', ar: 'نص' },
+  col_date: { en: 'Date', ar: 'تاريخ' },
+  col_files: { en: 'Files', ar: 'ملفات' },
+  col_people: { en: 'People', ar: 'أشخاص' },
+  col_numbers: { en: 'Numbers', ar: 'أرقام' },
+  col_currency: { en: 'Currency', ar: 'عملة' },
+  col_timeline: { en: 'Timeline', ar: 'جدول زمني' },
+  col_url: { en: 'URL', ar: 'رابط' },
+  col_checkbox: { en: 'Checkbox', ar: 'مربع اختيار' },
+  col_doc: { en: 'NABD Doc', ar: 'مستند NABD' },
+  col_location: { en: 'Location', ar: 'موقع' },
+  col_rating: { en: 'Rating', ar: 'تقييم' },
+  col_voting: { en: 'Voting', ar: 'تصويت' },
+  col_email: { en: 'Email', ar: 'بريد إلكتروني' },
+  col_phone: { en: 'Phone', ar: 'هاتف' },
+  col_world_clock: { en: 'World Clock', ar: 'ساعة عالمية' },
+  col_tags: { en: 'Tags', ar: 'وسوم' },
+
+  // Add Column Menu - Descriptions
+  desc_custom: { en: 'Custom column', ar: 'عمود مخصص' },
+  desc_status: { en: 'Track task status', ar: 'تتبع حالة المهمة' },
+  desc_priority: { en: 'Set task priority', ar: 'تعيين أولوية المهمة' },
+  desc_dropdown: { en: 'Select options', ar: 'اختيار خيارات' },
+  desc_text: { en: 'Free text', ar: 'نص حر' },
+  desc_date: { en: 'Dates', ar: 'تواريخ' },
+  desc_files: { en: 'Attach files', ar: 'إرفاق ملفات' },
+  desc_people: { en: 'Assign people', ar: 'تعيين أشخاص' },
+  desc_numbers: { en: 'Count things', ar: 'عد الأشياء' },
+  desc_currency: { en: 'Money with conversion', ar: 'أموال مع التحويل' },
+  desc_timeline: { en: 'Visual timeline', ar: 'جدول زمني مرئي' },
+  desc_url: { en: 'Add a URL', ar: 'إضافة رابط' },
+  desc_checkbox: { en: 'Check/Uncheck', ar: 'تحديد/إلغاء تحديد' },
+  desc_doc: { en: 'Embed docs', ar: 'تضمين مستندات' },
+  desc_location: { en: 'Add a location', ar: 'إضافة موقع' },
+  desc_rating: { en: 'Rate items with stars', ar: 'تقييم العناصر بالنجوم' },
+  desc_voting: { en: 'Vote on items', ar: 'التصويت على العناصر' },
+  desc_email: { en: 'Email address', ar: 'عنوان البريد الإلكتروني' },
+  desc_phone: { en: 'Phone number', ar: 'رقم الهاتف' },
+  desc_world_clock: { en: 'See time in other zones', ar: 'عرض الوقت في مناطق أخرى' },
+  desc_tags: { en: 'Manage tags', ar: 'إدارة الوسوم' },
+
+  // Add Column Menu - Sections
+  section_essentials: { en: 'Essentials', ar: 'الأساسيات' },
+  section_super_useful: { en: 'Super useful', ar: 'مفيدة جداً' },
+  section_power_ups: { en: 'Board Power Ups', ar: 'إضافات اللوحة' },
+  more_columns: { en: 'More columns', ar: 'المزيد من الأعمدة' },
+  no_columns_found: { en: 'No columns found', ar: 'لم يتم العثور على أعمدة' },
+  search_describe_column: { en: 'Search or describe your column', ar: 'ابحث أو صف عمودك' },
+
+  // Add Column Menu - Custom Column
+  name_your_column: { en: 'Name your column', ar: 'سمِّ عمودك' },
+  column_name_input: { en: 'Column name', ar: 'اسم العمود' },
+  create_column: { en: 'Create Column', ar: 'إنشاء عمود' },
+
+  // Add Column Menu - Dropdown Configuration
+  configure_dropdown: { en: 'Configure Dropdown', ar: 'تكوين القائمة المنسدلة' },
+  field_name: { en: 'Field name', ar: 'اسم الحقل' },
+  enter_name: { en: 'Enter name...', ar: 'أدخل الاسم...' },
+  dropdown_options: { en: 'Dropdown options', ar: 'خيارات القائمة المنسدلة' },
+  presets_label: { en: 'Presets', ar: 'القوالب المحفوظة' },
+  hide_presets: { en: 'Hide Presets', ar: 'إخفاء القوالب' },
+  saved_presets: { en: 'Saved Presets', ar: 'القوالب المحفوظة' },
+  no_saved_presets: { en: 'No saved presets yet', ar: 'لا توجد قوالب محفوظة' },
+  preset_name_placeholder: { en: 'Preset name...', ar: 'اسم القالب...' },
+  saved_label: { en: 'Saved!', ar: 'تم الحفظ!' },
+  type_paste_options: { en: 'Type or paste options', ar: 'اكتب أو الصق الخيارات' },
+
+  // Add Column Menu - Currency Configuration
+  configure_currency: { en: 'Configure Currency Column', ar: 'تكوين عمود العملة' },
+  select_currency: { en: 'Select Currency', ar: 'اختر العملة' },
+  search_currencies: { en: 'Search currencies...', ar: 'ابحث عن العملات...' },
+  currency_name_placeholder: { en: 'e.g. Budget, Price, Cost...', ar: 'مثال: الميزانية، السعر، التكلفة...' },
+
+  // Table Cell Placeholders
+  start_typing_to_add: { en: '+ Start typing to add...', ar: '+ ابدأ الكتابة للإضافة...' },
+  set_date: { en: 'Set Date', ar: 'تحديد التاريخ' },
+  add_value: { en: 'Add value', ar: 'إضافة قيمة' },
+  select_option: { en: 'Select Option', ar: 'اختر خياراً' },
+  add_url: { en: 'Add URL', ar: 'إضافة رابط' },
+  location_placeholder: { en: 'Location', ar: 'الموقع' },
+  upload: { en: 'Upload', ar: 'رفع' },
+  select_doc: { en: 'Select Doc', ar: 'اختر مستند' },
+  add: { en: 'Add', ar: 'إضافة' },
+  files_count: { en: 'Files', ar: 'ملفات' },
 };
 
 interface AppContextType {
@@ -1965,50 +2563,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem('app-user-display-name', userDisplayName);
   }, [userDisplayName]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+  }, []);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     setLanguage(prev => prev === 'en' ? 'ar' : 'en');
-  };
+  }, []);
 
-  const t = (key: string) => {
+  const t = useCallback((key: string) => {
     if (!translations[key]) return key;
     return translations[key][language];
-  };
+  }, [language]);
 
-  const updateUserDisplayName = (name: string) => {
+  const updateUserDisplayName = useCallback((name: string) => {
     setUserDisplayName(name);
-  };
+  }, []);
 
-  const updateCountry = (countryCode: string) => {
+  const updateCountry = useCallback((countryCode: string) => {
     if (COUNTRIES[countryCode]) {
       setCountry(COUNTRIES[countryCode]);
       localStorage.setItem('app-country-code', countryCode);
     }
-  };
+  }, []);
+
+  // Memoize currency to prevent unnecessary re-renders
+  const currency = useMemo(() => ({
+    ...country.currency,
+    // Use English symbol when in English mode if available
+    symbol: language === 'en' && country.currency.symbolEn
+      ? country.currency.symbolEn
+      : country.currency.symbol
+  }), [country.currency, language]);
+
+  // Memoize the entire context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    theme,
+    toggleTheme,
+    language,
+    toggleLanguage,
+    t,
+    dir: language === 'ar' ? 'rtl' : 'ltr',
+    userDisplayName,
+    updateUserDisplayName,
+    country,
+    updateCountry,
+    currency
+  }), [theme, toggleTheme, language, toggleLanguage, t, userDisplayName, updateUserDisplayName, country, updateCountry, currency]);
 
   return (
-    <AppContext.Provider value={{
-      theme,
-      toggleTheme,
-      language,
-      toggleLanguage,
-      t,
-      dir: language === 'ar' ? 'rtl' : 'ltr',
-      userDisplayName,
-      updateUserDisplayName,
-      country,
-      updateCountry,
-      currency: {
-        ...country.currency,
-        // Use English symbol when in English mode if available
-        symbol: language === 'en' && country.currency.symbolEn
-          ? country.currency.symbolEn
-          : country.currency.symbol
-      }
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkle } from 'phosphor-react';
 import { useAI } from '../contexts/AIContext';
-import { useAppContext } from '../contexts/AppContext';
 import AIChat from './AIChat';
 
 /**
@@ -9,11 +8,8 @@ import AIChat from './AIChat';
  */
 export function AIBrainButton() {
     const { credits, isProcessing } = useAI();
-    const { theme } = useAppContext();
     const [isOpen, setIsOpen] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
-
-    const isDark = theme === 'dark';
 
     // Keyboard shortcut
     useEffect(() => {
@@ -40,47 +36,37 @@ export function AIBrainButton() {
                 onMouseLeave={() => setIsPressed(false)}
                 className={`
                     fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-[10000]
-                    w-[44px] h-[44px] rounded-full
-                    flex flex-col items-center justify-center
-                    transition-all duration-150
-                    ${isPressed ? 'scale-95' : 'hover:scale-105'}
+                    w-[48px] h-[48px] rounded-full
+                    flex items-center justify-center
+                    transition-all duration-200
+                    ${isPressed ? 'scale-95' : 'hover:scale-110'}
                 `}
                 style={{
-                    background: isDark
-                        ? 'linear-gradient(145deg, #505050, #404040)'
-                        : 'linear-gradient(145deg, #6a6a6a, #505050)',
-                    boxShadow: isDark
-                        ? '4px 4px 8px #2a2a2a, -2px -2px 6px #606060'
-                        : '4px 4px 8px rgba(0,0,0,0.2), -2px -2px 6px rgba(120,120,120,0.2)',
-                    padding: '3px',
+                    boxShadow: `
+                        0 0 12px rgba(192, 192, 192, 0.5),
+                        0 0 24px rgba(192, 192, 192, 0.25)
+                    `,
                 }}
             >
-                {/* Inner white/light circle */}
+                {/* Gradient ring border */}
                 <div
-                    className={`
-                        w-full h-full rounded-full
-                        flex flex-col items-center justify-center
-                        ${isDark ? 'bg-gray-800' : 'bg-gray-100'}
-                    `}
+                    className="absolute inset-0 rounded-full"
                     style={{
-                        background: isDark
-                            ? 'linear-gradient(145deg, #606060, #4a4a4a)'
-                            : 'linear-gradient(145deg, #ffffff, #e6e6e6)',
-                        boxShadow: isDark
-                            ? 'inset 2px 2px 4px #3a3a3a, inset -2px -2px 4px #707070'
-                            : 'inset 2px 2px 4px #d0d0d0, inset -2px -2px 4px #ffffff',
+                        background: 'conic-gradient(from 0deg, #c0c0c0, #e8e8e8, #808080, #d0d0d0, #a0a0a0, #f0f0f0, #909090, #c0c0c0)',
+                        WebkitMask: 'radial-gradient(circle, transparent 58%, black 60%)',
+                        mask: 'radial-gradient(circle, transparent 58%, black 60%)',
                     }}
-                >
-                    {/* NABD Brain Icon */}
-                    <Sparkle
-                        size={18}
-                        weight="fill"
-                        className={`
-                            ${isDark ? 'text-white' : 'text-gray-700'}
-                            ${isProcessing ? 'animate-spin' : ''}
-                        `}
-                    />
-                </div>
+                />
+                {/* AI Icon */}
+                <Sparkle
+                    size={20}
+                    weight="fill"
+                    className={`relative z-10 ${isProcessing ? 'animate-spin' : ''}`}
+                    style={{
+                        color: '#c0c0c0',
+                        filter: 'drop-shadow(0 0 4px rgba(192, 192, 192, 0.6))',
+                    }}
+                />
             </button>
 
             {/* Chat Modal */}

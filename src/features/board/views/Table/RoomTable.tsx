@@ -522,11 +522,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Default Statuses (Source of Truth for Fallback)
     const DEFAULT_STATUSES: StatusOption[] = [
-        { id: 'To Do', title: 'To Do', color: 'gray' },
-        { id: 'In Progress', title: 'In Progress', color: 'blue' },
-        { id: 'Done', title: 'Done', color: 'emerald' },
-        { id: 'Stuck', title: 'Stuck', color: 'orange' },
-        { id: 'Rejected', title: 'Rejected', color: 'rose' }
+        { id: 'To Do', title: t('to_do'), color: 'gray' },
+        { id: 'In Progress', title: t('in_progress'), color: 'blue' },
+        { id: 'Done', title: t('done'), color: 'emerald' },
+        { id: 'Stuck', title: t('stuck'), color: 'orange' },
+        { id: 'Rejected', title: t('rejected'), color: 'rose' }
     ];
 
     // Load custom statuses on mount
@@ -635,7 +635,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         const rowsToExport = selectedRows.length > 0 ? selectedRows : allRows;
 
         if (rowsToExport.length === 0) {
-            alert("No data to export.");
+            alert(t('no_data_to_export'));
             return;
         }
 
@@ -674,7 +674,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         // Persist immediately
         // Note: The persistence effect will trigger automatically due to state change
 
-        showToast('Table cleared successfully', 'success');
+        showToast(t('table_cleared_successfully'), 'success');
         setIsClearDataModalOpen(false);
 
         if (onUpdateTasks) {
@@ -699,7 +699,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Handler to add a new table group
     const handleAddTableGroup = useCallback((param?: string | React.MouseEvent) => {
-        const nameToUse = typeof param === 'string' ? param : 'New Group';
+        const nameToUse = typeof param === 'string' ? param : t('new_group');
 
         setTableGroups(prev => {
             const newGroupId = `group-${Date.now()}`;
@@ -754,7 +754,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const handleDeleteGroup = useCallback((groupId: string) => {
         setTableGroups(prev => {
             if (prev.length <= 1) {
-                alert('Cannot delete the last group.');
+                alert(t('cannot_delete_last_group'));
                 return prev;
             }
             return prev.filter(g => g.id !== groupId);
@@ -766,7 +766,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     // Handler to add a row to a specific group
     const handleAddRowToGroup = useCallback((groupId: string, rowName?: string) => {
-        const nameToAdd = rowName?.trim() || 'New Item';
+        const nameToAdd = rowName?.trim() || t('new_item');
         const primaryCol = columns.find(c => c.id === 'name') || columns.find(c => c.id !== 'select') || { id: 'name' };
 
         const newRow: Row = {
@@ -814,7 +814,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
         // Use the existing add logic, but merge our creationRow data
         const primaryCol = columns.find(c => c.id === 'name') || columns.find(c => c.id !== 'select') || { id: 'name' };
-        const nameToUse = groupCreationRow[primaryCol.id] || 'New Item';
+        const nameToUse = groupCreationRow[primaryCol.id] || t('new_item');
 
         // We need to pass the FULL creation row data, not just the name.
         // handleAddRowToGroup currently takes (groupId, rowName). We should update it or manually do it here.
@@ -900,7 +900,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
             if (!rawData || rawData.length === 0) {
-                showToast('The file appears to be empty.', 'error');
+                showToast(t('file_appears_empty'), 'error');
                 return;
             }
 
@@ -930,7 +930,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const dataRows = rawData.slice(headerRowIndex + 1);
 
             if (dataRows.length === 0) {
-                showToast(`Found headers at row ${headerRowIndex + 1}, but no data rows.`, 'error');
+                showToast(t('found_headers_no_data').replace('{0}', String(headerRowIndex + 1)), 'error');
                 return;
             }
 
@@ -2130,7 +2130,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             className="w-full bg-transparent border-none outline-none text-[13px] text-stone-700 dark:text-stone-200 placeholder:text-stone-400"
                                         />
                                     ) : (
-                                        <span className="text-[13px] font-medium">Search</span>
+                                        <span className="text-[13px] font-medium">{t('search')}</span>
                                     )}
                                 </div>
                                 {isSearchOpen && (
@@ -2164,13 +2164,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 }}
                             >
                                 <UserCircle size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Person</span>
+                                <span className="text-[13px] font-medium">{t('person')}</span>
                             </div>
                             {isPersonFilterOpen && (
-                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
+                                <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                                     <div className="mb-3">
                                         <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">
-                                            Filter by person
+                                            {t('filter_by_person')}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -2239,15 +2239,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 }}
                             >
                                 <Funnel size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Filter</span>
+                                <span className="text-[13px] font-medium">{t('filter')}</span>
                                 <ChevronDown size={12} weight="regular" className={`opacity-50 transition-transform ${isFilterPanelOpen ? 'rotate-180' : ''}`} />
                             </div>
                             {isFilterPanelOpen && (
-                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
+                                <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[600px]">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">Advanced filters</span>
-                                            <span className="text-xs text-stone-400">Showing {filteredTableGroups.reduce((acc, g) => acc + g.rows.length, 0)} of {rows.length} items</span>
+                                            <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">{t('advanced_filters')}</span>
+                                            <span className="text-xs text-stone-400">{t('showing_items').replace('{0}', String(filteredTableGroups.reduce((acc, g) => acc + g.rows.length, 0))).replace('{1}', String(rows.length))}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {filters.length > 0 && (
@@ -2255,11 +2255,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     onClick={() => setFilters([])}
                                                     className="text-xs text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 flex items-center gap-1"
                                                 >
-                                                    Clear all
+                                                    {t('clear_all')}
                                                 </button>
                                             )}
                                             <button className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 border border-stone-200 dark:border-stone-600 px-2 py-1 rounded">
-                                                Save as new view
+                                                {t('save_as_new_view')}
                                             </button>
                                         </div>
                                     </div>
@@ -2268,7 +2268,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                     <div className="space-y-2 mb-3">
                                         {filters.map((filter, idx) => (
                                             <div key={filter.id} className="flex items-center gap-2">
-                                                <span className="text-xs text-stone-500 w-12">{idx === 0 ? 'Where' : 'And'}</span>
+                                                <span className="text-xs text-stone-500 w-12">{idx === 0 ? t('where') : t('and_condition')}</span>
                                                 <select
                                                     value={filter.column}
                                                     onChange={(e) => {
@@ -2276,7 +2276,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     }}
                                                     className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200"
                                                 >
-                                                    <option value="">Column</option>
+                                                    <option value="">{t('column_label')}</option>
                                                     {columns.filter(c => c.id !== 'select').map(col => (
                                                         <option key={col.id} value={col.id}>{col.label}</option>
                                                     ))}
@@ -2288,14 +2288,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     }}
                                                     className="w-40 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200"
                                                 >
-                                                    <option value="">Condition</option>
+                                                    <option value="">{t('condition_label')}</option>
                                                     {filter.column && getConditionsForType(columns.find(c => c.id === filter.column)?.type || 'text').map(cond => (
                                                         <option key={cond.value} value={cond.value}>{cond.label}</option>
                                                     ))}
                                                 </select>
                                                 <input
                                                     type="text"
-                                                    placeholder="Value"
+                                                    placeholder={t('value_label')}
                                                     value={filter.value}
                                                     onChange={(e) => {
                                                         setFilters(prev => prev.map(f => f.id === filter.id ? { ...f, value: e.target.value } : f));
@@ -2312,14 +2312,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         ))}
                                         {filters.length === 0 && (
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs text-stone-500 w-12">Where</span>
+                                                <span className="text-xs text-stone-500 w-12">{t('where')}</span>
                                                 <select className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-400">
-                                                    <option>Column</option>
+                                                    <option>{t('column_label')}</option>
                                                 </select>
                                                 <select className="w-40 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-400">
-                                                    <option>Condition</option>
+                                                    <option>{t('condition_label')}</option>
                                                 </select>
-                                                <input placeholder="Value" className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700" readOnly />
+                                                <input placeholder={t('value_label')} className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700" readOnly />
                                             </div>
                                         )}
                                     </div>
@@ -2329,7 +2329,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             onClick={() => setFilters(prev => [...prev, { id: `filter-${Date.now()}`, column: '', condition: '', value: '' }])}
                                             className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                                         >
-                                            + New filter
+                                            {t('new_filter')}
                                         </button>
                                     </div>
                                 </div>
@@ -2352,17 +2352,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 }}
                             >
                                 <ArrowsDownUp size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Sort</span>
+                                <span className="text-[13px] font-medium">{t('sort')}</span>
                             </div>
                             {isSortPanelOpen && (
-                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[400px]">
+                                <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[400px]">
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-sm font-medium text-stone-700 dark:text-stone-200 flex items-center gap-1.5">
-                                            Sort by
+                                            {t('sort_by')}
                                             <span className="w-4 h-4 rounded-full border border-stone-300 text-[10px] flex items-center justify-center text-stone-400">?</span>
                                         </span>
                                         <button className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 border border-stone-200 dark:border-stone-600 px-2 py-1 rounded">
-                                            Save as new view
+                                            {t('save_as_new_view')}
                                         </button>
                                     </div>
 
@@ -2377,7 +2377,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     }}
                                                     className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200"
                                                 >
-                                                    <option value="">Choose column</option>
+                                                    <option value="">{t('choose_column')}</option>
                                                     {columns.filter(c => c.id !== 'select').map(col => (
                                                         <option key={col.id} value={col.id}>{col.label}</option>
                                                     ))}
@@ -2389,8 +2389,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                     }}
                                                     className="w-36 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200"
                                                 >
-                                                    <option value="asc">↑ Ascending</option>
-                                                    <option value="desc">↓ Descending</option>
+                                                    <option value="asc">{t('ascending')}</option>
+                                                    <option value="desc">{t('descending')}</option>
                                                 </select>
                                                 <button
                                                     onClick={() => setSortRules(prev => prev.filter(r => r.id !== rule.id))}
@@ -2404,10 +2404,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             <div className="flex items-center gap-2">
                                                 <div className="text-stone-300">⋮⋮</div>
                                                 <select className="flex-1 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-400">
-                                                    <option>Choose column</option>
+                                                    <option>{t('choose_column')}</option>
                                                 </select>
                                                 <select className="w-36 h-9 px-3 text-sm border border-stone-200 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-400">
-                                                    <option>↑ Ascending</option>
+                                                    <option>{t('ascending')}</option>
                                                 </select>
                                             </div>
                                         )}
@@ -2417,7 +2417,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         onClick={() => setSortRules(prev => [...prev, { id: `sort-${Date.now()}`, column: '', direction: 'asc' }])}
                                         className="text-xs text-stone-400 hover:text-stone-600"
                                     >
-                                        + New sort
+                                        {t('new_sort')}
                                     </button>
                                 </div>
                             )}
@@ -2439,25 +2439,25 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 }}
                             >
                                 <EyeSlash size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Hide</span>
+                                <span className="text-[13px] font-medium">{t('hide')}</span>
                             </div>
                             {isHideColumnsOpen && (
-                                <div data-toolbar-panel className="absolute top-full left-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
+                                <div data-toolbar-panel className="absolute top-full start-0 mt-3 bg-white dark:bg-stone-800 rounded-xl shadow-2xl border border-stone-100 dark:border-stone-700 p-5 z-50 min-w-[320px]">
                                     <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Display columns</span>
+                                        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{t('display_columns')}</span>
                                         <button className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 border border-stone-200 dark:border-stone-600 px-2 py-1 rounded">
-                                            Save as new view
+                                            {t('save_as_new_view')}
                                         </button>
                                     </div>
 
                                     <div className="relative mb-3">
-                                        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                                        <MagnifyingGlass size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                         <input
                                             type="text"
                                             placeholder={t('find_columns')}
                                             value={columnSearchQuery}
                                             onChange={(e) => setColumnSearchQuery(e.target.value)}
-                                            className="w-full h-9 pl-8 pr-3 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            className="w-full h-9 ps-8 pe-3 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                         />
                                     </div>
 
@@ -2477,10 +2477,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                 className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
                                             />
                                             <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                                                All columns
+                                                {t('all_columns')}
                                             </span>
                                             <span className="text-xs text-stone-400 ml-auto">
-                                                {columns.filter(c => c.id !== 'select' && !hiddenColumns.has(c.id)).length} selected
+                                                {t('x_selected').replace('{0}', String(columns.filter(c => c.id !== 'select' && !hiddenColumns.has(c.id)).length))}
                                             </span>
                                         </label>
 
@@ -2489,7 +2489,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                             .filter(c => c.id !== 'select')
                                             .filter(c => columnSearchQuery === '' || c.label.toLowerCase().includes(columnSearchQuery.toLowerCase()))
                                             .map(col => (
-                                                <label key={col.id} className="flex items-center gap-3 py-1.5 pl-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700/50 rounded">
+                                                <label key={col.id} className="flex items-center gap-3 py-1.5 ps-4 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700/50 rounded">
                                                     <input
                                                         type="checkbox"
                                                         checked={!hiddenColumns.has(col.id)}
@@ -2530,17 +2530,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             onClick={() => setIsClearDataModalOpen(true)}
                         >
                             <Trash size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                            <span className="text-[13px] font-medium">Clear</span>
+                            <span className="text-[13px] font-medium">{t('clear')}</span>
                         </div>
 
                         {/* Group by */}
                         <div className="flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition-colors group">
                             <Stack size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                            <span className="text-[13px] font-medium">Group by</span>
+                            <span className="text-[13px] font-medium">{t('group_by')}</span>
                         </div>
 
                         {/* Selection Actions (Always Visible, Grey if disabled) */}
-                        <div className="flex items-center gap-4 ml-4">
+                        <div className="flex items-center gap-4 ms-4">
                             <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
 
                             <button
@@ -2551,7 +2551,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                     }`}
                             >
                                 <Copy size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
-                                <span className="text-[13px] font-medium">Duplicate</span>
+                                <span className="text-[13px] font-medium">{t('duplicate')}</span>
                             </button>
 
                             <button
@@ -2562,7 +2562,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                     }`}
                             >
                                 <Archive size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
-                                <span className="text-[13px] font-medium">Archive</span>
+                                <span className="text-[13px] font-medium">{t('archive')}</span>
                             </button>
 
                             <button
@@ -2571,8 +2571,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                     if (checkedRows.size === 0) return;
                                     setDeleteConfig({
                                         isOpen: true,
-                                        title: `Delete ${checkedRows.size} items?`,
-                                        description: "This action cannot be undone.",
+                                        title: t('delete_x_items').replace('{0}', String(checkedRows.size)),
+                                        description: t('this_action_cannot_be_undone'),
                                         onConfirm: () => {
                                             const rowsToDelete = rows.filter(r => checkedRows.has(r.id));
 
@@ -2601,7 +2601,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                     }`}
                             >
                                 <Trash size={16} weight="regular" className={checkedRows.size > 0 ? "group-hover:scale-110 transition-transform" : ""} />
-                                <span className="text-[13px] font-medium">Delete</span>
+                                <span className="text-[13px] font-medium">{t('delete')}</span>
                             </button>
 
                             <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
@@ -2609,19 +2609,19 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             <button
                                 onClick={handleExportTable}
                                 className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600"
-                                title={checkedRows.size > 0 ? `Export ${checkedRows.size} selected rows` : 'Export all rows'}
+                                title={checkedRows.size > 0 ? t('export_selected_rows').replace('{0}', String(checkedRows.size)) : t('export_all_rows')}
                             >
                                 <Export size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Export</span>
+                                <span className="text-[13px] font-medium">{t('export_data')}</span>
                             </button>
 
                             <button
                                 onClick={handleImportClick}
                                 className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-green-600"
-                                title="Import from CSV or Excel file"
+                                title={t('import_from_file')}
                             >
                                 <UploadCloud size={16} className="group-hover:scale-110 transition-transform" />
-                                <span className="text-[13px] font-medium">Import</span>
+                                <span className="text-[13px] font-medium">{t('import_data_btn')}</span>
                             </button>
                         </div>
                     </div>
@@ -2701,7 +2701,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                         minWidth: totalWidth,
                                                     }}
                                                 >
-                                                    <div className="flex items-center gap-2 px-4 py-3 sticky left-0 z-10 w-fit bg-white dark:bg-monday-dark-surface">
+                                                    <div className="flex items-center gap-2 px-4 py-3 sticky start-0 z-10 w-fit bg-white dark:bg-monday-dark-surface">
                                                         {/* Color accent bar (Drag Handle) */}
                                                         <GroupDragHandle colorClass={group.color.bg} />
                                                         <button
@@ -2715,7 +2715,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                         <button
                                                             onClick={() => handleToggleGroupPin(group.id)}
                                                             className={`p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors ${group.isPinned ? 'text-blue-600 dark:text-blue-400 rotate-45' : 'text-stone-400 hover:text-stone-600'}`}
-                                                            title={group.isPinned ? "Unpin Group" : "Pin Group"}
+                                                            title={group.isPinned ? t('unpin_group') : t('pin_group')}
                                                         >
                                                             <Pin size={16} className={group.isPinned ? "fill-current" : ""} />
                                                         </button>
@@ -2724,11 +2724,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                             onRename={(newName) => handleUpdateGroupName(group.id, newName)}
                                                             className={`${group.color.text} text-[24px]`}
                                                         />
-                                                        <span className="text-xs text-stone-400 ml-2">
-                                                            {group.rows.length} {group.rows.length === 1 ? 'item' : 'items'}
+                                                        <span className="text-xs text-stone-400 ms-2">
+                                                            {group.rows.length} {group.rows.length === 1 ? t('item_singular') : t('items_plural')}
                                                         </span>
                                                         {/* 3-dot menu */}
-                                                        <div className="relative ml-2">
+                                                        <div className="relative ms-2">
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -2741,23 +2741,23 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                             >
                                                                 <MoreHorizontal size={16} className="text-stone-400" />
                                                             </button>
-                                                            <div className="hidden absolute left-0 top-full mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-xl z-50 min-w-[120px] py-1">
+                                                            <div className="hidden absolute start-0 top-full mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-xl z-50 min-w-[120px] py-1">
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         setDeleteConfig({
                                                                             isOpen: true,
-                                                                            title: `Delete "${group.name}" and all its items?`,
-                                                                            description: "This will permanently remove the group and all tasks within it.",
+                                                                            title: t('delete_group_confirm').replace('{0}', group.name),
+                                                                            description: t('delete_group_description'),
                                                                             onConfirm: () => handleDeleteGroup(group.id)
                                                                         });
                                                                         const menu = e.currentTarget.parentElement;
                                                                         if (menu) menu.classList.add('hidden');
                                                                     }}
-                                                                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                                    className="w-full text-start px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                                                                 >
                                                                     <Trash size={14} />
-                                                                    Delete
+                                                                    {t('delete')}
                                                                 </button>
                                                             </div>
                                                         </div>

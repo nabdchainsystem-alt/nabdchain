@@ -10,6 +10,7 @@ import { FocusMode } from '../features/FocusMode';
 import { NotificationPanel } from './NotificationPanel';
 import { assignmentService, Assignment } from '../../services/assignmentService';
 import { teamService, ConnectionRequest } from '../../services/teamService';
+import { appLogger } from '../../utils/logger';
 
 import { NabdSmartBar } from '../ui/NabdSmartBar';
 import { QuickNotesPanel } from './QuickNotesPanel';
@@ -136,7 +137,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       setUnreadCount(assignmentCount + requests.length);
       setPendingRequests(requests);
     } catch (error) {
-      console.error('Failed to fetch notification count:', error);
+      appLogger.error('Failed to fetch notification count:', error);
     }
   }, [getToken]);
 
@@ -169,7 +170,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       setPendingRequests(requests);
       setUnreadCount((allAssignments.filter(a => !a.isViewed).length) + requests.length);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      appLogger.error('Failed to fetch notifications:', error);
     } finally {
       setIsLoadingNotifications(false);
     }
@@ -210,7 +211,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
         onNavigate('board', boardIdToNavigate);
       }
     } catch (error) {
-      console.error('Failed to view assignment:', error);
+      appLogger.error('Failed to view assignment:', error);
     }
   };
 

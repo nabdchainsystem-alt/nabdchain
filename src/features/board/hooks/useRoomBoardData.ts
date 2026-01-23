@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { IBoard, IGroup, ITask, Status, Priority } from '../types/boardTypes';
 import { v4 as uuidv4 } from 'uuid';
+import { boardLogger } from '../../../utils/logger';
 
 const INITIAL_BOARD: IBoard = {
     id: 'default-board',
@@ -121,7 +122,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
             }
         } catch (e) {
             // Invalid JSON in initialData prop, use defaults
-            console.warn('[useRoomBoardData] Failed to parse initialData:', e);
+            boardLogger.warn('[useRoomBoardData] Failed to parse initialData:', e);
         }
         return INITIAL_BOARD;
     });
@@ -149,7 +150,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
             // Reset for next update
             isExternalUpdate.current = false;
         } catch (e) {
-            console.error('Failed to save board data', e);
+            boardLogger.error('Failed to save board data', e);
         }
     }, [board, persistenceKey]);
 

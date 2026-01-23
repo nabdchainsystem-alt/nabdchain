@@ -10,6 +10,7 @@ import { GameEngine } from './engine/GameEngine';
 import { GameState, DEFAULT_CONFIG } from './types';
 import { ArrowsOut, ArrowsIn, SpeakerHigh, SpeakerSlash, X } from 'phosphor-react';
 import { getAudioManager } from './engine/AudioManager';
+import { appLogger } from '../../../utils/logger';
 
 interface SpaceShooterGameProps {
   onBack?: () => void;
@@ -92,7 +93,7 @@ export const SpaceShooterGame: React.FC<SpaceShooterGameProps> = ({
     engine.setCallbacks(
       (state) => setGameState({ ...state }),
       (score, highScore) => {
-        console.log(`Game Over! Score: ${score}, High Score: ${highScore}`);
+        appLogger.info(`Game Over! Score: ${score}, High Score: ${highScore}`);
       }
     );
 

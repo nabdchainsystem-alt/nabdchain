@@ -113,7 +113,7 @@ export const TableFilter: React.FC<TableFilterProps> = ({ columns, filters, onCh
                 <FilterIcon size={12} className={filters.length > 0 ? 'fill-current' : ''} />
                 <span>Filter</span>
                 {filters.length > 0 && (
-                    <span className="flex items-center justify-center bg-indigo-600 text-white text-[9px] w-4 h-4 rounded-full ml-1">
+                    <span className="flex items-center justify-center bg-indigo-600 text-white text-[9px] w-4 h-4 rounded-full ms-1">
                         {filters.length}
                     </span>
                 )}

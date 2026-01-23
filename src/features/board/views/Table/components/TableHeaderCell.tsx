@@ -86,6 +86,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
             col={{ ...col, id: uniqueId }}
             index={index}
             disabled={isRenaming}
+            sortDirection={sortDirection}
             className={`
                 h-full flex items-center text-xs font-sans font-medium text-stone-500 dark:text-stone-400 shrink-0
                 ${col.id === 'select' ? 'justify-center px-0' : col.id === 'name' ? 'justify-start px-3' : 'justify-center px-3'}
@@ -118,6 +119,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                         onChange={(e) => handleSelectAll(e.target.checked)}
                         className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4 accent-blue-600"
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={isAllSelected ? 'Deselect all rows' : 'Select all rows'}
                     />
                 </div>
             ) : isRenaming ? (
@@ -148,13 +150,13 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
                 </div>
             ) : (
                 <div className={`flex items-center ${col.id === 'name' ? 'justify-between' : 'justify-center'} w-full px-2`}>
-                    <span className={`truncate flex-1 ${col.id === 'name' ? 'text-left' : 'text-center'} select-none`} onDoubleClick={(e) => {
+                    <span className={`truncate flex-1 ${col.id === 'name' ? 'text-start' : 'text-center'} select-none`} onDoubleClick={(e) => {
                         e.stopPropagation();
                         if (col.id !== 'select') setRenamingColId(col.id);
                     }}>
                         {col.label}
-                        {sortDirection === 'asc' && <span className="ml-1 text-blue-500">↑</span>}
-                        {sortDirection === 'desc' && <span className="ml-1 text-blue-500">↓</span>}
+                        {sortDirection === 'asc' && <span className="ms-1 text-blue-500">↑</span>}
+                        {sortDirection === 'desc' && <span className="ms-1 text-blue-500">↓</span>}
                     </span>
                     {!['name', 'select'].includes(col.id) && (
                         <button

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Vendor, PurchaseOrder, InventoryItem } from './types';
 import { VENDORS_DATA } from './vendorsData';
+import { serviceLogger } from '../../utils/logger';
 
 // Mock Purchase Orders
 const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
@@ -56,7 +57,7 @@ export const useMarketplaceData = () => {
     const [inventory] = useState<InventoryItem[]>(MOCK_INVENTORY);
 
     const addPurchaseOrder = (po: PurchaseOrder) => {
-        console.log("Mock addPurchaseOrder:", po);
+        serviceLogger.debug("Mock addPurchaseOrder:", po);
         setPurchaseOrders(prev => [...prev, po]);
     };
 

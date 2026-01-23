@@ -7,6 +7,7 @@ import {
 import { PortalPopup } from '../../../../components/ui/PortalPopup';
 import { Priority } from '../../types/boardTypes';
 import { useAppContext } from '../../../../contexts/AppContext';
+import { boardLogger } from '../../../../utils/logger';
 
 // DnD Kit Imports
 import {
@@ -444,7 +445,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ boardId, tasks = [] 
             if (saved) return JSON.parse(saved);
         } catch (e) {
             // Invalid JSON in localStorage, use defaults
-            console.warn('[OverviewView] Failed to parse saved widgets from localStorage:', e);
+            boardLogger.warn('Failed to parse saved widgets from localStorage', e);
         }
 
         // Default workspace

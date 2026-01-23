@@ -9,6 +9,7 @@ import { CostControlDashboard } from './CostControlDashboard';
 import { PurchaseFunnelDashboard } from './PurchaseFunnelDashboard';
 import { DependencyRiskDashboard } from './DependencyRiskDashboard';
 import { ForecastPlanningDashboard } from './ForecastPlanningDashboard';
+import { useAppContext } from '../../../contexts/AppContext';
 
 const INITIAL_BOARD: Board = {
     id: 'dept-purchases',
@@ -27,56 +28,58 @@ const INITIAL_BOARD: Board = {
 };
 
 const PurchasesPage: React.FC = () => {
+    const { t } = useAppContext();
+
     // Dashboard sections for the Add View menu
     const dashboardSections = useMemo(() => [
         {
-            title: 'Dashboards',
+            title: t('purchases_dashboards'),
             options: [
                 {
                     id: 'purchase_overview',
-                    label: 'Purchase Overview',
+                    label: t('purchase_overview'),
                     icon: ChartLineUp,
-                    description: 'High-level snapshot of purchasing activity'
+                    description: t('purchase_overview_desc')
                 },
                 {
                     id: 'supplier_performance',
-                    label: 'Supplier Performance',
+                    label: t('supplier_performance'),
                     icon: Truck,
-                    description: 'Evaluate reliability, cost, and risk'
+                    description: t('supplier_performance_menu_desc')
                 },
                 {
                     id: 'purchase_behavior',
-                    label: 'Purchase Behavior',
+                    label: t('purchase_behavior'),
                     icon: TrendUp,
-                    description: 'Reveal hidden patterns and anomalies'
+                    description: t('purchase_behavior_desc')
                 },
                 {
                     id: 'cost_control',
-                    label: 'Cost Control',
+                    label: t('cost_control'),
                     icon: CurrencyDollar,
-                    description: 'Identify overspending and efficiency gaps'
+                    description: t('cost_control_desc')
                 },
                 {
                     id: 'purchase_funnel',
-                    label: 'Purchase Funnel',
+                    label: t('purchase_funnel'),
                     icon: Funnel,
-                    description: 'Track flows and approval bottlenecks'
+                    description: t('purchase_funnel_desc')
                 },
                 {
                     id: 'dependency_risk',
-                    label: 'Dependency & Risk',
+                    label: t('dependency_risk'),
                     icon: ShieldWarning,
-                    description: 'Measure reliance and operational risk'
+                    description: t('dependency_risk_desc')
                 },
                 {
                     id: 'forecast_planning',
-                    label: 'Forecast & Planning',
+                    label: t('forecast_planning'),
                     icon: Target,
-                    description: 'Predict future needs and budget impact'
+                    description: t('forecast_planning_desc')
                 }
             ]
         }
-    ], []);
+    ], [t]);
 
     const [board, setBoard] = useState<Board>(() => {
         const saved = localStorage.getItem('dept-purchases-data');
@@ -114,6 +117,13 @@ const PurchasesPage: React.FC = () => {
         });
     };
 
+    // Create localized board with translated name and description
+    const localizedBoard = useMemo(() => ({
+        ...board,
+        name: t('purchases_page_title'),
+        description: t('purchases_page_desc')
+    }), [board, t]);
+
     // Render custom dashboard views
     const renderCustomView = (viewId: string) => {
         switch (viewId) {
@@ -138,7 +148,7 @@ const PurchasesPage: React.FC = () => {
 
     return (
         <BoardView
-            board={board}
+            board={localizedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

@@ -12,9 +12,10 @@ interface SortableHeaderProps {
     onClick?: () => void;
     onContextMenu?: (e: React.MouseEvent) => void;
     disabled?: boolean;
+    sortDirection?: 'asc' | 'desc' | null;
 }
 
-export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, children, className, style, onClick, onContextMenu, disabled }) => {
+export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, children, className, style, onClick, onContextMenu, disabled, sortDirection }) => {
     const {
         attributes,
         listeners,
@@ -32,6 +33,9 @@ export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, chil
         ...style,
     };
 
+    // Determine aria-sort value
+    const ariaSort = sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : undefined;
+
     return (
         <div
             ref={setNodeRef}
@@ -39,6 +43,8 @@ export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, chil
             className={className}
             onClick={onClick}
             onContextMenu={onContextMenu}
+            role="columnheader"
+            aria-sort={ariaSort}
             {...attributes}
             {...listeners}
         >

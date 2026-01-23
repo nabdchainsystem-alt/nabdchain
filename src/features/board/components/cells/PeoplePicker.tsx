@@ -4,6 +4,7 @@ import { Users, Check, User, SpinnerGap } from 'phosphor-react';
 import { useAuth, useUser } from '../../../../auth-adapter';
 import { teamService, TeamMember } from '../../../../services/teamService';
 import { assignmentService } from '../../../../services/assignmentService';
+import { boardLogger } from '../../../../utils/logger';
 
 interface Person {
     id: string;
@@ -55,7 +56,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
                     });
                 }
             } catch (error) {
-                console.error('Failed to create assignment:', error);
+                boardLogger.error('Failed to create assignment:', error);
                 // Still proceed with the visual selection even if assignment fails
             } finally {
                 setIsAssigning(false);
@@ -106,7 +107,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
 
                 setTeamMembers(people);
             } catch (error) {
-                console.error('Failed to fetch team members:', error);
+                boardLogger.error('Failed to fetch team members:', error);
             } finally {
                 setIsLoading(false);
             }

@@ -81,7 +81,7 @@ export const procurementService = {
             return created;
         } catch (error) {
             appLogger.error('Error creating request:', error);
-            const fallback = { ...request, id: `local-${Date.now()}`, status: 'Draft' as const };
+            const fallback = { ...request, id: `local-${Date.now()}`, status: 'Draft' as const, title: request.title || request.name || 'Untitled Request' } as unknown as ProcurementRequest;
             return upsertLocal(LOCAL_KEYS.procurementRequests, fallback);
         }
     },

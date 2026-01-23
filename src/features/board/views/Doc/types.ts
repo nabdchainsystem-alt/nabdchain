@@ -24,3 +24,6 @@ export interface Doc {
     };
     parentId?: string;
 }
+
+// Alias for API usage
+export type DocPage = Doc;

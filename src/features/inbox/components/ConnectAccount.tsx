@@ -2,6 +2,7 @@ import { Envelope as Mail } from 'phosphor-react';
 import { useAuth } from '../../../auth-adapter';
 import { emailService } from '../../../services/emailService';
 import { useAppContext } from '../../../contexts/AppContext';
+import { appLogger } from '../../../utils/logger';
 
 export const ConnectAccount: React.FC = () => {
     const { getToken } = useAuth();
@@ -17,7 +18,7 @@ export const ConnectAccount: React.FC = () => {
             const { url } = await emailService.getAuthUrl(token, provider);
             window.location.href = url;
         } catch (e) {
-            console.error("Failed to start connection", e);
+            appLogger.error("Failed to start connection", e);
             alert(t('failed_init_connection'));
         }
     };

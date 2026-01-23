@@ -12,6 +12,7 @@ import { Column, Row } from '../views/Table/RoomTable';
 import { ChartBuilderConfig, ChartType } from './chart-builder/types';
 import { ChartDataTransformer } from './chart-builder/services/ChartDataTransformer';
 import { AIChartCard } from './AIChartCard';
+import { aiLogger } from '../../../utils/logger';
 
 interface AIReportModalProps {
     isOpen: boolean;
@@ -142,7 +143,7 @@ export const AIReportModal: React.FC<AIReportModalProps> = ({ isOpen, onClose, c
             `;
 
             // Direct call to gemini-2.5-flash as requested
-            console.log("Attempting generation with gemini-2.5-flash...");
+            aiLogger.info("Attempting generation with gemini-2.5-flash...");
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const result = await model.generateContent(prompt);
             const response = await result.response;
@@ -177,7 +178,7 @@ export const AIReportModal: React.FC<AIReportModalProps> = ({ isOpen, onClose, c
 
             setSuggestedConfigs(validSuggestions);
         } catch (err) {
-            console.error("AI Analysis failed:", err);
+            aiLogger.error('AI Analysis failed', err);
             let errorMessage = err instanceof Error ? err.message : "Unknown error";
 
             // Diagnostic: If model not found or overloaded, try to list available models to help debug

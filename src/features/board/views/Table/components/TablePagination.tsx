@@ -1,5 +1,6 @@
 import React from 'react';
 import { CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown } from 'phosphor-react';
+import { useAppContext } from '../../../../../contexts/AppContext';
 
 interface TablePaginationProps {
     totalItems: number;
@@ -18,6 +19,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
     onPageSizeChange,
     pageSizeOptions = [5, 10, 25, 50]
 }) => {
+    const { t } = useAppContext();
     const totalPages = Math.ceil(totalItems / pageSize);
     const startItem = (currentPage - 1) * pageSize + 1;
     const endItem = Math.min(currentPage * pageSize, totalItems);
@@ -29,11 +31,11 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             {/* Left: Info */}
             <div className="flex items-center gap-4">
                 <span>
-                    Showing <span className="font-semibold text-stone-900 dark:text-stone-200">{startItem}-{endItem}</span> of <span className="font-semibold text-stone-900 dark:text-stone-200">{totalItems}</span>
+                    {t('showing_items').replace('{0}', `${startItem}-${endItem}`).replace('{1}', String(totalItems))}
                 </span>
 
                 <div className="flex items-center gap-2">
-                    <span>Rows per page:</span>
+                    <span>{t('rows_per_page')}:</span>
                     <div className="relative group">
                         <select
                             value={pageSize}

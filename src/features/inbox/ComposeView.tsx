@@ -7,6 +7,7 @@ import {
 } from 'phosphor-react';
 
 import { emailService, EmailAccount } from '../../services/emailService';
+import { appLogger } from '../../utils/logger';
 
 interface ComposeViewProps {
     onDiscard: () => void;
@@ -51,7 +52,7 @@ export const ComposeView: React.FC<ComposeViewProps> = ({ onDiscard, accounts, i
             }
             onDiscard();
         } catch (error) {
-            console.error("Failed to send", error);
+            appLogger.error("Failed to send", error);
             alert("Failed to send email");
         } finally {
             setSending(false);

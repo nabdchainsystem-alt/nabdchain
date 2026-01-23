@@ -110,7 +110,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
     const { user: currentUser } = useUser();
-    const { currency: globalCurrency } = useAppContext();
+    const { currency: globalCurrency, t } = useAppContext();
 
     // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
     const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
@@ -126,13 +126,14 @@ export const TableCell: React.FC<TableCellProps> = ({
     // Select/Checkbox column
     if (col.id === 'select') {
         return (
-            <div className="flex items-center justify-center w-full h-full">
+            <div className="flex items-center justify-center w-full h-full" role="gridcell">
                 <input
                     type="checkbox"
                     checked={!!value}
                     onChange={(e) => onUpdateRow(row.id, { [col.id]: e.target.checked }, row.groupId)}
                     className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4 accent-blue-600"
                     onClick={(e) => e.stopPropagation()}
+                    aria-label={value ? 'Deselect row' : 'Select row'}
                 />
             </div>
         );
@@ -186,7 +187,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     <span className={`text-sm font-datetime truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
-                        {formatDate(value) || 'Set Date'}
+                        {formatDate(value) || t('set_date')}
                     </span>
                 </button>
                 {isActiveCell && activeCell?.trigger && (
@@ -242,7 +243,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                             {Number(value).toLocaleString()}
                         </span>
                     ) : (
-                        <span className="text-xs text-stone-400">Add value</span>
+                        <span className="text-xs text-stone-400">{t('add_value')}</span>
                     )}
                 </button>
             </div>
@@ -300,7 +301,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     {value ? (
                         <span className="text-xs font-medium text-white truncate">{value}</span>
                     ) : (
-                        <span className="text-xs text-stone-400">Select Option</span>
+                        <span className="text-xs text-stone-400">{t('select_option')}</span>
                     )}
                 </button>
                 {isActiveCell && activeCell?.trigger && (
@@ -337,7 +338,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                             </span>
                         </div>
                     ) : (
-                        <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">Select Doc</span>
+                        <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">{t('select_doc')}</span>
                     )}
                 </button>
                 {isActiveCell && activeCell?.trigger && (
@@ -462,7 +463,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                             <ExternalLink size={12} className="shrink-0 text-stone-400" />
                         </div>
                     ) : (
-                        <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>Add URL</span>
+                        <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>{t('add_url')}</span>
                     )}
                 </button>
                 {isActiveCell && activeCell?.trigger && (
@@ -504,7 +505,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     ) : (
                         <div className="flex items-center gap-2 text-stone-400">
                             <MapPin size={14} />
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>Location</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>{t('location_placeholder')}</span>
                         </div>
                     )}
                 </button>
@@ -547,7 +548,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     ) : (
                         <div className="flex items-center gap-1.5 text-stone-400 group-hover/file:text-stone-500 transition-colors">
                             <UploadCloud size={14} />
-                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>Upload</span>
+                            <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>{t('upload')}</span>
                         </div>
                     )}
                 </button>
@@ -560,7 +561,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     >
                         <div className="w-72 bg-white dark:bg-stone-900 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
                             <div className="p-3 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">Files ({files.length})</span>
+                                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">{t('files_count')} ({files.length})</span>
                                 <button
                                     onClick={() => {
                                         onSetActiveCell(null);
@@ -569,7 +570,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                                     className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
                                 >
                                     <UploadCloud size={12} />
-                                    Add
+                                    {t('add')}
                                 </button>
                             </div>
                             <div className="max-h-48 overflow-y-auto">
@@ -637,7 +638,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Show placeholder for creation row on name column
     const isCreationRow = row.id === CREATION_ROW_ID;
-    const placeholder = isCreationRow && col.id === 'name' ? '+ Start typing to add...' : '';
+    const placeholder = isCreationRow && col.id === 'name' ? t('start_typing_to_add') : '';
 
     return (
         <div className="h-full w-full">
@@ -660,7 +661,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                         position: { x: e.clientX, y: e.clientY }
                     });
                 }}
-                style={{ ...cellStyle, textAlign: col.id === 'name' ? 'left' : 'center' }}
+                style={{ ...cellStyle, textAlign: col.id === 'name' ? 'start' : 'center' }}
                 className="w-full h-full bg-transparent border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors"
             />
         </div>

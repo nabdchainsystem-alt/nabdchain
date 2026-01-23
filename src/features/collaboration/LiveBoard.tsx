@@ -13,6 +13,7 @@ import {
     ArrowCounterClockwise,
     Palette
 } from 'phosphor-react';
+import { socketLogger } from '../../utils/logger';
 
 interface Cursor {
     userId: string;
@@ -59,11 +60,11 @@ export const LiveBoard: React.FC<{ roomId: string, onClose: () => void }> = ({ r
     // Join the socket room when whiteboard opens
     useEffect(() => {
         if (!socket) {
-            console.log('[LiveBoard] No socket connection');
+            socketLogger.debug('[LiveBoard] No socket connection');
             return;
         }
 
-        console.log('[LiveBoard] Joining room:', roomId);
+        socketLogger.info('[LiveBoard] Joining room:', roomId);
         socket.emit('join-room', {
             roomId,
             userId: user?.id || 'guest',
@@ -71,7 +72,7 @@ export const LiveBoard: React.FC<{ roomId: string, onClose: () => void }> = ({ r
         });
 
         return () => {
-            console.log('[LiveBoard] Leaving room:', roomId);
+            socketLogger.info('[LiveBoard] Leaving room:', roomId);
             socket.emit('leave-room', { roomId, userId: user?.id || 'guest' });
         };
     }, [socket, roomId, user]);
@@ -87,7 +88,7 @@ export const LiveBoard: React.FC<{ roomId: string, onClose: () => void }> = ({ r
         };
 
         const handleRemoteDraw = (data: any) => {
-            console.log('[LiveBoard] Received draw-data:', data);
+            socketLogger.debug('[LiveBoard] Received draw-data:', data);
             const canvas = canvasRef.current;
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
