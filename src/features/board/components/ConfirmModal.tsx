@@ -26,7 +26,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     return createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
             <div
-                className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 transition-opacity"
                 onClick={onClose}
             />
 

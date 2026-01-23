@@ -194,6 +194,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
                 boardId: board.id,
                 type: 'BOARD_CREATED',
                 content: `Created board: ${board.name}`,
+                metadata: JSON.stringify({ boardName: board.name }),
             }
         });
 
@@ -308,6 +309,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
                 boardId: null,
                 type: 'BOARD_DELETED',
                 content: `Deleted board: ${boardName}`,
+                metadata: JSON.stringify({ boardName }),
             }
         });
 

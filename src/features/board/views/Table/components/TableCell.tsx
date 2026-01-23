@@ -185,7 +185,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
                     className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
-                    <span className={`text-sm font-sans truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
+                    <span className={`text-sm font-datetime truncate ${value ? 'text-stone-600 dark:text-stone-300' : 'text-stone-400'}`}>
                         {formatDate(value) || 'Set Date'}
                     </span>
                 </button>
@@ -238,7 +238,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     {value ? (
-                        <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">
+                        <span className="text-sm font-datetime text-stone-600 dark:text-stone-300 truncate">
                             {Number(value).toLocaleString()}
                         </span>
                     ) : (
@@ -262,7 +262,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     {value ? (
-                        <span className="text-sm font-sans text-stone-600 dark:text-stone-300 truncate">
+                        <span className="text-sm font-datetime text-stone-600 dark:text-stone-300 truncate">
                             {formatCurrency(Number(value), currencyCode, currencySymbol)}
                         </span>
                     ) : (

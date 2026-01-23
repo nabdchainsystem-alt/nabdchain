@@ -687,6 +687,16 @@ const AppContent: React.FC = () => {
     handleBoardCreated(newBoard);
   };
 
+  // Handler for Dashboard's "New Board" workspace selection
+  const handleRequestNewBoard = React.useCallback((workspaceId: string) => {
+    // Switch to the selected workspace
+    setActiveWorkspaceId(workspaceId);
+    // Dispatch event to open the Sidebar's board creation modal
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('open-new-board-modal'));
+    }, 100); // Small delay to ensure workspace switch is processed
+  }, []);
+
   const handleNavigate = React.useCallback((view: ViewState | string, boardId?: string, skipHistoryPush?: boolean) => {
     setActiveView(view);
     if (boardId) {
@@ -767,7 +777,7 @@ const AppContent: React.FC = () => {
 
     const newItem: RecentlyVisitedItem = {
       id: board ? board.id : view,
-      title: title,
+      title: board ? board.name : view.toLowerCase().replace(/ /g, '_'),
       type: view,
       timestamp: Date.now(),
       boardId: board?.id,
@@ -1307,6 +1317,7 @@ const AppContent: React.FC = () => {
                   activeWorkspaceId={activeWorkspaceId}
                   workspaces={workspaces}
                   onTaskCreated={handleCreateTaskOnBoard}
+                  onRequestNewBoard={handleRequestNewBoard}
                 />
               </FeatureErrorBoundary>
             ) : activeView === 'board' ? (

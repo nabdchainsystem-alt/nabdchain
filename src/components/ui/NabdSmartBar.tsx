@@ -576,7 +576,7 @@ export const NabdSmartBar: React.FC<NabdSmartBarProps> = ({ boards, onCreateTask
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm text-gray-900 dark:text-white line-clamp-2">{note.content}</p>
                                   <div className="flex items-center gap-2 mt-1.5">
-                                    <span className="text-[10px] text-gray-400">{formatTimeAgo(note.createdAt, language)}</span>
+                                    <span className="text-[10px] text-gray-400 font-datetime">{formatTimeAgo(note.createdAt, language)}</span>
                                     {note.tags.map(tag => (
                                       <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${TAG_COLORS[tag] || TAG_COLORS.later}`}>#{tag}</span>
                                     ))}

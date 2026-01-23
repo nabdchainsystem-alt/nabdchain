@@ -84,7 +84,7 @@ export const QuickNotesPanel: React.FC<QuickNotesPanelProps> = ({
                             autoFocus
                         />
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-monday-dark-border">
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-gray-400 font-datetime">
                                 {formatTimeAgo(selectedNote.createdAt, language)}
                             </span>
                             <div className="flex gap-2">
@@ -135,7 +135,7 @@ export const QuickNotesPanel: React.FC<QuickNotesPanelProps> = ({
                                                 {note.content}
                                             </p>
                                             <div className="flex items-center gap-2 mt-1.5">
-                                                <span className="text-[10px] text-gray-400">
+                                                <span className="text-[10px] text-gray-400 font-datetime">
                                                     {formatTimeAgo(note.createdAt, language)}
                                                 </span>
                                                 {note.tags.map(tag => (
@@ -148,6 +148,16 @@ export const QuickNotesPanel: React.FC<QuickNotesPanelProps> = ({
                                         {note.pinned && (
                                             <PushPin size={14} weight="fill" className="text-amber-500 shrink-0 mt-1" />
                                         )}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteNote(note.id);
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors opacity-0 group-hover:opacity-100 shrink-0 mt-0.5"
+                                            title={t('delete')}
+                                        >
+                                            <Trash size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             ))

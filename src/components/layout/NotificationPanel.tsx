@@ -80,8 +80,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <button
                     onClick={() => setActiveTab('unread')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'unread'
-                            ? 'text-monday-blue border-b-2 border-monday-blue bg-blue-50/50 dark:bg-blue-900/10'
-                            : 'text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                        ? 'text-monday-blue border-b-2 border-monday-blue bg-blue-50/50 dark:bg-blue-900/10'
+                        : 'text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                         }`}
                 >
                     <EnvelopeSimple size={16} />
@@ -96,8 +96,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <button
                     onClick={() => setActiveTab('read')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'read'
-                            ? 'text-monday-blue border-b-2 border-monday-blue bg-blue-50/50 dark:bg-blue-900/10'
-                            : 'text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                        ? 'text-monday-blue border-b-2 border-monday-blue bg-blue-50/50 dark:bg-blue-900/10'
+                        : 'text-gray-500 dark:text-monday-dark-text-secondary hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
                         }`}
                 >
                     <EnvelopeOpen size={16} />
@@ -167,7 +167,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                                         </p>
                                         <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-400 dark:text-monday-dark-text-secondary">
                                             <Clock size={12} />
-                                            <span>{formatTimeAgo(assignment.createdAt)}</span>
+                                            <span className="font-datetime">{formatTimeAgo(assignment.createdAt)}</span>
                                         </div>
                                     </div>
 

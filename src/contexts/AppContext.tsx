@@ -10,7 +10,6 @@ interface Translations {
     ar: string;
   };
 }
-
 const translations: Translations = {
   // Navigation & Core
   home: { en: 'Home', ar: 'الرئيسية' },
@@ -23,10 +22,86 @@ const translations: Translations = {
   workspaces: { en: 'Workspaces', ar: 'مساحات العمل' },
   search: { en: 'Search', ar: 'بحث' },
   add_workspace: { en: 'Add Workspace', ar: 'إضافة مساحة عمل' },
+  or_create_workspace: { en: 'or create workspace', ar: 'أو إنشاء مساحة عمل' },
+  create_workspace: { en: 'Create Workspace', ar: 'إنشاء مساحة عمل' },
+  rename: { en: 'Rename', ar: 'إعادة تسمية' },
+  edit_workspace: { en: 'Edit Workspace', ar: 'تعديل مساحة العمل' },
+  workspace_name: { en: 'Workspace Name', ar: 'اسم مساحة العمل' },
+  workspace_icon: { en: 'Workspace Icon', ar: 'أيقونة مساحة العمل' },
+  workspace_name_placeholder: { en: 'e.g. Marketing Team', ar: 'مثال: فريق التسويق' },
+  save_changes: { en: 'Save Changes', ar: 'حفظ التغييرات' },
+  cancel: { en: 'Cancel', ar: 'إلغاء' },
+  // Workspace Icons
+  'Briefcase': { en: 'Briefcase', ar: 'حقيبة عمل' },
+  'Layout': { en: 'Layout', ar: 'تخطيط' },
+  'Star': { en: 'Star', ar: 'نجمة' },
+  'Heart': { en: 'Heart', ar: 'قلب' },
+  'Smile': { en: 'Smile', ar: 'ابتسامة' },
+  'Globe': { en: 'Globe', ar: 'عالم' },
+  'Cpu': { en: 'CPU', ar: 'معالج' },
+  'Database': { en: 'Database', ar: 'قاعدة بيانات' },
+  'Cloud': { en: 'Cloud', ar: 'سحابة' },
+  'Code': { en: 'Code', ar: 'كود' },
+  'Terminal': { en: 'Terminal', ar: 'مبنى' },
+  'Command': { en: 'Command', ar: 'أمر' },
+  'Hash': { en: 'Hash', ar: 'هاشتاج' },
+  'Image': { en: 'Image', ar: 'صورة' },
+  'Music': { en: 'Music', ar: 'موسيقى' },
+  'Video': { en: 'Video', ar: 'فيديو' },
+  'PenTool': { en: 'Pen Tool', ar: 'أداة القلم' },
+  'Box': { en: 'Box', ar: 'صندوق' },
+  'Package': { en: 'Package', ar: 'حزمة' },
+  'Layers': { en: 'Layers', ar: 'طبقات' },
+  'Home': { en: 'Home', ar: 'البيت' },
+  'Grid': { en: 'Grid', ar: 'شبكة' },
+  'Folder': { en: 'Folder', ar: 'مجلد' },
+  'Table': { en: 'Table', ar: 'جدول' },
+  'List': { en: 'List', ar: 'قائمة' },
+  'KanbanSquare': { en: 'Kanban', ar: 'كانبان' },
+  'CheckSquare': { en: 'Check', ar: 'تحقق' },
+
+  // Arcade
+  arcade: { en: 'Arcade', ar: 'الأركيد' },
+  take_break: { en: 'Take a break and have some fun', ar: 'خذ استراحة واستمتع' },
+  games: { en: 'games', ar: 'ألعاب' },
+  play_now: { en: 'Play Now', ar: 'العب الآن' },
+  high_score: { en: 'High Score', ar: 'أعلى نتيجة' },
+  coming_soon: { en: 'Coming Soon', ar: 'قريباً' },
+  'snake': { en: 'Snake', ar: 'الثعبان' },
+  'desc_snake': { en: 'Classic snake game. Eat food to grow!', ar: 'لعبة الثعبان الكلاسيكية. كل الطعام لتكبر!' },
+  'tetris': { en: 'Tetris', ar: 'تحطيم الطوب' },
+  'desc_tetris': { en: 'Stack falling blocks to clear lines.', ar: 'رتّب الكتل وحطم كل الطوب. اجمع النقاط!' },
+  'pong': { en: 'Pong', ar: 'بونغ' },
+  'desc_pong': { en: 'Classic paddle game against AI. First to 7 points wins!', ar: 'لعبة المضرب الكلاسيكية ضد الذكاء الاصطناعي. الفائز من يصل 7 نقاط!' },
+
   notifications: { en: 'Notifications', ar: 'الإشعارات' },
   mark_all_read: { en: 'Mark all as read', ar: 'تحديد الكل كمقروء' },
   no_notifications: { en: 'No notifications', ar: 'لا توجد إشعارات' },
   view_assignment: { en: 'View Assignment', ar: 'عرض المهمة' },
+
+  // Invite Member
+  invite_member_desc: { en: 'Invite team members to collaborate on your workspace', ar: 'قم بدعوة أعضاء الفريق للتعاون في مساحة العمل الخاصة بك' },
+  enter_email_placeholder: { en: 'Enter email address', ar: 'أدخل عنوان البريد الإلكتروني' },
+  send_invitation: { en: 'Send Invitation', ar: 'إرسال الدعوة' },
+
+  // Save to Vault
+  save_to_vault: { en: 'Save to Vault', ar: 'حفظ في الخزنة' },
+  file_name: { en: 'File Name', ar: 'اسم الملف' },
+  where_to_save: { en: 'Where to save', ar: 'أين تريد الحفظ؟' },
+  root_no_folder: { en: 'Root (No Folder)', ar: 'الجذر (بدون مجلد)' },
+  create_new_folder: { en: 'Create new folder', ar: 'إنشاء مجلد جديد' },
+  tags: { en: 'Tags', ar: 'الوسوم' },
+  tags_placeholder: { en: 'design, project, important (comma separated)', ar: 'تصميم، مشروع، مهم (مفصولة بفواصل)' },
+  saving: { en: 'Saving...', ar: 'جاري الحفظ...' },
+  folder_name: { en: 'Folder Name', ar: 'اسم المجلد' },
+  enter_file_name: { en: 'Enter file name', ar: 'أدخل اسم الملف' },
+  original: { en: 'Original', ar: 'الأصلي' },
+  kb: { en: 'KB', ar: 'كيلوبايت' },
+
+  or_create_board: { en: 'or create board', ar: 'أو إنشاء لوحة' },
+
+
+
 
   // Greetings
   good_morning: { en: 'Good morning', ar: 'صباح الخير' },
@@ -105,7 +180,6 @@ const translations: Translations = {
   support: { en: 'Support', ar: 'الدعم' },
   help_center: { en: 'Help center', ar: 'مركز المساعدة' },
   create_board: { en: 'Create Board', ar: 'إنشاء لوحة' },
-  cancel: { en: 'Cancel', ar: 'إلغاء' },
   generating: { en: 'Generating...', ar: 'جاري الإنشاء...' },
 
   // Table & Data
@@ -161,7 +235,6 @@ const translations: Translations = {
   block: { en: 'Block', ar: 'حظر' },
   translate: { en: 'Translate', ar: 'ترجمة' },
   print: { en: 'Print', ar: 'طباعة' },
-  trash: { en: 'Trash', ar: 'سلة المهملات' },
   connected: { en: 'Connected', ar: 'متصل' },
   syncing_emails: { en: 'Syncing emails...', ar: 'جاري مزامنة البريد...' },
   no_emails_found: { en: 'No emails found', ar: 'لم يتم العثور على رسائل' },
@@ -272,6 +345,8 @@ const translations: Translations = {
   location: { en: 'Location', ar: 'الموقع' },
   existing_board: { en: 'Existing Board', ar: 'لوحة موجودة' },
   workspace: { en: 'Workspace', ar: 'مساحة العمل' },
+  select_workspace: { en: 'Select Workspace', ar: 'اختر مساحة العمل' },
+  continue: { en: 'Continue', ar: 'متابعة' },
   new_board_name: { en: 'New Board Name', ar: 'اسم اللوحة الجديدة' },
   no_boards_found: { en: 'No boards found', ar: 'لم يتم العثور على لوحات' },
   create_task: { en: 'Create Task', ar: 'إنشاء مهمة' },
@@ -312,7 +387,7 @@ const translations: Translations = {
   submit: { en: 'Submit', ar: 'إرسال' },
   update: { en: 'Update', ar: 'تحديث' },
   create: { en: 'Create', ar: 'إنشاء' },
-  rename: { en: 'Rename', ar: 'إعادة التسمية' },
+
   duplicate: { en: 'Duplicate', ar: 'تكرار' },
   share: { en: 'Share', ar: 'مشاركة' },
   settings: { en: 'Settings', ar: 'الإعدادات' },
@@ -334,9 +409,25 @@ const translations: Translations = {
   // Confirmation Dialogs
   delete_board: { en: 'Delete Board', ar: 'حذف اللوحة' },
   delete_board_confirm: { en: 'Are you sure you want to delete this board? This action cannot be undone.', ar: 'هل أنت متأكد من حذف هذه اللوحة؟ لا يمكن التراجع عن هذا الإجراء.' },
+
+  // Board Creation
+  board_name: { en: 'Board Name', ar: 'اسم اللوحة' },
+  board_name_placeholder: { en: 'e.g. Q4 Marketing Plan', ar: 'مثال: خطة تسويق الربع الرابع' },
+  board_icon: { en: 'Board Icon', ar: 'أيقونة اللوحة' },
+  click_to_change_icon: { en: 'Click to change icon', ar: 'انقر لتغيير الأيقونة' },
+
   delete_workspace: { en: 'Delete Workspace', ar: 'حذف مساحة العمل' },
   delete_workspace_confirm: { en: 'Are you sure you want to delete this workspace? All boards within it will be deleted. This action cannot be undone.', ar: 'هل أنت متأكد من حذف مساحة العمل هذه؟ سيتم حذف جميع اللوحات فيها. لا يمكن التراجع عن هذا الإجراء.' },
+
   cannot_delete_only_workspace: { en: 'Cannot delete the only workspace. Create another one first.', ar: 'لا يمكن حذف مساحة العمل الوحيدة. قم بإنشاء واحدة أخرى أولاً.' },
+
+  // Delete Board Modal
+  delete_board_confirmation_named: { en: 'Are you sure you want to delete "{boardName}"? This action cannot be undone.', ar: 'هل أنت متأكد أنك تريد حذف "{boardName}"؟ لا يمكن التراجع عن هذا الإجراء.' },
+  has_sub_boards_warning: { en: 'This board contains nested sub-boards. How would you like to handle them?', ar: 'تحتوي هذه اللوحة على لوحات فرعية متداخلة. كيف تود التعامل معها؟' },
+  delete_single_board: { en: 'Delete this board only', ar: 'حذف هذه اللوحة فقط' },
+  delete_single_board_desc: { en: 'Sub-boards will be moved to the parent level.', ar: 'سيتم نقل اللوحات الفرعية إلى المستوى الأعلى.' },
+  delete_recursive_board: { en: 'Delete board and sub-boards', ar: 'حذف اللوحة واللوحات الفرعية' },
+  delete_recursive_board_desc: { en: 'Everything will be permanently deleted.', ar: 'سيتم حذف كل شيء بشكل دائم.' },
 
   // Department & Page Names
   operations: { en: 'Operations', ar: 'العمليات' },
@@ -458,7 +549,7 @@ const translations: Translations = {
   realtime_alerts: { en: 'Real-time Alerts', ar: 'تنبيهات فورية' },
   mobile_push: { en: 'Mobile Push', ar: 'إشعارات الجوال' },
   slack_integration: { en: 'Slack Integration', ar: 'تكامل Slack' },
-  coming_soon: { en: 'Coming Soon', ar: 'قريباً' },
+
   general: { en: 'General', ar: 'عام' },
   user_profile: { en: 'User Profile', ar: 'الملف الشخصي' },
   email_notifications: { en: 'Email Notifications', ar: 'إشعارات البريد الإلكتروني' },
@@ -466,13 +557,10 @@ const translations: Translations = {
   privacy_security: { en: 'Privacy & Security', ar: 'الخصوصية والأمان' },
 
   // Dashboard & Home
-  arcade: { en: 'Arcade', ar: 'الأركيد' },
+
 
   // Arcade Games
-  snake: { en: 'Snake', ar: 'الثعبان' },
-  tetris: { en: 'Tetris', ar: 'تتريس' },
   breakout: { en: 'Breakout', ar: 'تحطيم الطوب' },
-  pong: { en: 'Pong', ar: 'بونغ' },
   space_invaders: { en: 'Space Invaders', ar: 'غزاة الفضاء' },
   minesweeper: { en: 'Minesweeper', ar: 'كاسحة الألغام' },
   memory_match: { en: 'Memory Match', ar: 'تطابق الذاكرة' },
@@ -480,8 +568,7 @@ const translations: Translations = {
   sudoku: { en: 'Sudoku', ar: 'سودوكو' },
   chess: { en: 'Chess', ar: 'الشطرنج' },
   solitaire: { en: 'Solitaire', ar: 'سوليتير' },
-  play_now: { en: 'Play Now', ar: 'العب الآن' },
-  high_score: { en: 'High Score', ar: 'أعلى نتيجة' },
+
 
 
   // TopBar - Focus Timer
@@ -559,7 +646,6 @@ const translations: Translations = {
   add_sub_board: { en: 'Add sub-board', ar: 'إضافة لوحة فرعية' },
   test_tools: { en: 'Test Tools', ar: 'أدوات الاختبار' },
   more_options: { en: 'More options', ar: 'خيارات إضافية' },
-  board_name_placeholder: { en: 'Board name', ar: 'اسم اللوحة' },
   spreadsheet_view: { en: 'Spreadsheet view', ar: 'عرض جدول البيانات' },
   visual_workflow: { en: 'Visual workflow', ar: 'سير عمل مرئي' },
   customize_quick_nav: { en: 'Customize quick nav', ar: 'تخصيص التنقل السريع' },
@@ -593,20 +679,17 @@ const translations: Translations = {
 
 
   // Vault Sidebar & Groups
-  new_item: { en: 'New Item', ar: 'عنصر جديد' },
-  folders: { en: 'Folders', ar: 'المجلدات' },
+
   all_items: { en: 'All Items', ar: 'جميع العناصر' },
-  favorites: { en: 'Favorites', ar: 'المفضلة' },
+
   weblinks: { en: 'Web Links', ar: 'روابط الويب' },
   documents: { en: 'Documents', ar: 'المستندات' },
   images: { en: 'Images', ar: 'الصور' },
   logins: { en: 'Logins', ar: 'بيانات الدخول' },
   secure_notes: { en: 'Secure Notes', ar: 'ملاحظات آمنة' },
-  trash: { en: 'Trash', ar: 'سلة المحذوفات' },
   last_7_days: { en: 'Last 7 Days', ar: 'آخر 7 أيام' },
   older: { en: 'Older', ar: 'الأقدم' },
-  today: { en: 'Today', ar: 'اليوم' },
-  yesterday: { en: 'Yesterday', ar: 'أمس' },
+
   notes_group: { en: 'Notes', ar: 'الملاحظات' },
   weblinks_group: { en: 'Web Links', ar: 'روابط الويب' },
   folders_group: { en: 'Folders', ar: 'المجلدات' },
@@ -622,13 +705,13 @@ const translations: Translations = {
   create_category_item: { en: 'Create new {category}', ar: 'إنشاء {category} جديد' },
   this_folder_is_empty: { en: 'This folder is empty', ar: 'هذا المجلد فارغ' },
   add_new_items_folder: { en: 'Add new items specifically to this folder.', ar: 'أضف عناصر جديدة خصيصًا لهذا المجلد.' },
-  new_subfolder: { en: 'New Subfolder', ar: 'مجلد فرعي جديد' },
+
   secure_digital_life: { en: 'Secure your digital life', ar: 'أمّن حياتك الرقمية' },
   vault_empty_desc: { en: 'Your vault is empty. Store passwords, secure notes, and sensitive documents with bank-grade encryption.', ar: 'خزنتك فارغة. قم بتخزين كلمات المرور والملاحظات الآمنة والمستندات الحساسة بتشفير بنكي.' },
-  add_login: { en: 'Add Login', ar: 'إضافة تسجيل دخول' },
+
   save_passwords_desc: { en: 'Save passwords & credentials', ar: 'حفظ كلمات المرور وبيانات الاعتماد' },
   create_secure_folder: { en: 'Create a secure folder', ar: 'إنشاء مجلد آمن' },
-  secure_note: { en: 'Secure Note', ar: 'ملاحظة آمنة' },
+
   encrypted_text_notes: { en: 'Encrypted text notes', ar: 'ملاحظات نصية مشفرة' },
   import_from_1password: { en: 'Import from 1Password / Chrome', ar: 'استيراد من 1Password / Chrome' },
   to_create_new_item: { en: 'to create new item', ar: 'لإنشاء عنصر جديد' },
@@ -650,31 +733,20 @@ const translations: Translations = {
   activity_created_task: { en: 'Created task "{task}" in {board}', ar: 'تم إنشاء المهمة "{task}" في {board}' },
   activity_updated_status: { en: 'Updated "{task}" status to {status} in {board}', ar: 'تم تحديث حالة "{task}" إلى {status} في {board}' },
   activity_sent_email: { en: 'Sent email to {email}', ar: 'تم إرسال بريد إلى {email}' },
+  activity_deleted_board: { en: 'Deleted board: {name}', ar: 'تم حذف اللوحة: {name}' },
 
   // Arcade Descriptions
   desc_space_shooter: { en: 'Classic vertical scrolling shooter. Destroy enemies, collect power-ups, survive waves!', ar: 'لعبة إطلاق نار كلاسيكية. دمر الأعداء، واجمع القوة، وابق على قيد الحياة!' },
   desc_space_invaders: { en: 'Defend Earth from descending alien invaders. Classic arcade action!', ar: 'دافع عن الأرض من الغزاة الفضائيين. أكشن أركيد كلاسيكي!' },
   desc_asteroids: { en: 'Navigate your ship through space and destroy asteroids to survive!', ar: 'قُد سفينتك عبر الفضاء ودمر الكويكبات للبقاء على قيد الحياة!' },
-  desc_snake: { en: 'Classic snake game with power-ups. Eat food to grow, collect abilities!', ar: 'لعبة الثعبان الكلاسيكية. كل الطعام لتكبر، واجمع القدرات!' },
-  desc_tetris: { en: 'Stack falling blocks to clear lines. How long can you survive?', ar: 'رتب الكتل المتساقطة لمسح الخطوط. إلى متى يمكنك الصمود؟' },
-  desc_breakout: { en: 'Bounce the ball and break all the bricks. Collect power-ups!', ar: 'ارتد الكرة وحطم كل الطوب. اجمع التعزيزات!' },
-  desc_pong: { en: 'Classic paddle game against AI. First to 7 points wins!', ar: 'لعبة المضرب الكلاسيكية ضد الذكاء الاصطناعي. الفائز من يصل لـ 7 نقاط!' },
-  desc_flappy_bird: { en: 'Tap to fly through pipes. Simple but addictive!', ar: 'اضغط للطيران عبر الأنابيب. بسيطة لكن مسببة للإدمان!' },
-  desc_whack_a_mole: { en: 'Hit the moles as they pop up! Golden moles worth more points!', ar: 'اضرب الشامات وخي تظهر! الشامات الذهبية تستحق نقاطًا أكثر!' },
   desc_memory_match: { en: 'Find matching pairs. Test your memory skills!', ar: 'اعثر على الأزواج المتطابقة. اختبر مهارات ذاكرتك!' },
   desc_sudoku: { en: 'Fill the grid so every row, column, and 3x3 box has 1-9!', ar: 'املأ الشبكة بحيث يحتوي كل صف وعمود ومربع 3x3 على 1-9!' },
   desc_simon_says: { en: 'Remember and repeat the color sequence. Test your memory!', ar: 'تذكر وكرر تسلسل الألوان. اختبر ذاكرتك!' },
 
   // Settings
   views_visibility: { en: 'Views Visibility', ar: 'رؤية الصفحات' },
-  search_people: { en: 'Search people...', ar: 'بحث عن أشخاص...' },
-  add_more: { en: 'Add more...', ar: 'إضافة المزيد...' },
-  clear_and_close: { en: 'Clear and close', ar: 'مسح وإغلاق' },
-  team: { en: 'Team', ar: 'فريق' },
-  no_matches: { en: 'No matches found', ar: 'لا توجد نتائج' },
-  filter_by_person: { en: 'Filter by person', ar: 'تصفية حسب الشخص' },
-  no_date: { en: 'No Date', ar: 'بلا تاريخ' },
-  open_in_board: { en: 'Open in board', ar: 'فتح في اللوحة' },
+
+
 
   on_track: { en: 'On Track', ar: 'على المسار' },
   use_quick_notes_hint: { en: 'If you want to write a quick note use NABD Bar', ar: 'إذا أردت كتابة ملاحظة سريعة استخدم شريط نبض' },

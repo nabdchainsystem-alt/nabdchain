@@ -24,6 +24,8 @@ const ICON_MAP: Record<string, any> = {
     Home: House, Grid: SquaresFour, Folder, Table, List, KanbanSquare: Kanban, CheckSquare
 };
 
+
+
 // Quick Navigation Items Configuration
 interface QuickNavItem {
     id: string;
@@ -79,13 +81,14 @@ const ACTIVE_SUB_NAV_STYLE = 'font-outfit bg-gradient-to-br from-[#e9ecef] to-[#
 
 const DEFAULT_QUICK_NAV = ['dashboard', 'my_work', 'inbox', 'vault'];
 
-const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode }> = ({ content, children }) => {
+const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode; enabled?: boolean }> = ({ content, children, enabled = true }) => {
     const [visible, setVisible] = useState(false);
-    const [position, setPosition] = useState<{ top: number, left?: number, right?: number }>({ top: 0 });
+    const [position, setPosition] = useState<{ top: number, left: number, isRTL?: boolean }>({ top: 0, left: 0 });
     const triggerRef = useRef<HTMLDivElement>(null);
     const { dir } = useAppContext();
 
     const handleMouseEnter = () => {
+        if (!enabled || !triggerRef.current) return;
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             let top = rect.top + rect.height / 2;
@@ -98,13 +101,12 @@ const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode }> =
                 top = tooltipHeight / 2 + 10;
             }
 
-            const newPos: any = { top };
-            if (dir === 'rtl') {
-                newPos.right = window.innerWidth - rect.left + 8;
-            } else {
-                newPos.left = rect.right + 8;
-            }
-            setPosition(newPos);
+            const isRTL = dir === 'rtl';
+            setPosition({
+                top,
+                left: isRTL ? rect.left - 8 : rect.right + 8,
+                isRTL
+            });
             setVisible(true);
         }
     };
@@ -114,7 +116,7 @@ const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode }> =
             ref={triggerRef}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={() => setVisible(false)}
-            className="group relative"
+            className={`group relative ${enabled ? 'w-fit mx-auto' : 'w-full'}`}
         >
             {children}
             {visible && createPortal(
@@ -122,9 +124,8 @@ const SidebarTooltip: React.FC<{ content: string; children: React.ReactNode }> =
                     className="fixed z-[9999] px-2 py-1 rounded-md bg-gray-900 dark:bg-gray-700 text-white text-[10px] font-medium whitespace-nowrap shadow-lg pointer-events-none"
                     style={{
                         top: position.top,
-                        transform: 'translateY(-50%)',
                         left: position.left,
-                        right: position.right
+                        transform: `translateY(-50%) ${position.isRTL ? 'translateX(-100%)' : ''}`
                     }}
                 >
                     {content}
@@ -262,49 +263,49 @@ const QuickNavIcons: React.FC<{
 
             {/* Settings button */}
             <SidebarTooltip content={t('edit')}>
-                <div className="group relative mt-1">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            let top = rect.top;
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        let top = rect.top;
 
-                            // Smart vertical positioning: if popup would go off screen, align it to bottom
-                            const estimatedHeight = Math.min(400, window.innerHeight - 40);
-                            if (top + estimatedHeight > window.innerHeight) {
-                                top = Math.max(10, window.innerHeight - estimatedHeight - 10);
-                            }
+                        // Smart vertical positioning: if popup would go off screen, align it to bottom
+                        const maxMenuHeight = 600;
+                        const bottomMargin = 20;
+                        const estimatedHeight = Math.min(maxMenuHeight, window.innerHeight - (bottomMargin * 2));
+                        if (top + estimatedHeight > window.innerHeight - bottomMargin) {
+                            top = Math.max(10, window.innerHeight - estimatedHeight - bottomMargin);
+                        }
 
-                            const pos: any = { top };
-                            if (dir === 'rtl') {
-                                pos.right = window.innerWidth - rect.left + 12;
-                            } else {
-                                pos.left = rect.right + 12;
-                            }
-                            setSettingsPos(pos);
-                            setShowSettings(!showSettings);
-                        }}
-                        title="Customize quick nav"
-                        className="w-7 h-7 rounded-full flex items-center justify-center
-                            bg-white/70 dark:bg-gray-800/70
-                            hover:bg-white dark:hover:bg-gray-800
-                            hover:shadow-sm
-                            transition-all duration-300 ease-out"
-                    >
-                        <Gauge size={12} weight="regular" className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
-                    </button>
-                </div>
+                        const isRTL = dir === 'rtl';
+                        const pos: any = {
+                            top,
+                            left: isRTL ? rect.left - 12 : rect.right + 12,
+                            isRTL
+                        };
+                        setSettingsPos(pos);
+                        setShowSettings(!showSettings);
+                    }}
+                    title="Customize quick nav"
+                    className="w-7 h-7 rounded-full flex items-center justify-center
+                        bg-white/70 dark:bg-gray-800/70
+                        hover:bg-white dark:hover:bg-gray-800
+                        hover:shadow-sm
+                        transition-all duration-300 ease-out mt-1"
+                >
+                    <Gauge size={12} weight="regular" className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                </button>
             </SidebarTooltip>
 
             {/* Settings Popup */}
             {showSettings && createPortal(
                 <div
                     ref={settingsRef}
-                    className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 min-w-[200px] max-h-[400px] overflow-y-auto no-scrollbar"
+                    className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 min-w-[200px] max-h-[600px] overflow-y-auto no-scrollbar"
                     style={{
                         top: settingsPos.top,
-                        left: settingsPos.left || 'auto',
-                        right: settingsPos.right || 'auto'
+                        left: settingsPos.left,
+                        transform: settingsPos.isRTL ? 'translateX(-100%)' : 'none'
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -365,21 +366,19 @@ const QuickNavIcons: React.FC<{
 
             {/* Expand button at bottom */}
             <SidebarTooltip content={t('open')}>
-                <div className="group relative mt-2">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onExpandSidebar();
-                        }}
-                        title={t('expand_sidebar')}
-                        className="w-7 h-7 rounded-full flex items-center justify-center
-                            bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700
-                            text-gray-400 hover:text-gray-500 dark:hover:text-gray-300
-                            transition-all duration-200 hover:shadow-sm"
-                    >
-                        <CaretRight size={12} weight="bold" />
-                    </button>
-                </div>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onExpandSidebar();
+                    }}
+                    title={t('expand_sidebar')}
+                    className="w-7 h-7 rounded-full flex items-center justify-center
+                        bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700
+                        text-gray-400 hover:text-gray-500 dark:hover:text-gray-300
+                        transition-all duration-200 hover:shadow-sm mt-2"
+                >
+                    <CaretRight size={12} weight="bold" />
+                </button>
             </SidebarTooltip>
         </div>
     );
@@ -432,11 +431,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     const [initialWidth, setInitialWidth] = useState(width);
     const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = useState(false);
+    const [addMenuMode, setAddMenuMode] = useState<'board' | 'workspace'>('board');
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const [addMenuPos, setAddMenuPos] = useState<{ top?: number, bottom?: number, left: number }>({ top: 0, left: 0 });
+    const [addMenuPos, setAddMenuPos] = useState<{ top?: number, bottom?: number, left?: number, right?: number, isRTL?: boolean }>({ top: 0, left: 0 });
     const [workspaceMenuPos, setWorkspaceMenuPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, boardId: string } | null>(null);
-    const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number, y: number, workspaceId: string } | null>(null);
+
     const [isBoardHovered, setIsBoardHovered] = useState(false);
     const [isDashboardHovered, setIsDashboardHovered] = useState(false);
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
@@ -496,6 +495,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         localStorage.setItem('expandedBoards', JSON.stringify(Array.from(expandedBoards)));
     }, [expandedBoards]);
 
+    // Listen for external trigger to open new board modal
+    useEffect(() => {
+        const handleOpenNewBoardModal = () => {
+            setIsNewBoardModalOpen(true);
+            setCreationStep('details');
+            setSelectedTemplate(undefined);
+        };
+        window.addEventListener('open-new-board-modal', handleOpenNewBoardModal);
+        return () => window.removeEventListener('open-new-board-modal', handleOpenNewBoardModal);
+    }, []);
+
     const toggleExpand = (boardId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         const newExpanded = new Set(expandedBoards);
@@ -520,8 +530,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     // Close menus on click outside
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            setContextMenu(null);
-            setWorkspaceContextMenu(null);
+
             setIsWorkspaceMenuOpen(false);
 
             if (
@@ -568,17 +577,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         };
     }, [isResizing, onResize, dir, initialMouseX, initialWidth, width]);
 
-    const handleContextMenu = (e: React.MouseEvent, boardId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY, boardId });
-    };
 
-    const handleWorkspaceContextMenu = (e: React.MouseEvent, workspaceId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setWorkspaceContextMenu({ x: e.clientX, y: e.clientY, workspaceId });
-    }
+
+
 
     const handleCreateWorkspace = (e: React.FormEvent) => {
         e.preventDefault();
@@ -606,6 +607,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             setNewWorkspaceName('');
             setNewWorkspaceIcon('Briefcase');
             setEditingWorkspaceId(null);
+            setIsAddMenuOpen(false);
+            setAddMenuMode('board');
         }
     };
 
@@ -641,22 +644,41 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         } else {
             if (addButtonRef.current) {
                 const rect = addButtonRef.current.getBoundingClientRect();
-                const MENU_HEIGHT = 280; // Approximate height of the menu (input + layout grid + button + link)
-                const left = rect.right + 10; // Position to the right of the button with some gap
+                const MENU_HEIGHT = 320; // Increased to account for icon picker
+                const MENU_WIDTH = 220;
+
+                let left, isRTL = false;
+                if (dir === 'rtl') {
+                    if (rect.left - MENU_WIDTH - 10 < 10) {
+                        // Not enough space on the start side (left in RTL), show on the other side
+                        left = rect.right + 10;
+                    } else {
+                        // Standard RTL: show on the left of button
+                        left = rect.left - 10;
+                        isRTL = true;
+                    }
+                } else {
+                    if (rect.right + MENU_WIDTH + 10 > window.innerWidth - 10) {
+                        // Not enough space on the end side (right in LTR), show on the other side
+                        left = rect.left - 10 - MENU_WIDTH; // Fallback positioning
+                    } else {
+                        // Standard LTR: show on the right of button
+                        left = rect.right + 10;
+                    }
+                }
+
                 const spaceBelow = window.innerHeight - rect.top;
                 const spaceAbove = rect.bottom;
 
-                // Decide whether to open downward or upward
                 if (spaceBelow >= MENU_HEIGHT || spaceBelow >= spaceAbove) {
-                    // Open downward - align with top of button
                     const top = Math.min(rect.top, window.innerHeight - MENU_HEIGHT - 10);
-                    setAddMenuPos({ top: Math.max(10, top), bottom: undefined, left });
+                    setAddMenuPos({ top: Math.max(10, top), bottom: undefined, left, isRTL });
                 } else {
-                    // Open upward - align with bottom of button
                     const bottom = window.innerHeight - rect.bottom;
-                    setAddMenuPos({ top: undefined, bottom: Math.max(10, bottom), left });
+                    setAddMenuPos({ top: undefined, bottom: Math.max(10, bottom), left, isRTL });
                 }
             }
+            setAddMenuMode('board');
             setIsAddMenuOpen(true);
         }
     };
@@ -667,8 +689,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         } else {
             if (workspaceButtonRef.current) {
                 const rect = workspaceButtonRef.current.getBoundingClientRect();
-                // Position to the right of the sidebar
-                const left = rect.right + 8;
+                const MENU_WIDTH = 220;
+
+                let left;
+                if (dir === 'rtl') {
+                    // In RTL, position menu to the left of the sidebar
+                    left = Math.max(10, rect.left - MENU_WIDTH - 8);
+                } else {
+                    // In LTR, position menu to the right of the sidebar
+                    left = rect.right + 8;
+                }
+
                 const top = rect.top;
                 setWorkspaceMenuPos({ top, left });
             }
@@ -694,132 +725,141 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     <div className={`h-full min-h-0 flex flex-col transition-opacity duration-300 ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                         {/* 1. Top Navigation */}
                         <div className={`pt-3 pb-3 space-y-0.5 ltr:pl-5 ltr:pr-3 rtl:pr-5 rtl:pl-3 transition-[padding] duration-300`}>
-                            <button
-                                onClick={() => onNavigate('dashboard')}
-                                title={t('home')}
-                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                        ${activeView === 'dashboard'
-                                        ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                        `}
-                            >
-                                <House size={17} weight="light" className="flex-shrink-0" />
-                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
-                            </button>
-                            {pageVisibility['flow_hub'] !== false && (
+                            <SidebarTooltip content={t('home')} enabled={isCollapsed}>
                                 <button
-                                    onClick={() => onNavigate('flow_hub')}
-                                    title={t('flow_hub')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'flow_hub'
+                                    onClick={() => onNavigate('dashboard')}
+                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                    ${activeView === 'dashboard'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
                                             : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
+                                    `}
                                 >
-                                    <Sparkle size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('flow_hub')}</span>
+                                    <House size={17} weight="light" className="flex-shrink-0" />
+                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('home')}</span>
                                 </button>
+                            </SidebarTooltip>
+                            {pageVisibility['flow_hub'] !== false && (
+                                <SidebarTooltip content={t('flow_hub')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('flow_hub')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'flow_hub'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <Sparkle size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('flow_hub')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                             {pageVisibility['process_map'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('process_map')}
-                                    title={t('process_map')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'process_map'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <Activity size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('process_map')}</span>
-                                </button>
+                                <SidebarTooltip content={t('process_map')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('process_map')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'process_map'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <Activity size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('process_map')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                             {pageVisibility['my_work'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('my_work')}
-                                    title={t('my_work')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'my_work'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <SquaresFour size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
-                                </button>
+                                <SidebarTooltip content={t('my_work')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('my_work')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'my_work'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <SquaresFour size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('my_work')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
 
                             {/* New Pages */}
                             {pageVisibility['inbox'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('inbox')}
-                                    title={t('inbox')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'inbox'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <Tray size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
-                                </button>
+                                <SidebarTooltip content={t('inbox')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('inbox')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'inbox'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <Tray size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('inbox')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                             {pageVisibility['talk'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('talk')}
-                                    title={t('talk')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'talk'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <ChatCircleText size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
-                                </button>
+                                <SidebarTooltip content={t('talk')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('talk')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'talk'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <ChatCircleText size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('talk')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
 
                             {pageVisibility['teams'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('teams')}
-                                    title={t('teams')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'teams'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <Users size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
-                                </button>
+                                <SidebarTooltip content={t('teams')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('teams')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'teams'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <Users size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('teams')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                             {pageVisibility['vault'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('vault')}
-                                    title={t('vault')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 
-                            ${activeView === 'vault'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
-                            `}
-                                >
-                                    <Lock size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
-                                </button>
+                                <SidebarTooltip content={t('vault')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('vault')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 
+                                        ${activeView === 'vault'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                        `}
+                                    >
+                                        <Lock size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('vault')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                             {pageVisibility['test_tools'] !== false && (
-                                <button
-                                    onClick={() => onNavigate('test')}
-                                    title={t('test_tools')}
-                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300
-                            ${activeView === 'test'
-                                            ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
-                            `}
-                                >
-                                    <Flask size={17} weight="light" className="flex-shrink-0" />
-                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('test_tools')}</span>
-                                </button>
+                                <SidebarTooltip content={t('test_tools')} enabled={isCollapsed}>
+                                    <button
+                                        onClick={() => onNavigate('test')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300
+                                        ${activeView === 'test'
+                                                ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
+                                        `}
+                                    >
+                                        <Flask size={17} weight="light" className="flex-shrink-0" />
+                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('test_tools')}</span>
+                                    </button>
+                                </SidebarTooltip>
                             )}
                         </div>
 
@@ -843,15 +883,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     <div className="space-y-1">
                                         {/* Overview */}
                                         <div className="mb-1">
-                                            <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
-                                                title={t('overview')}
-                                            >
-                                                <Layout size={17} weight="light" className="flex-shrink-0" />
-                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('overview')}</span>
-                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                            </div>
+                                            <SidebarTooltip content={t('overview')} enabled={isCollapsed}>
+                                                <div
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    onClick={() => !isCollapsed && toggleDepartment('mini_overview')}
+                                                >
+                                                    <Layout size={17} weight="light" className="flex-shrink-0" />
+                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('overview')}</span>
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_overview') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                </div>
+                                            </SidebarTooltip>
                                             {expandedDepartments.has('mini_overview') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
@@ -866,15 +907,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                                         {/* Operations */}
                                         <div className="mb-1">
-                                            <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
-                                                title={t('operations')}
-                                            >
-                                                <Factory size={17} weight="light" className="flex-shrink-0" />
-                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('operations')}</span>
-                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                            </div>
+                                            <SidebarTooltip content={t('operations')} enabled={isCollapsed}>
+                                                <div
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    onClick={() => !isCollapsed && toggleDepartment('mini_operations')}
+                                                >
+                                                    <Factory size={17} weight="light" className="flex-shrink-0" />
+                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('operations')}</span>
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                </div>
+                                            </SidebarTooltip>
                                             {expandedDepartments.has('mini_operations') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
@@ -892,15 +934,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                                         {/* Finance */}
                                         <div className="mb-1">
-                                            <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
-                                                title={t('finance')}
-                                            >
-                                                <Money size={17} weight="light" className="flex-shrink-0" />
-                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('finance')}</span>
-                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                            </div>
+                                            <SidebarTooltip content={t('finance')} enabled={isCollapsed}>
+                                                <div
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    onClick={() => !isCollapsed && toggleDepartment('mini_finance')}
+                                                >
+                                                    <Money size={17} weight="light" className="flex-shrink-0" />
+                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('finance')}</span>
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_finance') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                </div>
+                                            </SidebarTooltip>
                                             {expandedDepartments.has('mini_finance') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
@@ -912,15 +955,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                                         {/* People */}
                                         <div className="mb-1">
-                                            <div
-                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                onClick={() => !isCollapsed && toggleDepartment('mini_people')}
-                                                title={t('people')}
-                                            >
-                                                <UsersThree size={17} weight="light" className="flex-shrink-0" />
-                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('people')}</span>
-                                                <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                            </div>
+                                            <SidebarTooltip content={t('people')} enabled={isCollapsed}>
+                                                <div
+                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                    onClick={() => !isCollapsed && toggleDepartment('mini_people')}
+                                                >
+                                                    <UsersThree size={17} weight="light" className="flex-shrink-0" />
+                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('people')}</span>
+                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('mini_people') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                </div>
+                                            </SidebarTooltip>
                                             {expandedDepartments.has('mini_people') && !isCollapsed && (
                                                 <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                     <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[14px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
@@ -936,15 +980,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Supply Chain */}
                                         {pageVisibility['supply_chain'] !== false && (
                                             <div className="mb-1">
-                                                <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                    onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
-                                                    title={t('supply_chain')}
-                                                >
-                                                    <Package size={17} weight="light" className="flex-shrink-0" />
-                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('supply_chain')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                                </div>
+                                                <SidebarTooltip content={t('supply_chain')} enabled={isCollapsed}>
+                                                    <div
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                        onClick={() => !isCollapsed && toggleDepartment('supply_chain')}
+                                                    >
+                                                        <Package size={17} weight="light" className="flex-shrink-0" />
+                                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('supply_chain')}</span>
+                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('supply_chain') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    </div>
+                                                </SidebarTooltip>
                                                 {expandedDepartments.has('supply_chain') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['procurement'] !== false && (
@@ -980,15 +1025,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Manufacturing (Legacy Operations) */}
                                         {pageVisibility['operations'] !== false && (
                                             <div className="mb-1">
-                                                <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                    onClick={() => !isCollapsed && toggleDepartment('operations')}
-                                                    title={t('manufacturing')}
-                                                >
-                                                    <Factory size={17} weight="light" className="flex-shrink-0" />
-                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('manufacturing')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                                </div>
+                                                <SidebarTooltip content={t('manufacturing')} enabled={isCollapsed}>
+                                                    <div
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                        onClick={() => !isCollapsed && toggleDepartment('operations')}
+                                                    >
+                                                        <Factory size={17} weight="light" className="flex-shrink-0" />
+                                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('manufacturing')}</span>
+                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('operations') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    </div>
+                                                </SidebarTooltip>
                                                 {expandedDepartments.has('operations') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['maintenance'] !== false && (
@@ -1014,15 +1060,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Business */}
                                         {pageVisibility['business'] !== false && (
                                             <div className="mb-1">
-                                                <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                    onClick={() => !isCollapsed && toggleDepartment('business')}
-                                                    title={t('business')}
-                                                >
-                                                    <Buildings size={17} weight="light" className="flex-shrink-0" />
-                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                                </div>
+                                                <SidebarTooltip content={t('business')} enabled={isCollapsed}>
+                                                    <div
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                        onClick={() => !isCollapsed && toggleDepartment('business')}
+                                                    >
+                                                        <Buildings size={17} weight="light" className="flex-shrink-0" />
+                                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business')}</span>
+                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    </div>
+                                                </SidebarTooltip>
                                                 {expandedDepartments.has('business') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['sales_listing'] !== false && (
@@ -1043,15 +1090,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         {/* Business Support */}
                                         {pageVisibility['business_support'] !== false && (
                                             <div className="mb-1">
-                                                <div
-                                                    className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
-                                                    onClick={() => !isCollapsed && toggleDepartment('business_support')}
-                                                    title={t('business_support')}
-                                                >
-                                                    <Users size={17} weight="light" className="flex-shrink-0" />
-                                                    <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business_support')}</span>
-                                                    <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
-                                                </div>
+                                                <SidebarTooltip content={t('business_support')} enabled={isCollapsed}>
+                                                    <div
+                                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2] transition-all duration-300`}
+                                                        onClick={() => !isCollapsed && toggleDepartment('business_support')}
+                                                    >
+                                                        <Users size={17} weight="light" className="flex-shrink-0" />
+                                                        <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('business_support')}</span>
+                                                        <CaretDown size={13} weight="light" className={`text-gray-400 transition-all duration-300 flex-shrink-0 ${expandedDepartments.has('business_support') ? 'rotate-180' : ''} ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[20px] opacity-100'}`} />
+                                                    </div>
+                                                </SidebarTooltip>
                                                 {expandedDepartments.has('business_support') && !isCollapsed && (
                                                     <div className="ml-2 pl-3 border-l border-gray-200 dark:border-monday-dark-border mt-1 space-y-0.5">
                                                         {pageVisibility['it_support'] !== false && (
@@ -1153,7 +1201,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         toggleWorkspaceMenu();
                                                     }}
                                                 >
-                                                    <CaretRight size={13} weight="light" className="transition-transform duration-200" />
+                                                    {dir === 'rtl' ? <CaretLeft size={13} weight="light" className="transition-transform duration-200" /> : <CaretRight size={13} weight="light" className="transition-transform duration-200" />}
                                                 </div>
                                             </div>
                                         )}
@@ -1166,87 +1214,193 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div className="fixed inset-0 z-[9998]" onClick={() => setIsAddMenuOpen(false)} />
                                             <div
                                                 ref={addMenuRef}
-                                                className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[9999] animate-in fade-in zoom-in-95 duration-100 min-w-[200px] w-auto overflow-hidden max-h-[calc(100vh-20px)] overflow-y-auto"
+                                                className="fixed bg-white dark:bg-monday-dark-surface shadow-xl rounded-lg border border-gray-200 dark:border-monday-dark-border z-[9999] animate-in fade-in zoom-in-95 duration-100 min-w-[220px] w-auto overflow-hidden max-h-[calc(100vh-20px)] overflow-y-auto"
                                                 style={{
-                                                    ...(addMenuPos.top !== undefined ? { top: addMenuPos.top } : {}),
-                                                    ...(addMenuPos.bottom !== undefined ? { bottom: addMenuPos.bottom } : {}),
-                                                    left: addMenuPos.left
+                                                    top: addMenuPos.top,
+                                                    bottom: addMenuPos.bottom,
+                                                    left: addMenuPos.left,
+                                                    transform: addMenuPos.isRTL ? 'translateX(-100%)' : 'none'
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <form
-                                                    onSubmit={(e) => {
-                                                        e.preventDefault();
-                                                        if (newBoardName.trim()) {
-                                                            const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
-                                                            onAddBoard(
-                                                                newBoardName.trim(),
-                                                                iconMap[selectedLayout] || 'Table',
-                                                                undefined,
-                                                                selectedLayout as any,
-                                                                undefined
-                                                            );
-                                                            setNewBoardName('');
-                                                            setSelectedLayout('table');
-                                                            setIsAddMenuOpen(false);
-                                                        }
-                                                    }}
-                                                    className="p-3"
-                                                >
-                                                    <div className="mb-3">
-                                                        <input
-                                                            type="text"
-                                                            autoFocus
-                                                            value={newBoardName}
-                                                            onChange={(e) => setNewBoardName(e.target.value)}
-                                                            placeholder={t('board_name_placeholder')}
-                                                            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue transition-shadow"
-                                                        />
-                                                    </div>
+                                                {addMenuMode === 'board' ? (
+                                                    <form
+                                                        onSubmit={(e) => {
+                                                            e.preventDefault();
+                                                            if (newBoardName.trim()) {
+                                                                const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
+                                                                // Use selected icon or fallback to layout default
+                                                                const finalIcon = newBoardIcon && newBoardIcon !== 'Table' ? newBoardIcon : (iconMap[selectedLayout] || 'Table');
 
-                                                    <div className="grid grid-cols-2 gap-1 mb-3">
-                                                        {[
-                                                            { id: 'table', label: t('table'), icon: Table },
-                                                            { id: 'datatable', label: t('data'), icon: Database },
-                                                            { id: 'kanban', label: t('kanban'), icon: Kanban },
-                                                            { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
-                                                        ].map((layout) => (
-                                                            <button
-                                                                key={layout.id}
-                                                                type="button"
-                                                                onClick={() => setSelectedLayout(layout.id as any)}
-                                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-[10px] font-medium transition-all ${selectedLayout === layout.id
-                                                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-1 ring-blue-100 dark:ring-blue-800'
-                                                                    : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:bg-gray-100'
-                                                                    }`}
-                                                            >
-                                                                <layout.icon size={17} weight={selectedLayout === layout.id ? "fill" : "regular"} />
-                                                                <span>{layout.label}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-
-                                                    <button
-                                                        type="submit"
-                                                        disabled={!newBoardName.trim()}
-                                                        className="w-full py-1.5 bg-monday-blue text-white text-xs font-semibold rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
-                                                    >
-                                                        {t('create_board')}
-                                                    </button>
-
-                                                    <div className="mt-2 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setIsAddWorkspaceModalOpen(true);
+                                                                onAddBoard(
+                                                                    newBoardName.trim(),
+                                                                    finalIcon,
+                                                                    undefined,
+                                                                    selectedLayout as any,
+                                                                    undefined
+                                                                );
+                                                                setNewBoardName('');
+                                                                setNewBoardIcon('Table');
+                                                                setSelectedLayout('table');
                                                                 setIsAddMenuOpen(false);
-                                                            }}
-                                                            className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                            }
+                                                        }}
+                                                        className="p-3"
+                                                    >
+                                                        <div className="mb-3">
+                                                            <input
+                                                                type="text"
+                                                                autoFocus
+                                                                value={newBoardName}
+                                                                onChange={(e) => setNewBoardName(e.target.value)}
+                                                                placeholder={t('board_name_placeholder')}
+                                                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue transition-shadow"
+                                                            />
+                                                        </div>
+
+                                                        {/* Icon Picker */}
+                                                        <div className="mb-3 relative">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
+                                                                className="w-full flex items-center justify-between px-3 py-1.5 bg-gray-50 dark:bg-monday-dark-hover border border-gray-200 dark:border-monday-dark-border rounded-md hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    {React.createElement(ICON_MAP[newBoardIcon] || Table, { size: 14, className: "text-monday-blue" })}
+                                                                    <span className="text-[11px] text-gray-700 dark:text-gray-300">{t(newBoardIcon)}</span>
+                                                                </div>
+                                                                <CaretDown size={10} weight="light" className="text-gray-400" />
+                                                            </button>
+
+                                                            {isIconPickerOpen && (
+                                                                <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-xl rounded-md p-2 z-50 grid grid-cols-5 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                    {Object.keys(ICON_MAP).map((iconName) => (
+                                                                        <button
+                                                                            key={iconName}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setNewBoardIcon(iconName);
+                                                                                setIsIconPickerOpen(false);
+                                                                            }}
+                                                                            className={`p-1.5 rounded-sm flex items-center justify-center transition-colors ${newBoardIcon === iconName ? 'bg-monday-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-400'}`}
+                                                                            title={t(iconName).toString()}
+                                                                        >
+                                                                            {React.createElement(ICON_MAP[iconName], { size: 14 })}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-1 mb-3">
+                                                            {[
+                                                                { id: 'table', label: t('table'), icon: Table },
+                                                                { id: 'datatable', label: t('data'), icon: Database },
+                                                                { id: 'kanban', label: t('kanban'), icon: Kanban },
+                                                                { id: 'gtd', label: t('gtd_system'), icon: CheckSquare }
+                                                            ].map((layout) => (
+                                                                <button
+                                                                    key={layout.id}
+                                                                    type="button"
+                                                                    onClick={() => setSelectedLayout(layout.id as any)}
+                                                                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-[10px] font-medium transition-all ${selectedLayout === layout.id
+                                                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-1 ring-blue-100 dark:ring-blue-800'
+                                                                        : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 dark:text-gray-400 hover:bg-gray-100'
+                                                                        }`}
+                                                                >
+                                                                    <layout.icon size={17} weight={selectedLayout === layout.id ? "fill" : "regular"} />
+                                                                    <span>{layout.label}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+
+                                                        <button
+                                                            type="submit"
+                                                            disabled={!newBoardName.trim()}
+                                                            className="w-full py-1.5 bg-monday-blue text-white text-xs font-semibold rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
                                                         >
-                                                            or create workspace
+                                                            {t('create_board')}
                                                         </button>
-                                                    </div>
-                                                </form>
+
+                                                        {/* Mode Switcher Footer */}
+                                                        <div className="mt-2 text-center border-t border-gray-100 dark:border-monday-dark-border pt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAddMenuMode('workspace')}
+                                                                className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                            >
+                                                                {t('or_create_workspace')}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <form
+                                                        onSubmit={handleCreateWorkspace}
+                                                        className="p-3"
+                                                    >
+                                                        <div className="mb-3">
+                                                            <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">{t('workspace_name')}</label>
+                                                            <input
+                                                                type="text"
+                                                                autoFocus
+                                                                value={newWorkspaceName}
+                                                                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                                                                placeholder="e.g. Marketing"
+                                                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue transition-shadow"
+                                                            />
+                                                        </div>
+
+                                                        <div className="mb-3">
+                                                            <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">{t('workspace_icon')}</label>
+                                                            <div className="grid grid-cols-5 gap-1">
+                                                                {Object.keys(ICON_MAP).slice(0, 10).map((iconName, index) => {
+                                                                    const isSelected = newWorkspaceIcon === iconName;
+                                                                    const gradients = [
+                                                                        'from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500',
+                                                                        'from-green-500 to-emerald-500', 'from-indigo-500 to-violet-500'
+                                                                    ];
+                                                                    const gradient = gradients[index % gradients.length];
+
+                                                                    return (
+                                                                        <button
+                                                                            key={iconName}
+                                                                            type="button"
+                                                                            onClick={() => setNewWorkspaceIcon(iconName)}
+                                                                            className={`
+                                                                            aspect-square rounded-md flex items-center justify-center transition-all duration-200
+                                                                            ${isSelected
+                                                                                    ? `bg-gradient-to-br ${gradient} text-white shadow-sm ring-1 ring-offset-1 ring-blue-500`
+                                                                                    : 'bg-gray-50 dark:bg-monday-dark-hover text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                                                }
+                                                                        `}
+                                                                            title={iconName}
+                                                                        >
+                                                                            {React.createElement(ICON_MAP[iconName], { size: 16 })}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            type="submit"
+                                                            disabled={!newWorkspaceName.trim()}
+                                                            className="w-full py-1.5 bg-monday-blue text-white text-xs font-semibold rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
+                                                        >
+                                                            {t('create_workspace')}
+                                                        </button>
+
+                                                        <div className="mt-2 text-center border-t border-gray-100 dark:border-monday-dark-border pt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAddMenuMode('board')}
+                                                                className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                            >
+                                                                {t('or_create_board')}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                )}
                                             </div>
                                         </>,
                                         document.body
@@ -1282,11 +1436,36 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                             {ws.name}
                                                         </span>
                                                     </div>
-                                                    <div
-                                                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-500 dark:text-gray-400"
-                                                        onClick={(e) => handleWorkspaceContextMenu(e, ws.id)}
-                                                    >
-                                                        <DotsThree size={12} weight="light" />
+                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div
+                                                            className="p-1 hover:bg-gray-200 dark:hover:bg-monday-dark-hover rounded-sm text-gray-400 hover:text-monday-blue dark:text-gray-500 transition-colors"
+                                                            title={t('rename')}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setEditingWorkspaceId(ws.id);
+                                                                setNewWorkspaceName(ws.name);
+                                                                setNewWorkspaceIcon(ws.icon);
+                                                                setIsAddWorkspaceModalOpen(true);
+                                                                setIsWorkspaceMenuOpen(false);
+                                                            }}
+                                                        >
+                                                            <Pencil size={12} weight="light" />
+                                                        </div>
+                                                        <div
+                                                            className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-sm text-gray-400 hover:text-red-600 dark:text-gray-500 transition-colors"
+                                                            title={t('delete')}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (workspaces.length <= 1) {
+                                                                    alert(t('cannot_delete_only_workspace'));
+                                                                    return;
+                                                                }
+                                                                setWorkspaceToDelete(ws.id);
+                                                                setIsWorkspaceMenuOpen(false);
+                                                            }}
+                                                        >
+                                                            <Trash size={12} weight="light" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1322,7 +1501,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 <div
                                                     className={`font-outfit flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} py-1.5 rounded-sm cursor-pointer group transition-all duration-300 select-none
                                                 ${isActive ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-white/40 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
-                                                ${isChild ? 'ml-3' : ''}
+                                                ${isChild ? (dir === 'rtl' ? 'mr-3' : 'ml-3') : ''}
                                             `}
                                                     onClick={() => onNavigate('board', board.id)}
                                                     title={board.name}
@@ -1358,17 +1537,21 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                 <Plus size={13} weight="light" />
                                                             </div>
                                                             <div
-                                                                onClick={(e) => handleContextMenu(e, board.id)}
-                                                                className={`p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-monday-dark-border text-gray-400 ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
-                                                                title={t('more_options')}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setBoardToDelete(board.id);
+                                                                    setIsDeleteBoardModalOpen(true);
+                                                                }}
+                                                                className={`p-1 rounded-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-monday-dark-border text-gray-400 ${isActive ? 'visible' : 'invisible group-hover:visible'}`}
+                                                                title={t('delete')}
                                                             >
-                                                                <DotsThree size={13} weight="bold" />
+                                                                <Trash size={13} weight="light" />
                                                             </div>
                                                         </div>
                                                     )}
                                                 </div>
                                                 {hasChildren && !isCollapsed && isExpanded && (
-                                                    <div className="ml-4 pl-1 border-l border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5">
+                                                    <div className={`${dir === 'rtl' ? 'mr-4 pr-1 border-r' : 'ml-4 pl-1 border-l'} border-gray-200 dark:border-monday-dark-border mt-0.5 space-y-0.5`}>
                                                         {subBoards.map(sb => renderBoardItem(sb, level + 1))}
                                                     </div>
                                                 )}
@@ -1394,24 +1577,26 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 )}
                                 <div className="space-y-1">
                                     {pageVisibility['local_marketplace'] !== false && (
-                                        <button
-                                            onClick={() => onNavigate('local_marketplace')}
-                                            title={t('local_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'local_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
-                                        >
-                                            <ShoppingCart size={17} weight="light" className="flex-shrink-0" />
-                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('local_marketplace')}</span>
-                                        </button>
+                                        <SidebarTooltip content={t('local_marketplace')} enabled={isCollapsed}>
+                                            <button
+                                                onClick={() => onNavigate('local_marketplace')}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 ${activeView === 'local_marketplace' ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
+                                            >
+                                                <ShoppingCart size={17} weight="light" className="flex-shrink-0" />
+                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('local_marketplace')}</span>
+                                            </button>
+                                        </SidebarTooltip>
                                     )}
                                     {pageVisibility['foreign_marketplace'] !== false && (
-                                        <button
-                                            onClick={() => onNavigate('foreign_marketplace')}
-                                            title={t('foreign_marketplace')}
-                                            className={`flex items-center ${!isCollapsed ? 'gap-3 px-3' : 'gap-0 px-3'} w-full py-1.5 rounded-sm transition-all duration-300 ${activeView === 'foreign_marketplace' ? 'bg-white/50 dark:bg-monday-dark-hover text-monday-blue shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
-                                        >
-                                            <Globe size={17} weight="light" className="flex-shrink-0" />
-                                            <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('foreign_marketplace')}</span>
-                                        </button>
+                                        <SidebarTooltip content={t('foreign_marketplace')} enabled={isCollapsed}>
+                                            <button
+                                                onClick={() => onNavigate('foreign_marketplace')}
+                                                className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-all duration-300 ${activeView === 'foreign_marketplace' ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
+                                            >
+                                                <Globe size={17} weight="light" className="flex-shrink-0" />
+                                                <span className={`font-normal text-[14px] truncate min-w-0 flex-1 text-start leading-5 ${textBase} ${textVisibility}`}>{t('foreign_marketplace')}</span>
+                                            </button>
+                                        </SidebarTooltip>
                                     )}
                                 </div>
                             </div>
@@ -1441,32 +1626,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     {(isCollapsed && dir === 'ltr') || (!isCollapsed && dir === 'rtl') ? <CaretRight size={13} weight="light" /> : <CaretLeft size={13} weight="light" />}
                 </button>
 
-                {/* Board Context Menu - Rendered via Portal */}
-                {contextMenu && createPortal(
-                    <>
-                        <div className="fixed inset-0 z-[9998]" onClick={() => setContextMenu(null)} />
-                        <div
-                            className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[9999] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
-                            style={{ top: Math.min(contextMenu.y, window.innerHeight - 350), left: dir === 'rtl' ? (contextMenu.x - 224) : (contextMenu.x + 10) }}
-                        >
-                            <div className="px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]">
-                                <ArrowSquareOut size={13} weight="light" className="text-gray-500 dark:text-gray-400" /> Open in new tab
-                            </div>
-                            <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-                            <div
-                                className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
-                                onClick={() => {
-                                    setBoardToDelete(contextMenu.boardId);
-                                    setIsDeleteBoardModalOpen(true);
-                                    setContextMenu(null);
-                                }}
-                            >
-                                <Trash size={13} weight="light" /> {t('delete')}
-                            </div>
-                        </div>
-                    </>,
-                    document.body
-                )}
+
 
                 <DeleteBoardModal
                     isOpen={isDeleteBoardModalOpen}
@@ -1496,8 +1656,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             }}
                         />
                         <div
-                            className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border min-w-[200px] w-auto z-[9999]"
-                            style={{ top: quickAddMenu.y, left: quickAddMenu.x }}
+                            className="fixed bg-white dark:bg-monday-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-monday-dark-border min-w-[240px] w-auto z-[9999]"
+                            style={{ top: Math.min(quickAddMenu.y, window.innerHeight - 320), left: quickAddMenu.x }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <form
@@ -1506,7 +1666,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     if (newBoardName.trim()) {
                                         const iconMap: Record<string, string> = { table: 'Table', datatable: 'Database', kanban: 'Kanban', gtd: 'CheckSquare' };
                                         const parentId = quickAddMenu.parentId;
-                                        onAddBoard(newBoardName.trim(), iconMap[selectedLayout] || 'Table', undefined, selectedLayout as any, parentId);
+                                        // Use selected icon or fallback to layout default
+                                        const finalIcon = newBoardIcon && newBoardIcon !== 'Table' ? newBoardIcon : (iconMap[selectedLayout] || 'Table');
+
+                                        onAddBoard(newBoardName.trim(), finalIcon, undefined, selectedLayout as any, parentId);
                                         if (parentId) {
                                             setExpandedBoards(prev => {
                                                 const next = new Set(prev);
@@ -1515,6 +1678,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             });
                                         }
                                         setNewBoardName('');
+                                        setNewBoardIcon('Table');
                                         setSelectedLayout('table');
                                         setQuickAddMenu(null);
                                     }
@@ -1529,6 +1693,40 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                     placeholder={t('board_name_placeholder')}
                                     className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-monday-dark-border rounded-md bg-gray-50 dark:bg-monday-dark-bg focus:outline-none focus:ring-1 focus:ring-monday-blue focus:border-monday-blue"
                                 />
+
+                                {/* Icon Picker */}
+                                <div className="mt-3 relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
+                                        className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-monday-dark-border rounded-md hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {React.createElement(ICON_MAP[newBoardIcon] || Table, { size: 16, className: "text-monday-blue" })}
+                                            <span className="text-xs text-gray-700 dark:text-gray-300">{t(newBoardIcon.toLowerCase()) || newBoardIcon}</span>
+                                        </div>
+                                        <CaretDown size={12} weight="light" className="text-gray-400" />
+                                    </button>
+
+                                    {isIconPickerOpen && (
+                                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-monday-dark-surface border border-gray-100 dark:border-monday-dark-border shadow-xl rounded-md p-2 z-50 grid grid-cols-5 gap-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                            {Object.keys(ICON_MAP).map((iconName) => (
+                                                <button
+                                                    key={iconName}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNewBoardIcon(iconName);
+                                                        setIsIconPickerOpen(false);
+                                                    }}
+                                                    className={`p-1.5 rounded-sm flex items-center justify-center transition-colors ${newBoardIcon === iconName ? 'bg-monday-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-400'}`}
+                                                    title={iconName}
+                                                >
+                                                    {React.createElement(ICON_MAP[iconName], { size: 16 })}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="grid grid-cols-2 gap-1 mt-3">
                                     {[
@@ -1562,14 +1760,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         }}
                                         className="flex-1 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md"
                                     >
-                                        Cancel
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={!newBoardName.trim()}
                                         className="flex-1 px-3 py-1.5 text-xs bg-monday-blue text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
                                     >
-                                        Create
+                                        {t('create')}
                                     </button>
                                 </div>
                             </form>
@@ -1588,54 +1786,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     />
                 )}
 
-                {/* Workspace Context Menu - Rendered via Portal */}
-                {workspaceContextMenu && createPortal(
-                    <>
-                        <div className="fixed inset-0 z-[9998]" onClick={() => setWorkspaceContextMenu(null)} />
-                        <div
-                            className="fixed bg-white dark:bg-monday-dark-surface rounded-sm shadow-2xl border border-gray-100 dark:border-monday-dark-border w-56 py-2 z-[9999] text-gray-700 dark:text-monday-dark-text animate-in fade-in zoom-in-95 duration-100"
-                            style={{ top: Math.min(workspaceContextMenu.y, window.innerHeight - 150), left: dir === 'rtl' ? (workspaceContextMenu.x - 224) : (workspaceContextMenu.x + 10) }}
-                        >
-                            <div
-                                className="px-3 py-1.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-monday-dark-hover cursor-pointer text-[14px]"
-                                onClick={() => {
-                                    const ws = workspaces.find(w => w.id === workspaceContextMenu.workspaceId);
-                                    if (ws) {
-                                        setEditingWorkspaceId(ws.id);
-                                        setNewWorkspaceName(ws.name);
-                                        setNewWorkspaceIcon(ws.icon);
-                                        setIsAddWorkspaceModalOpen(true);
-                                    }
-                                    setWorkspaceContextMenu(null);
-                                }}
-                            >
-                                <Pencil size={13} weight="light" className="text-gray-500" /> Rename
-                            </div>
-                            <div className="h-px bg-gray-100 dark:bg-monday-dark-border my-1"></div>
-                            <div
-                                className="px-3 py-1.5 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 cursor-pointer text-[14px]"
-                                onClick={() => {
-                                    if (workspaces.length <= 1) {
-                                        alert(t('cannot_delete_only_workspace'));
-                                        return;
-                                    }
-                                    setWorkspaceToDelete(workspaceContextMenu.workspaceId);
-                                    setWorkspaceContextMenu(null);
-                                }}
-                            >
-                                <Trash size={13} weight="light" /> {t('delete')}
-                            </div>
-                        </div>
-                    </>,
-                    document.body
-                )}
 
 
 
-                {/* Create Workspace Modal */}
+
+                {/* Create/Edit Workspace Modal (Only for Editing now, Creation is inline) */}
                 {
                     isAddWorkspaceModalOpen && (
-                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
+                        <div className="fixed inset-0 flex items-center justify-center z-[70]">
+                            <div className="absolute inset-0" onClick={() => setIsAddWorkspaceModalOpen(false)} />
                             <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-[450px] border border-gray-100 dark:border-monday-dark-border">
                                 <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-gray-50/50 dark:bg-monday-dark-bg/50 rounded-t-xl">
                                     <h3 className="font-semibold text-lg text-gray-800 dark:text-monday-dark-text">{editingWorkspaceId ? t('edit_workspace') : t('add_workspace')}</h3>
@@ -1650,20 +1809,20 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 </div>
                                 <form onSubmit={handleCreateWorkspace} className="p-6 space-y-5">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Name</label>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">{t('workspace_name')}</label>
                                         <input
                                             type="text"
                                             autoFocus
                                             value={newWorkspaceName}
                                             onChange={(e) => setNewWorkspaceName(e.target.value)}
                                             className="w-full border border-gray-300 dark:border-monday-dark-border bg-white dark:bg-monday-dark-bg text-gray-800 dark:text-monday-dark-text rounded-sm p-3 text-[14px] focus:border-monday-blue focus:ring-2 focus:ring-monday-blue/20 outline-none transition-all duration-300 shadow-sm"
-                                            placeholder="e.g. Marketing Team"
+                                            placeholder={t('workspace_name_placeholder')}
                                         />
                                     </div>
 
                                     {/* High Graphics Icon Picker */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">Workspace Icon</label>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-2">{t('workspace_icon')}</label>
                                         <div className="relative">
                                             <button
                                                 type="button"
@@ -1674,7 +1833,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     <div className={`w-10 h-10 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
                                                         {React.createElement(ICON_MAP[newWorkspaceIcon] || Briefcase, { size: 20 })}
                                                     </div>
-                                                    <span className="font-medium text-gray-700 dark:text-gray-200">{newWorkspaceIcon}</span>
+                                                    <span className="font-medium text-gray-700 dark:text-gray-200">{t(newWorkspaceIcon)}</span>
                                                 </div>
                                                 <CaretDown size={13} weight="light" className={`text-gray-400 transition-transform duration-300 ${isWorkspaceIconPickerOpen ? 'rotate-180' : ''}`} />
                                             </button>
@@ -1712,7 +1871,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                             ? 'shadow-lg scale-110 ring-2 ring-offset-2 ring-blue-500'
                                                                             : 'opacity-70 hover:opacity-100 hover:scale-110 shadow-sm'}
                                                                 `}
-                                                                    title={iconName}
+                                                                    title={t(iconName)}
                                                                 >
                                                                     {React.createElement(ICON_MAP[iconName], { size: 20 })}
                                                                 </button>
@@ -1755,8 +1914,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                 {/* Create Board Modal */}
                 {
                     isNewBoardModalOpen && (
-                        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[70]">
-                            <div className={`bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl transition-all duration-300 flex flex-col ${creationStep === 'template' ? 'w-[90vw] max-w-5xl h-[80vh]' : 'w-96 max-h-[90vh]'}`}>
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none">
+                            <div className={`pointer-events-auto bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl transition-all duration-300 flex flex-col ${creationStep === 'template' ? 'w-[90vw] max-w-5xl h-[80vh]' : 'w-96 max-h-[90vh]'}`}>
                                 {/* Header */}
                                 <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center bg-white dark:bg-monday-dark-surface rounded-t-xl flex-shrink-0">
                                     <div className="flex items-center gap-2">
@@ -1813,7 +1972,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             {/* Board Name Input */}
                                             <div className="space-y-2">
                                                 <label className="block text-[14px] font-medium text-gray-700 dark:text-gray-300">
-                                                    Board Name
+                                                    {t('board_name')}
                                                 </label>
                                                 <input
                                                     type="text"
@@ -1821,7 +1980,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                     value={newBoardName}
                                                     onChange={(e) => setNewBoardName(e.target.value)}
                                                     className="w-full px-4 py-3 bg-gray-50 dark:bg-monday-dark-hover border border-gray-200 dark:border-monday-dark-border rounded-xl focus:ring-2 focus:ring-monday-blue/20 focus:border-monday-blue transition-all duration-300 outline-none font-medium text-gray-900 dark:text-white placeholder:text-gray-400"
-                                                    placeholder="e.g. Q4 Marketing Plan"
+                                                    placeholder={t('board_name_placeholder')}
                                                 />
                                             </div>
 
@@ -1830,19 +1989,19 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">{t('add_view')}</label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {[
-                                                        { id: 'table', label: t('table'), icon: Table, description: t('spreadsheet_view') },
-                                                        { id: 'kanban', label: t('kanban'), icon: Kanban, description: t('visual_workflow') },
-                                                        { id: 'list', label: t('list'), icon: List, description: t('simple_list_desc') },
-                                                        { id: 'calendar', label: t('calendar'), icon: CalendarBlank, description: t('schedule_tasks_desc') },
-                                                        { id: 'gantt', label: t('gantt'), icon: ChartLineUp, description: t('visual_timeline_desc') },
-                                                        { id: 'doc', label: t('doc'), icon: FileText, description: t('collaborate_docs_desc') },
+                                                        { id: 'table', label: t('table'), icon: Table },
+                                                        { id: 'kanban', label: t('kanban'), icon: Kanban },
+                                                        { id: 'list', label: t('list'), icon: List },
+                                                        { id: 'calendar', label: t('calendar'), icon: CalendarBlank },
+                                                        { id: 'gantt', label: t('gantt'), icon: ChartLineUp },
+                                                        { id: 'doc', label: t('doc'), icon: FileText },
                                                     ].map((tool) => (
                                                         <button
                                                             key={tool.id}
                                                             type="button"
                                                             onClick={() => setSelectedLayout(tool.id as any)}
                                                             className={`
-                                                        relative flex flex-col gap-2 p-3 rounded-xl border-2 text-left transition-all duration-300 group
+                                                        relative flex flex-col items-center justify-center gap-2 p-2 rounded-lg border-2 transition-all duration-300 group
                                                         ${selectedLayout === tool.id
                                                                     ? 'border-monday-blue bg-blue-50/50 dark:bg-blue-900/20 shadow-sm'
                                                                     : 'border-transparent bg-gray-50 dark:bg-monday-dark-hover hover:scale-[1.02]'}
@@ -1852,19 +2011,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                         w-8 h-8 rounded-sm flex items-center justify-center transition-colors
                                                         ${selectedLayout === tool.id ? 'bg-monday-blue text-white' : 'bg-white dark:bg-monday-dark-surface text-gray-500'}
                                                     `}>
-                                                                <tool.icon size={17} />
+                                                                <tool.icon size={18} />
                                                             </div>
-                                                            <div>
-                                                                <h4 className={`font-bold text-[14px] ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
-                                                                    {tool.label}
-                                                                </h4>
-                                                                <p className="text-[10px] text-gray-500 font-medium truncate">
-                                                                    {tool.description}
-                                                                </p>
-                                                            </div>
+                                                            <h4 className={`font-bold text-xs ${selectedLayout === tool.id ? 'text-monday-blue' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                                {tool.label}
+                                                            </h4>
                                                             {selectedLayout === tool.id && (
-                                                                <div className="absolute top-2 right-2 text-monday-blue">
-                                                                    <CheckSquare size={13} weight="fill" className="fill-current" />
+                                                                <div className="absolute top-1 right-1 text-monday-blue">
+                                                                    <CheckSquare size={12} weight="fill" className="fill-current" />
                                                                 </div>
                                                             )}
                                                         </button>
@@ -1874,7 +2028,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
                                             {/* Icon Picker */}
                                             <div className="space-y-3">
-                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Board Icon</label>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">{t('board_icon')}</label>
 
                                                 <div className="relative">
                                                     <button
@@ -1899,8 +2053,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                                 );
                                                             })()}
                                                             <div className="text-left">
-                                                                <div className="text-[14px] font-semibold text-gray-700 dark:text-gray-200">{newBoardIcon}</div>
-                                                                <div className="text-xs text-gray-400">Click to change icon</div>
+                                                                <div className="text-[14px] font-semibold text-gray-700 dark:text-gray-200">{t(newBoardIcon.toLowerCase())}</div>
+                                                                <div className="text-xs text-gray-400">{t('click_to_change_icon')}</div>
                                                             </div>
                                                         </div>
                                                         <CaretDown size={13} weight="light" className={`text-gray-400 transition-transform duration-300 ${isIconPickerOpen ? 'rotate-180' : ''}`} />

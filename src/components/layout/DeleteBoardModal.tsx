@@ -48,7 +48,7 @@ export const DeleteBoardModal: React.FC<DeleteBoardModalProps> = ({
                     </h3>
 
                     <p className="text-stone-500 dark:text-stone-400 mb-6 leading-relaxed">
-                        Are you sure you want to delete <strong>"{boardName}"</strong>? This action cannot be undone.
+                        {t('delete_board_confirmation_named').replace('{boardName}', boardName)}
                     </p>
 
                     {hasSubBoards && (
@@ -56,7 +56,7 @@ export const DeleteBoardModal: React.FC<DeleteBoardModalProps> = ({
                             <div className="flex items-start gap-3 mb-3">
                                 <Warning className="text-amber-500 mt-0.5 shrink-0" size={18} />
                                 <p className="text-sm text-stone-600 dark:text-stone-300">
-                                    This board contains nested sub-boards. How would you like to handle them?
+                                    {t('has_sub_boards_warning')}
                                 </p>
                             </div>
 
@@ -78,10 +78,10 @@ export const DeleteBoardModal: React.FC<DeleteBoardModalProps> = ({
                                     </div>
                                     <div>
                                         <span className="block text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            Delete this board only
+                                            {t('delete_single_board')}
                                         </span>
                                         <span className="block text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                                            Sub-boards will be moved to the parent level.
+                                            {t('delete_single_board_desc')}
                                         </span>
                                     </div>
                                 </label>
@@ -103,10 +103,10 @@ export const DeleteBoardModal: React.FC<DeleteBoardModalProps> = ({
                                     </div>
                                     <div>
                                         <span className="block text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-red-500 transition-colors">
-                                            Delete board and sub-boards
+                                            {t('delete_recursive_board')}
                                         </span>
                                         <span className="block text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                                            Everything will be permanently deleted.
+                                            {t('delete_recursive_board_desc')}
                                         </span>
                                     </div>
                                 </label>
@@ -119,7 +119,7 @@ export const DeleteBoardModal: React.FC<DeleteBoardModalProps> = ({
                             onClick={onClose}
                             className="flex-1 px-4 py-2.5 rounded-xl font-medium text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
                         >
-                            Cancel
+                            {t('cancel')}
                         </button>
                         <button
                             onClick={() => onConfirm(hasSubBoards ? deleteMode : 'single')}

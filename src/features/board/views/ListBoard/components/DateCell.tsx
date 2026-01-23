@@ -204,7 +204,7 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
         className="w-full h-full flex items-center justify-center px-3 text-xs text-gray-500 hover:bg-gray-100 cursor-pointer group relative"
       >
         {date ? (
-          <span className="flex items-center gap-2 justify-center w-full">
+          <span className="flex items-center gap-2 justify-center w-full font-datetime">
             <CalendarIcon className="w-3 h-3 text-gray-400" />
             {date}
           </span>

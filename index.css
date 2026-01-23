@@ -71,6 +71,10 @@
         scrollbar-width: none;
         /* Firefox */
     }
+
+    .font-datetime {
+        font-family: 'Cairo', 'Noto Kufi Arabic', 'Inter', sans-serif !important;
+    }
 }
 
 /* Animation for person filter expanding from center */

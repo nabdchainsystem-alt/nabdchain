@@ -84,7 +84,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                         {/* Fast Mode */}
                         <button
                             onClick={() => { if (deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
-                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-all ${!deepModeEnabled ? (isDark ? 'bg-white text-black' : 'bg-[#323338]/50 text-white') : (isDark ? 'hover:bg-gray-900 text-gray-400' : 'hover:bg-gray-50 text-gray-500')}`}
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-all ${!deepModeEnabled ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm' : (isDark ? 'hover:bg-gray-900 text-gray-400' : 'hover:bg-gray-50 text-gray-500')}`}
                         >
                             <Lightning size={12} weight={!deepModeEnabled ? 'fill' : 'regular'} />
                             <span className="text-[10px] font-bold">Fast</span>
@@ -93,7 +93,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                         {/* Deep Mode */}
                         <button
                             onClick={() => { if (!deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
-                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-all ${deepModeEnabled ? (isDark ? 'bg-white text-black' : 'bg-[#323338]/50 text-white') : (isDark ? 'hover:bg-gray-900 text-gray-400' : 'hover:bg-gray-50 text-gray-500')}`}
+                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-all ${deepModeEnabled ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm' : (isDark ? 'hover:bg-gray-900 text-gray-400' : 'hover:bg-gray-50 text-gray-500')}`}
                         >
                             <Brain size={12} weight={deepModeEnabled ? 'fill' : 'regular'} />
                             <span className="text-[10px] font-bold">Deep</span>

@@ -5,9 +5,9 @@ import {
   ClockCounterClockwise, CaretLeft, CaretRight, ArrowSquareOut, Star,
   CheckCircle, Flag, WarningCircle, CalendarBlank, Folder,
   PencilSimple, ListPlus, UserPlus, MagnifyingGlass, SquaresFour,
-  UploadSimple, Clock, Trash, ChatCircle, PaperPlaneRight,
+  UploadSimple, Clock, Trash, ChatCircle, PaperPlaneRight, Briefcase,
   EnvelopeSimple, Archive, NotePencil, Bell, Funnel, SortAscending, ArrowsDownUp, User, X,
-  Receipt, Package
+  Receipt, Package, FloppyDisk
 } from 'phosphor-react';
 import { NewTaskModal } from '../../components/ui/NewTaskModal';
 import { CreateEventModal } from './components/CreateEventModal';
@@ -22,6 +22,7 @@ import { MOCK_MEMBERS } from '../teams/data';
 import { useAuth } from '../../auth-adapter';
 import { normalizePriority } from '../priorities/priorityUtils';
 import { useToast } from '../marketplace/components/Toast';
+import { useQuickNotes } from '../../hooks/useQuickNotes';
 import { appLogger, boardLogger } from '../../utils/logger';
 import { formatTimeAgo, getPersonName, formatDate } from '../../utils/formatters';
 import { getActivityStyles, getCardTheme } from '../../utils/dashboardHelpers';
@@ -43,13 +44,14 @@ interface DashboardProps {
   activeWorkspaceId?: string;
   workspaces: Workspace[];
   onTaskCreated: (boardId: string, task: Task) => Promise<void>;
+  onRequestNewBoard?: (workspaceId: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVisited, onNavigate, boards, activeWorkspaceId, workspaces, onTaskCreated, onRequestNewBoard }) => {
   const { userDisplayName, t, language } = useAppContext();
   const { getToken, isSignedIn } = useAuth();
   const { showToast } = useToast();
-
+  const { addNote } = useQuickNotes();
   const [quickNote, setQuickNote] = useState('');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
@@ -59,6 +61,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [urgentTasksPage, setUrgentTasksPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'overdue' | 'person'>('all');
+
+  // Workspace selection for new board
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+
+
 
 
 
@@ -350,13 +358,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     fetchActivities();
   }, [isSignedIn, getToken, activeWorkspaceId]);
 
-  // Saves quick note to local storage on change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem('dashboard_quick_note', quickNote);
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [quickNote]);
 
   // Load all tasks from localStorage for each board
   // Tasks are stored in room-table-groups-v1-{boardId}-{viewId} format
@@ -596,6 +597,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
     }
   };
 
+  const handleSaveQuickNote = () => {
+    if (!quickNote.trim()) return;
+    addNote(quickNote);
+    showToast(t('note_saved'), 'success');
+    // Optional: Clear note after saving? User might want to keep it as scratchpad.
+    // Keeping it for now as per "Auto-save" behavior.
+  };
+
   const handleEventSave = async (eventData: any, boardId: string) => {
     try {
       if (!boardId) return;
@@ -770,7 +779,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       {/* Content */}
                       <div className="p-4 cursor-pointer flex-1 flex flex-col justify-between" onClick={() => onNavigate(item.type, item.boardId)}>
                         <div>
-                          <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">{item.title}</h3>
+                          <h3 className="font-bold text-gray-900 mb-1 truncate text-base group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+                            {item.boardId ? item.title : t(item.title.toLowerCase().replace(/ /g, '_'))}
+                          </h3>
                           <p className="text-xs text-gray-500 dark:text-monday-dark-text-secondary mb-2 truncate">
                             {item.boardId ? t('project_board') : t('application_module')}
                           </p>
@@ -1106,7 +1117,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                     <MagnifyingGlass size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('search_all')}</span>
                   </button>
-                  <button className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md">
+                  <button
+                    onClick={() => setIsWorkspaceModalOpen(true)}
+                    className="flex flex-col items-center justify-center p-3 border border-gray-100 dark:border-monday-dark-border rounded-xl hover:bg-blue-50 hover:border-blue-100 hover:text-blue-600 transition-all group bg-white shadow-sm hover:shadow-md"
+                  >
                     <SquaresFour size={32} weight="light" className="mb-2 text-gray-400 dark:text-monday-dark-text-muted group-hover:text-blue-500 transition-colors" />
                     <span className="text-xs font-medium whitespace-nowrap">{t('new_board')}</span>
                   </button>
@@ -1152,36 +1166,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                       activities.slice(0, 5).map((activity, idx) => {
                         // Translation Helper for Activities
                         let content = activity.content;
+
+                        // Parse metadata if available
+                        let metadata: any = null;
+                        try {
+                          if (activity.metadata) {
+                            metadata = JSON.parse(activity.metadata);
+                          }
+                        } catch (e) {
+                          // ignore parsing error
+                        }
+
                         if (language === 'ar') {
-                          // Try to match specific patterns
-                          // 1. Created board
-                          const createdBoardMatch = content.match(/Created board: (.*)/i);
-                          if (createdBoardMatch) {
-                            content = (t('activity_created_board') || 'Created board: {name}').replace('{name}', createdBoardMatch[1]);
-                          }
-                          // 2. Created task
-                          const createdTaskMatch = content.match(/Created task "(.*)" in (.*)/i);
-                          if (createdTaskMatch) {
-                            const [_, taskName, boardName] = createdTaskMatch;
-                            content = (t('activity_created_task') || 'Created task "{task}" in {board}')
-                              .replace('{task}', taskName)
-                              .replace('{board}', boardName);
-                          }
-                          // 3. Updated status
-                          const updatedStatusMatch = content.match(/Updated "(.*)" status to (.*) in (.*)/i);
-                          if (updatedStatusMatch) {
-                            const [_, taskName, status, boardName] = updatedStatusMatch;
-                            content = (t('activity_updated_status') || 'Updated "{task}" status to {status} in {board}')
-                              .replace('{task}', taskName)
-                              .replace('{status}', status)
-                              .replace('{board}', boardName);
-                          }
-                          // 4. Sent email
-                          const sentEmailMatch = content.match(/Sent email to (.*)/i);
-                          if (sentEmailMatch) {
-                            content = (t('activity_sent_email') || 'Sent email to {email}').replace('{email}', sentEmailMatch[1]);
+                          // Smart Translation using Metadata
+                          if (activity.type === 'BOARD_DELETED' && metadata?.boardName) {
+                            content = (t('activity_deleted_board') || 'Deleted board: {name}').replace('{name}', metadata.boardName);
+                          } else if (activity.type === 'BOARD_CREATED' && metadata?.boardName) {
+                            content = (t('activity_created_board') || 'Created board: {name}').replace('{name}', metadata.boardName);
+                          } else {
+                            // Fallback to regex matching for legacy activities
+                            // 1. Created board
+                            const createdBoardMatch = content.match(/Created board: (.*)/i);
+                            if (createdBoardMatch) {
+                              content = (t('activity_created_board') || 'Created board: {name}').replace('{name}', createdBoardMatch[1]);
+                            }
+                            // 1.5 Deleted board (Legacy fallback)
+                            const deletedBoardMatch = content.match(/Deleted board: (.*)/i);
+                            if (deletedBoardMatch) {
+                              content = (t('activity_deleted_board') || 'Deleted board: {name}').replace('{name}', deletedBoardMatch[1]);
+                            }
+                            // 2. Created task
+                            const createdTaskMatch = content.match(/Created task "(.*)" in (.*)/i);
+                            if (createdTaskMatch) {
+                              const [_, taskName, boardName] = createdTaskMatch;
+                              content = (t('activity_created_task') || 'Created task "{task}" in {board}')
+                                .replace('{task}', taskName)
+                                .replace('{board}', boardName);
+                            }
+                            // 3. Updated status
+                            const updatedStatusMatch = content.match(/Updated "(.*)" status to (.*) in (.*)/i);
+                            if (updatedStatusMatch) {
+                              const [_, taskName, status, boardName] = updatedStatusMatch;
+                              content = (t('activity_updated_status') || 'Updated "{task}" status to {status} in {board}')
+                                .replace('{task}', taskName)
+                                .replace('{status}', status)
+                                .replace('{board}', boardName);
+                            }
+                            // 4. Sent email
+                            const sentEmailMatch = content.match(/Sent email to (.*)/i);
+                            if (sentEmailMatch) {
+                              content = (t('activity_sent_email') || 'Sent email to {email}').replace('{email}', sentEmailMatch[1]);
+                            }
                           }
                         }
+
 
                         return (
                           <li key={activity.id}>
@@ -1233,7 +1271,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
                   <NotePencil size={24} weight="light" className="text-yellow-500" />
                   {t('quick_notes')}
                 </h2>
-                <span className="text-xs text-gray-400 dark:text-monday-dark-text-muted">{t('auto_saved')}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSaveQuickNote}
+                    disabled={!quickNote.trim()}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={t('save_to_notes')}
+                  >
+                    <FloppyDisk size={14} weight="fill" />
+                    {t('save')}
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{t('use_quick_notes_hint')}</p>
               <textarea
@@ -1320,6 +1368,75 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBoardCreated, recentlyVi
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
       />
+
+
+      {/* Workspace Selection Modal for New Board */}
+      {isWorkspaceModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl w-96 max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-100 dark:border-monday-dark-border flex justify-between items-center">
+              <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">
+                {t('select_workspace')}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsWorkspaceModalOpen(false);
+                  setSelectedWorkspaceId(null);
+                }}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded-md transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} weight="light" />
+              </button>
+            </div>
+
+            {/* Workspace List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {workspaces.map((workspace) => (
+                <button
+                  key={workspace.id}
+                  onClick={() => setSelectedWorkspaceId(workspace.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${selectedWorkspaceId === workspace.id
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-200 dark:border-monday-dark-border hover:bg-gray-50 dark:hover:bg-monday-dark-hover'
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${workspace.color || 'from-gray-400 to-gray-500'} flex items-center justify-center text-white`}>
+                    <Briefcase size={20} weight="light" />
+                  </div>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{workspace.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-100 dark:border-monday-dark-border flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsWorkspaceModalOpen(false);
+                  setSelectedWorkspaceId(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedWorkspaceId && onRequestNewBoard) {
+                    onRequestNewBoard(selectedWorkspaceId);
+                    setIsWorkspaceModalOpen(false);
+                    setSelectedWorkspaceId(null);
+                  }
+                }}
+                disabled={!selectedWorkspaceId}
+                className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('continue')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

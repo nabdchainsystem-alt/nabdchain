@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { vaultService, VaultItem } from '../../../services/vaultService';
 import { useAuth } from '../../../auth-adapter';
 import { storageLogger } from '../../../utils/logger';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SaveToVaultModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface SaveToVaultModalProps {
 
 export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onClose, file, onSuccess }) => {
     const { getToken, userId } = useAuth();
+    const { t } = useAppContext();
     const [folders, setFolders] = useState<VaultItem[]>([]);
     const [selectedFolderId, setSelectedFolderId] = useState<string>('');
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -122,10 +124,10 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
     if (!isOpen || !file) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h2 className="text-lg font-bold text-gray-900">Save to Vault</h2>
+                    <h2 className="text-lg font-bold text-gray-900">{t('save_to_vault')}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -138,26 +140,26 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                             <span className="material-symbols-outlined">description</span>
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-xs text-gray-500 mb-1">Original: {file.name}</p>
-                            <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</p>
+                            <p className="text-xs text-gray-500 mb-1">{t('original')}: {file.name}</p>
+                            <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} {t('kb')}</p>
                         </div>
                     </div>
 
                     {/* File Name Input */}
                     <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">File Name</label>
+                        <label className="text-sm font-semibold text-gray-700 block mb-2">{t('file_name')}</label>
                         <input
                             type="text"
                             value={fileName}
                             onChange={(e) => setFileName(e.target.value)}
-                            placeholder="Enter file name"
+                            placeholder={t('enter_file_name')}
                             className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                         />
                     </div>
 
                     {/* Folder Selection */}
                     <div className="space-y-3">
-                        <label className="text-sm font-semibold text-gray-700 block">Where to save?</label>
+                        <label className="text-sm font-semibold text-gray-700 block">{t('where_to_save')}</label>
 
                         {!isCreatingFolder ? (
                             <div className="space-y-3">
@@ -166,7 +168,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                                     onChange={(e) => setSelectedFolderId(e.target.value)}
                                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                                 >
-                                    <option value="">Root (No Folder)</option>
+                                    <option value="">{t('root_no_folder')}</option>
                                     {folders.map(folder => (
                                         <option key={folder.id} value={folder.id}>{folder.title}</option>
                                     ))}
@@ -176,7 +178,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                                     className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
-                                    Create new folder
+                                    {t('create_new_folder')}
                                 </button>
                             </div>
                         ) : (
@@ -186,7 +188,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                                         type="text"
                                         value={newFolderName}
                                         onChange={(e) => setNewFolderName(e.target.value)}
-                                        placeholder="Folder Name"
+                                        placeholder={t('folder_name')}
                                         className="flex-1 p-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                                     />
                                     <button
@@ -202,14 +204,14 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
 
                     {/* Tags */}
                     <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">Tags</label>
+                        <label className="text-sm font-semibold text-gray-700 block mb-2">{t('tags')}</label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-[18px]">label</span>
                             <input
                                 type="text"
                                 value={tags}
                                 onChange={(e) => setTags(e.target.value)}
-                                placeholder="design, project, important (comma separated)"
+                                placeholder={t('tags_placeholder')}
                                 className="w-full pl-9 p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                             />
                         </div>
@@ -221,7 +223,7 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         onClick={handleSave}
@@ -231,12 +233,12 @@ export const SaveToVaultModal: React.FC<SaveToVaultModalProps> = ({ isOpen, onCl
                         {isSaving ? (
                             <>
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                Saving...
+                                {t('saving')}
                             </>
                         ) : (
                             <>
                                 <span className="material-symbols-outlined text-[18px]">upload</span>
-                                Save to Vault
+                                {t('save_to_vault')}
                             </>
                         )}
                     </button>
