@@ -1,4 +1,4 @@
-import React, { memo, useRef, useCallback } from 'react';
+import React, { memo, useRef, useCallback, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface MemoizedChartProps {
@@ -15,6 +15,10 @@ interface MemoizedChartProps {
     /** Skip initial animation (useful when returning from hidden state) */
     skipAnimation?: boolean;
 }
+
+// Minimum dimensions to prevent ECharts 0-dimension warnings
+const MIN_WIDTH = 100;
+const MIN_HEIGHT = 100;
 
 // Track visibility for animation control
 let lastVisibilityChange = 0;
@@ -78,7 +82,6 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
     // Cache options to prevent unnecessary updates
     const optionRef = useRef<string>('');
     const cachedOption = useRef<any>(null);
-    const chartRef = useRef<any>(null);
     const isFirstRender = useRef(true);
 
     // Check if we're in stability window (recently returned from hidden)
@@ -100,12 +103,8 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
         isFirstRender.current = false;
     }
 
-    // Handle chart ready - store instance reference
+    // Handle chart ready - pass through to user callback
     const handleChartReady = useCallback((instance: any) => {
-        // Store the ECharts instance for later use
-        if (chartRef.current) {
-            chartRef.current._echartsInstance = instance;
-        }
         onChartReady?.(instance);
     }, [onChartReady]);
 
@@ -118,11 +117,17 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
     // Ensure we have a valid option object
     const chartOption = cachedOption.current || option || {};
 
+    // Merge style with minimum dimensions to prevent 0-dimension warnings
+    const mergedStyle = useMemo(() => ({
+        minWidth: MIN_WIDTH,
+        minHeight: MIN_HEIGHT,
+        ...style,
+    }), [style]);
+
     return (
         <ReactECharts
-            ref={chartRef}
             option={chartOption}
-            style={style}
+            style={mergedStyle}
             className={className}
             opts={mergedOpts}
             theme={theme}

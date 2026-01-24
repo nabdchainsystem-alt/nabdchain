@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -110,15 +111,7 @@ export const SupplierCostDashboard: React.FC = () => {
     ], [t]);
 
     // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-cost-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -325,7 +318,7 @@ export const SupplierCostDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_distribution')}</h3>
                                     <p className="text-xs text-gray-400">{t('concentration_analysis')}</p>
                                 </div>
-                                <ReactECharts option={spendDistPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={spendDistPieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Category Spend (Pie) */}
@@ -334,7 +327,7 @@ export const SupplierCostDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_split')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
-                                <ReactECharts option={categorySpendPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={categorySpendPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -405,7 +398,7 @@ export const SupplierCostDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_bridge')}</h3>
                             <p className="text-xs text-gray-400">{t('budget_to_actual_walk')}</p>
                         </div>
-                        <ReactECharts option={waterfallOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={waterfallOption} style={{ height: '300px', width: '100%', minHeight: 100, minWidth: 100 }} />
                     </div>
                 )}
 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -60,12 +61,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
         { name: 'MetalWorks', Orders: 22 },
     ], []);
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-orders-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -161,7 +157,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('order_status')}</h3>
                             <p className="text-xs text-gray-400">{t('current_distribution')}</p>
                         </div>
-                        <ReactECharts option={statusPieOption} style={{ height: '220px' }} />
+                        <MemoizedChart option={statusPieOption} style={{ height: '220px' }} />
                     </div>
                 )}
 

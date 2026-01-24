@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
 import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -53,7 +54,7 @@ const INVENTORY_ITEMS = [
 export const InventoryOverviewDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('inventory-overview-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -70,12 +71,6 @@ export const InventoryOverviewDashboard: React.FC = () => {
         { id: '8', label: t('carrying_cost'), subtitle: t('pct_of_value'), value: '12.5%', change: '-0.5%', trend: 'up', icon: <Archive size={18} />, sparklineData: [14, 13.5, 13.2, 12.8, 12.6, 12.5], color: 'blue' },
     ];
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));

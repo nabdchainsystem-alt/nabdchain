@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
 import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -71,7 +72,7 @@ const SANKEY_LINKS = [
 export const StockMovementDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('stock-movement-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -98,12 +99,6 @@ export const StockMovementDashboard: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));

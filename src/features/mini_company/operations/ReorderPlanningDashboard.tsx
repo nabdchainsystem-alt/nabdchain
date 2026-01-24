@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -78,14 +79,7 @@ const WAVE_DATA = {
 export const ReorderPlanningDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('reorder-planning-dashboard', 800);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -267,7 +261,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Coverage Status</h3>
                                 <p className="text-xs text-gray-400">Inventory health</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
@@ -282,7 +276,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Urgency Level</h3>
                                 <p className="text-xs text-gray-400">Reorder priority</p>
                             </div>
-                            <ReactECharts option={urgencyPieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={urgencyPieOption} style={{ height: '180px' }} />
                         </div>
                     )}
                 </div>
@@ -346,7 +340,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={waveOption} style={{ height: '300px', width: '100%', minHeight: 100, minWidth: 100 }} />
                     </div>
                 )}
 

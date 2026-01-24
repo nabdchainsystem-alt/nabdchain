@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -70,14 +71,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
         { value: 85, name: t('services') }
     ], [t]);
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-performance-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -214,7 +208,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('overall_score')}</h3>
                             <p className="text-xs text-gray-400">{t('avg_performance')}</p>
                         </div>
-                        <ReactECharts option={categoryGaugeOption} style={{ height: '200px' }} />
+                        <MemoizedChart option={categoryGaugeOption} style={{ height: '200px' }} />
                     </div>
                 )}
 
@@ -257,7 +251,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('score_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('supplier_ratings')}</p>
                             </div>
-                            <ReactECharts option={distributionPieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={distributionPieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {SIDE_KPIS.slice(0, 2).map((kpi, index) => (

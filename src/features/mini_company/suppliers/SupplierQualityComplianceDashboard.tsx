@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -101,17 +102,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
     const { t, dir } = useLanguage();
     const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
-
-    // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-quality-compliance-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -390,7 +381,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('inspection_outcomes')}</h3>
                                     <p className="text-xs text-gray-400">{t('pass_fail_distribution')}</p>
                                 </div>
-                                <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Compliance Status (Pie) */}
@@ -399,7 +390,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('compliance_status')}</h3>
                                     <p className="text-xs text-gray-400">{t('overall_distribution')}</p>
                                 </div>
-                                <ReactECharts option={compliancePieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={compliancePieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -475,7 +466,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('metrics_radar')}</h3>
                             <p className="text-xs text-gray-400">{t('quality_vs_other_kpis')}</p>
                         </div>
-                        <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={radarOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}
 

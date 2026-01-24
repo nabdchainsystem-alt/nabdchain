@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -79,14 +80,7 @@ interface SalesSegmentationDashboardProps {
 export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('sales-segmentation-dashboard', 800);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'revenue', direction: 'desc' });
@@ -304,7 +298,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('revenue_by_segment')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('contribution_share')}</p>
                             </div>
-                            <ReactECharts option={revenuePieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={revenuePieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -317,7 +311,7 @@ export const SalesSegmentationDashboard: React.FC<SalesSegmentationDashboardProp
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('loyalty_curve')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('orders_vs_revenue_segment')}</p>
                             </div>
-                            <ReactECharts option={loyaltyScatterOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={loyaltyScatterOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>

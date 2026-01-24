@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Package, ChartLine, Shield, ShoppingCart } from 'phosphor-react';
@@ -104,7 +104,7 @@ const SuppliersPage: React.FC = () => {
         }
     ];
 
-    const renderCustomView = (viewId: string) => {
+    const renderCustomView = useCallback((viewId: string) => {
         switch (viewId) {
             case 'supplier_overview':
                 return <SupplierOverviewDashboard />;
@@ -117,7 +117,7 @@ const SuppliersPage: React.FC = () => {
             default:
                 return null;
         }
-    };
+    }, []);
 
     // Create localized board with translated name and description
     const localizedBoard = useMemo(() => ({

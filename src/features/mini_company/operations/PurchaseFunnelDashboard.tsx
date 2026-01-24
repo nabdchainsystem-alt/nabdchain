@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -79,7 +80,7 @@ const SANKEY_DATA = {
 export const PurchaseFunnelDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('purchase-funnel-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: KPIData[] = [
@@ -95,13 +96,6 @@ export const PurchaseFunnelDashboard: React.FC = () => {
         { id: '7', label: t('rejected_requests'), subtitle: t('denied'), value: '25', change: '-2', trend: 'up', icon: <XCircle size={18} />, sparklineData: [28, 27, 26, 26, 25, 25, 25] },
         { id: '8', label: t('sla_compliance'), subtitle: t('on_time_rate'), value: '86%', change: '+3%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [80, 81, 82, 83, 84, 85, 86] },
     ];
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -288,7 +282,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('conversion_funnel')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('request_progression')}</p>
                             </div>
-                            <ReactECharts option={funnelOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={funnelOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -301,7 +295,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('stage_status_distribution')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('request_outcomes')}</p>
                             </div>
-                            <ReactECharts option={stageStatusPieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={stageStatusPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>
@@ -370,7 +364,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}
 

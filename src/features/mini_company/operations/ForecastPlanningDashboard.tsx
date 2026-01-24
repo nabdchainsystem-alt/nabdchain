@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -64,7 +65,7 @@ const CONE_DATA = {
 export const ForecastPlanningDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('forecast-planning-dashboard', 800);
 
     // --- KPI Data (inside component for translations) ---
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean })[] = [
@@ -80,13 +81,6 @@ export const ForecastPlanningDashboard: React.FC = () => {
         { id: '7', label: t('budget_impact'), subtitle: t('pct_of_annual_limit'), value: '15%', change: '+1%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [12, 13, 13, 14, 14, 14, 15] },
         { id: '8', label: t('variance_trend'), subtitle: t('forecast_vs_actual'), value: '-2.1%', change: '-0.5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [4, 3.5, 3.2, 2.8, 2.5, 2.3, 2.1] },
     ];
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -288,7 +282,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('future_allocation')}</h3>
                                 <p className="text-xs text-gray-400">{t('budget_distribution')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
@@ -301,7 +295,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_utilization')}</h3>
                                 <p className="text-xs text-gray-400">{t('quarterly_spending_progress')}</p>
                             </div>
-                            <ReactECharts option={budgetPieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={budgetPieOption} style={{ height: '180px' }} />
                         </div>
                     )}
                 </div>
@@ -365,7 +359,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={coneOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={coneOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}
 

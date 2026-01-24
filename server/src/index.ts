@@ -1,8 +1,7 @@
 import 'dotenv/config'; // Must be first
 import express from 'express';
 import { createServer } from 'http';
-// DISABLED: Socket.io imports - disabled for troubleshooting
-// import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -24,8 +23,7 @@ import aiRoutes from './routes/aiRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
-// DISABLED: Socket initialization - disabled for troubleshooting
-// import { initializeSocket } from './socket/index';
+import { initializeSocket } from './socket/index';
 import { serverLogger, authLogger, dbLogger } from './utils/logger';
 
 // Validate environment variables at startup
@@ -398,22 +396,22 @@ app.post('/api/activities', requireAuth, async (req: any, res) => {
 // Prefixed routes above replace these legacy ones.
 // All board/card/thread/room logic should stay in routes/*.ts files going forward.
 
-// DISABLED: Socket.io WebSocket server - disabled for troubleshooting
-// const io = new SocketIOServer(httpServer, {
-//     cors: {
-//         origin: isProduction
-//             ? ['https://nabdchain.com', 'https://www.nabdchain.com', 'https://app.nabdchain.com', 'https://mobile.nabdchain.com']
-//             : true, // Allow all origins in development
-//         methods: ['GET', 'POST'],
-//         credentials: true,
-//     },
-// });
+// Socket.io WebSocket server
+const io = new SocketIOServer(httpServer, {
+    cors: {
+        origin: isProduction
+            ? ['https://nabdchain.com', 'https://www.nabdchain.com', 'https://app.nabdchain.com', 'https://mobile.nabdchain.com']
+            : true, // Allow all origins in development
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+});
 
 // Initialize socket event handlers
-// initializeSocket(io);
+initializeSocket(io);
 
 httpServer.listen(PORT, () => {
     serverLogger.info(`NABD API running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-    serverLogger.info('WebSocket server DISABLED for troubleshooting');
+    serverLogger.info('WebSocket server enabled');
 });
 

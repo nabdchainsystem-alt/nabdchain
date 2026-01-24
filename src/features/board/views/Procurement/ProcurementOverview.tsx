@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../../components/common/MemoizedChart';
 import {
     Files,
     Tray as Inbox,
@@ -1474,9 +1474,9 @@ export const ProcurementOverview: React.FC = () => {
                         </div>
 
                         <div className="w-full -ml-2">
-                            <ReactECharts
+                            <MemoizedChart
                                 option={activeChartOption}
-                                style={{ height: '300px', width: '100%' }}
+                                style={{ height: '300px', width: '100%', minHeight: 100, minWidth: 100 }}
                                 theme={null}
                             />
                         </div>
@@ -1877,9 +1877,9 @@ export const ProcurementOverview: React.FC = () => {
                     </div>
 
                     <div className="w-full -ml-2">
-                        <ReactECharts
+                        <MemoizedChart
                             option={ordersByDepartmentChart}
-                            style={{ height: '280px', width: '100%' }}
+                            style={{ height: '280px', width: '100%', minHeight: 100, minWidth: 100 }}
                             theme={null}
                         />
                     </div>

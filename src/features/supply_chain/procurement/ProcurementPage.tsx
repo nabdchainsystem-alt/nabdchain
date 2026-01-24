@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import procurementMaster from './Procurement Dashboard/requests_orders_semantic_master.json';
@@ -91,7 +91,7 @@ const ProcurementPage: React.FC = () => {
     const requestDashboards = procurementMaster.requests.rich.dashboards || [];
     const orderDashboards = (procurementMaster as any).orders?.rich?.dashboards || [];
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: 'Requests Dashboards',
             options: requestDashboards.map((d: any) => ({
@@ -108,32 +108,34 @@ const ProcurementPage: React.FC = () => {
                 description: d.name.en
             }))
         }
-    ].filter(s => s.options.length > 0);
+    ].filter(s => s.options.length > 0), [requestDashboards, orderDashboards]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        switch (viewId) {
+            // Requests (New & Legacy)
+            case 'R01': case 'req_control': return <DailyRequestsControl />;
+            case 'R02': case 'req_backlog': return <RequestsBacklogAging />;
+            case 'R03': case 'req_sku_demand': return <SkuDemandDashboard />;
+            case 'R04': case 'req_rfq_pipeline': return <VendorRfqPipeline />;
+            case 'R05': case 'req_approvals': return <ApprovalsFlowDashboard />;
+            case 'R06': case 'req_spend': return <SpendBudgetExposure />;
+            case 'R07': case 'req_risks': return <RisksExceptionsDashboard />;
+            // Orders (New & Legacy)
+            case 'O01': case 'ord_control': return <DailyOrdersControl />;
+            case 'O02': case 'ord_fulfillment': return <OrderFulfillmentDashboard />;
+            case 'O03': case 'ord_finance': return <OrdersFinanceDashboard />;
+            case 'O04': case 'ord_performance': return <CustomerVendorPerformance />;
+            case 'O05': case 'ord_risks': return <OrderRisksDashboard />;
+            default: return null;
+        }
+    }, []);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                switch (viewId) {
-                    // Requests (New & Legacy)
-                    case 'R01': case 'req_control': return <DailyRequestsControl />;
-                    case 'R02': case 'req_backlog': return <RequestsBacklogAging />;
-                    case 'R03': case 'req_sku_demand': return <SkuDemandDashboard />;
-                    case 'R04': case 'req_rfq_pipeline': return <VendorRfqPipeline />;
-                    case 'R05': case 'req_approvals': return <ApprovalsFlowDashboard />;
-                    case 'R06': case 'req_spend': return <SpendBudgetExposure />;
-                    case 'R07': case 'req_risks': return <RisksExceptionsDashboard />;
-                    // Orders (New & Legacy)
-                    case 'O01': case 'ord_control': return <DailyOrdersControl />;
-                    case 'O02': case 'ord_fulfillment': return <OrderFulfillmentDashboard />;
-                    case 'O03': case 'ord_finance': return <OrdersFinanceDashboard />;
-                    case 'O04': case 'ord_performance': return <CustomerVendorPerformance />;
-                    case 'O05': case 'ord_risks': return <OrderRisksDashboard />;
-                    default: return null;
-                }
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

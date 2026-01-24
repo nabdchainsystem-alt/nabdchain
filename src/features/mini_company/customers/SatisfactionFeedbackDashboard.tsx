@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -14,14 +15,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('satisfaction-feedback-dashboard', 1200);
 
     // --- KPI Data ---
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = useMemo(() => [
@@ -272,7 +266,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('sentiment_breakdown')}</h3>
                                     <p className="text-xs text-gray-400">{t('overall_mood')}</p>
                                 </div>
-                                <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Rating Distribution (Pie) */}
@@ -281,7 +275,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('rating_distribution')}</h3>
                                     <p className="text-xs text-gray-400">{t('star_breakdown')}</p>
                                 </div>
-                                <ReactECharts option={ratingPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={ratingPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -349,7 +343,7 @@ export const SatisfactionFeedbackDashboard: React.FC = () => {
 
                         {/* Companion Chart: Radar (2 cols) */}
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
+                            <MemoizedChart option={radarOption} style={{ height: '300px', width: '100%' }} />
                         </div>
                     </>
                 )}

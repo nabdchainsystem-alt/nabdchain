@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -44,14 +45,7 @@ const SUPPLIER_DETAILS = [
 export const SupplierPerformanceDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('operations-supplier-performance-dashboard', 800);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -260,7 +254,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('suppliers_by_risk_category')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                     )}
 
@@ -359,7 +353,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                             <p className="text-xs text-gray-400">{t('spend_vs_lead_time_risk')}</p>
                         </div>
                         <div className="flex-1 w-full min-h-0 px-2 pb-2">
-                            <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
+                            <MemoizedChart option={scatterOption} style={{ height: '100%', width: '100%', minHeight: 100, minWidth: 100 }} />
                         </div>
                     </div>
                 )}

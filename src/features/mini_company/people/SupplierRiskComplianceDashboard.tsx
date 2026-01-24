@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -58,12 +59,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
         { name: t('jun'), High: 8, Medium: 24, Low: 124 },
     ], [t]);
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-risk-compliance-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -179,7 +175,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_risk_level')}</p>
                             </div>
-                            <ReactECharts option={riskPieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={riskPieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {SIDE_KPIS.slice(0, 2).map((kpi, index) => (

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -88,15 +89,7 @@ export const RetentionChurnDashboard: React.FC = () => {
     ], [t]);
 
     // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('retention-churn-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -295,14 +288,14 @@ export const RetentionChurnDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('customer_lifecycle')}</h3>
                                 <p className="text-xs text-gray-400">{t('status')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('tenure_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('inactivity_period')}</p>
                             </div>
-                            <ReactECharts option={tenurePieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={tenurePieOption} style={{ height: '180px' }} />
                         </div>
                     </div>
                 )}
@@ -378,7 +371,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={spiralOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={spiralOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}
 

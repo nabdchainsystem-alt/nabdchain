@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../../components/common/MemoizedChart';
 import {
     X, Check, ChartBar as BarChart3, ChartLine as LineChart, ChartPie as PieChart,
     GearSix as Settings2, Database, WarningCircle as AlertCircle,
@@ -431,9 +431,9 @@ export const ChartBuilderModal: React.FC<ChartBuilderModalProps> = ({ isOpen, on
                                 {/* Main Chart Render */}
                                 <div className="flex-1 p-6 relative">
                                     {(aiGeneratedOption || (validation.isValid && chartOption)) ? (
-                                        <ReactECharts
+                                        <MemoizedChart
                                             option={{ ...(aiGeneratedOption || chartOption), title: { show: false }, grid: { top: 10, bottom: 20, left: 20, right: 20, containLabel: true } }}
-                                            style={{ height: '100%', width: '100%' }}
+                                            style={{ height: '100%', width: '100%', minHeight: 100, minWidth: 100 }}
                                             theme="macarons"
                                         />
                                     ) : (

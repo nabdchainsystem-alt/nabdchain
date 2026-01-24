@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -86,14 +87,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
     const { t, dir } = useLanguage();
     const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-lead-time-responsiveness-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -362,11 +356,11 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                                 <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('lead_time_mix')}</h3>
-                                <ReactECharts option={bucketsPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={bucketsPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                                 <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('order_urgency')}</h3>
-                                <ReactECharts option={urgencyPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={urgencyPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -438,7 +432,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('predictability_analysis')}</h3>
                                 <p className="text-xs text-gray-400">{t('lead_time_variability_boxplot')}</p>
                             </div>
-                            <ReactECharts option={boxplotOption} style={{ height: '300px', width: '100%' }} />
+                            <MemoizedChart option={boxplotOption} style={{ height: '300px', width: '100%' }} />
                         </div>
                     </>
                 )}

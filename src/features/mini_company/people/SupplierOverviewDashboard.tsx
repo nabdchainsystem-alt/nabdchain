@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -74,14 +75,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
         status: t(item.statusKey)
     })), [t]);
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-overview-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -231,14 +225,14 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_categories')}</h3>
                                 <p className="text-xs text-gray-400">{t('distribution_by_type')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_status')}</h3>
                                 <p className="text-xs text-gray-400">{t('relationship_health')}</p>
                             </div>
-                            <ReactECharts option={statusPieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={statusPieOption} style={{ height: '180px' }} />
                         </div>
                     </div>
                 )}

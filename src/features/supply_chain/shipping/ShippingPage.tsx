@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { ShippingDashboard } from './ShippingDashboard';
@@ -75,7 +75,7 @@ export const ShippingPage: React.FC = () => {
         setBoard(prev => ({ ...prev, tasks }));
     }, []);
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: t('shipping_dashboards'),
             options: shippingMaster.dashboards.map(d => ({
@@ -84,20 +84,22 @@ export const ShippingPage: React.FC = () => {
                 description: d.name.en
             }))
         }
-    ];
+    ], [t]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        if (viewId === 'sc_shipping' || viewId.startsWith('S')) {
+            const config = shippingMaster.dashboards.find(d => d.id === viewId);
+            return <ShippingDashboard viewId={viewId} title={config?.name.en} />;
+        }
+        return null;
+    }, []);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                if (viewId === 'sc_shipping' || viewId.startsWith('S')) {
-                    const config = shippingMaster.dashboards.find(d => d.id === viewId);
-                    return <ShippingDashboard viewId={viewId} title={config?.name.en} />;
-                }
-                return null;
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -81,14 +82,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('category-analysis-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -312,7 +306,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_allocation')}</h3>
                             <p className="text-xs text-gray-400">{t('departmental_breakdown')}</p>
                         </div>
-                        <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                        <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                     </div>
 
                     {/* ECharts: Budget Status (Pie) */}
@@ -321,7 +315,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('budget_status')}</h3>
                             <p className="text-xs text-gray-400">{t('categories_by_status')}</p>
                         </div>
-                        <ReactECharts option={budgetStatusPieOption} style={{ height: '180px' }} />
+                        <MemoizedChart option={budgetStatusPieOption} style={{ height: '180px' }} />
                     </div>
                 </div>
 
@@ -384,7 +378,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
 
                 {/* Companion Chart: Radar (2 cols) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                    <ReactECharts option={radarOption} style={{ height: '300px', width: '100%' }} />
+                    <MemoizedChart option={radarOption} style={{ height: '300px', width: '100%' }} />
                 </div>
 
             </div>

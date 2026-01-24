@@ -57,12 +57,12 @@ interface AIChatProps {
     initialPrompt?: string;
 }
 
-const QUICK_ACTIONS = [
-    { icon: ChartBar, label: 'Chart', prompt: 'Create a chart showing ', promptType: 'chart', color: 'text-blue-500 bg-blue-500/10' },
-    { icon: Table, label: 'Table', prompt: 'Generate a table of ', promptType: 'table', color: 'text-green-500 bg-green-500/10' },
-    { icon: ListChecks, label: 'Tasks', prompt: 'Extract tasks from: ', promptType: 'gtd', color: 'text-orange-500 bg-orange-500/10' },
-    { icon: TrendUp, label: 'Forecast', prompt: 'Forecast the trend for ', promptType: 'forecast', color: 'text-purple-500 bg-purple-500/10' },
-    { icon: Lightbulb, label: 'Tips', prompt: 'Give me tips on ', promptType: 'tips', color: 'text-amber-500 bg-amber-500/10' },
+const getQuickActions = (t: (key: string) => string) => [
+    { icon: ChartBar, label: t('ai_chart'), prompt: 'Create a chart showing ', promptType: 'chart', color: 'text-blue-500 bg-blue-500/10' },
+    { icon: Table, label: t('ai_table'), prompt: 'Generate a table of ', promptType: 'table', color: 'text-green-500 bg-green-500/10' },
+    { icon: ListChecks, label: t('tasks'), prompt: 'Extract tasks from: ', promptType: 'gtd', color: 'text-orange-500 bg-orange-500/10' },
+    { icon: TrendUp, label: t('ai_forecast'), prompt: 'Forecast the trend for ', promptType: 'forecast', color: 'text-purple-500 bg-purple-500/10' },
+    { icon: Lightbulb, label: t('ai_tips'), prompt: 'Give me tips on ', promptType: 'tips', color: 'text-amber-500 bg-amber-500/10' },
 ];
 
 const TIER_INFO = {
@@ -117,7 +117,8 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
         currentBoardContext,
         currentRoomContext,
     } = useAI();
-    const { theme, t } = useAppContext();
+    const { theme, t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -142,13 +143,13 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
     const contextSummary = useCallback(() => {
         const parts: string[] = [];
         if (currentBoardContext) {
-            parts.push(`Board: ${currentBoardContext.name} (${currentBoardContext.taskCount} tasks)`);
+            parts.push(`${t('board_label')}: ${currentBoardContext.name} (${currentBoardContext.taskCount} ${t('tasks')})`);
         }
         if (currentRoomContext) {
-            parts.push(`Room: ${currentRoomContext.name} (${currentRoomContext.rowCount} rows)`);
+            parts.push(`${t('room_label')}: ${currentRoomContext.name} (${currentRoomContext.rowCount} ${t('rows_label')})`);
         }
-        return parts.length > 0 ? parts.join(' • ') : 'No context loaded';
-    }, [currentBoardContext, currentRoomContext]);
+        return parts.length > 0 ? parts.join(' • ') : t('no_context_loaded');
+    }, [currentBoardContext, currentRoomContext, t]);
 
     // Auto-scroll to bottom
     const scrollToBottom = useCallback(() => {
@@ -179,12 +180,12 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
             const welcomeMessage: Message = {
                 id: 'welcome',
                 role: 'system',
-                content: `**Welcome to NABD Brain** 🧠\n\nI'm your intelligent assistant powered by a 3-tier AI system:\n\n- **Cleaner** (Gemini 2.5 Flash) - Fast data tasks\n- **Worker** (Gemini 3 Flash) - Analysis & insights  \n- **Thinker** (Gemini 3 Pro) - Deep strategy\n\nI automatically choose the right model based on your question complexity. ${currentBoardContext || currentRoomContext ? `\n\n📊 **Current Context:** ${contextSummary()}` : ''}`,
+                content: `**${t('welcome_nabd_brain')}** 🧠\n\n${t('ai_system_intro')}\n\n- **Cleaner** (Gemini 2.5 Flash) - ${t('cleaner_desc')}\n- **Worker** (Gemini 3 Flash) - ${t('worker_desc')}\n- **Thinker** (Gemini 3 Pro) - ${t('thinker_desc')}\n\n${t('auto_model_selection')} ${currentBoardContext || currentRoomContext ? `\n\n📊 **${t('current_context')}:** ${contextSummary()}` : ''}`,
                 timestamp: new Date(),
             };
             setMessages([welcomeMessage]);
         }
-    }, [isOpen, messages.length, currentBoardContext, currentRoomContext, contextSummary]);
+    }, [isOpen, messages.length, currentBoardContext, currentRoomContext, contextSummary, t]);
 
     // Preview tier on input change with debounce
     useEffect(() => {
@@ -294,6 +295,8 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
         }
     };
 
+    const QUICK_ACTIONS = getQuickActions(t);
+
     const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
         setInput(action.prompt);
         inputRef.current?.focus();
@@ -326,7 +329,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}
                 ${isExpanded
                     ? 'inset-4'
-                    : 'bottom-20 right-4 rtl:right-auto rtl:left-4 w-[440px] h-[620px]'
+                    : `bottom-20 w-[440px] h-[620px] ${isRTL ? 'left-4' : 'right-4'}`
                 }
             `}
         >
@@ -369,14 +372,14 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                     </div>
                     <div>
                         <h3 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            NABD Brain
+                            {t('nabd_brain')}
                         </h3>
                         <div className="flex items-center gap-1.5">
                             {creditsLoading ? (
                                 <CircleNotch size={10} className="animate-spin text-gray-400" />
                             ) : (
                                 <span className={`text-[11px] font-medium ${credits < 10 ? 'text-red-500' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {credits} credits
+                                    {credits} {t('credit')}
                                 </span>
                             )}
                             <span className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
@@ -389,17 +392,17 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                         : isDark ? 'text-blue-400 bg-blue-500/10' : 'text-blue-500 bg-blue-500/10'
                                     }
                                 `}
-                                title={deepModeEnabled ? 'Deep Mode: Always use Thinker (5 credits)' : 'Auto Mode: Smart routing based on complexity'}
+                                title={deepModeEnabled ? `${t('deep_mode')}: ${t('thinker_only')} (5 cr)` : `${t('auto_mode')}: ${t('smart_routing')}`}
                             >
                                 {deepModeEnabled ? (
                                     <>
                                         <Brain size={11} weight="fill" />
-                                        Deep
+                                        {t('deep_mode')}
                                     </>
                                 ) : (
                                     <>
                                         <Robot size={11} weight="fill" />
-                                        Auto
+                                        {t('auto_mode')}
                                     </>
                                 )}
                             </button>
@@ -418,7 +421,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                 : isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
                             }
                         `}
-                        title="View context"
+                        title={t('view_context')}
                     >
                         <Database size={16} />
                         {(currentBoardContext || currentRoomContext) && (
@@ -431,7 +434,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                             className={`p-1.5 rounded-lg transition-colors ${
                                 isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
                             }`}
-                            title="Clear chat"
+                            title={t('clear_chat')}
                         >
                             <Trash size={16} />
                         </button>
@@ -441,7 +444,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                         className={`p-1.5 rounded-lg transition-colors ${
                             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
                         }`}
-                        title={isExpanded ? 'Minimize' : 'Expand'}
+                        title={isExpanded ? t('minimize') : t('expand')}
                     >
                         {isExpanded ? <ArrowsInSimple size={16} /> : <ArrowsOutSimple size={16} />}
                     </button>
@@ -450,7 +453,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                         className={`p-1.5 rounded-lg transition-colors ${
                             isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
                         }`}
-                        title="Close"
+                        title={t('close')}
                     >
                         <X size={16} />
                     </button>
@@ -466,35 +469,35 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                     <div className="flex items-center gap-2 mb-2">
                         <Eye size={14} className={isDark ? 'text-blue-400' : 'text-blue-500'} />
                         <span className={`text-xs font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                            Context Being Read
+                            {t('context_being_read')}
                         </span>
                     </div>
                     {currentBoardContext ? (
                         <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                             <div className="flex items-center gap-2 mb-1">
                                 <FileText size={12} />
-                                <strong>Board:</strong> {currentBoardContext.name}
+                                <strong>{t('board_label')}:</strong> {currentBoardContext.name}
                             </div>
-                            <div className="ml-4 space-y-0.5 text-[11px] opacity-80">
-                                <div>{currentBoardContext.taskCount} tasks</div>
-                                <div>Columns: {currentBoardContext.columns.slice(0, 5).join(', ')}{currentBoardContext.columns.length > 5 ? '...' : ''}</div>
+                            <div className={`space-y-0.5 text-[11px] opacity-80 ${isRTL ? 'mr-4' : 'ml-4'}`}>
+                                <div>{currentBoardContext.taskCount} {t('tasks')}</div>
+                                <div>{t('columns_label')}: {currentBoardContext.columns.slice(0, 5).join(', ')}{currentBoardContext.columns.length > 5 ? '...' : ''}</div>
                             </div>
                         </div>
                     ) : currentRoomContext ? (
                         <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                             <div className="flex items-center gap-2 mb-1">
                                 <Table size={12} />
-                                <strong>Room:</strong> {currentRoomContext.name}
+                                <strong>{t('room_label')}:</strong> {currentRoomContext.name}
                             </div>
-                            <div className="ml-4 space-y-0.5 text-[11px] opacity-80">
-                                <div>{currentRoomContext.rowCount} rows</div>
-                                <div>Columns: {currentRoomContext.columns.slice(0, 5).join(', ')}{currentRoomContext.columns.length > 5 ? '...' : ''}</div>
+                            <div className={`space-y-0.5 text-[11px] opacity-80 ${isRTL ? 'mr-4' : 'ml-4'}`}>
+                                <div>{currentRoomContext.rowCount} {t('rows_label')}</div>
+                                <div>{t('columns_label')}: {currentRoomContext.columns.slice(0, 5).join(', ')}{currentRoomContext.columns.length > 5 ? '...' : ''}</div>
                             </div>
                         </div>
                     ) : (
                         <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            <Info size={12} className="inline mr-1" />
-                            No board/room context. Open a board to enable context-aware responses.
+                            <Info size={12} className={`inline ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                            {t('no_board_context_hint')}
                         </div>
                     )}
                 </div>
@@ -529,7 +532,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                             {message.error && (
                                 <div className="flex items-center gap-1.5 mb-2">
                                     <Warning size={14} weight="fill" />
-                                    <span className="text-xs font-medium">Error</span>
+                                    <span className="text-xs font-medium">{t('ai_error')}</span>
                                 </div>
                             )}
 
@@ -556,12 +559,12 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                     {message.metadata?.escalated && (
                                         <span className="text-purple-400 flex items-center gap-0.5">
                                             <ArrowClockwise size={10} />
-                                            Escalated
+                                            {t('escalated')}
                                         </span>
                                     )}
                                     {message.metadata?.complexityScore !== undefined && (
                                         <span className="opacity-70">
-                                            Complexity: {message.metadata.complexityScore}/100
+                                            {t('complexity')}: {message.metadata.complexityScore}/100
                                         </span>
                                     )}
                                 </div>
@@ -605,11 +608,11 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                        {currentTier === 'thinker' ? 'Deep thinking...' :
-                                         currentTier === 'cleaner' ? 'Processing data...' : 'Analyzing...'}
+                                        {currentTier === 'thinker' ? t('deep_thinking') :
+                                         currentTier === 'cleaner' ? t('processing_data') : t('analyzing')}
                                     </span>
                                     <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                        Using {currentTier ? TIER_INFO[currentTier].model : 'AI'}
+                                        {t('using_ai')} {currentTier ? TIER_INFO[currentTier].model : 'AI'}
                                     </span>
                                 </div>
                             </div>
@@ -706,7 +709,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={currentBoardContext ? `Ask about ${currentBoardContext.name}...` : 'Ask me anything...'}
+                        placeholder={currentBoardContext ? `${t('ask_about')} ${currentBoardContext.name}...` : t('ask_me_anything')}
                         disabled={isProcessing}
                         rows={1}
                         className={`
@@ -742,7 +745,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                     : 'bg-gray-100 text-gray-400'
                             }
                         `}
-                        title={credits < 1 ? 'No credits remaining' : 'Send message'}
+                        title={credits < 1 ? t('no_credits_remaining') : t('send_message')}
                     >
                         {isProcessing ? (
                             <CircleNotch size={20} className="animate-spin" />

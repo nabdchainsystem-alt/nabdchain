@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -295,7 +295,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_split')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('geographic_distribution')}</p>
                             </div>
-                            <ReactECharts option={regionPieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={regionPieOption} style={{ height: '210px', minHeight: 100 }} />
                         </div>
                     )}
 
@@ -426,7 +426,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                                 <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('region_agent_status')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
-                                <ReactECharts option={flowChartOption} style={{ height: '100%', width: '100%' }} />
+                                <MemoizedChart option={flowChartOption} style={{ height: '100%', width: '100%', minHeight: 200, minWidth: 100 }} />
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-normal">

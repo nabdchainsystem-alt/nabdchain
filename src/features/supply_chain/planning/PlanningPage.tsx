@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { PlanningDashboard } from './PlanningDashboard';
@@ -82,7 +82,7 @@ export const PlanningPage: React.FC = () => {
         setBoard(prev => ({ ...prev, tasks }));
     }, []);
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: t('planning_dashboards'),
             options: planningMaster.dashboards.map(d => ({
@@ -91,20 +91,22 @@ export const PlanningPage: React.FC = () => {
                 description: d.name_en
             }))
         }
-    ];
+    ], [t]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        if (viewId === 'sc_planning' || viewId.startsWith('P')) {
+            const config = planningMaster.dashboards.find(d => d.id === viewId);
+            return <PlanningDashboard viewId={viewId} title={config?.name_en} />;
+        }
+        return null;
+    }, []);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                if (viewId === 'sc_planning' || viewId.startsWith('P')) {
-                    const config = planningMaster.dashboards.find(d => d.id === viewId);
-                    return <PlanningDashboard viewId={viewId} title={config?.name_en} />;
-                }
-                return null;
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -83,14 +84,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('approval-flow-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -283,7 +277,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('conversion_funnel')}</h3>
                                     <p className="text-xs text-gray-400">{t('request_progression')}</p>
                                 </div>
-                                <ReactECharts option={funnelOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={funnelOption} style={{ height: '180px' }} />
                             </>
                         )}
                     </div>
@@ -298,7 +292,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('approval_outcome')}</h3>
                                     <p className="text-xs text-gray-400">{t('overall_success_rate')}</p>
                                 </div>
-                                <ReactECharts option={outcomePieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={outcomePieOption} style={{ height: '180px' }} />
                             </>
                         )}
                     </div>
@@ -374,7 +368,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                     {isLoading ? (
                         <ChartSkeleton />
                     ) : (
-                        <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                     )}
                 </div>
 

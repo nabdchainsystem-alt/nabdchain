@@ -29,11 +29,12 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
         aiEnabled,
         toggleAI,
     } = useAI();
-    const { theme } = useAppContext();
+    const { theme, t, dir } = useAppContext();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const isDark = theme === 'dark';
+    const isRTL = dir === 'rtl';
     const hasContext = currentBoardContext || currentRoomContext;
 
     // Close dropdown when clicking outside
@@ -97,8 +98,8 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                     ${!aiEnabled ? 'opacity-50' : ''}
                 `}
                 title={aiEnabled
-                    ? `NABD Brain - ${credits} credits • ${deepModeEnabled ? 'Deep Mode' : 'Auto Mode'}${hasContext ? ' • Context Active' : ''}`
-                    : 'NABD Brain - AI Disabled (click to enable)'
+                    ? `${t('nabd_brain')} - ${credits} ${t('credit')} • ${deepModeEnabled ? t('deep_mode') : t('auto_mode')}${hasContext ? ` • ${t('current_context')}` : ''}`
+                    : `${t('nabd_brain')} - ${t('ai_disabled')} (${t('click_to_enable_ai')})`
                 }
             >
                 {!aiEnabled ? (
@@ -126,14 +127,15 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
 
                 {/* Context indicator */}
                 {hasContext && aiEnabled && (
-                    <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />
+                    <div className={`absolute -top-0.5 w-2 h-2 rounded-full bg-green-500 ${isRTL ? '-left-0.5' : '-right-0.5'}`} />
                 )}
             </button>
 
             {/* Dropdown Menu */}
             {isOpen && (
                 <div className={`
-                    absolute top-full right-0 rtl:right-auto rtl:left-0 mt-2 w-48 rounded-xl shadow-xl border z-50 overflow-hidden
+                    absolute top-full mt-2 w-48 rounded-xl shadow-xl border z-50 overflow-hidden
+                    ${isRTL ? 'left-0' : 'right-0'}
                     ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}
                 `}>
                     {/* Header with ON/OFF Toggle */}
@@ -142,7 +144,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                             <div className="flex items-center gap-2">
                                 <Sparkle size={14} weight="fill" className={isDark ? 'text-gray-400' : 'text-gray-600'} />
                                 <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    NABD Brain
+                                    {t('nabd_brain')}
                                 </span>
                             </div>
                             {/* ON/OFF Toggle Switch */}
@@ -155,22 +157,25 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                                         : isDark ? 'bg-gray-700' : 'bg-gray-300'
                                     }
                                 `}
-                                title={aiEnabled ? 'Click to disable AI' : 'Click to enable AI'}
+                                title={aiEnabled ? t('click_to_disable_ai') : t('click_to_enable_ai')}
                             >
                                 <div className={`
                                     absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200
-                                    ${aiEnabled ? 'translate-x-5' : 'translate-x-0.5'}
+                                    ${aiEnabled
+                                        ? isRTL ? 'translate-x-0.5' : 'translate-x-5'
+                                        : isRTL ? 'translate-x-5' : 'translate-x-0.5'
+                                    }
                                 `} />
                             </button>
                         </div>
                         {aiEnabled && (
                             <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                {creditsLoading ? '...' : `${credits} credits available`}
+                                {creditsLoading ? '...' : `${credits} ${t('credits_available')}`}
                             </div>
                         )}
                         {!aiEnabled && (
                             <div className="text-[10px] mt-1 text-orange-500">
-                                AI features are disabled
+                                {t('ai_features_disabled')}
                             </div>
                         )}
                     </div>
@@ -190,10 +195,10 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                                 `}
                             >
                                 <Robot size={15} weight={!deepModeEnabled ? 'fill' : 'regular'} />
-                                <div className="flex-1 text-left">
-                                    <div className="text-xs font-medium">Auto</div>
+                                <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                    <div className="text-xs font-medium">{t('auto_mode')}</div>
                                     <div className={`text-[9px] opacity-60`}>
-                                        Smart routing • 1-5 cr
+                                        {t('smart_routing')} • 1-5 cr
                                     </div>
                                 </div>
                                 {!deepModeEnabled && (
@@ -213,10 +218,10 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                                 `}
                             >
                                 <Brain size={15} weight={deepModeEnabled ? 'fill' : 'regular'} />
-                                <div className="flex-1 text-left">
-                                    <div className="text-xs font-medium">Deep</div>
+                                <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                    <div className="text-xs font-medium">{t('deep_mode')}</div>
                                     <div className={`text-[9px] opacity-60`}>
-                                        Thinker only • 5 cr
+                                        {t('thinker_only')} • 5 cr
                                     </div>
                                 </div>
                                 {deepModeEnabled && (
@@ -243,7 +248,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                         <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                             <div className="flex items-center justify-center gap-1.5">
                                 <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                    <kbd className="px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-800' : 'bg-gray-100'} text-[9px] font-mono">⌘J</kbd> to chat
+                                    <kbd className={`px-1.5 py-0.5 rounded text-[9px] font-mono ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>⌘J</kbd> {t('to_chat')}
                                 </span>
                             </div>
                         </div>

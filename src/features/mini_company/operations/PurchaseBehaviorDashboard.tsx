@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -72,7 +73,7 @@ const HEATMAP_DATA = generateHeatmapData();
 export const PurchaseBehaviorDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('purchase-behavior-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: KPIData[] = [
@@ -89,12 +90,6 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
         { id: '8', label: t('peak_purchase_day'), subtitle: t('highest_activity'), value: t('tuesday'), change: t('consistent'), trend: 'neutral', icon: <CalendarIcon size={18} color="#3b82f6" />, sparklineData: [8, 12, 15, 10, 9, 7, 5] },
     ];
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -275,7 +270,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('category_mix_spend')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('portfolio_diversity')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -288,7 +283,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('order_source_distribution')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('purchase_initiation_types')}</p>
                             </div>
-                            <ReactECharts option={orderSourcePieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={orderSourcePieOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>
@@ -353,7 +348,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('temporal_purchase_wave')}</h3>
                             <p className="text-xs text-gray-400">{t('activity_density_time')}</p>
                         </div>
-                        <ReactECharts option={heatmapOption} style={{ height: '240px', width: '100%' }} />
+                        <MemoizedChart option={heatmapOption} style={{ height: '240px', width: '100%' }} />
                     </div>
                 )}
 

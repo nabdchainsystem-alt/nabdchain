@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -92,14 +93,7 @@ interface SalesForecastDashboardProps {
 export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('sales-forecast-dashboard', 800);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'deviation', direction: 'desc' });
@@ -314,7 +308,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                                 <p className="text-xs text-gray-400 mt-1">{t('trend_comparison')}</p>
                             </div>
                             <div className="h-[260px]">
-                                <ReactECharts option={lineOption} style={{ height: '100%' }} />
+                                <MemoizedChart option={lineOption} style={{ height: '100%', minHeight: 100 }} />
                             </div>
                         </div>
                     )}
@@ -360,7 +354,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('risk_distribution')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('vulnerability_assessment')}</p>
                             </div>
-                            <ReactECharts option={riskPieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={riskPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -498,7 +492,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                             <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('scatter_analysis_desc')}</p>
                         </div>
                         <div className="flex-1 min-h-[400px]">
-                            <ReactECharts option={scatterOption} style={{ height: '100%', width: '100%' }} />
+                            <MemoizedChart option={scatterOption} style={{ height: '100%', width: '100%', minHeight: 100, minWidth: 100 }} />
                         </div>
                         <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/50 text-start">
                             <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-normal">

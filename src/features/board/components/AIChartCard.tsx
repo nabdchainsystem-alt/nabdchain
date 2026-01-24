@@ -1,5 +1,5 @@
 import React, { useMemo, memo, useRef } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import { ChartBar as BarChart3, ChartPie as PieChart, ChartLine as LineChart, PlusCircle, X } from 'phosphor-react';
 import { Column, Row } from '../views/Table/RoomTable';
 import { ChartBuilderConfig } from './chart-builder/types';
@@ -78,13 +78,13 @@ export const AIChartCard: React.FC<AIChartCardProps> = memo(({ config, columns, 
                 </div>
             </div>
             <div className="flex-1 p-4 relative">
-                <ReactECharts
+                <MemoizedChart
                     option={{
                         ...chartOption,
                         title: { show: false },
                         grid: { ...((chartOption as any).grid || {}), top: 10, bottom: 40, left: 10, right: 10, containLabel: true }
                     }}
-                    style={{ height: '100%', width: '100%' }}
+                    style={{ height: '100%', width: '100%', minHeight: 100, minWidth: 100 }}
                     notMerge={false}
                     lazyUpdate={true}
                 />

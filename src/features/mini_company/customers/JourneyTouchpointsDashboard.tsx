@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -96,14 +97,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
     ], [t]);
 
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('journey-touchpoints-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -285,7 +279,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('funnel_progression')}</h3>
                                     <p className="text-xs text-gray-400">{t('path_analysis')}</p>
                                 </div>
-                                <ReactECharts option={funnelOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={funnelOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Drop Point Split (Pie) */}
@@ -294,7 +288,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('drop_off_rate')}</h3>
                                     <p className="text-xs text-gray-400">{t('funnel_exits')}</p>
                                 </div>
-                                <ReactECharts option={dropPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={dropPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -359,7 +353,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
 
                         {/* Companion Chart: Sankey (2 cols) */}
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <ReactECharts option={sankeyOption} style={{ height: '300px', width: '100%' }} />
+                            <MemoizedChart option={sankeyOption} style={{ height: '300px', width: '100%' }} />
                         </div>
                     </>
                 )}

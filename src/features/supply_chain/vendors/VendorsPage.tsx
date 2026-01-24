@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { VendorsDashboard } from './VendorsDashboard';
@@ -76,7 +76,7 @@ export const VendorsPage: React.FC = () => {
         setBoard(prev => ({ ...prev, tasks }));
     }, []);
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: t('vendor_dashboards'),
             options: vendorsMaster.dashboards.map(d => ({
@@ -85,20 +85,22 @@ export const VendorsPage: React.FC = () => {
                 description: d.name_en
             }))
         }
-    ];
+    ], [t]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        if (viewId === 'sc_vendors' || viewId.startsWith('V')) {
+            const config = vendorsMaster.dashboards.find(d => d.id === viewId);
+            return <VendorsDashboard viewId={viewId} title={config?.name_en} />;
+        }
+        return null;
+    }, []);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                if (viewId === 'sc_vendors' || viewId.startsWith('V')) {
-                    const config = vendorsMaster.dashboards.find(d => d.id === viewId);
-                    return <VendorsDashboard viewId={viewId} title={config?.name_en} />;
-                }
-                return null;
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

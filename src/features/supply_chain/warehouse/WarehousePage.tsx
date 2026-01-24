@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { WarehouseDashboard } from './WarehouseDashboard';
@@ -99,7 +99,7 @@ export const WarehousePage: React.FC = () => {
         // Let's assume for this specific task (fixing TABS), we only care on updates to availableViews.
     }, []);
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: t('warehouse_dashboards'),
             options: warehouseMaster.dashboards.map(d => ({
@@ -118,23 +118,25 @@ export const WarehousePage: React.FC = () => {
                 }
             ]
         }
-    ];
+    ], [t]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        if (viewId === 'sc_warehouse' || viewId.startsWith('W')) {
+            const config = warehouseMaster.dashboards.find(d => d.id === viewId);
+            return <WarehouseDashboard viewId={viewId} title={config?.name_en} />;
+        }
+        if (viewId === 'warehouse_capacity_map') {
+            return <WarehouseCapacityMap boardName={board.name} />;
+        }
+        return null;
+    }, [board.name]);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                if (viewId === 'sc_warehouse' || viewId.startsWith('W')) {
-                    const config = warehouseMaster.dashboards.find(d => d.id === viewId);
-                    return <WarehouseDashboard viewId={viewId} title={config?.name_en} />;
-                }
-                if (viewId === 'warehouse_capacity_map') {
-                    return <WarehouseCapacityMap boardName={board.name} />;
-                }
-                return null;
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

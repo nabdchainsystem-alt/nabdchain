@@ -57,6 +57,51 @@ const TestPage = lazyWithRetry(() => import('./features/tools/TestPage').then(m 
 const ArcadePage = lazyWithRetry(() => import('./features/arcade/ArcadePage'));
 const LiveSessionPage = lazyWithRetry(() => import('./features/collaboration/LiveSessionPage').then(m => ({ default: m.LiveSessionPage })));
 
+// Department Pages - Supply Chain
+const ProcurementPage = lazyWithRetry(() => import('./features/supply_chain/procurement/ProcurementPage'));
+const WarehousePage = lazyWithRetry(() => import('./features/supply_chain/warehouse/WarehousePage'));
+const ShippingPage = lazyWithRetry(() => import('./features/supply_chain/shipping/ShippingPage'));
+const FleetPage = lazyWithRetry(() => import('./features/supply_chain/fleet/FleetPage'));
+const VendorsPage = lazyWithRetry(() => import('./features/supply_chain/vendors/VendorsPage'));
+const PlanningPage = lazyWithRetry(() => import('./features/supply_chain/planning/PlanningPage'));
+
+// Department Pages - Operations
+const MaintenancePage = lazyWithRetry(() => import('./features/operations/maintenance/MaintenancePage'));
+const ProductionPage = lazyWithRetry(() => import('./features/operations/production/ProductionPage'));
+const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
+
+// Department Pages - Business
+const BusinessSalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
+const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
+
+// Mini Company - Overview
+const DashboardsPage = lazyWithRetry(() => import('./features/mini_company/overview/DashboardsPage'));
+const ReportsPage = lazyWithRetry(() => import('./features/mini_company/overview/ReportsPage'));
+
+// Mini Company - Operations
+const SalesPage = lazyWithRetry(() => import('./features/mini_company/operations/SalesPage'));
+const PurchasesPage = lazyWithRetry(() => import('./features/mini_company/operations/PurchasesPage'));
+const InventoryPage = lazyWithRetry(() => import('./features/mini_company/operations/InventoryPage'));
+
+// Mini Company - Finance & People
+const ExpensesPage = lazyWithRetry(() => import('./features/mini_company/finance/ExpensesPage'));
+const CustomersPage = lazyWithRetry(() => import('./features/mini_company/customers/CustomersPage').then(module => ({ default: module.CustomersPage })));
+const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/suppliers/SuppliersPage').then(module => ({ default: module.SuppliersPage })));
+
+// Marketplace
+const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
+const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
+
+// Business Support
+const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
+const HRPage = lazyWithRetry(() => import('./features/business_support/hr/HRPage'));
+const MarketingPage = lazyWithRetry(() => import('./features/business_support/marketing/MarketingPage'));
+
+// Tools & Settings
+const CornellNotesPage = lazyWithRetry(() => import('./features/tools/cornell/CornellNotesPage'));
+const QuickNotesPage = lazyWithRetry(() => import('./features/quick_notes/QuickNotesPage'));
+const SettingsPage = lazyWithRetry(() => import('./features/settings/SettingsPage'));
+
 // ============================================================================
 // PRELOAD CRITICAL ROUTES - Load in background after initial render
 // ============================================================================
@@ -1229,50 +1274,6 @@ const AppContent: React.FC = () => {
       }
     } catch (e) { boardLogger.error('Failed to update board', e); }
   }, [getToken]);
-
-  // --- Department Pages (Lazy Loaded) ---
-  const ProcurementPage = lazyWithRetry(() => import('./features/supply_chain/procurement/ProcurementPage'));
-  const WarehousePage = lazyWithRetry(() => import('./features/supply_chain/warehouse/WarehousePage'));
-  const ShippingPage = lazyWithRetry(() => import('./features/supply_chain/shipping/ShippingPage'));
-  const FleetPage = lazyWithRetry(() => import('./features/supply_chain/fleet/FleetPage'));
-  const VendorsPage = lazyWithRetry(() => import('./features/supply_chain/vendors/VendorsPage'));
-  const PlanningPage = lazyWithRetry(() => import('./features/supply_chain/planning/PlanningPage'));
-
-  const MaintenancePage = lazyWithRetry(() => import('./features/operations/maintenance/MaintenancePage'));
-  const ProductionPage = lazyWithRetry(() => import('./features/operations/production/ProductionPage'));
-  const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
-
-  const BusinessSalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
-  const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
-
-
-  // Mini Company - Overview
-  const DashboardsPage = lazyWithRetry(() => import('./features/mini_company/overview/DashboardsPage'));
-  const ReportsPage = lazyWithRetry(() => import('./features/mini_company/overview/ReportsPage'));
-
-  // Mini Company - Operations
-  const SalesPage = lazyWithRetry(() => import('./features/mini_company/operations/SalesPage'));
-  const PurchasesPage = lazyWithRetry(() => import('./features/mini_company/operations/PurchasesPage'));
-  const InventoryPage = lazyWithRetry(() => import('./features/mini_company/operations/InventoryPage'));
-
-  // Mini Company - Finance
-  const ExpensesPage = lazyWithRetry(() => import('./features/mini_company/finance/ExpensesPage'));
-  const CustomersPage = lazyWithRetry(() => import('./features/mini_company/customers/CustomersPage').then(module => ({ default: module.CustomersPage })));
-  const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/suppliers/SuppliersPage').then(module => ({ default: module.SuppliersPage })));
-
-  // Mini Company - People
-
-
-
-  const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
-  const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
-
-  const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
-  const HRPage = lazyWithRetry(() => import('./features/business_support/hr/HRPage'));
-  const MarketingPage = lazyWithRetry(() => import('./features/business_support/marketing/MarketingPage'));
-  const CornellNotesPage = lazyWithRetry(() => import('./features/tools/cornell/CornellNotesPage'));
-  const QuickNotesPage = lazyWithRetry(() => import('./features/quick_notes/QuickNotesPage'));
-  const SettingsPage = lazyWithRetry(() => import('./features/settings/SettingsPage'));
 
   const FullScreenLoader = () => (
     <div className="h-full w-full flex items-center justify-center">

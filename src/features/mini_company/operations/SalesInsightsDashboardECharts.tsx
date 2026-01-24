@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartLineUp, CurrencyDollar, ShoppingCart, Users, Receipt, TrendUp, TrendDown, ArrowsOut, ArrowsIn, Info } from 'phosphor-react';
@@ -251,12 +251,12 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales Over Time</h3>
-                            <ReactECharts option={salesOverTimeOption} style={{ height: 250 }} />
+                            <MemoizedChart option={salesOverTimeOption} style={{ height: 250 }} />
                         </div>
 
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales by Channel</h3>
-                            <ReactECharts option={salesByChannelOption} style={{ height: 250 }} />
+                            <MemoizedChart option={salesByChannelOption} style={{ height: 250 }} />
                         </div>
                     </div>
 
@@ -264,12 +264,12 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Sales by Category</h3>
-                            <ReactECharts option={categoryPieOption} style={{ height: 250 }} />
+                            <MemoizedChart option={categoryPieOption} style={{ height: 250 }} />
                         </div>
 
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Order Status</h3>
-                            <ReactECharts option={statusPieOption} style={{ height: 250 }} />
+                            <MemoizedChart option={statusPieOption} style={{ height: 250 }} />
                         </div>
                     </div>
 
@@ -310,7 +310,7 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
                         {/* Treemap: Product Revenue Contribution */}
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
                             <h3 className="text-sm font-semibold text-gray-500 mb-5 uppercase tracking-wider">Revenue Contribution</h3>
-                            <ReactECharts option={treemapOption} style={{ height: '350px' }} />
+                            <MemoizedChart option={treemapOption} style={{ height: '350px' }} />
                         </div>
                     </div>
 

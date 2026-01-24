@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -86,14 +87,7 @@ export const FixedVariableDashboard: React.FC = () => {
     const { currency } = useAppContext();
     const { t } = useLanguage();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('fixed-variable-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -279,7 +273,7 @@ export const FixedVariableDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('current_split')}</h3>
                                     <p className="text-xs text-gray-400">{t('fixed_vs_variable_ratio')}</p>
                                 </div>
-                                <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                             </>
                         )}
                     </div>
@@ -294,7 +288,7 @@ export const FixedVariableDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('variable_cost_mix')}</h3>
                                     <p className="text-xs text-gray-400">{t('variable_expense_types')}</p>
                                 </div>
-                                <ReactECharts option={variablePieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={variablePieOption} style={{ height: '180px' }} />
                             </>
                         )}
                     </div>
@@ -363,7 +357,7 @@ export const FixedVariableDashboard: React.FC = () => {
                     {isLoading ? (
                         <ChartSkeleton />
                     ) : (
-                        <ReactECharts option={matrixOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={matrixOption} style={{ height: '300px', width: '100%' }} />
                     )}
                 </div>
 

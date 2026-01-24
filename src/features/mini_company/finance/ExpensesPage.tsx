@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Wallet, Tag, Receipt } from 'phosphor-react';
-import ReactECharts from 'echarts-for-react';
 import { ExpensesOverviewDashboard } from './ExpensesOverviewDashboard';
 import { CategoryAnalysisDashboard } from './CategoryAnalysisDashboard';
 import { FixedVariableDashboard } from './FixedVariableDashboard';

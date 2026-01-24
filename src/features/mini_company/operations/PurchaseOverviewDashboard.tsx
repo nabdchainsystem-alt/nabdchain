@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -55,7 +56,7 @@ const RECENT_ORDERS = [
 export const PurchaseOverviewDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('purchase-overview-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: KPIData[] = [
@@ -71,13 +72,6 @@ export const PurchaseOverviewDashboard: React.FC = () => {
         { id: '7', label: t('purchase_frequency'), subtitle: t('days_between_orders'), value: '3.2d', change: '-0.5d', trend: 'up', icon: <Activity size={18} />, sparklineData: [4, 3.8, 3.6, 3.5, 3.4, 3.3, 3.2], color: 'blue' },
         { id: '8', label: t('unplanned_purchase_rate'), subtitle: t('outside_approved_plan'), value: '12%', change: '-3%', trend: 'up', icon: <Warning size={18} />, sparklineData: [18, 16, 15, 14, 13, 12.5, 12], color: 'blue' },
     ];
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -295,7 +289,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('spend_distribution')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('breakdown_purchase_type')}</p>
                             </div>
-                            <ReactECharts option={pieOption1} style={{ height: '210px' }} />
+                            <MemoizedChart option={pieOption1} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -308,7 +302,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('supplier_share')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('market_share_suppliers')}</p>
                             </div>
-                            <ReactECharts option={pieOption2} style={{ height: '210px' }} />
+                            <MemoizedChart option={pieOption2} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>
@@ -382,7 +376,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_concentration_category')}</h3>
                             <p className="text-xs text-gray-400">{t('distribution_category_dependency')}</p>
                         </div>
-                        <ReactECharts option={marimekkoOption} style={{ height: '280px', width: '100%' }} />
+                        <MemoizedChart option={marimekkoOption} style={{ height: '280px', width: '100%' }} />
                     </div>
                 )}
 

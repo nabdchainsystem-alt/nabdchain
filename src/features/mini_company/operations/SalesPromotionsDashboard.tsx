@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -74,14 +75,7 @@ interface SalesPromotionsDashboardProps {
 export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('sales-promotions-dashboard', 800);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'roi', direction: 'desc' });
@@ -305,7 +299,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('revenue_by_type')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('promotion_type_breakdown')}</p>
                             </div>
-                            <ReactECharts option={typePieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={typePieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -318,7 +312,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('campaign_impact')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('roi_vs_conversion')}</p>
                             </div>
-                            <ReactECharts option={impactBubbleOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={impactBubbleOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>

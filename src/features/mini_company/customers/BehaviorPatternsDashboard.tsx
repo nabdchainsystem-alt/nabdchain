@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -31,15 +32,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
     const [showInfo, setShowInfo] = useState(false);
 
     // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('behavior-patterns-dashboard', 1200);
 
     // --- Translated KPI Data ---
     const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
@@ -269,14 +262,14 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_mix')}</h3>
                                 <p className="text-xs text-gray-400">{t('preferential_split')}</p>
                             </div>
-                            <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                             <div className="mb-2">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('purchase_type')}</h3>
                                 <p className="text-xs text-gray-400">{t('buying_behavior')}</p>
                             </div>
-                            <ReactECharts option={purchaseTypePieOption} style={{ height: '180px' }} />
+                            <MemoizedChart option={purchaseTypePieOption} style={{ height: '180px' }} />
                         </div>
                     </div>
                 )}
@@ -343,7 +336,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={waveOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={waveOption} style={{ height: '300px', width: '100%' }} />
                     </div>
                 )}
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../../components/common/MemoizedChart';
 import { KPICard, KPIConfig } from './KPICard';
 export type { KPIConfig };
 
@@ -44,7 +44,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ config }) => {
                     {config.charts.map((chart) => (
                         <div key={chart.id} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm">
                             <h4 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-4 px-2">{chart.title}</h4>
-                            <ReactECharts
+                            <MemoizedChart
                                 option={{
                                     ...chart.data,
                                     title: { show: false }, // Hide internal title as we have external H4
@@ -57,7 +57,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ config }) => {
                                         ...(chart.data.grid || {})
                                     }
                                 }}
-                                style={{ height: '220px', width: '100%' }}
+                                style={{ height: '220px', width: '100%', minHeight: 100, minWidth: 100 }}
                                 theme="macarons" // Clean theme, can be customized
                             />
                         </div>

@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect, memo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo, memo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -78,14 +79,7 @@ interface SalesFunnelDashboardProps {
 export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('sales-funnel-dashboard', 800);
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'date', direction: 'desc' });
@@ -291,7 +285,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                                 <p className="text-xs text-gray-400 mt-1">{t('lead_conversion_stages')}</p>
                             </div>
                             <div className="h-[260px]">
-                                <ReactECharts option={funnelOption} style={{ height: '100%' }} />
+                                <MemoizedChart option={funnelOption} style={{ height: '100%', minHeight: 100 }} />
                             </div>
                         </div>
                     )}
@@ -335,7 +329,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('won_vs_lost_deals')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('success_rate_breakdown')}</p>
                             </div>
-                            <ReactECharts option={wonLostPieOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={wonLostPieOption} style={{ height: '210px' }} />
                         </div>
                     )}
 
@@ -348,7 +342,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('leakage_heatmap')}</h3>
                                 <p className="text-xs text-gray-400 mt-1">{t('stage_vs_category')}</p>
                             </div>
-                            <ReactECharts option={heatmapOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={heatmapOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>

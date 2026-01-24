@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { FleetDashboard } from './FleetDashboard';
@@ -83,7 +83,7 @@ export const FleetPage: React.FC = () => {
         setBoard(prev => ({ ...prev, tasks }));
     }, []);
 
-    const dashboardSections = [
+    const dashboardSections = useMemo(() => [
         {
             title: t('fleet_dashboards'),
             options: fleetMaster.dashboards.map(d => ({
@@ -92,20 +92,22 @@ export const FleetPage: React.FC = () => {
                 description: d.name.en
             }))
         }
-    ];
+    ], [t]);
+
+    const renderCustomView = useCallback((viewId: string) => {
+        if (viewId === 'sc_fleet' || viewId.startsWith('F')) {
+            const config = fleetMaster.dashboards.find(d => d.id === viewId);
+            return <FleetDashboard viewId={viewId} title={config?.name.en} />;
+        }
+        return null;
+    }, []);
 
     return (
         <BoardView
             board={board}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
-            renderCustomView={(viewId) => {
-                if (viewId === 'sc_fleet' || viewId.startsWith('F')) {
-                    const config = fleetMaster.dashboards.find(d => d.id === viewId);
-                    return <FleetDashboard viewId={viewId} title={config?.name.en} />;
-                }
-                return null;
-            }}
+            renderCustomView={renderCustomView}
             dashboardSections={dashboardSections}
         />
     );

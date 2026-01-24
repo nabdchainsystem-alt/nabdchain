@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -110,15 +111,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
     const TRANSLATED_MONTHS = useMemo(() => [t('jan'), t('feb'), t('mar'), t('apr'), t('may'), t('jun')], [t]);
 
     // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-delivery-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -308,7 +301,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('issue_breakdown')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
-                                <ReactECharts option={issuePieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={issuePieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Delivery Mode (Pie) */}
@@ -317,7 +310,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('delivery_mode')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_transport_type')}</p>
                                 </div>
-                                <ReactECharts option={deliveryModePieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={deliveryModePieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -388,7 +381,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('monthly_consistency')}</h3>
                             <p className="text-xs text-gray-400">{t('on_time_performance_heatmap')}</p>
                         </div>
-                        <ReactECharts option={heatmapOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={heatmapOption} style={{ height: '300px', width: '100%', minHeight: 100, minWidth: 100 }} />
                     </div>
                 )}
 

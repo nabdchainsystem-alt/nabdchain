@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import ReactECharts from 'echarts-for-react';
 import {
     X, Sparkle as Sparkles, WarningCircle as AlertCircle, ArrowsClockwise as RefreshCw,
     ChartBar as BarChart3, ChartPie as PieChart, ChartLine as LineChart, GridFour as LayoutGrid,

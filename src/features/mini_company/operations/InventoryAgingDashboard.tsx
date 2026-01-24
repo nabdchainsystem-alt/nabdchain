@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
 import { MemoizedChart as ReactECharts } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
@@ -59,7 +60,7 @@ const HEAT_SPIRAL_DATA = [
 export const InventoryAgingDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = useFirstMountLoading('inventory-aging-dashboard', 800);
 
     // --- KPI Data ---
     const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -76,12 +77,6 @@ export const InventoryAgingDashboard: React.FC = () => {
         { id: '8', label: t('write_off_risk'), subtitle: t('potential_loss'), value: '$8.2k', change: '-$500', trend: 'up', icon: <Fire size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.5, 8.2], color: 'blue' },
     ];
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));

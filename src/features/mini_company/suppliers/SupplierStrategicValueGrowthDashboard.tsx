@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -98,14 +99,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
     const { t, dir } = useLanguage();
     const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('supplier-strategic-value-growth-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -371,11 +365,11 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                                 <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('partner_mix')}</h3>
-                                <ReactECharts option={strategicPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={strategicPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
                                 <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('contracts')}</h3>
-                                <ReactECharts option={contractPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={contractPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -447,7 +441,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('value_matrix')}</h3>
                                 <p className="text-xs text-gray-400">{t('growth_vs_strategic')}</p>
                             </div>
-                            <ReactECharts option={scatterOption} style={{ height: '300px', width: '100%' }} />
+                            <MemoizedChart option={scatterOption} style={{ height: '300px', width: '100%' }} />
                         </div>
                     </>
                 )}

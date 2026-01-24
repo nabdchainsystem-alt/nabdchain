@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useState, useMemo } from 'react';
+import { useFirstMountLoading } from '../../../hooks/useFirstMount';
+import { MemoizedChart } from '../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
 import { KPICard, KPIConfig } from '../../board/components/dashboard/KPICard';
 import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/components/dashboard/KPICardVariants';
@@ -105,15 +106,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
     ], [t]);
 
     // Loading state for smooth entrance animation
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Simulate data loading with staggered animation
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1200);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = useFirstMountLoading('suppliers-overview-dashboard', 1200);
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -311,7 +304,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_mix')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
-                                <ReactECharts option={pieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                             </div>
 
                             {/* ECharts: Supplier Status (Pie) */}
@@ -320,7 +313,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('status_mix')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_classification')}</p>
                                 </div>
-                                <ReactECharts option={statusPieOption} style={{ height: '180px' }} />
+                                <MemoizedChart option={statusPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
 
@@ -396,7 +389,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <ReactECharts option={bubbleOption} style={{ height: '300px', width: '100%' }} />
+                        <MemoizedChart option={bubbleOption} style={{ height: '300px', width: '100%', minHeight: 100, minWidth: 100 }} />
                     </div>
                 )}
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { MemoizedChart } from '../../../../components/common/MemoizedChart';
 import {
     Tray as Inbox,
     CalendarCheck,
@@ -219,7 +219,7 @@ export const RFQSection: React.FC<RFQSectionProps> = ({ rfqs, onDeleteRfq, onSen
             <div className="bg-white dark:bg-monday-dark-surface border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4">RFQs by Status</h3>
                 <div className="h-[300px]">
-                    <ReactECharts option={chartData} style={{ height: '100%', width: '100%' }} />
+                    <MemoizedChart option={chartData} style={{ height: '100%', width: '100%', minHeight: 100, minWidth: 100 }} />
                 </div>
             </div>
 
