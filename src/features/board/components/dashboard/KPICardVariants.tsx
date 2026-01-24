@@ -69,7 +69,7 @@ export const SparklineKPICard: React.FC<SparklineKPIConfig> = ({
     const chartData = sparklineData.map((v, i) => ({ value: v, index: i }));
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-1">
                 <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>
                 {icon && <div className={`p-1.5 rounded-lg ${colors.bg} ${colors.text}`}>{icon}</div>}
@@ -245,7 +245,7 @@ export const ComparisonKPICard: React.FC<ComparisonKPIConfig> = ({
     const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-3">
                 <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>
                 {icon && <div className={`p-1.5 rounded-lg ${colors.bg} ${colors.text}`}>{icon}</div>}
@@ -318,7 +318,7 @@ export const GradientKPICard: React.FC<GradientKPIConfig> = ({
     const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
 
     return (
-        <div className={`relative overflow-hidden flex flex-col p-4 rounded-xl shadow-lg bg-gradient-to-br ${gradientMap[gradient]} animate-fade-in-up`}>
+        <div className={`relative overflow-hidden flex flex-col p-4 rounded-xl shadow-lg bg-gradient-to-br ${gradientMap[gradient]}`}>
             {/* Glass overlay */}
             <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]" />
 
@@ -385,7 +385,7 @@ export const CompactKPICard: React.FC<CompactKPIConfig> = ({
     };
 
     return (
-        <div className="flex items-center justify-between p-3 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-lg shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex items-center justify-between p-3 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-lg shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
                 <div className={`w-1 h-10 rounded-full ${colors.bg.replace('bg-', 'bg-').replace('-50', '-500').replace('-900/20', '-500')}`}
                      style={{ backgroundColor: colors.line }} />
@@ -439,7 +439,7 @@ export const RadialKPICard: React.FC<RadialKPIConfig> = ({
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="flex flex-col items-center p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col items-center p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider mb-3">{label}</span>
 
             <div className="relative w-24 h-24">
@@ -532,7 +532,7 @@ export const MiniBarKPICard: React.FC<MiniBarKPIConfig> = ({
     const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>
                 {icon && <div className={`p-1.5 rounded-lg ${colors.bg} ${colors.text}`}>{icon}</div>}
@@ -615,7 +615,7 @@ export const MiniAreaKPICard: React.FC<MiniAreaKPIConfig> = ({
     const areaGradientId = `gradient-${color}`;
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>
                 {icon && <div className={`p-1.5 rounded-lg ${colors.bg} ${colors.text}`}>{icon}</div>}
@@ -699,7 +699,7 @@ export const MultiMetricKPICard: React.FC<MultiMetricKPIConfig> = ({
     if (loading) return <MultiMetricKPICardSkeleton />;
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-4">
                 <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>
                 {icon && <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-monday-dark-elevated text-zinc-600 dark:text-monday-dark-text-secondary dark:text-zinc-400 dark:text-monday-dark-text-muted">{icon}</div>}
@@ -784,7 +784,7 @@ export const FullChartKPICard: React.FC<FullChartKPIConfig> = ({
     const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-3">
                 <div>
                     <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
 import { Truck, Factory, Money, Star, Package, Clock, ShieldCheck, MapTrifold, Handshake, Rocket, ShieldWarning } from 'phosphor-react';
@@ -86,37 +86,37 @@ export const SuppliersPage = () => {
                 },
                 {
                     id: 'supplier_delivery',
-                    label: 'Delivery Performance',
+                    label: t('delivery_performance'),
                     icon: Truck,
                     description: 'Reliability & Speed'
                 },
                 {
                     id: 'supplier_cost',
-                    label: 'Cost & Variance',
+                    label: t('cost_variance'),
                     icon: Money,
                     description: 'Spend controls'
                 },
                 {
                     id: 'supplier_quality',
-                    label: 'Quality & Compliance',
+                    label: t('quality_compliance'),
                     icon: ShieldCheck,
                     description: 'Defects & Standards'
                 },
                 {
                     id: 'supplier_lead_time',
-                    label: 'Lead Time & Speed',
+                    label: t('lead_time_speed'),
                     icon: Clock,
                     description: 'Responsiveness'
                 },
                 {
                     id: 'supplier_risk',
-                    label: 'Risk & Dependency',
+                    label: t('risk_dependency'),
                     icon: ShieldWarning,
                     description: 'Supply Chain Risks'
                 },
                 {
                     id: 'supplier_strategic',
-                    label: 'Value & Growth',
+                    label: t('value_growth'),
                     icon: Rocket,
                     description: 'Innovation & Partnerships'
                 }
@@ -145,9 +145,16 @@ export const SuppliersPage = () => {
         }
     };
 
+    // Create translated board for display
+    const translatedBoard = useMemo(() => ({
+        ...board,
+        name: t('suppliers'),
+        description: t('suppliers_page_desc')
+    }), [board, t]);
+
     return (
         <BoardView
-            board={board}
+            board={translatedBoard}
             onUpdateBoard={handleUpdateBoard}
             onUpdateTasks={handleUpdateTasks}
             isDepartmentLayout={true}

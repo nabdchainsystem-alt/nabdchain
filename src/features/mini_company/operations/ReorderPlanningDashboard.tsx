@@ -76,7 +76,7 @@ const WAVE_DATA = {
 };
 
 export const ReorderPlanningDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 

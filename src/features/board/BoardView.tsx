@@ -277,7 +277,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
     // ... existing state ...
     const [showInfoMenu, setShowInfoMenu] = useState(false);
     const { setIsSidebarCollapsed } = useUI();
-    const { t } = useAppContext();
+    const { t, dir } = useAppContext();
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     const toggleFullScreen = () => {
@@ -1205,8 +1205,8 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                         )}
 
                         {/* Tabs Row */}
-                        <div className="flex items-center gap-0 pr-6 border-b border-gray-200 dark:border-gray-800 -ml-[24px] -mr-[20px] pl-[24px]">
-                            <div className="flex items-center justify-start gap-[11.5px] overflow-x-auto no-scrollbar max-w-full">
+                        <div className={`flex items-center gap-0 border-b border-gray-200 dark:border-gray-800 -ml-[24px] -mr-[20px] ${dir === 'rtl' ? 'pr-[24px] pl-6' : 'pl-[24px] pr-6'}`}>
+                            <div className={`flex items-center gap-[11.5px] overflow-x-auto no-scrollbar max-w-full ${dir === 'rtl' ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
                                 {/* Fixed "Overview" Tab */}
                                 {sanitizedAvailableViews.includes('overview' as any) && (() => {
                                     const overviewOption = effectiveViewOptions.find(v => v.id === 'overview');

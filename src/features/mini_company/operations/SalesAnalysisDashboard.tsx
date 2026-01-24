@@ -79,14 +79,8 @@ interface SalesAnalysisDashboardProps {
 export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ hideFullscreen = false }) => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+    // Disabled loading animation for troubleshooting chart issues
+    const isLoading = false;
 
     // Table State
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' | null }>({ key: 'date', direction: 'desc' });

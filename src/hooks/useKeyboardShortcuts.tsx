@@ -3,7 +3,7 @@
  * Global and contextual keyboard shortcuts for power users
  */
 
-import { useEffect, useCallback, useRef, createContext, useContext, useState, ReactNode } from 'react';
+import React, { useEffect, useCallback, useRef, createContext, useContext, useState, ReactNode } from 'react';
 
 // Types
 export interface Shortcut {

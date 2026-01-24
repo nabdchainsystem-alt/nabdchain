@@ -53,7 +53,7 @@ export const KPICard: React.FC<KPIConfig> = memo(({ label, subtitle, value, chan
     const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
 
     return (
-        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow h-full justify-between animate-fade-in-up">
+        <div className="flex flex-col p-4 bg-white dark:bg-monday-dark-surface border border-zinc-200 dark:border-monday-dark-border rounded-xl shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow h-full justify-between">
             <div className="flex justify-between items-start mb-1">
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-zinc-500 dark:text-monday-dark-text-secondary uppercase tracking-wider">{label}</span>

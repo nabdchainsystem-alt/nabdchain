@@ -71,7 +71,7 @@ const UTILIZATION_GRID = [
 ];
 
 export const WarehousePerformanceDashboard: React.FC = () => {
-    const { currency } = useAppContext();
+    const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
