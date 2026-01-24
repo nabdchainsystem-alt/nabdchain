@@ -305,16 +305,26 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                         </div>
                     )}
 
-                    {/* Sales Flow Sankey */}
+                    {/* Regional Performance */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title={t('sales_flow')} />
+                        <ChartSkeleton height="h-[250px]" title={t('regional_performance')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_flow')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('region_agent_status')}</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_performance')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('comparative_volume_territory')}</p>
                             </div>
-                            <ReactECharts option={flowChartOption} style={{ height: '210px' }} />
+                            <div className="h-[210px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={SALES_BY_REGION_DATA} margin={{ left: 10, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
+                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Bar dataKey="value" name={t('share_percent')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -410,28 +420,19 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                     </div>
                 )}
 
-                    {/* Companion Chart: Regional Performance */}
+                    {/* Companion Chart: Sales Flow Sankey */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[450px]" title={t('regional_performance')} />
+                        <ChartSkeleton height="h-[450px]" title={t('sales_flow')} />
                     ) : (
                         <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                                    {t('regional_performance')}
+                                    {t('sales_flow')}
                                 </h3>
-                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('comparative_volume_territory')}</p>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('region_agent_status')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={SALES_BY_REGION_DATA} margin={{ left: 10, right: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} />
-                                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="value" name={t('share_percent')} fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <ReactECharts option={flowChartOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <p className="text-[10px] text-blue-600 dark:text-blue-400 leading-normal">
