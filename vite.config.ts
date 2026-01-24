@@ -54,93 +54,37 @@ export default defineConfig(({ mode }) => {
           chunkFileNames: isProduction ? 'assets/[name]-[hash].js' : 'assets/[name].js',
           entryFileNames: isProduction ? 'assets/[name]-[hash].js' : 'assets/[name].js',
           assetFileNames: isProduction ? 'assets/[name]-[hash].[ext]' : 'assets/[name].[ext]',
-          manualChunks: (id) => {
-            // Core React - critical path
-            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-              return 'vendor-react';
-            }
+          // Use object-based manualChunks for vendor packages to prevent circular dependencies.
+          // The function-based approach was causing vendor-react to import from feature chunks,
+          // which created circular dependencies and caused "undefined is not an object" errors.
+          // Feature chunks will be split automatically by Rollup's code-splitting.
+          manualChunks: {
+            // Core React - critical path (must be self-contained)
+            'vendor-react': ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
             // Router - needed early
-            if (id.includes('node_modules/react-router')) {
-              return 'vendor-router';
-            }
+            'vendor-router': ['react-router-dom'],
             // DnD Kit - only needed for board interactions
-            if (id.includes('node_modules/@dnd-kit')) {
-              return 'vendor-dnd';
-            }
+            'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
             // Framer Motion - animations (large)
-            if (id.includes('node_modules/framer-motion')) {
-              return 'vendor-animation';
-            }
+            'vendor-animation': ['framer-motion'],
             // Icons
-            if (id.includes('node_modules/phosphor-react')) {
-              return 'vendor-icons';
-            }
+            'vendor-icons': ['phosphor-react'],
             // Charts - heavy, lazy load
-            if (id.includes('node_modules/echarts') || id.includes('node_modules/recharts')) {
-              return 'vendor-charts';
-            }
+            'vendor-charts': ['echarts', 'echarts-for-react', 'recharts'],
             // Excel/spreadsheet
-            if (id.includes('node_modules/xlsx')) {
-              return 'vendor-xlsx';
-            }
+            'vendor-xlsx': ['xlsx'],
             // Socket.io - real-time features
-            if (id.includes('node_modules/socket.io')) {
-              return 'vendor-socket';
-            }
+            'vendor-socket': ['socket.io-client'],
             // Virtualization
-            if (id.includes('node_modules/react-window')) {
-              return 'vendor-virtual';
-            }
+            'vendor-virtual': ['react-window', 'react-window-infinite-loader'],
             // Authentication
-            if (id.includes('node_modules/@clerk')) {
-              return 'vendor-auth';
-            }
+            'vendor-auth': ['@clerk/clerk-react'],
             // AI features
-            if (id.includes('node_modules/@google/generative-ai')) {
-              return 'vendor-ai';
-            }
+            'vendor-ai': ['@google/generative-ai'],
             // Markdown
-            if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark') || id.includes('node_modules/rehype')) {
-              return 'vendor-markdown';
-            }
+            'vendor-markdown': ['react-markdown'],
             // PDF generation
-            if (id.includes('node_modules/html2canvas') || id.includes('node_modules/html2pdf')) {
-              return 'vendor-pdf';
-            }
-            // Split feature modules
-            if (id.includes('/features/board/views/Table/')) {
-              return 'feature-table';
-            }
-            if (id.includes('/features/board/views/Kanban/')) {
-              return 'feature-kanban';
-            }
-            if (id.includes('/features/board/views/Calendar/')) {
-              return 'feature-calendar';
-            }
-            if (id.includes('/features/board/views/GanttChart/')) {
-              return 'feature-gantt';
-            }
-            if (id.includes('/features/inbox/')) {
-              return 'feature-inbox';
-            }
-            if (id.includes('/features/vault/')) {
-              return 'feature-vault';
-            }
-            if (id.includes('/features/mini_company/')) {
-              return 'feature-mini-company';
-            }
-            if (id.includes('/features/supply_chain/')) {
-              return 'feature-supply-chain';
-            }
-            if (id.includes('/features/marketplace/')) {
-              return 'feature-marketplace';
-            }
-            if (id.includes('/features/tools/')) {
-              return 'feature-tools';
-            }
-            if (id.includes('/features/collaboration/')) {
-              return 'feature-collab';
-            }
+            'vendor-pdf': ['html2canvas', 'html2pdf.js'],
           }
         }
       }
