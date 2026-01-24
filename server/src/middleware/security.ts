@@ -105,9 +105,9 @@ export function validateBody<T>(schema: z.ZodSchema<T>) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
                     error: 'Validation error',
-                    details: error.errors.map(e => ({
-                        path: e.path.join('.'),
-                        message: e.message,
+                    details: error.issues.map((issue: z.ZodIssue) => ({
+                        path: issue.path.join('.'),
+                        message: issue.message,
                     })),
                 });
                 return;
@@ -129,9 +129,9 @@ export function validateQuery<T>(schema: z.ZodSchema<T>) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
                     error: 'Invalid query parameters',
-                    details: error.errors.map(e => ({
-                        path: e.path.join('.'),
-                        message: e.message,
+                    details: error.issues.map((issue: z.ZodIssue) => ({
+                        path: issue.path.join('.'),
+                        message: issue.message,
                     })),
                 });
                 return;
@@ -153,9 +153,9 @@ export function validateParams<T>(schema: z.ZodSchema<T>) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
                     error: 'Invalid URL parameters',
-                    details: error.errors.map(e => ({
-                        path: e.path.join('.'),
-                        message: e.message,
+                    details: error.issues.map((issue: z.ZodIssue) => ({
+                        path: issue.path.join('.'),
+                        message: issue.message,
                     })),
                 });
                 return;
