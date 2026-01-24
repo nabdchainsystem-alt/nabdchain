@@ -142,7 +142,7 @@ export const VaultView: React.FC = () => {
                     isFavorite: !!i.isFavorite,
                     folderId: i.folderId,
                     color: i.color,
-                    metadata: i.metadata ? JSON.parse(i.metadata) : undefined,
+                    metadata: i.metadata ? (typeof i.metadata === 'string' ? JSON.parse(i.metadata) : i.metadata) : undefined,
                     // Removed icon from state to ensure serializability and avoid potential rendering issues
                     previewUrl: i.previewUrl || i.content
                 };
