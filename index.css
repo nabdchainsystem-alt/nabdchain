@@ -252,6 +252,42 @@
     outline: none !important;
 }
 
+/* Chart Stability - Prevent flicker on visibility/focus change */
+.chart-stability-active .recharts-wrapper,
+.chart-stability-active .recharts-surface,
+.chart-stability-active .recharts-responsive-container,
+.chart-stability-active [class*="echarts"],
+.chart-stability-active canvas,
+.chart-stability-active svg {
+    transition: none !important;
+    animation: none !important;
+    animation-duration: 0s !important;
+}
+
+/* Prevent chart resize flash */
+.chart-stability-active .recharts-wrapper {
+    will-change: auto !important;
+}
+
+/* Disable all recharts animations when in stability mode */
+.chart-stability-active .recharts-bar-rectangle,
+.chart-stability-active .recharts-line,
+.chart-stability-active .recharts-area,
+.chart-stability-active .recharts-pie-sector,
+.chart-stability-active .recharts-cell {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Global recharts performance optimizations */
+.recharts-responsive-container {
+    contain: layout style;
+}
+
+.recharts-surface {
+    contain: strict;
+}
+
 /* Mobile-specific utilities */
 .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);

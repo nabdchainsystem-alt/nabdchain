@@ -1,4 +1,4 @@
-import React, { memo, useRef, useEffect, useCallback, useState } from 'react';
+import React, { memo, useRef, useEffect, useCallback } from 'react';
 import ReactEChartsCore from 'echarts-for-react';
 
 interface MemoizedChartProps {
@@ -14,6 +14,21 @@ interface MemoizedChartProps {
     onChartReady?: (instance: any) => void;
     /** Skip initial animation (useful when returning from hidden state) */
     skipAnimation?: boolean;
+}
+
+// Track visibility for animation control
+let lastVisibilityChange = 0;
+const STABILITY_WINDOW = 500;
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            lastVisibilityChange = Date.now();
+        }
+    });
+    window.addEventListener('focus', () => {
+        lastVisibilityChange = Date.now();
+    });
 }
 
 // Custom comparison function for memo
@@ -65,16 +80,12 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
     const cachedOption = useRef<any>(null);
     const chartRef = useRef<any>(null);
     const isFirstRender = useRef(true);
-    const [isPageVisible, setIsPageVisible] = useState(true);
 
     // Track page visibility to prevent re-renders when returning from hidden state
     useEffect(() => {
         const handleVisibilityChange = () => {
-            const visible = !document.hidden;
-            setIsPageVisible(visible);
-
             // When page becomes visible again, prevent chart from re-animating
-            if (visible && chartRef.current) {
+            if (!document.hidden && chartRef.current) {
                 const instance = chartRef.current.getEchartsInstance?.();
                 if (instance) {
                     // Silently resize without animation
@@ -83,21 +94,37 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
             }
         };
 
+        const handleFocus = () => {
+            if (chartRef.current) {
+                const instance = chartRef.current.getEchartsInstance?.();
+                if (instance) {
+                    instance.resize({ animation: { duration: 0 } });
+                }
+            }
+        };
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
+
+    // Check if we're in stability window (recently returned from hidden)
+    const inStabilityWindow = Date.now() - lastVisibilityChange < STABILITY_WINDOW;
 
     // Cache the option and apply animation settings
     const optionStr = JSON.stringify(option);
     if (optionRef.current !== optionStr) {
         optionRef.current = optionStr;
 
-        // Clone option and modify animation based on state
-        const shouldAnimate = isFirstRender.current && !skipAnimation;
+        // Disable animation if: not first render, skipAnimation requested, or in stability window
+        const shouldAnimate = isFirstRender.current && !skipAnimation && !inStabilityWindow;
         cachedOption.current = {
             ...option,
             animation: shouldAnimate ? (option.animation ?? true) : false,
-            animationDuration: shouldAnimate ? (option.animationDuration ?? 1000) : 0,
+            animationDuration: shouldAnimate ? (option.animationDuration ?? 800) : 0,
         };
 
         isFirstRender.current = false;

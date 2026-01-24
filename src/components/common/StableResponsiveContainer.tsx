@@ -20,11 +20,44 @@ interface StableResponsiveContainerProps {
     debounce?: number;
 }
 
+// Track visibility globally to avoid flicker across all charts
+let globalIsVisible = true;
+let lastVisibilityChange = 0;
+const STABILITY_WINDOW = 500; // Ignore resize for 500ms after visibility change
+
+// Initialize chart stability system
+if (typeof document !== 'undefined') {
+    const enableStabilityMode = () => {
+        document.body.classList.add('chart-stability-active');
+        lastVisibilityChange = Date.now();
+        // Remove stability class after window
+        setTimeout(() => {
+            document.body.classList.remove('chart-stability-active');
+        }, STABILITY_WINDOW);
+    };
+
+    document.addEventListener('visibilitychange', () => {
+        globalIsVisible = !document.hidden;
+        if (globalIsVisible) {
+            enableStabilityMode();
+        }
+    });
+
+    window.addEventListener('focus', enableStabilityMode);
+
+    // Also handle mouse re-entry (switching monitors)
+    document.addEventListener('mouseenter', () => {
+        if (Date.now() - lastVisibilityChange < 1000) {
+            enableStabilityMode();
+        }
+    });
+}
+
 /**
  * A ResponsiveContainer wrapper that:
  * 1. Caches dimensions to prevent flicker on visibility change
- * 2. Debounces resize events
- * 3. Ignores resize events while page is hidden
+ * 2. Debounces resize events aggressively
+ * 3. Ignores ALL resize events during stability window after visibility change
  */
 export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps> = memo(({
     children,
@@ -34,45 +67,39 @@ export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps>
     minHeight,
     aspect,
     className,
-    debounce = 100,
+    debounce = 150,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
     const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-    const isVisibleRef = useRef(true);
-
-    // Track page visibility
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            isVisibleRef.current = !document.hidden;
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
+    const lastDimensionsRef = useRef<{ width: number; height: number } | null>(null);
 
     // Measure container and cache dimensions
     const updateDimensions = useCallback(() => {
-        if (!containerRef.current || !isVisibleRef.current) return;
+        // Don't update during stability window
+        if (Date.now() - lastVisibilityChange < STABILITY_WINDOW) return;
+        if (!containerRef.current || !globalIsVisible) return;
 
         const rect = containerRef.current.getBoundingClientRect();
         const newWidth = Math.floor(rect.width);
         const newHeight = Math.floor(rect.height);
 
-        // Only update if dimensions actually changed significantly (> 1px)
-        setDimensions(prev => {
-            if (!prev) return { width: newWidth, height: newHeight };
-            if (Math.abs(prev.width - newWidth) <= 1 && Math.abs(prev.height - newHeight) <= 1) {
-                return prev;
-            }
-            return { width: newWidth, height: newHeight };
-        });
+        // Skip if dimensions are the same or very close (within 5px)
+        const prev = lastDimensionsRef.current;
+        if (prev && Math.abs(prev.width - newWidth) <= 5 && Math.abs(prev.height - newHeight) <= 5) {
+            return;
+        }
+
+        lastDimensionsRef.current = { width: newWidth, height: newHeight };
+        setDimensions({ width: newWidth, height: newHeight });
     }, []);
 
     // Debounced resize handler
     const handleResize = useCallback(() => {
-        // Skip resize events while page is hidden
-        if (!isVisibleRef.current) return;
+        // Skip ALL resize events during stability window or when hidden
+        if (!globalIsVisible || Date.now() - lastVisibilityChange < STABILITY_WINDOW) {
+            return;
+        }
 
         if (resizeTimeoutRef.current) {
             clearTimeout(resizeTimeoutRef.current);
@@ -86,8 +113,11 @@ export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps>
         const container = containerRef.current;
         if (!container) return;
 
-        // Initial measurement
-        updateDimensions();
+        // Initial measurement (immediate)
+        const rect = container.getBoundingClientRect();
+        const initialDims = { width: Math.floor(rect.width), height: Math.floor(rect.height) };
+        lastDimensionsRef.current = initialDims;
+        setDimensions(initialDims);
 
         // Use ResizeObserver for efficient resize detection
         const observer = new ResizeObserver(handleResize);
@@ -99,10 +129,9 @@ export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps>
                 clearTimeout(resizeTimeoutRef.current);
             }
         };
-    }, [updateDimensions, handleResize]);
+    }, [handleResize]);
 
-    // If we have cached dimensions, use them for stability
-    // This prevents the flash when switching focus
+    // Container style
     const containerStyle: React.CSSProperties = {
         width: typeof width === 'number' ? width : width,
         height: typeof height === 'number' ? height : height,
@@ -110,28 +139,27 @@ export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps>
         minHeight,
     };
 
+    // Always use cached dimensions once we have them - never fall back
+    if (!dimensions) {
+        return (
+            <div ref={containerRef} className={className} style={containerStyle}>
+                <ResponsiveContainer width="100%" height="100%" aspect={aspect} debounce={debounce}>
+                    {children as React.ReactElement}
+                </ResponsiveContainer>
+            </div>
+        );
+    }
+
     return (
         <div ref={containerRef} className={className} style={containerStyle}>
-            {dimensions ? (
-                <ResponsiveContainer
-                    width={dimensions.width}
-                    height={dimensions.height}
-                    aspect={aspect}
-                    debounce={debounce}
-                >
-                    {children as React.ReactElement}
-                </ResponsiveContainer>
-            ) : (
-                // Fallback while measuring
-                <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                    aspect={aspect}
-                    debounce={debounce}
-                >
-                    {children as React.ReactElement}
-                </ResponsiveContainer>
-            )}
+            <ResponsiveContainer
+                width={dimensions.width}
+                height={dimensions.height}
+                aspect={aspect}
+                debounce={debounce}
+            >
+                {children as React.ReactElement}
+            </ResponsiveContainer>
         </div>
     );
 });
@@ -139,24 +167,15 @@ export const StableResponsiveContainer: React.FC<StableResponsiveContainerProps>
 StableResponsiveContainer.displayName = 'StableResponsiveContainer';
 
 /**
- * Hook to prevent chart data from updating while page is hidden
+ * Hook to prevent chart data from updating while page is hidden or during stability window
  * This prevents data refresh from causing chart re-render when returning to the page
  */
 export function useStableChartData<T>(data: T): T {
     const stableDataRef = useRef<T>(data);
-    const isVisibleRef = useRef(true);
 
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            isVisibleRef.current = !document.hidden;
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    // Only update data when page is visible
-    if (isVisibleRef.current) {
+    // Only update data when page is visible AND outside stability window
+    const shouldUpdate = globalIsVisible && (Date.now() - lastVisibilityChange > STABILITY_WINDOW);
+    if (shouldUpdate) {
         stableDataRef.current = data;
     }
 
