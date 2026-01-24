@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, TrendUp, Lightning, Sparkle } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface ForecastLifetimeRiskInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface ForecastLifetimeRiskInfoProps {
 }
 
 export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> = ({ isOpen, onClose }) => {
+    const { t, dir } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
     }, []);
 
     const questions = [
-        { q: 'How is "Forecasted CLV" predicted?', a: 'Using historical purchase data, retention rates, and average order value trends to project future revenue per customer.' },
-        { q: 'What does "Forecast Accuracy" measure?', a: 'The deviation between past predictions and actual outcomes (e.g., 92% accurate means 8% error margin).' },
-        { q: 'What is "Upsell Potential"?', a: 'An AI-generated score indicating the likelihood of a customer purchasing higher-tier products based on usage patterns.' },
-        { q: 'How is "Lifetime Value Growth" calculated?', a: 'The year-over-year increase in the total expected value of the customer base.' }
+        { q: t('forecast_info_q1'), a: t('forecast_info_a1') },
+        { q: t('forecast_info_q2'), a: t('forecast_info_a2') },
+        { q: t('forecast_info_q3'), a: t('forecast_info_a3') },
+        { q: t('forecast_info_q4'), a: t('forecast_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -47,9 +49,10 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
     if (!mounted || !shouldRender) return null;
 
     const portalTarget = document.fullscreenElement || document.body;
+    const isRTL = dir === 'rtl';
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,24 +63,24 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
                 <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Sparkle size={24} className="text-purple-600 dark:text-purple-400" />
-                            Forecast & Lifetime Risk
+                            <Sparkle size={24} className="text-blue-600 dark:text-blue-400" />
+                            {t('forecast_lifetime_risk_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Predictive Analytics</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('forecast_risk_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -86,37 +89,37 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard uses predictive modeling to estimate future customer value and identify long-term churn risks, helping to prioritize retention efforts.
+                            {t('forecast_risk_overview_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
-                                            <CaretDown weight="bold" className="text-purple-500 shrink-0" size={14} />
+                                            <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
                                             <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
                                         )}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-purple-600 dark:text-purple-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -125,30 +128,50 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Forecasted CLV" desc="Predicted total revenue per customer." />
-                                    <DetailItem title="Confidence Level" desc="Statistical certainty of the forecast." />
-                                    <DetailItem title="High-Risk Customers" desc="Count of customers likely to churn." />
-                                    <DetailItem title="Upsell Potential" desc="Est. additional revenue from upgrades." />
+                                    <DetailItem title={t('predicted_clv')} desc={t('predicted_clv_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('risk_customers')} desc={t('risk_customers_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('revenue_at_risk')} desc={t('revenue_at_risk_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('model_accuracy')} desc={t('model_accuracy_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Future Value" desc="Projected revenue by segment." />
-                                    <DetailItem title="Risk Distribution" desc="Customer base risk segmentation." />
-                                    <DetailItem title="Action Plan" desc="Recommended steps for high-value/risk." />
-                                    <DetailItem title="LTV Probability" desc="Range of possible future outcomes." />
+                                    <DetailItem title={t('clv_distribution')} desc={t('clv_distribution_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('risk_factors')} desc={t('risk_factors_desc')} isRTL={isRTL} />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('info_predictions')}
+                        </h3>
+
+                        <div className="space-y-6">
+                            <div>
+                                <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
+                                    <TrendUp size={14} className="text-gray-500" />
+                                    <span>{t('forecast_methodology')}</span>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('forecast_methodology_desc')}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -158,9 +181,9 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -169,9 +192,9 @@ export const ForecastLifetimeRiskInfo: React.FC<ForecastLifetimeRiskInfoProps> =
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
-        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
+        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

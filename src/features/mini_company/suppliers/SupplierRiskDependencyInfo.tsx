@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Warning, ShieldWarning, LinkBreak, TreeStructure } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SupplierRiskDependencyInfoProps {
     isOpen: boolean;
@@ -8,10 +9,13 @@ interface SupplierRiskDependencyInfoProps {
 }
 
 export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProps> = ({ isOpen, onClose }) => {
+    const { t, language } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
+    const isRTL = language === 'ar';
+    const dir = isRTL ? 'rtl' : 'ltr';
 
     useEffect(() => {
         setMounted(true);
@@ -19,10 +23,10 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
     }, []);
 
     const questions = [
-        { q: 'How is "Dependency %" calculated?', a: 'The proportion of total category spend or volume allocated to a single supplier.' },
-        { q: 'What defines a "Single-Source" supplier?', a: 'A critical component or service provided by only one vendor with no immediate alternative verified.' },
-        { q: 'How is the "Risk Score" derived?', a: 'Weighted average of financial stability, geopolitical risk, and dependency concentration.' },
-        { q: 'What is a "Supply Disruption Event"?', a: 'Any incident (natural disaster, strike, insolvency) causing a delay greater than 7 days.' }
+        { q: t('supplier_risk_q1'), a: t('supplier_risk_a1') },
+        { q: t('supplier_risk_q2'), a: t('supplier_risk_a2') },
+        { q: t('supplier_risk_q3'), a: t('supplier_risk_a3') },
+        { q: t('supplier_risk_q4'), a: t('supplier_risk_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -49,7 +53,7 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,9 +64,9 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
@@ -70,14 +74,14 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Risk & Dependency
+                            {t('supplier_risk_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sourcing & Procurement</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('sourcing_procurement')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -87,24 +91,24 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This view highlights supply chain vulnerabilities. It identifies critical single points of failure, overly high dependency on specific vendors, and tracks potential disruption risks.
+                            {t('supplier_risk_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
@@ -116,7 +120,7 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,29 +130,29 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Single-Source Suppliers" desc="Count of vendors with no approved backup." />
-                                    <DetailItem title="Dependency %" desc="Highest spend concentration on one vendor." />
-                                    <DetailItem title="Risk Score" desc="Aggregate risk rating (0-100)." />
-                                    <DetailItem title="Disruption Events" desc="Count of supply chain interruptions." />
+                                    <DetailItem title={t('supplier_single_source')} desc={t('supplier_single_source_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_dependency_pct')} desc={t('supplier_dependency_pct_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_risk_score')} desc={t('supplier_risk_score_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_disruption_events')} desc={t('supplier_disruption_events_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Dependency Map" desc="Network graph of supplier relationships." />
-                                    <DetailItem title="Risk Distribution" desc="Vendors categorized by risk level." />
-                                    <DetailItem title="Spend Concentration" desc="Pareto analysis of procurement spend." />
-                                    <DetailItem title="Backup Coverage" desc="% of critical parts with alternate sourcing." />
+                                    <DetailItem title={t('supplier_dependency_map')} desc={t('supplier_dependency_map_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_risk_distribution')} desc={t('supplier_risk_distribution_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_risk_spend_concentration')} desc={t('supplier_risk_spend_concentration_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_backup_coverage')} desc={t('supplier_backup_coverage_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
                         </div>
@@ -160,7 +164,7 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -169,8 +173,8 @@ export const SupplierRiskDependencyInfo: React.FC<SupplierRiskDependencyInfoProp
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>

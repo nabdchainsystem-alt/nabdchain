@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, CaretRight, CaretDown, CurrencyDollar, Table, Calculator } from 'phosphor-react';
+import { X, Info, CaretRight, CaretDown, Table, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface CostControlInfoProps {
     isOpen: boolean;
@@ -8,6 +9,8 @@ interface CostControlInfoProps {
 }
 
 export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClose }) => {
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,11 +22,11 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
     }, []);
 
     const questions = [
-        { q: 'Where are we overspending?', a: 'Check "Budget Variance %" and the "Cost vs Budget" chart. Positive variance indicates spending above budget.' },
-        { q: 'How effective are our negotiations?', a: 'Review "Negotiation Savings". This tracks the difference between initial quotes and final invoiced amounts.' },
-        { q: 'Which items have volatile prices?', a: 'The "Price Volatility Index" highlights items with fluctuating costs, suggesting a need for fixed-rate contracts.' },
-        { q: 'Where can we optimize?', a: '"Optimization Opportunities" counts potential savings from bulk buying or switching suppliers.' },
-        { q: 'How is our budget allocation distributed?', a: 'The "Cost Allocation" pie chart shows which categories consume the calculated budget.' }
+        { q: t('cc_q1'), a: t('cc_a1') },
+        { q: t('cc_q2'), a: t('cc_a2') },
+        { q: t('cc_q3'), a: t('cc_a3') },
+        { q: t('cc_q4'), a: t('cc_a4') },
+        { q: t('cc_q5'), a: t('cc_a5') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -50,7 +53,7 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div dir={dir} className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -61,63 +64,63 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : (isRTL ? '-translate-x-full' : 'translate-x-full')}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Cost Control
+                            {t('cost_control')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimization & Variance Analysis</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('cost_control_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard focuses on financial efficiency, identifying areas where actual spending deviates from the budget and highlighting opportunities for cost reduction.
+                            {t('cost_control_overview')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -127,35 +130,35 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Total Cost" desc="Total actual spend calculated from approved purchase orders." />
-                                    <DetailItem title="Budget Variance %" desc="Percentage difference between Actual Cost and Budget." />
-                                    <DetailItem title="Cost per Category" desc="Average spend across active purchasing categories." />
-                                    <DetailItem title="Negotiation Savings" desc="Total secured savings (Quote Price - Final Price)." />
-                                    <DetailItem title="Price Volatility Index" desc="Measure of price fluctuation for key items over time (0-100)." />
-                                    <DetailItem title="High-Risk Items" desc="Count of items significantly over budget or with supply instability." />
-                                    <DetailItem title="Optimization Opportunities" desc="Count of flagged potential savings (e.g., volume discounts)." />
-                                    <DetailItem title="Cost Efficiency %" desc="Ratio of achieved savings to total spending potential, indicating optimization effectiveness." />
+                                    <DetailItem title={t('total_cost')} desc={t('total_cost_desc')} />
+                                    <DetailItem title={t('budget_variance_pct')} desc={t('budget_variance_desc')} />
+                                    <DetailItem title={t('cost_per_category')} desc={t('cost_per_category_desc')} />
+                                    <DetailItem title={t('negotiation_savings')} desc={t('negotiation_savings_desc')} />
+                                    <DetailItem title={t('price_volatility_index')} desc={t('price_volatility_desc')} />
+                                    <DetailItem title={t('high_risk_items')} desc={t('high_risk_items_desc')} />
+                                    <DetailItem title={t('optimization_opportunities')} desc={t('optimization_opportunities_desc')} />
+                                    <DetailItem title={t('cost_efficiency_pct')} desc={t('cost_efficiency_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Cost vs Budget" desc="Bar chart (Recharts) comparing actual spending vs planned budget by category." />
-                                    <DetailItem title="Monthly Cost Trend" desc="Bar chart (Recharts) showing cost fluctuation patterns over months." />
-                                    <DetailItem title="Cost Allocation" desc="Donut chart (ECharts) showing spend distribution by category." />
-                                    <DetailItem title="Savings Breakdown" desc="Donut chart (ECharts) showing cost optimization sources (Negotiation, Volume Discount, Contract Terms, Process Efficiency)." />
-                                    <DetailItem title="Item Cost Variance Table" desc="Detailed list of items with cost, budget, and variance percentage." />
-                                    <DetailItem title="Cost Deviation Radar" desc="Radar chart (ECharts) visualizing budget adherence by category with actual vs planned overlay." />
+                                    <DetailItem title={t('cost_vs_budget')} desc={t('cost_vs_budget_desc')} />
+                                    <DetailItem title={t('monthly_cost_trend')} desc={t('monthly_cost_trend_desc')} />
+                                    <DetailItem title={t('cost_allocation')} desc={t('cost_allocation_desc')} />
+                                    <DetailItem title={t('savings_breakdown')} desc={t('savings_breakdown_desc')} />
+                                    <DetailItem title={t('item_cost_variance_table')} desc={t('item_cost_variance_desc')} />
+                                    <DetailItem title={t('cost_deviation_radar')} desc={t('cost_deviation_radar_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -164,31 +167,31 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables_fields')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. Budgets"
-                                        desc="Target spending limits."
-                                        columns={['Category', 'Fiscal Period', 'Amount']}
+                                        name={`1. ${t('budgets_table')}`}
+                                        desc={t('budgets_table_desc')}
+                                        columns={[t('cc_col_category'), t('cc_col_fiscal_period'), t('sp_col_amount')]}
                                     />
                                     <TableSchema
-                                        name="2. PurchaseOrderItems"
-                                        desc="Actual line item costs."
-                                        columns={['Item ID', 'Unit Price', 'Quantity', 'Final Amount']}
+                                        name={`2. ${t('purchase_order_items_table')}`}
+                                        desc={t('purchase_order_items_desc')}
+                                        columns={[t('cc_col_item_id'), t('cc_col_unit_price'), t('cc_col_quantity'), t('cc_col_final_amount')]}
                                     />
                                     <TableSchema
-                                        name="3. OptimizationRules"
-                                        desc="Logic for flagging opportunities."
-                                        columns={['Rule ID', 'Threshold', 'Savings Type']}
+                                        name={`3. ${t('optimization_rules_table')}`}
+                                        desc={t('optimization_rules_desc')}
+                                        columns={[t('cc_col_rule_id'), t('cc_col_threshold'), t('cc_col_savings_type')]}
                                     />
                                 </div>
                             </div>
@@ -196,16 +199,16 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Variance %</strong> = ((Actual - Budget) / Budget) * 100.</span>
+                                        <span><strong>{t('cc_calc_variance')}</strong> {t('cc_calc_variance_formula')}</span>
                                     </li>
-                                    <li className="flex gap-2">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Volatility</strong> = StdDev(Unit Price) / Mean(Unit Price).</span>
+                                        <span><strong>{t('cc_calc_volatility')}</strong> {t('cc_calc_volatility_formula')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -218,7 +221,7 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -228,7 +231,7 @@ export const CostControlInfo: React.FC<CostControlInfoProps> = ({ isOpen, onClos
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -239,7 +242,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

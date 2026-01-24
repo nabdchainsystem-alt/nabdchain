@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Clock, Lightning, Warning, TrendUp } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SupplierLeadTimeResponsivenessInfoProps {
     isOpen: boolean;
@@ -8,10 +9,13 @@ interface SupplierLeadTimeResponsivenessInfoProps {
 }
 
 export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeResponsivenessInfoProps> = ({ isOpen, onClose }) => {
+    const { t, language } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
+    const isRTL = language === 'ar';
+    const dir = isRTL ? 'rtl' : 'ltr';
 
     useEffect(() => {
         setMounted(true);
@@ -19,10 +23,10 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
     }, []);
 
     const questions = [
-        { q: 'How is "Avg Lead Time" calculated?', a: 'The average number of days between purchase order issuance and good receipts notification.' },
-        { q: 'What is the "Responsiveness Score"?', a: 'A metric combining quote turnaround time (RFQ), urgent order acceptance rate, and communication speed.' },
-        { q: 'How is "Lead Time Variance" measured?', a: 'Standard deviation of delivery times against the quoted lead time, indicating process stability.' },
-        { q: 'What qualifies as an "Emergency Order"?', a: 'Orders placed with a requested delivery date less than 50% of standard lead time.' }
+        { q: t('supplier_leadtime_q1'), a: t('supplier_leadtime_a1') },
+        { q: t('supplier_leadtime_q2'), a: t('supplier_leadtime_a2') },
+        { q: t('supplier_leadtime_q3'), a: t('supplier_leadtime_a3') },
+        { q: t('supplier_leadtime_q4'), a: t('supplier_leadtime_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -49,7 +53,7 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,9 +64,9 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
@@ -70,14 +74,14 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Lead Time & Speed
+                            {t('supplier_leadtime_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sourcing & Procurement</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('sourcing_procurement')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -87,24 +91,24 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This view analyzes supplier agility and reliability. It tracks lead time consistency, responsiveness to RFQs, and handling of urgent requests to optimize supply chain speed.
+                            {t('supplier_leadtime_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
@@ -116,7 +120,7 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,29 +130,29 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Avg Lead Time" desc="Mean time from order to delivery." />
-                                    <DetailItem title="Fastest Supplier" desc="Vendor with shortest reliable lead time." />
-                                    <DetailItem title="Response Time (RFQ)" desc="Avg hours to quote on new requests." />
-                                    <DetailItem title="Lead Time Variance" desc="Stability/predictability of delivery dates." />
+                                    <DetailItem title={t('supplier_avg_leadtime')} desc={t('supplier_avg_leadtime_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_fastest_supplier')} desc={t('supplier_fastest_supplier_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_response_time_rfq')} desc={t('supplier_response_time_rfq_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_leadtime_variance')} desc={t('supplier_leadtime_variance_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Lead Time Distribution" desc="Box plot of delivery times by supplier." />
-                                    <DetailItem title="Response Speed" desc="Ranked view of supplier quoting speed." />
-                                    <DetailItem title="Urgency Mix" desc="Standard vs Emergency order volume." />
-                                    <DetailItem title="Time Buckets" desc="Orders grouped by delivery duration." />
+                                    <DetailItem title={t('supplier_leadtime_distribution')} desc={t('supplier_leadtime_distribution_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_response_speed')} desc={t('supplier_response_speed_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_urgency_mix')} desc={t('supplier_urgency_mix_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_time_buckets')} desc={t('supplier_time_buckets_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
                         </div>
@@ -160,7 +164,7 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -169,8 +173,8 @@ export const SupplierLeadTimeResponsivenessInfo: React.FC<SupplierLeadTimeRespon
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>

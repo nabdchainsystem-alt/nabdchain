@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAI } from '../contexts/AIContext';
-import { Sparkle, Lightning, Brain, CircleNotch, Robot, Database, Power } from 'phosphor-react';
+import { Sparkle, Lightning, Brain, CircleNotch, Robot, Database, Power, ChartLineUp, ChatCircle } from 'phosphor-react';
 import { useAppContext } from '../contexts/AppContext';
 
 interface AICreditsDisplayProps {
@@ -12,9 +12,16 @@ interface AICreditsDisplayProps {
  * Displays user's AI credit balance and mode toggle in a single dropdown.
  * Placed in the TopBar for persistent visibility.
  *
- * NABD Brain Modes:
- * - Auto (Smart Routing): AI analyzes complexity and chooses the right model
- * - Deep Mode: Always uses Thinker (Gemini 3 Pro) for complex analysis
+ * NABD Brain 5-Tier System:
+ * - Cleaner (Tier 1): Gemini 2.5 Flash - File processing & data cleaning
+ * - Assistant (Tier 2): Gemini 3 Flash - Simple Q&A, basic tasks
+ * - Worker (Tier 3): Gemini 3 Flash - Charts, tables, reports
+ * - Analyst (Tier 4): Gemini 2.5 Flash - Analysis, insights, patterns
+ * - Thinker (Tier 5): Gemini 3 Pro - Strategic, forecasting, complex reasoning
+ *
+ * Modes:
+ * - Auto (Smart Routing): AI analyzes complexity and chooses the right tier
+ * - Deep Mode: Forces Thinker (Tier 5) for all requests
  */
 export function AICreditsDisplay({ showMode = true, compact = false }: AICreditsDisplayProps) {
     const {
@@ -48,15 +55,19 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Get current tier indicator
+    // Get current tier indicator - 5-Tier System
     const getTierIndicator = () => {
         if (!isProcessing || !currentTier) return null;
 
         switch (currentTier) {
             case 'cleaner':
-                return <Sparkle size={10} weight="fill" className="text-green-500" />;
+                return <Sparkle size={10} weight="fill" className="text-gray-400" />;
+            case 'assistant':
+                return <ChatCircle size={10} weight="fill" className="text-green-500" />;
             case 'worker':
                 return <Lightning size={10} weight="fill" className="text-blue-500" />;
+            case 'analyst':
+                return <ChartLineUp size={10} weight="fill" className="text-orange-500" />;
             case 'thinker':
                 return <Brain size={10} weight="fill" className="text-purple-500" />;
         }
@@ -64,7 +75,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
 
     if (compact) {
         return (
-            <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex items-center gap-1.5 text-sm rtl:flex-row-reverse">
                 {isProcessing ? (
                     <div className="relative">
                         <CircleNotch size={14} className="animate-spin text-blue-500" />
@@ -88,7 +99,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    relative flex items-center gap-1
+                    relative flex items-center gap-1 rtl:flex-row-reverse
                     text-gray-500 dark:text-monday-dark-text-secondary
                     hover:text-[#323338] dark:hover:text-monday-dark-text
                     transition-colors p-1.5 rounded
@@ -141,7 +152,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                     {/* Header with ON/OFF Toggle */}
                     <div className={`px-3 py-2.5 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 rtl:flex-row-reverse">
                                 <Sparkle size={14} weight="fill" className={isDark ? 'text-gray-400' : 'text-gray-600'} />
                                 <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {t('nabd_brain')}
@@ -161,10 +172,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                             >
                                 <div className={`
                                     absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200
-                                    ${aiEnabled
-                                        ? isRTL ? 'translate-x-0.5' : 'translate-x-5'
-                                        : isRTL ? 'translate-x-5' : 'translate-x-0.5'
-                                    }
+                                    ${aiEnabled ? 'translate-x-5' : 'translate-x-0.5'}
                                 `} />
                             </button>
                         </div>
@@ -187,7 +195,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                             <button
                                 onClick={() => { if (deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
                                 className={`
-                                    w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all
+                                    w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all rtl:flex-row-reverse
                                     ${!deepModeEnabled
                                         ? isDark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900'
                                         : isDark ? 'hover:bg-gray-800/50 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
@@ -210,7 +218,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                             <button
                                 onClick={() => { if (!deepModeEnabled) toggleDeepMode(); setIsOpen(false); }}
                                 className={`
-                                    w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all
+                                    w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all rtl:flex-row-reverse
                                     ${deepModeEnabled
                                         ? isDark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900'
                                         : isDark ? 'hover:bg-gray-800/50 text-gray-400' : 'hover:bg-gray-50 text-gray-500'
@@ -234,7 +242,7 @@ export function AICreditsDisplay({ showMode = true, compact = false }: AICredits
                     {/* Context Status - Only show when AI is enabled */}
                     {aiEnabled && hasContext && (
                         <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 rtl:flex-row-reverse">
                                 <Database size={11} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
                                 <span className={`text-[10px] truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                     {currentBoardContext?.name || currentRoomContext?.name}

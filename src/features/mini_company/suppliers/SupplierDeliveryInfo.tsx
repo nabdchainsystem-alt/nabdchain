@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Truck, Clock, Crosshair, Warning } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface SupplierDeliveryInfoProps {
     isOpen: boolean;
@@ -8,10 +9,13 @@ interface SupplierDeliveryInfoProps {
 }
 
 export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOpen, onClose }) => {
+    const { t, language } = useAppContext();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
+    const isRTL = language === 'ar';
+    const dir = isRTL ? 'rtl' : 'ltr';
 
     useEffect(() => {
         setMounted(true);
@@ -19,10 +23,10 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
     }, []);
 
     const questions = [
-        { q: 'How is "On-Time Delivery %" calculated?', a: 'The percentage of orders delivered on or before the promised delivery date, measured against total orders received.' },
-        { q: 'What qualifies as a "Late Delivery"?', a: 'Any shipment arriving more than 24 hours past the agreed delivery window.' },
-        { q: 'What is "Average Lead Time"?', a: 'The average number of days between purchase order issuance and goods receipt.' },
-        { q: 'How is "Delivery Accuracy" measured?', a: 'Based on the correctness of items, quantities, and documentation for each shipment (perfect order rate).' }
+        { q: t('supplier_delivery_q1'), a: t('supplier_delivery_a1') },
+        { q: t('supplier_delivery_q2'), a: t('supplier_delivery_a2') },
+        { q: t('supplier_delivery_q3'), a: t('supplier_delivery_a3') },
+        { q: t('supplier_delivery_q4'), a: t('supplier_delivery_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -49,7 +53,7 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,9 +64,9 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
@@ -70,14 +74,14 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-teal-600 dark:text-teal-400" />
-                            Delivery Performance
+                            {t('supplier_delivery_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Logistics & Fulfillment</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('supplier_delivery_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -87,24 +91,24 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard evaluates supplier reliability by tracking delivery times, accuracy, and punctuality, helping to identify bottlenecks and ensure supply chain continuity.
+                            {t('supplier_delivery_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-teal-500 shrink-0" size={14} />
@@ -116,7 +120,7 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,29 +130,29 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="On-Time Delivery %" desc="Ratio of punctual shipments." />
-                                    <DetailItem title="Average Lead Time" desc="Typical days to fulfill order." />
-                                    <DetailItem title="Delivery Accuracy" desc="Correct item/qty rate." />
-                                    <DetailItem title="Late Deliveries" desc="Count of delayed shipments." />
+                                    <DetailItem title={t('supplier_ontime_delivery')} desc={t('supplier_ontime_delivery_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_avg_lead_time')} desc={t('supplier_avg_lead_time_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_delivery_accuracy')} desc={t('supplier_delivery_accuracy_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_late_deliveries')} desc={t('supplier_late_deliveries_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="On-Time vs Late" desc="Performance by top suppliers." />
-                                    <DetailItem title="Lead Time Trend" desc="Speed improvements over time." />
-                                    <DetailItem title="Monthly Heatmap" desc="Seasonal delivery performance." />
-                                    <DetailItem title="Reliability Index" desc="Composite score gauge." />
+                                    <DetailItem title={t('supplier_ontime_vs_late')} desc={t('supplier_ontime_vs_late_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_lead_time_trend')} desc={t('supplier_lead_time_trend_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_monthly_heatmap')} desc={t('supplier_monthly_heatmap_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('supplier_reliability_index')} desc={t('supplier_reliability_index_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
                         </div>
@@ -160,7 +164,7 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
                         onClick={onClose}
                         className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -169,8 +173,8 @@ export const SupplierDeliveryInfo: React.FC<SupplierDeliveryInfoProps> = ({ isOp
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
             {title}
         </div>

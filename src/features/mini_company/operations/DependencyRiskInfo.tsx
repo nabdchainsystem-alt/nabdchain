@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { X, Info, CaretRight, CaretDown, ShieldWarning, Table, Calculator } from 'phosphor-react';
+import { X, Info, CaretRight, CaretDown, Table, Calculator } from 'phosphor-react';
+import { useAppContext } from '../../../contexts/AppContext';
 
 interface DependencyRiskInfoProps {
     isOpen: boolean;
@@ -8,6 +9,8 @@ interface DependencyRiskInfoProps {
 }
 
 export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, onClose }) => {
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,11 +22,11 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
     }, []);
 
     const questions = [
-        { q: 'Are we too reliant on specific suppliers?', a: 'Check "Dependency Ratio" and "Single-Supplier Categories". High values indicate a single point of failure risk.' },
-        { q: 'What is our overall risk exposure?', a: '"Risk Exposure %" creates a weighted score of spend connected to high-risk suppliers.' },
-        { q: 'Do we have backup options?', a: 'Look at "Backup Supplier Count". A low number suggests we need to diversify sourcing for critical items.' },
-        { q: 'How stable is our supply chain?', a: 'The "Stability Score" aggregates financial health and delivery reliability of our key partners.' },
-        { q: 'Which categories are most vulnerable?', a: 'The "Network Dependency Graph" visually aids in spotting categories linked to only one or few nodes (suppliers).' }
+        { q: t('dr_q1'), a: t('dr_a1') },
+        { q: t('dr_q2'), a: t('dr_a2') },
+        { q: t('dr_q3'), a: t('dr_a3') },
+        { q: t('dr_q4'), a: t('dr_a4') },
+        { q: t('dr_q5'), a: t('dr_a5') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -50,7 +53,7 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div dir={dir} className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -61,63 +64,63 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : (isRTL ? '-translate-x-full' : 'translate-x-full')}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
-                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
+                <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 text-start">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             <Info size={24} className="text-blue-600 dark:text-blue-400" />
-                            Dependency & Risk
+                            {t('dependency_risk')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Resilience & Mitigation</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('dependency_risk_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('close')}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 text-start">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard measures operational risk by analyzing reliance on specific suppliers, identifying single points of failure, and tracking risk exposure across the supply chain.
+                            {t('dependency_risk_overview')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-start"
                                     >
                                         {openQuestionIndex === i ? (
                                             <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
-                                            <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
+                                            <CaretRight weight="bold" className="text-gray-400 shrink-0 rtl:rotate-180" size={14} />
                                         )}
                                         <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 ps-7 pb-2 leading-relaxed">{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -127,35 +130,35 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            {t('detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('key_performance_indicators')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Dependency Ratio" desc="Percentage of total spend concentrated in the top 5 suppliers." />
-                                    <DetailItem title="Single-Supplier Categories" desc="Count of material categories sourced from only one vendor." />
-                                    <DetailItem title="Risk Exposure %" desc="Percentage of spend allocated to high-risk entities." />
-                                    <DetailItem title="Backup Supplier Count" desc="Average number of alternative suppliers per category." />
-                                    <DetailItem title="Avg Switching Cost" desc="Estimated financial impact of changing a primary supplier." />
-                                    <DetailItem title="Risk Alerts" desc="Active warnings (e.g., bankruptcy news, severe delays)." />
-                                    <DetailItem title="Stability Score" desc="Computed 0-100 index of supply chain robustness." />
-                                    <DetailItem title="Mitigation Progress" desc="Percentage of risk mitigation actions that have been completed." />
+                                    <DetailItem title={t('dependency_ratio')} desc={t('dependency_ratio_desc')} />
+                                    <DetailItem title={t('single_supplier_categories')} desc={t('single_supplier_desc')} />
+                                    <DetailItem title={t('risk_exposure_pct')} desc={t('risk_exposure_desc')} />
+                                    <DetailItem title={t('backup_supplier_count')} desc={t('backup_supplier_desc')} />
+                                    <DetailItem title={t('avg_switching_cost')} desc={t('avg_switching_cost_desc')} />
+                                    <DetailItem title={t('risk_alerts')} desc={t('risk_alerts_desc')} />
+                                    <DetailItem title={t('stability_score')} desc={t('stability_score_desc')} />
+                                    <DetailItem title={t('mitigation_progress')} desc={t('mitigation_progress_desc')} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-start">{t('charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Dependency by Category" desc="Bar chart (Recharts) showing dominant supplier share per category." />
-                                    <DetailItem title="Risk Trend" desc="Stacked bar chart (Recharts) showing high/medium/low risk distribution over time." />
-                                    <DetailItem title="Risk Levels" desc="Pie chart (ECharts) classifying suppliers by Low/Med/High risk." />
-                                    <DetailItem title="Diversification Score" desc="Pie chart (ECharts) showing sourcing diversification levels across categories." />
-                                    <DetailItem title="Risk Detail Table" desc="List of suppliers with their respective impact and risk scores." />
-                                    <DetailItem title="Network Dependency Graph" desc="Network graph (ECharts) visualizing connections between categories and suppliers." />
+                                    <DetailItem title={t('dependency_by_category')} desc={t('dependency_by_category_desc')} />
+                                    <DetailItem title={t('risk_trend')} desc={t('risk_trend_desc')} />
+                                    <DetailItem title={t('risk_levels')} desc={t('risk_levels_desc')} />
+                                    <DetailItem title={t('diversification_score')} desc={t('diversification_score_desc')} />
+                                    <DetailItem title={t('risk_detail_table')} desc={t('risk_detail_table_desc')} />
+                                    <DetailItem title={t('network_dependency_graph')} desc={t('network_dependency_graph_desc')} />
                                 </div>
                             </div>
                         </div>
@@ -164,26 +167,26 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
                             <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
-                            Data Sources & Logic
+                            {t('data_sources_logic')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Table size={14} className="text-gray-500" />
-                                    <span>Source Tables & Fields</span>
+                                    <span>{t('source_tables_fields')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <TableSchema
-                                        name="1. SupplierRiskProfile"
-                                        desc="External and internal risk data."
-                                        columns={['Supplier ID', 'Financial Score', 'Geo Risk', 'Perf Score']}
+                                        name={`1. ${t('supplier_risk_profile_table')}`}
+                                        desc={t('supplier_risk_profile_desc')}
+                                        columns={[t('dr_col_supplier_id'), t('dr_col_financial_score'), t('dr_col_geo_risk'), t('dr_col_perf_score')]}
                                     />
                                     <TableSchema
-                                        name="2. CategoryAllocations"
-                                        desc="Spend distribution."
-                                        columns={['Category', 'Total Spend', 'Supplier Share %']}
+                                        name={`2. ${t('category_allocations_table')}`}
+                                        desc={t('category_allocations_desc')}
+                                        columns={[t('cc_col_category'), t('dr_col_total_spend'), t('dr_col_supplier_share')]}
                                     />
                                 </div>
                             </div>
@@ -191,16 +194,16 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
                                 <div className="flex items-center gap-2 mb-3 text-blue-800 dark:text-blue-300 font-semibold text-xs uppercase tracking-wide">
                                     <Calculator size={14} className="text-blue-600 dark:text-blue-400" />
-                                    <span>Core Calculation Logic</span>
+                                    <span>{t('core_calculation_logic')}</span>
                                 </div>
-                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ml-1">
-                                    <li className="flex gap-2">
+                                <ul className="space-y-2.5 text-xs text-blue-900/80 dark:text-blue-200/80 ms-1">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Dependency</strong> = Max(Single Supplier Spend) / Total Category Spend.</span>
+                                        <span><strong>{t('dr_calc_dependency')}</strong> {t('dr_calc_dependency_formula')}</span>
                                     </li>
-                                    <li className="flex gap-2">
+                                    <li className="flex gap-2 text-start">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                        <span><strong>Risk Score</strong> = (0.4 * Financial) + (0.3 * Geo) + (0.3 * Performance).</span>
+                                        <span><strong>{t('dr_calc_risk_score')}</strong> {t('dr_calc_risk_formula')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -213,7 +216,7 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
                         onClick={onClose}
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('close_guide')}
                     </button>
                 </div>
             </div>
@@ -223,7 +226,7 @@ export const DependencyRiskInfo: React.FC<DependencyRiskInfoProps> = ({ isOpen, 
 };
 
 const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
+    <div className="group text-start">
         <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
@@ -234,7 +237,7 @@ const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
 );
 
 const TableSchema = ({ name, desc, columns }: { name: string, desc: string, columns: string[] }) => (
-    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden text-start">
         <div className="px-3 py-2 bg-gray-100/50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-0.5">
             <span className="font-bold text-xs text-gray-800 dark:text-gray-200">{name}</span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">{desc}</span>

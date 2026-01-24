@@ -83,7 +83,7 @@ export function AIBrainButton() {
         <>
             {/* Toggle hint tooltip */}
             {showToggleHint && (
-                <div className={`fixed bottom-20 z-[10001] bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg ${isRTL ? 'left-6' : 'right-6'}`}>
+                <div className={`fixed bottom-20 z-50 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg ${isRTL ? 'left-6' : 'right-6'}`}>
                     {t('ai_disabled_hint')}
                 </div>
             )}
@@ -97,7 +97,7 @@ export function AIBrainButton() {
                 onMouseLeave={handleMouseLeave}
                 title={aiEnabled ? `${t('open_ai_chat')} (⌘J) • ${t('right_click_disable')}` : `${t('ai_disabled')} • ${t('right_click_enable')}`}
                 className={`
-                    fixed bottom-6 z-[10000]
+                    fixed bottom-6 z-50
                     w-[48px] h-[48px] rounded-full
                     flex items-center justify-center
                     transition-all duration-200

@@ -26,6 +26,8 @@ import {
     Info,
     CaretDown,
     CaretUp,
+    ChatCircle,
+    ChartLineUp,
 } from 'phosphor-react';
 import { useAI, ModelTier, BoardContextData, RoomContextData } from '../contexts/AIContext';
 import { useAppContext } from '../contexts/AppContext';
@@ -69,25 +71,43 @@ const TIER_INFO = {
     cleaner: {
         name: 'Cleaner',
         model: 'Gemini 2.5 Flash',
-        description: 'Fast data formatting & simple tasks',
+        description: 'File processing & data cleaning',
+        color: 'text-gray-400',
+        bgColor: 'bg-gray-400/10',
+        icon: Sparkle,
+        cost: 1,
+    },
+    assistant: {
+        name: 'Assistant',
+        model: 'Gemini 3 Flash',
+        description: 'Simple Q&A & quick answers',
         color: 'text-green-500',
         bgColor: 'bg-green-500/10',
-        icon: Sparkle,
+        icon: ChatCircle,
         cost: 1,
     },
     worker: {
         name: 'Worker',
         model: 'Gemini 3 Flash',
-        description: 'Analysis, charts, tables & insights',
+        description: 'Charts, tables & reports',
         color: 'text-blue-500',
         bgColor: 'bg-blue-500/10',
         icon: Lightning,
         cost: 1,
     },
+    analyst: {
+        name: 'Analyst',
+        model: 'Gemini 2.5 Flash',
+        description: 'Analysis & pattern insights',
+        color: 'text-orange-500',
+        bgColor: 'bg-orange-500/10',
+        icon: ChartLineUp,
+        cost: 3,
+    },
     thinker: {
         name: 'Thinker',
         model: 'Gemini 3 Pro',
-        description: 'Deep strategy & complex analysis',
+        description: 'Strategy & complex reasoning',
         color: 'text-purple-500',
         bgColor: 'bg-purple-500/10',
         icon: Brain,
@@ -174,18 +194,6 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
         }
     }, [initialPrompt, isOpen]);
 
-    // Add welcome message on first open
-    useEffect(() => {
-        if (isOpen && messages.length === 0) {
-            const welcomeMessage: Message = {
-                id: 'welcome',
-                role: 'system',
-                content: `**${t('welcome_nabd_brain')}** 🧠\n\n${t('ai_system_intro')}\n\n- **Cleaner** (Gemini 2.5 Flash) - ${t('cleaner_desc')}\n- **Worker** (Gemini 3 Flash) - ${t('worker_desc')}\n- **Thinker** (Gemini 3 Pro) - ${t('thinker_desc')}\n\n${t('auto_model_selection')} ${currentBoardContext || currentRoomContext ? `\n\n📊 **${t('current_context')}:** ${contextSummary()}` : ''}`,
-                timestamp: new Date(),
-            };
-            setMessages([welcomeMessage]);
-        }
-    }, [isOpen, messages.length, currentBoardContext, currentRoomContext, contextSummary, t]);
 
     // Preview tier on input change with debounce
     useEffect(() => {
@@ -318,7 +326,10 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
         return <IconComponent size={12} weight="fill" className={info.color} />;
     };
 
-    const getTierLabel = (tier: ModelTier) => TIER_INFO[tier].model;
+    const getTierLabel = (tier: ModelTier) => {
+        const tierNameKey = `${tier}_name` as keyof typeof TIER_INFO;
+        return t(tierNameKey as string);
+    };
 
     if (!isOpen) return null;
 
@@ -504,7 +515,24 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
             )}
 
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+            <div className={`flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+                {/* Welcome Screen - shows when no messages */}
+                {messages.length === 0 && !isProcessing && (
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                        <div className="mb-4">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                                <Brain size={32} weight="duotone" className={isDark ? 'text-purple-400' : 'text-purple-500'} />
+                            </div>
+                            <h2 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {t('welcome_nabd_brain')}
+                            </h2>
+                            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {t('ai_assistant')}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {messages.map((message) => (
                     <div
                         key={message.id}
@@ -606,15 +634,13 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                         {currentTier && getTierIcon(currentTier)}
                                     </div>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                        {currentTier === 'thinker' ? t('deep_thinking') :
-                                         currentTier === 'cleaner' ? t('processing_data') : t('analyzing')}
-                                    </span>
-                                    <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                                        {t('using_ai')} {currentTier ? TIER_INFO[currentTier].model : 'AI'}
-                                    </span>
-                                </div>
+                                <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                                    {currentTier === 'thinker' ? t('deep_thinking') :
+                                     currentTier === 'analyst' ? t('analyzing_patterns') :
+                                     currentTier === 'worker' ? t('generating') :
+                                     currentTier === 'assistant' ? t('quick_response') :
+                                     currentTier === 'cleaner' ? t('processing_data') : t('analyzing')}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -626,7 +652,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
             {/* Quick Actions Bar */}
             {messages.length <= 1 && (
                 <div className={`px-4 py-2 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                         {QUICK_ACTIONS.map((action) => (
                             <button
                                 key={action.label}
@@ -668,13 +694,13 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                             <div className="flex items-center gap-2">
                                 {getTierIcon(tierPreview.tier)}
                                 <span>
-                                    <strong className={TIER_INFO[tierPreview.tier].color}>{TIER_INFO[tierPreview.tier].name}</strong>
-                                    {' '}will handle this ({tierPreview.cost} credit{tierPreview.cost > 1 ? 's' : ''})
+                                    <strong className={TIER_INFO[tierPreview.tier].color}>{t(`${tierPreview.tier}_name`)}</strong>
+                                    {' '}{t('will_handle_this')} ({tierPreview.cost} {t('credit')})
                                 </span>
                             </div>
                             {tierPreview.complexity && (
                                 <div className="flex items-center gap-1">
-                                    <span className="opacity-60">Score: {tierPreview.complexity.score}</span>
+                                    <span className="opacity-60">{t('complexity')}: {tierPreview.complexity.score}</span>
                                     {showTierDetails ? <CaretUp size={12} /> : <CaretDown size={12} />}
                                 </div>
                             )}
@@ -683,7 +709,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                         {showTierDetails && tierPreview.complexity && (
                             <div className={`px-3 pb-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className={`pt-2 text-[10px] space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    <div><strong>Why this tier:</strong></div>
+                                    <div><strong>{t('why_this_tier')}</strong></div>
                                     <div className="flex flex-wrap gap-1">
                                         {tierPreview.complexity.factors.map((factor, i) => (
                                             <span
@@ -695,7 +721,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                                         ))}
                                     </div>
                                     <div className="opacity-70">
-                                        Confidence: {Math.round(tierPreview.complexity.confidence * 100)}%
+                                        {t('confidence')}: {Math.round(tierPreview.complexity.confidence * 100)}%
                                     </div>
                                 </div>
                             </div>
@@ -709,7 +735,7 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={currentBoardContext ? `${t('ask_about')} ${currentBoardContext.name}...` : t('ask_me_anything')}
+                        placeholder={t('ask_me_anything')}
                         disabled={isProcessing}
                         rows={1}
                         className={`
@@ -758,14 +784,14 @@ export function AIChat({ isOpen, onClose, initialPrompt }: AIChatProps) {
                 {/* Credits warning */}
                 {credits < 5 && credits > 0 && (
                     <div className={`mt-2 text-[10px] text-center ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                        <Warning size={10} className="inline mr-1" />
-                        Low credits ({credits} remaining)
+                        <Warning size={10} className={`inline ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                        {t('low_credits')} ({credits} {t('remaining')})
                     </div>
                 )}
                 {credits < 1 && (
                     <div className={`mt-2 text-[10px] text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                        <Warning size={10} className="inline mr-1" />
-                        No credits remaining. Please add credits to continue.
+                        <Warning size={10} className={`inline ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                        {t('no_credits_remaining')}. {t('add_credits_continue')}
                     </div>
                 )}
             </div>

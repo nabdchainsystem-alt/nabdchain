@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Smiley, Star, ChatCenteredText } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface SatisfactionFeedbackInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface SatisfactionFeedbackInfoProps {
 }
 
 export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> = ({ isOpen, onClose }) => {
+    const { t, dir } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
     }, []);
 
     const questions = [
-        { q: 'How is "NPS" calculated?', a: 'Net Promoter Score = % of Promoters (9-10) minus % of Detractors (0-6).' },
-        { q: 'What determines the "Sentiment Index"?', a: 'AI-driven analysis of text feedback, classifying comments into positive, neutral, or negative sentiment scores.' },
-        { q: 'What is "Resolution Status"?', a: 'The current state of any negative feedback or support ticket linked to a customer review (e.g., Open, In Progress, Resolved).' },
-        { q: 'How is "Avg Satisfaction Score" derived?', a: 'The mean score of all numerical ratings (CSAT) collected via surveys and post-interaction feedback.' }
+        { q: t('satisfaction_info_q1'), a: t('satisfaction_info_a1') },
+        { q: t('satisfaction_info_q2'), a: t('satisfaction_info_a2') },
+        { q: t('satisfaction_info_q3'), a: t('satisfaction_info_a3') },
+        { q: t('satisfaction_info_q4'), a: t('satisfaction_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -47,9 +49,10 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
     if (!mounted || !shouldRender) return null;
 
     const portalTarget = document.fullscreenElement || document.body;
+    const isRTL = dir === 'rtl';
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,24 +63,24 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
                 <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Info size={24} className="text-yellow-500 dark:text-yellow-400" />
-                            Satisfaction & Feedback
+                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
+                            {t('satisfaction_feedback_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sentiment Analysis</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('satisfaction_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -86,37 +89,37 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard tracks customer sentiment and satisfaction levels, aggregating feedback from surveys, reviews, and direct interactions to measure brand health.
+                            {t('satisfaction_overview_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
-                                            <CaretDown weight="bold" className="text-yellow-500 shrink-0" size={14} />
+                                            <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
                                             <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
                                         )}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -125,30 +128,50 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="AVG Satisfaction (CSAT)" desc="Mean rating out of 5/10." />
-                                    <DetailItem title="NPS" desc="Net Promoter Score metric." />
-                                    <DetailItem title="Response Rate" desc="% of customers completing surveys." />
-                                    <DetailItem title="Sentiment Index" desc="Positive vs Negative text analysis." />
+                                    <DetailItem title={t('avg_rating')} desc={t('avg_rating_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('response_rate')} desc={t('response_rate_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('resolution_time')} desc={t('resolution_time_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('promoter_ratio')} desc={t('promoter_ratio_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Feedback Volume" desc="Reviews by category over time." />
-                                    <DetailItem title="Sentiment Split" desc="Emotional classification breakdown." />
-                                    <DetailItem title="Feedback Log" desc="Recent reviews and status." />
-                                    <DetailItem title="Emotional Radar" desc="Polarity of customer feelings." />
+                                    <DetailItem title={t('feedback_trend')} desc={t('feedback_trend_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('topic_analysis')} desc={t('topic_analysis_desc')} isRTL={isRTL} />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('info_metrics')}
+                        </h3>
+
+                        <div className="space-y-6">
+                            <div>
+                                <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
+                                    <Star size={14} className="text-gray-500" />
+                                    <span>{t('satisfaction_scoring')}</span>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('satisfaction_scoring_desc')}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -158,9 +181,9 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -169,9 +192,9 @@ export const SatisfactionFeedbackInfo: React.FC<SatisfactionFeedbackInfoProps> =
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
-        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
+        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

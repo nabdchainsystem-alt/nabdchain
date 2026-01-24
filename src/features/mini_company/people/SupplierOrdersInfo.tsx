@@ -49,13 +49,13 @@ export const SupplierOrdersInfo: React.FC<SupplierOrdersInfoProps> = ({ isOpen, 
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 z-[9999] flex overflow-hidden pointer-events-none font-sans ${isRTL ? 'justify-start' : 'justify-end'}`} dir={dir}>
+        <div className={`fixed inset-0 z-[9999] flex overflow-hidden pointer-events-none font-sans justify-end`} dir={dir}>
             <div className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} aria-hidden="true" style={{ background: 'transparent' }} />
             <div className={`pointer-events-auto relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700 transform transition-transform duration-500 ${isVisible ? 'translate-x-0' : (isRTL ? '-translate-x-full' : 'translate-x-full')}`} style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}>
                 <div className={`flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className={isRTL ? 'text-right' : ''}>
                         <h2 className={`text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <Info size={24} className="text-indigo-600 dark:text-indigo-400" />
+                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
                             {t('supplier_orders')}
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('order_tracking')}</p>
@@ -72,15 +72,15 @@ export const SupplierOrdersInfo: React.FC<SupplierOrdersInfoProps> = ({ isOpen, 
                     </section>
                     <section>
                         <h3 className={`text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <ShoppingCart size={16} className="text-indigo-500" />
+                            <ShoppingCart size={16} className="text-blue-500" />
                             {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button onClick={() => toggleQuestion(i)} className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}>
-                                        {openQuestionIndex === i ? <CaretDown weight="bold" className="text-indigo-500 shrink-0" size={14} /> : <CaretRight weight="bold" className={`text-gray-400 shrink-0 ${isRTL ? 'rotate-180' : ''}`} size={14} />}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.q}</span>
+                                        {openQuestionIndex === i ? <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} /> : <CaretRight weight="bold" className={`text-gray-400 shrink-0 ${isRTL ? 'rotate-180' : ''}`} size={14} />}
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.q}</span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
                                         <p className={`text-xs text-gray-500 dark:text-gray-400 pb-2 leading-relaxed ${isRTL ? 'pr-7' : 'pl-7'}`}>{item.a}</p>
@@ -91,7 +91,7 @@ export const SupplierOrdersInfo: React.FC<SupplierOrdersInfoProps> = ({ isOpen, 
                     </section>
                 </div>
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
-                    <button onClick={onClose} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">{t('close_guide')}</button>
+                    <button onClick={onClose} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">{t('close_guide')}</button>
                 </div>
             </div>
         </div>,

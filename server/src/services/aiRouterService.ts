@@ -7,7 +7,7 @@ import { aiLogger } from '../utils/logger';
 // Types & Interfaces
 // ============================================================================
 
-export type ModelTier = 'cleaner' | 'worker' | 'thinker';
+export type ModelTier = 'cleaner' | 'assistant' | 'worker' | 'analyst' | 'thinker';
 
 export interface AIRequest {
     prompt: string;
@@ -150,25 +150,31 @@ export interface ComplexityAnalysis {
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Model names for each tier - Updated to correct Gemini model names
+// Model names for each tier - 5-Tier Smart Routing System
 const MODEL_CONFIG = {
-    cleaner: 'gemini-2.5-flash-preview-05-20',  // Tier 1: Gemini 2.5 Flash - Low-cost data processing
-    worker: 'gemini-2.5-flash-preview-05-20',   // Tier 2: Gemini 3 Flash - Default engine (90% of requests)
-    thinker: 'gemini-2.5-pro-preview-06-05',    // Tier 3: Gemini 3 Pro - High-intelligence (10% of requests)
+    cleaner: 'gemini-2.5-flash-preview-05-20',  // Tier 1: Gemini 2.5 Flash - File processing & data cleaning
+    assistant: 'gemini-3-flash-preview',         // Tier 2: Gemini 3 Flash - Simple Q&A, basic tasks
+    worker: 'gemini-3-flash-preview',            // Tier 3: Gemini 3 Flash - Charts, tables, reports
+    analyst: 'gemini-2.5-flash-preview-05-20',  // Tier 4: Gemini 2.5 Flash - Analysis, insights, patterns
+    thinker: 'gemini-3-pro-preview',             // Tier 5: Gemini 3 Pro - Strategic, forecasting, complex reasoning
 } as const;
 
 // Fallback models if primary fails
 const FALLBACK_MODELS = {
-    cleaner: 'gemini-2.0-flash',
-    worker: 'gemini-2.0-flash',
-    thinker: 'gemini-2.5-flash-preview-05-20',
+    cleaner: 'gemini-3-flash-preview',
+    assistant: 'gemini-2.5-flash-preview-05-20',
+    worker: 'gemini-2.5-flash-preview-05-20',
+    analyst: 'gemini-3-flash-preview',
+    thinker: 'gemini-2.5-pro-preview-06-05',
 } as const;
 
-// Credit costs per tier
+// Credit costs per tier (optimized for value)
 const CREDIT_COSTS: Record<ModelTier, number> = {
-    cleaner: 1,
-    worker: 1,
-    thinker: 5,
+    cleaner: 1,    // File processing
+    assistant: 1,  // Simple queries
+    worker: 1,     // Charts, tables
+    analyst: 3,    // Analysis tasks
+    thinker: 5,    // Strategic reasoning
 };
 
 // Complexity patterns for semantic analysis
@@ -391,19 +397,30 @@ export function analyzeComplexity(prompt: string, context?: AIContext): Complexi
         factors.push(`Multiple questions: ${questionMarks}`);
     }
 
-    // Determine tier based on score
+    // Determine tier based on score - 5-Tier Smart Routing
     let tier: ModelTier;
     let confidence: number;
 
-    if (score >= 50) {
+    if (score >= 70) {
+        // Tier 5: Thinker - Strategic, forecasting, multi-dimensional analysis
         tier = 'thinker';
-        confidence = Math.min(0.95, 0.6 + (score - 50) / 100);
-    } else if (score >= 20) {
+        confidence = Math.min(0.95, 0.7 + (score - 70) / 100);
+    } else if (score >= 50) {
+        // Tier 4: Analyst - Pattern recognition, insights, correlations
+        tier = 'analyst';
+        confidence = Math.min(0.9, 0.6 + (score - 50) / 80);
+    } else if (score >= 25) {
+        // Tier 3: Worker - Charts, tables, reports, summaries
         tier = 'worker';
-        confidence = Math.min(0.9, 0.5 + (score - 20) / 60);
+        confidence = Math.min(0.85, 0.55 + (score - 25) / 50);
+    } else if (score >= 10) {
+        // Tier 2: Assistant - Simple Q&A, basic tasks, quick answers
+        tier = 'assistant';
+        confidence = Math.min(0.9, 0.7 + (score - 10) / 30);
     } else {
-        tier = 'worker'; // Default to worker, not cleaner (cleaner is only for files)
-        confidence = 0.8;
+        // Tier 2: Default to assistant for very simple queries
+        tier = 'assistant';
+        confidence = 0.85;
     }
 
     return { score, tier, confidence, factors };
@@ -411,24 +428,40 @@ export function analyzeComplexity(prompt: string, context?: AIContext): Complexi
 
 /**
  * Determines the appropriate model tier based on request complexity
+ * 5-Tier System: cleaner → assistant → worker → analyst → thinker
  */
 export function determineTier(request: AIRequest): ModelTier {
-    // Tier 1: File uploads always go to cleaner
+    // Tier 1 (Cleaner): File uploads always go to cleaner for data processing
     if (request.fileUpload) {
         return 'cleaner';
     }
 
-    // Tier 3: Force deep mode
+    // Tier 5 (Thinker): Force deep mode - strategic reasoning
     if (request.forceDeepMode) {
         return 'thinker';
     }
 
-    // Tier 3: Specific prompt types that always need deep analysis
-    if (request.promptType === 'forecast' || request.promptType === 'analysis') {
+    // Tier 5 (Thinker): Forecasting always needs highest intelligence
+    if (request.promptType === 'forecast') {
         return 'thinker';
     }
 
-    // Use semantic complexity analysis
+    // Tier 4 (Analyst): Analysis tasks need pattern recognition
+    if (request.promptType === 'analysis') {
+        return 'analyst';
+    }
+
+    // Tier 3 (Worker): Charts and tables need visualization capability
+    if (request.promptType === 'chart' || request.promptType === 'table') {
+        return 'worker';
+    }
+
+    // Tier 2 (Assistant): GTD and tips are straightforward tasks
+    if (request.promptType === 'gtd' || request.promptType === 'tips') {
+        return 'assistant';
+    }
+
+    // Use semantic complexity analysis for general prompts
     const analysis = analyzeComplexity(request.prompt, request.context);
 
     return analysis.tier;
@@ -531,9 +564,9 @@ export async function saveConversationTurn(
 function buildSystemPrompt(tier: ModelTier, context?: AIContext, promptType?: string): string {
     let systemPrompt = '';
 
-    // Base prompts for each tier
+    // Base prompts for each tier - 5-Tier System
     const basePrompts: Record<ModelTier, string> = {
-        cleaner: `You are NABD Brain - Data Processor Module.
+        cleaner: `You are NABD Brain - Data Processor Module (Tier 1).
 Your role is to analyze and normalize data structures for the NABD enterprise platform.
 
 Capabilities:
@@ -549,30 +582,73 @@ Rules:
 - Detect currencies, percentages, dates separately
 - Flag potential data quality issues`,
 
-        worker: `You are NABD Brain - Intelligence Engine.
-A powerful AI assistant for the NABD enterprise platform, optimized for speed and efficiency.
+        assistant: `You are NABD Brain - Quick Assistant Module (Tier 2).
+A fast, helpful AI assistant for the NABD enterprise platform, optimized for simple queries and quick answers.
+
+Capabilities:
+- Answer straightforward questions quickly
+- Provide basic explanations and definitions
+- Help with simple calculations
+- Give quick summaries of concepts
+- Assist with basic task extraction (GTD)
+- Provide actionable tips and suggestions
+
+Guidelines:
+- Be brief and to the point
+- Give direct answers without over-explaining
+- If the question is complex, acknowledge it may need deeper analysis
+- Focus on immediate, practical help
+- Use simple language
+- Respond quickly and efficiently`,
+
+        worker: `You are NABD Brain - Intelligence Engine (Tier 3).
+A powerful AI assistant for the NABD enterprise platform, optimized for visualizations and reports.
 
 Capabilities:
 - Generate chart configurations (ECharts format)
 - Create data tables and summaries
-- Help with task management and GTD methodology
+- Build comprehensive reports
 - Provide concise, actionable business insights
 - Answer questions about data and metrics
+- Create visual representations of data
 
 Guidelines:
 - Be concise and direct - respect the user's time
 - For charts, output valid ECharts option JSON only
 - For tables, output structured JSON with columns and rows
-- For tasks, extract actionable items with clear priorities
+- For reports, organize information clearly
 - Consider department context when available
 - Focus on practical, implementable answers`,
 
-        thinker: `You are NABD Brain - Strategic Advisor Module.
-An expert business analyst and strategist for the NABD enterprise platform, designed for deep analysis.
+        analyst: `You are NABD Brain - Analyst Module (Tier 4).
+An intelligent business analyst for the NABD enterprise platform, specialized in insights and patterns.
+
+Capabilities:
+- Identify patterns and trends in data
+- Provide analytical insights with reasoning
+- Detect correlations between metrics
+- Offer data-driven recommendations
+- Compare and contrast datasets
+- Highlight key findings and outliers
+- Perform root cause analysis
+- Generate comprehensive analysis reports
+
+Guidelines:
+- Support insights with data references
+- Identify both obvious and hidden patterns
+- Provide context for findings
+- Suggest actionable next steps
+- Consider multiple perspectives
+- Quantify findings when possible
+- Highlight confidence levels for insights
+- Connect analysis to business impact`,
+
+        thinker: `You are NABD Brain - Strategic Advisor Module (Tier 5).
+An expert business strategist for the NABD enterprise platform, designed for complex reasoning and forecasting.
 
 Capabilities:
 - Multi-dimensional data analysis across departments
-- Pattern recognition and anomaly detection
+- Advanced pattern recognition and anomaly detection
 - Predictive forecasting with confidence intervals
 - Strategic recommendations with action plans
 - Risk assessment and mitigation strategies

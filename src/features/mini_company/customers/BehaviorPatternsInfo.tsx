@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Info, CaretRight, CaretDown, Activity, Clock, ShoppingCart } from 'phosphor-react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface BehaviorPatternsInfoProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface BehaviorPatternsInfoProps {
 }
 
 export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOpen, onClose }) => {
+    const { t, dir } = useLanguage();
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -19,10 +21,10 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
     }, []);
 
     const questions = [
-        { q: 'What does "Seasonal Index" indicate?', a: 'It measures the deviation of purchase volume in the current season relative to the annual average (e.g., 1.2 = 20% higher).' },
-        { q: 'How is "Behavior Volatility" measured?', a: 'Based on the variance in order frequency. High volatility means unpredictable buying patterns.' },
-        { q: 'What triggers a "Pattern Alert"?', a: 'Significant deviations from established norms, such as a regular buyer suddenly stopping or a spike in returns.' },
-        { q: 'What is the "Purchase Mix"?', a: 'The distribution of product categories within the average customer basket.' }
+        { q: t('behavior_info_q1'), a: t('behavior_info_a1') },
+        { q: t('behavior_info_q2'), a: t('behavior_info_a2') },
+        { q: t('behavior_info_q3'), a: t('behavior_info_a3') },
+        { q: t('behavior_info_q4'), a: t('behavior_info_a4') }
     ];
 
     const toggleQuestion = (index: number) => {
@@ -47,9 +49,10 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
     if (!mounted || !shouldRender) return null;
 
     const portalTarget = document.fullscreenElement || document.body;
+    const isRTL = dir === 'rtl';
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div className={`fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -60,24 +63,24 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
             <div
                 className={`
                     pointer-events-auto
-                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-l border-gray-100 dark:border-gray-700
+                    relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col ${isRTL ? 'border-r' : 'border-l'} border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >
                 <div className="flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Info size={24} className="text-orange-600 dark:text-orange-400" />
-                            Behavior & Patterns
+                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
+                            {t('behavior_patterns_title')}
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Purchasing Habits</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('behavior_subtitle')}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Close info window"
+                        aria-label={t('info_close_guide')}
                     >
                         <X size={20} />
                     </button>
@@ -86,37 +89,37 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24">
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">01</span>
-                            Overview
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
+                            {t('info_overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            This dashboard uncovers deep insights into how customers interact with the brand, highlighting purchase cycles, product preferences, and behavioral anomalies.
+                            {t('behavior_overview_desc')}
                         </p>
                     </section>
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">02</span>
-                            Key Questions Answered
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
+                            {t('info_key_questions')}
                         </h3>
                         <div className="grid gap-2">
                             {questions.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors overflow-hidden">
                                     <button
                                         onClick={() => toggleQuestion(i)}
-                                        className="w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors text-left"
+                                        className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
-                                            <CaretDown weight="bold" className="text-orange-500 shrink-0" size={14} />
+                                            <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
                                             <CaretRight weight="bold" className="text-gray-400 shrink-0" size={14} />
                                         )}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
                                     <div className={`px-3 overflow-hidden transition-all duration-300 ease-in-out ${openQuestionIndex === i ? 'max-h-40 py-2 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7 pb-2 leading-relaxed">{item.a}</p>
+                                        <p className={`text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'pr-7' : 'pl-7'} pb-2 leading-relaxed`}>{item.a}</p>
                                     </div>
                                 </div>
                             ))}
@@ -125,30 +128,30 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">03</span>
-                            Detailed Breakdown
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
+                            {t('info_detailed_breakdown')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Key Performance Indicators</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_kpis')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Purchase Frequency" desc="Avg days between orders." />
-                                    <DetailItem title="Basket Size" desc="Items per order." />
-                                    <DetailItem title="Repeat Rate" desc="% of customers who buy again." />
-                                    <DetailItem title="Seasonal Index" desc="Current demand vs baseline." />
+                                    <DetailItem title={t('purchase_frequency_label')} desc={t('purchase_frequency_label_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('basket_size_label')} desc={t('basket_size_label_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('repeat_rate')} desc={t('repeat_rate_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('seasonal_index')} desc={t('seasonal_index_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                             <div>
-                                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 text-left">Charts & Tables</h4>
+                                <h4 className={`text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('info_charts_tables')}</h4>
                                 <div className="space-y-3">
-                                    <DetailItem title="Orders by Time" desc="Hourly/Daily activity heat." />
-                                    <DetailItem title="Purchase Mix" desc="Category preference composition." />
-                                    <DetailItem title="Behavior Timeline" desc="Visual history of customer actions." />
-                                    <DetailItem title="Pattern Alerts" desc="Automatically detected anomalies." />
+                                    <DetailItem title={t('orders_by_time')} desc={t('orders_by_time_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('purchase_mix')} desc={t('purchase_mix_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('behavior_timeline')} desc={t('behavior_timeline_desc')} isRTL={isRTL} />
+                                    <DetailItem title={t('pattern_alerts')} desc={t('pattern_alerts_desc')} isRTL={isRTL} />
                                 </div>
                             </div>
                         </div>
@@ -156,21 +159,21 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
 
                     <section>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs">04</span>
-                            Models
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
+                            {t('info_models')}
                         </h3>
 
                         <div className="space-y-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-4 text-gray-800 dark:text-gray-200 font-semibold text-xs uppercase tracking-wide">
                                     <Activity size={14} className="text-gray-500" />
-                                    <span>Predictive Behavior</span>
+                                    <span>{t('predictive_behavior')}</span>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">Next Purchase Prediction</div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">Calculated using historical inter-purchase time distributions for each customer segment.</p>
+                                        <div className="font-bold text-xs text-gray-800 dark:text-gray-200 mb-1">{t('next_purchase_prediction')}</div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('next_purchase_prediction_desc')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -181,9 +184,9 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                        Close Guide
+                        {t('info_close_guide')}
                     </button>
                 </div>
             </div>
@@ -192,9 +195,9 @@ export const BehaviorPatternsInfo: React.FC<BehaviorPatternsInfoProps> = ({ isOp
     );
 };
 
-const DetailItem = ({ title, desc }: { title: string, desc: string }) => (
-    <div className="group text-left">
-        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+const DetailItem = ({ title, desc, isRTL = false }: { title: string, desc: string, isRTL?: boolean }) => (
+    <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
+        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

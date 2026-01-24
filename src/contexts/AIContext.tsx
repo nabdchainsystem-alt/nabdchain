@@ -6,7 +6,7 @@ import { aiLogger } from '../utils/logger';
 // Types
 // ============================================================================
 
-export type ModelTier = 'cleaner' | 'worker' | 'thinker';
+export type ModelTier = 'cleaner' | 'assistant' | 'worker' | 'analyst' | 'thinker';
 
 export interface AICreditsState {
     balance: number;

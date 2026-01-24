@@ -9,7 +9,8 @@ interface SalesSegmentationInfoProps {
 }
 
 export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ isOpen, onClose }) => {
-    const { t } = useAppContext();
+    const { t, dir } = useAppContext();
+    const isRTL = dir === 'rtl';
     const [shouldRender, setShouldRender] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null);
@@ -51,7 +52,7 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
     ];
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
+        <div dir={dir} className="fixed inset-0 z-[9999] flex justify-end overflow-hidden pointer-events-none font-sans">
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 bg-black/5 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -63,7 +64,7 @@ export const SalesSegmentationInfo: React.FC<SalesSegmentationInfoProps> = ({ is
                     pointer-events-auto
                     relative w-full max-w-md bg-white dark:bg-monday-dark-surface shadow-2xl h-full flex flex-col border-s border-gray-100 dark:border-gray-700
                     transform transition-transform duration-500
-                    ${isVisible ? 'translate-x-0' : 'ltr:translate-x-full rtl:-translate-x-full'}
+                    ${isVisible ? 'translate-x-0' : (isRTL ? '-translate-x-full' : 'translate-x-full')}
                 `}
                 style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
             >

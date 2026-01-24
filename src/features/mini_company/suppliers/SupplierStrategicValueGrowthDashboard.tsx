@@ -218,7 +218,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
             }
         },
         grid: { left: '10%', right: '10%', top: '15%', bottom: '15%' },
-        xAxis: { type: 'value', name: t('growth_pct'), splitLine: { show: false }, position: isRTL ? 'top' : 'bottom' },
+        xAxis: { type: 'value', name: t('growth_pct'), splitLine: { show: false }, inverse: isRTL },
         yAxis: { type: 'value', name: t('value_score'), min: 50, max: 100, splitLine: { lineStyle: { type: 'dashed' } }, position: isRTL ? 'right' : 'left' },
         series: [
             {

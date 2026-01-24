@@ -52,7 +52,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
     const portalTarget = document.fullscreenElement || document.body;
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 z-[9999] flex overflow-hidden pointer-events-none font-sans ${isRTL ? 'justify-start' : 'justify-end'}`} dir={dir}>
+        <div className={`fixed inset-0 z-[9999] flex overflow-hidden pointer-events-none font-sans justify-end`} dir={dir}>
             <div
                 className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 onClick={onClose}
@@ -73,7 +73,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
                 <div className={`flex-none flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-monday-dark-surface z-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className={isRTL ? 'text-right' : ''}>
                         <h2 className={`text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <Info size={24} className="text-indigo-600 dark:text-indigo-400" />
+                            <Info size={24} className="text-blue-600 dark:text-blue-400" />
                             {t('supplier_overview')}
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('supplier_base_health')}</p>
@@ -90,7 +90,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
                 <div className={`flex-1 overflow-y-auto p-6 space-y-8 text-gray-600 dark:text-gray-300 pb-24 ${isRTL ? 'text-right' : ''}`}>
                     <section>
                         <h3 className={`text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">01</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">01</span>
                             {t('overview')}
                         </h3>
                         <p className="text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -100,7 +100,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className={`text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 uppercase tracking-wider flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">02</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">02</span>
                             {t('key_questions_answered')}
                         </h3>
                         <div className="grid gap-2">
@@ -111,11 +111,11 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
                                         className={`w-full flex gap-3 items-center text-sm p-3 bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-800/50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                                     >
                                         {openQuestionIndex === i ? (
-                                            <CaretDown weight="bold" className="text-indigo-500 shrink-0" size={14} />
+                                            <CaretDown weight="bold" className="text-blue-500 shrink-0" size={14} />
                                         ) : (
                                             <CaretRight weight="bold" className={`text-gray-400 shrink-0 ${isRTL ? 'rotate-180' : ''}`} size={14} />
                                         )}
-                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <span className={`font-medium ${openQuestionIndex === i ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                             {item.q}
                                         </span>
                                     </button>
@@ -129,7 +129,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className={`text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">03</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">03</span>
                             {t('detailed_breakdown')}
                         </h3>
 
@@ -161,7 +161,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
 
                     <section>
                         <h3 className={`text-sm font-bold text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wider flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <span className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">04</span>
+                            <span className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">04</span>
                             {t('data_logic')}
                         </h3>
 
@@ -186,7 +186,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
                 <div className="flex-none p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-monday-dark-bg z-10">
                     <button
                         onClick={onClose}
-                        className={`w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+                        className={`w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
                         {t('close_guide')}
                     </button>
@@ -199,7 +199,7 @@ export const SupplierOverviewInfo: React.FC<SupplierOverviewInfoProps> = ({ isOp
 
 const DetailItem = ({ title, desc, isRTL }: { title: string, desc: string, isRTL: boolean }) => (
     <div className={`group ${isRTL ? 'text-right' : 'text-left'}`}>
-        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <div className="font-semibold text-gray-800 dark:text-gray-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {title}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
