@@ -9,21 +9,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { WarehousePerformanceInfo } from './WarehousePerformanceInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Warehouses Count', subtitle: 'Active Facilities', value: '4', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [4, 4, 4, 4, 4, 4], color: 'blue' },
-    { id: '2', label: 'Total Utilization', subtitle: 'Capacity Used', value: '78%', change: '+3%', trend: 'up', icon: <Cube size={18} />, sparklineData: [70, 72, 75, 76, 77, 78], color: 'blue' },
-    { id: '3', label: 'Picking Time Avg', subtitle: 'Per Order', value: '14m', change: '-2m', trend: 'up', icon: <Clock size={18} />, sparklineData: [18, 17, 16, 15, 15, 14], color: 'blue' },
-    { id: '4', label: 'Fulfillment Speed', subtitle: 'Orders / Hour', value: '45', change: '+5', trend: 'up', icon: <Lightning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Storage Efficiency', subtitle: 'Cubic Usage', value: '88%', change: '+2%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [84, 85, 86, 87, 88, 88], color: 'blue' },
-    { id: '6', label: 'Error Rate', subtitle: 'Pick/Pack', value: '0.8%', change: '-0.1%', trend: 'up', icon: <Warning size={18} />, sparklineData: [1.2, 1.1, 1.0, 0.9, 0.9, 0.8], color: 'blue' },
-    { id: '7', label: 'Capacity Alerts', subtitle: 'Near Full', value: '1', change: '0', trend: 'down', icon: <Warning size={18} />, sparklineData: [2, 2, 1, 1, 1, 1], color: 'blue' },
-    { id: '8', label: 'On-Time Ship', subtitle: 'Fulfillment %', value: '96.5%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [93, 94, 94.5, 95, 95.8, 96.5], color: 'blue' },
-];
-
 // --- Mock Data: Charts ---
 const WAREHOUSE_PERFORMANCE = [
     { name: 'Main Hub', picking: 95, shipping: 90, storage: 85 },
@@ -75,6 +60,21 @@ export const WarehousePerformanceDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const isLoading = useFirstMountLoading('warehouse-performance-dashboard', 800);
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '1', label: t('warehouses_count'), subtitle: t('active_facilities'), value: '4', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [4, 4, 4, 4, 4, 4], color: 'blue' },
+        { id: '2', label: t('total_utilization'), subtitle: t('capacity_used'), value: '78%', change: '+3%', trend: 'up', icon: <Cube size={18} />, sparklineData: [70, 72, 75, 76, 77, 78], color: 'blue' },
+        { id: '3', label: t('picking_time_avg'), subtitle: t('per_order'), value: '14m', change: '-2m', trend: 'up', icon: <Clock size={18} />, sparklineData: [18, 17, 16, 15, 15, 14], color: 'blue' },
+        { id: '4', label: t('fulfillment_speed'), subtitle: t('orders_per_hour'), value: '45', change: '+5', trend: 'up', icon: <Lightning size={18} />, sparklineData: [35, 38, 40, 42, 44, 45], color: 'blue' },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '5', label: t('storage_efficiency'), subtitle: t('cubic_usage'), value: '88%', change: '+2%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [84, 85, 86, 87, 88, 88], color: 'blue' },
+        { id: '6', label: t('error_rate'), subtitle: t('pick_pack'), value: '0.8%', change: '-0.1%', trend: 'up', icon: <Warning size={18} />, sparklineData: [1.2, 1.1, 1.0, 0.9, 0.9, 0.8], color: 'blue' },
+        { id: '7', label: t('capacity_alerts'), subtitle: t('near_full'), value: '1', change: '0', trend: 'down', icon: <Warning size={18} />, sparklineData: [2, 2, 1, 1, 1, 1], color: 'blue' },
+        { id: '8', label: t('on_time_ship'), subtitle: t('fulfillment_pct'), value: '96.5%', change: '+1.2%', trend: 'up', icon: <CheckCircle size={18} />, sparklineData: [93, 94, 94.5, 95, 95.8, 96.5], color: 'blue' },
+    ];
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -186,8 +186,8 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Facility Throughput</h3>
-                            <p className="text-xs text-gray-400">Activity scores</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('facility_throughput')}</h3>
+                            <p className="text-xs text-gray-400">{t('activity_scores')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -217,8 +217,8 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Daily Throughput</h3>
-                            <p className="text-xs text-gray-400">Orders processed per day</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('daily_throughput')}</h3>
+                            <p className="text-xs text-gray-400">{t('orders_processed_per_day')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -249,8 +249,8 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Total Capacity</h3>
-                                <p className="text-xs text-gray-400">Space utilization</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('total_capacity')}</h3>
+                                <p className="text-xs text-gray-400">{t('space_utilization')}</p>
                             </div>
                             <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -264,8 +264,8 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Order Status</h3>
-                                <p className="text-xs text-gray-400">Fulfillment breakdown</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('order_status')}</h3>
+                                <p className="text-xs text-gray-400">{t('fulfillment_breakdown')}</p>
                             </div>
                             <MemoizedChart option={orderStatusPieOption} style={{ height: '180px' }} />
                         </div>

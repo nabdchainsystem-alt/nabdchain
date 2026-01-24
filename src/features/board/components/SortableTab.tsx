@@ -51,7 +51,7 @@ export const SortableTab: React.FC<SortableTabProps> = ({
             onClick={onClick}
             onContextMenu={onContextMenu}
             className={`
-                flex items-center justify-start text-left gap-2 py-1.5 border-b-2 text-[13.6px] font-medium
+                flex items-center gap-2 py-1.5 border-b-2 text-[13.6px] font-medium
                 transition-colors whitespace-nowrap select-none cursor-pointer
                 ${isActive
                     ? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100'

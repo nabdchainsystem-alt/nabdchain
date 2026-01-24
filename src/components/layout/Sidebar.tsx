@@ -961,15 +961,21 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_operations') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-gray-300 dark:border-gray-600 mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Megaphone size={13} weight="light" /> <span>{t('sales')}</span>
-                                                    </button>
-                                                    <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <ShoppingCart size={13} weight="light" /> <span>{t('purchases')}</span>
-                                                    </button>
-                                                    <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Package size={13} weight="light" /> <span>{t('stock_inventory')}</span>
-                                                    </button>
+                                                    {pageVisibility['sales'] !== false && (
+                                                        <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <Megaphone size={13} weight="light" /> <span>{t('sales')}</span>
+                                                        </button>
+                                                    )}
+                                                    {pageVisibility['purchases'] !== false && (
+                                                        <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <ShoppingCart size={13} weight="light" /> <span>{t('purchases')}</span>
+                                                        </button>
+                                                    )}
+                                                    {pageVisibility['inventory'] !== false && (
+                                                        <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <Package size={13} weight="light" /> <span>{t('stock_inventory')}</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -988,9 +994,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_finance') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-zinc-300 dark:border-zinc-600 mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Money size={13} weight="light" /> <span>{t('expenses')}</span>
-                                                    </button>
+                                                    {pageVisibility['expenses'] !== false && (
+                                                        <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <Money size={13} weight="light" /> <span>{t('expenses')}</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1009,12 +1017,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_people') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-neutral-300 dark:border-neutral-600 mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Users size={13} weight="light" /> <span>{t('customers')}</span>
-                                                    </button>
-                                                    <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
-                                                        <Truck size={13} weight="light" /> <span>{t('suppliers')}</span>
-                                                    </button>
+                                                    {pageVisibility['customers'] !== false && (
+                                                        <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <Users size={13} weight="light" /> <span>{t('customers')}</span>
+                                                        </button>
+                                                    )}
+                                                    {pageVisibility['suppliers'] !== false && (
+                                                        <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <Truck size={13} weight="light" /> <span>{t('suppliers')}</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

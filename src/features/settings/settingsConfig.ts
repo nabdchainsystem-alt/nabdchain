@@ -2,7 +2,7 @@ import {
     House, SquaresFour, Tray, Users, Lock,
     ShoppingCart, Globe, Package, Truck, UsersThree,
     Wrench, Factory, ShieldCheck, Buildings, Table, Megaphone, Money,
-    Monitor, Layout, Flask
+    Monitor, Layout, Flask, CurrencyDollar
 } from 'phosphor-react';
 
 export interface PageConfig {
@@ -20,6 +20,14 @@ export const ALL_PAGES: Record<string, PageConfig> = {
     'vault': { label: 'vault', section: 'main', icon: Lock },
     'test_tools': { label: 'test_tools', section: 'main', icon: Flask },
     'mini_company': { label: 'departments', section: 'main', icon: Buildings },
+
+    // Mini Company Departments
+    'sales': { label: 'sales', section: 'mini_company', icon: Megaphone },
+    'purchases': { label: 'purchases', section: 'mini_company', icon: ShoppingCart },
+    'inventory': { label: 'inventory', section: 'mini_company', icon: Package },
+    'expenses': { label: 'expenses', section: 'mini_company', icon: CurrencyDollar },
+    'customers': { label: 'customers', section: 'mini_company', icon: UsersThree },
+    'suppliers': { label: 'suppliers', section: 'mini_company', icon: Truck },
 
     // Marketplace
     'local_marketplace': { label: 'local_marketplace', section: 'marketplace', icon: ShoppingCart },
@@ -44,7 +52,6 @@ export const ALL_PAGES: Record<string, PageConfig> = {
     'business': { label: 'business_group', section: 'departments', icon: Buildings },
     'sales_listing': { label: 'sales_listings', section: 'business', icon: Table },
     'sales_factory': { label: 'sales_factory', section: 'business', icon: Factory },
-    'sales': { label: 'sales', section: 'business', icon: Megaphone },
     'finance': { label: 'finance', section: 'business', icon: Money },
 
     // Business Support

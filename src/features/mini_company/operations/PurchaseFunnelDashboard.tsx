@@ -56,31 +56,34 @@ const REQUEST_STATUS = [
     { id: 'PR-2024-005', requester: 'Evan Wright', stage: 'Finalizing', days: 0, status: 'On Track' },
 ];
 
-const SANKEY_DATA = {
-    nodes: [
-        { name: 'Submitted' },
-        { name: 'Manager Approved' },
-        { name: 'Manager Rejected' },
-        { name: 'Finance Approved' },
-        { name: 'Finance Rejected' },
-        { name: 'Ordered' },
-        { name: 'Cancelled' }
-    ],
-    links: [
-        { source: 'Submitted', target: 'Manager Approved', value: 80 },
-        { source: 'Submitted', target: 'Manager Rejected', value: 10 },
-        { source: 'Submitted', target: 'Cancelled', value: 10 },
-        { source: 'Manager Approved', target: 'Finance Approved', value: 70 },
-        { source: 'Manager Approved', target: 'Finance Rejected', value: 10 },
-        { source: 'Finance Approved', target: 'Ordered', value: 68 },
-        { source: 'Finance Approved', target: 'Cancelled', value: 2 },
-    ]
-};
+// SANKEY_DATA moved inside component for translation support
 
 export const PurchaseFunnelDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const isLoading = useFirstMountLoading('purchase-funnel-dashboard', 800);
+
+    // Translated Sankey Data
+    const SANKEY_DATA = {
+        nodes: [
+            { name: t('sankey_submitted') },
+            { name: t('sankey_manager_approved') },
+            { name: t('sankey_manager_rejected') },
+            { name: t('sankey_finance_approved') },
+            { name: t('sankey_finance_rejected') },
+            { name: t('sankey_ordered') },
+            { name: t('sankey_cancelled') }
+        ],
+        links: [
+            { source: t('sankey_submitted'), target: t('sankey_manager_approved'), value: 80 },
+            { source: t('sankey_submitted'), target: t('sankey_manager_rejected'), value: 10 },
+            { source: t('sankey_submitted'), target: t('sankey_cancelled'), value: 10 },
+            { source: t('sankey_manager_approved'), target: t('sankey_finance_approved'), value: 70 },
+            { source: t('sankey_manager_approved'), target: t('sankey_finance_rejected'), value: 10 },
+            { source: t('sankey_finance_approved'), target: t('sankey_ordered'), value: 68 },
+            { source: t('sankey_finance_approved'), target: t('sankey_cancelled'), value: 2 },
+        ]
+    };
 
     // --- KPI Data ---
     const TOP_KPIS: KPIData[] = [
@@ -148,7 +151,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
 
     // Sankey Chart
     const sankeyOption: EChartsOption = {
-        title: { text: 'Approval Flow Analysis', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
+        title: { text: t('approval_flow_analysis'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
         tooltip: { trigger: 'item', triggerOn: 'mousemove' },
         series: [
             {

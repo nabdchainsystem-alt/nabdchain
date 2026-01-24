@@ -9,21 +9,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ReorderPlanningInfo } from './ReorderPlanningInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 
-// --- KPI Data ---
-const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '1', label: 'Below Reorder Point', subtitle: 'Action Required', value: '18', change: '+4', trend: 'down', icon: <Warning size={18} />, sparklineData: [14, 15, 15, 16, 17, 18], color: 'blue' },
-    { id: '2', label: 'Reorder Qty Needed', subtitle: 'To Max Level', value: '2,450', rawValue: 2450, isCurrency: false, change: '+12%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [2000, 2100, 2200, 2300, 2400, 2450], color: 'blue' },
-    { id: '3', label: 'Avg Lead Time', subtitle: 'Supplier Speed', value: '12d', change: '+1d', trend: 'down', icon: <Clock size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
-    { id: '4', label: 'Days Stock Left', subtitle: 'Runway', value: '24d', change: '-2d', trend: 'down', icon: <Package size={18} />, sparklineData: [28, 27, 26, 25, 25, 24], color: 'blue' },
-];
-
-const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
-    { id: '5', label: 'Emergency Reorders', subtitle: 'Expedited', value: '3', change: '-1', trend: 'up', icon: <Lightning size={18} />, sparklineData: [5, 4, 4, 3, 3, 3], color: 'blue' },
-    { id: '6', label: 'Overstock Items', subtitle: '> Max Limit', value: '45', change: '+5', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [40, 41, 42, 43, 44, 45], color: 'blue' },
-    { id: '7', label: 'Planning Confidence', subtitle: 'Data Reliability', value: '92%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [90, 91, 91, 91, 92, 92], color: 'blue' },
-    { id: '8', label: 'Stockout Risk', subtitle: 'Items at risk', value: '8', change: '-2', trend: 'up', icon: <Warning size={18} />, sparklineData: [12, 11, 10, 9, 9, 8], color: 'blue' },
-];
-
 // Import Icon for use in Mock Data definition if needed, or just use component directly
 import { Lightning } from 'phosphor-react';
 
@@ -80,6 +65,21 @@ export const ReorderPlanningDashboard: React.FC = () => {
     const { currency, t } = useAppContext();
     const [showInfo, setShowInfo] = useState(false);
     const isLoading = useFirstMountLoading('reorder-planning-dashboard', 800);
+
+    // --- KPI Data ---
+    const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '1', label: t('below_reorder_point'), subtitle: t('action_required'), value: '18', change: '+4', trend: 'down', icon: <Warning size={18} />, sparklineData: [14, 15, 15, 16, 17, 18], color: 'blue' },
+        { id: '2', label: t('reorder_qty_needed'), subtitle: t('to_max_level'), value: '2,450', rawValue: 2450, isCurrency: false, change: '+12%', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [2000, 2100, 2200, 2300, 2400, 2450], color: 'blue' },
+        { id: '3', label: t('avg_lead_time'), subtitle: t('supplier_speed'), value: '12d', change: '+1d', trend: 'down', icon: <Clock size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
+        { id: '4', label: t('days_stock_left'), subtitle: t('runway'), value: '24d', change: '-2d', trend: 'down', icon: <Package size={18} />, sparklineData: [28, 27, 26, 25, 25, 24], color: 'blue' },
+    ];
+
+    const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
+        { id: '5', label: t('emergency_reorders'), subtitle: t('expedited'), value: '3', change: '-1', trend: 'up', icon: <Lightning size={18} />, sparklineData: [5, 4, 4, 3, 3, 3], color: 'blue' },
+        { id: '6', label: t('overstock_items'), subtitle: t('above_max_limit'), value: '45', change: '+5', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [40, 41, 42, 43, 44, 45], color: 'blue' },
+        { id: '7', label: t('planning_confidence'), subtitle: t('data_reliability'), value: '92%', change: '+1%', trend: 'up', icon: <ShieldCheck size={18} />, sparklineData: [90, 91, 91, 91, 92, 92], color: 'blue' },
+        { id: '8', label: t('stockout_risk'), subtitle: t('items_at_risk'), value: '8', change: '-2', trend: 'up', icon: <Warning size={18} />, sparklineData: [12, 11, 10, 9, 9, 8], color: 'blue' },
+    ];
 
     const toggleFullScreen = () => {
         window.dispatchEvent(new Event('dashboard-toggle-fullscreen'));
@@ -198,8 +198,8 @@ export const ReorderPlanningDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Reorder Amounts</h3>
-                            <p className="text-xs text-gray-400">Qty to order per SKU</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('reorder_amounts')}</h3>
+                            <p className="text-xs text-gray-400">{t('qty_to_order_per_sku')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -226,8 +226,8 @@ export const ReorderPlanningDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[300px]">
                         <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lead Time by Supplier</h3>
-                            <p className="text-xs text-gray-400">Days to delivery</p>
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('lead_time_by_supplier')}</h3>
+                            <p className="text-xs text-gray-400">{t('days_to_delivery')}</p>
                         </div>
                         <div className="h-[220px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -258,8 +258,8 @@ export const ReorderPlanningDashboard: React.FC = () => {
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Coverage Status</h3>
-                                <p className="text-xs text-gray-400">Inventory health</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('coverage_status')}</h3>
+                                <p className="text-xs text-gray-400">{t('inventory_health')}</p>
                             </div>
                             <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
@@ -273,8 +273,8 @@ export const ReorderPlanningDashboard: React.FC = () => {
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up min-h-[250px]">
                             <div className="mb-2">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Urgency Level</h3>
-                                <p className="text-xs text-gray-400">Reorder priority</p>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('urgency_level')}</h3>
+                                <p className="text-xs text-gray-400">{t('reorder_priority')}</p>
                             </div>
                             <MemoizedChart option={urgencyPieOption} style={{ height: '180px' }} />
                         </div>

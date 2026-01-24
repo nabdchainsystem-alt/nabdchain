@@ -301,6 +301,9 @@ const AppContent: React.FC = () => {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
+  // Track visited department pages for lazy keep-alive (only mount once visited)
+  const [visitedDeptPages, setVisitedDeptPages] = useState<Set<string>>(() => new Set());
+
   // Startup cleanup: Remove deleted boards AND orphaned boards from localStorage
   useEffect(() => {
     const savedBoards = localStorage.getItem('app-boards');
@@ -627,6 +630,17 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('app-active-view', activeView);
+  }, [activeView]);
+
+  // Track visited department pages for lazy keep-alive
+  const DEPT_PAGES = ['sales', 'purchases', 'inventory', 'expenses', 'customers', 'suppliers'];
+  useEffect(() => {
+    if (DEPT_PAGES.includes(activeView)) {
+      setVisitedDeptPages(prev => {
+        if (prev.has(activeView)) return prev;
+        return new Set([...prev, activeView]);
+      });
+    }
   }, [activeView]);
 
   useEffect(() => {
@@ -1420,7 +1434,8 @@ const AppContent: React.FC = () => {
         {/* Main Content Area */}
         <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ltr:shadow-[-4px_0_24px_rgba(0,0,0,0.08)] rtl:shadow-[4px_0_24px_rgba(0,0,0,0.08)] ms-0.5`}>
           <React.Suspense fallback={<FullScreenLoader />}>
-            {activeView === 'dashboard' ? (
+            {/* Dashboard - Always mounted, hidden when not active (CSS keep-alive) */}
+            <div className={activeView === 'dashboard' ? 'contents' : 'hidden'}>
               <FeatureErrorBoundary featureName="Dashboard">
                 <Dashboard
                   onBoardCreated={handleBoardCreated}
@@ -1433,7 +1448,10 @@ const AppContent: React.FC = () => {
                   onRequestNewBoard={handleRequestNewBoard}
                 />
               </FeatureErrorBoundary>
-            ) : activeView === 'board' ? (
+            </div>
+
+            {/* Other views - conditionally rendered */}
+            {activeView === 'board' ? (
               activeBoard ? (
                 <FeatureErrorBoundary featureName="Board">
                   <BoardView
@@ -1498,19 +1516,41 @@ const AppContent: React.FC = () => {
               <BusinessSalesPage onNavigate={handleNavigate} />
             ) : activeView === 'dashboards' ? (
               <DashboardsPage />
-            ) : activeView === 'sales' ? (
-              <SalesPage />
-            ) : activeView === 'purchases' ? (
-              <PurchasesPage />
-            ) : activeView === 'inventory' ? (
-              <InventoryPage />
-            ) : activeView === 'expenses' ? (
-              <ExpensesPage />
-            ) : activeView === 'customers' ? (
-              <CustomersPage />
-            ) : activeView === 'suppliers' ? (
-              <SuppliersPage />
-            ) : activeView === 'reports' ? (
+            ) : null}
+
+            {/* Department pages with dashboards - Lazy CSS keep-alive (mount on first visit, then preserve) */}
+            {visitedDeptPages.has('sales') && (
+              <div className={activeView === 'sales' ? 'contents' : 'hidden'}>
+                <SalesPage />
+              </div>
+            )}
+            {visitedDeptPages.has('purchases') && (
+              <div className={activeView === 'purchases' ? 'contents' : 'hidden'}>
+                <PurchasesPage />
+              </div>
+            )}
+            {visitedDeptPages.has('inventory') && (
+              <div className={activeView === 'inventory' ? 'contents' : 'hidden'}>
+                <InventoryPage />
+              </div>
+            )}
+            {visitedDeptPages.has('expenses') && (
+              <div className={activeView === 'expenses' ? 'contents' : 'hidden'}>
+                <ExpensesPage />
+              </div>
+            )}
+            {visitedDeptPages.has('customers') && (
+              <div className={activeView === 'customers' ? 'contents' : 'hidden'}>
+                <CustomersPage />
+              </div>
+            )}
+            {visitedDeptPages.has('suppliers') && (
+              <div className={activeView === 'suppliers' ? 'contents' : 'hidden'}>
+                <SuppliersPage />
+              </div>
+            )}
+
+            {activeView === 'reports' ? (
               <ReportsPage />
             ) : activeView === 'it_support' ? (
               <ITPage />
@@ -1542,20 +1582,7 @@ const AppContent: React.FC = () => {
               <ArcadePage />
             ) : activeView === 'live_session' ? (
               <LiveSessionPage />
-            ) : (
-              // Unknown view - redirect to dashboard
-              <FeatureErrorBoundary featureName="Dashboard">
-                <Dashboard
-                  onBoardCreated={handleBoardCreated}
-                  recentlyVisited={recentlyVisited}
-                  onNavigate={handleNavigate}
-                  boards={workspaceBoards}
-                  activeWorkspaceId={activeWorkspaceId}
-                  workspaces={workspaces}
-                  onTaskCreated={handleCreateTaskOnBoard}
-                />
-              </FeatureErrorBoundary>
-            )}
+            ) : null /* Unknown view - Dashboard is always mounted above */}
           </React.Suspense>
         </main>
       </div>

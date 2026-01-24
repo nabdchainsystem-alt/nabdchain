@@ -226,6 +226,10 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
         // Default to overview if it exists, otherwise first available
         return sanitizedAvailableViews.includes('overview' as any) ? 'overview' as any : (sanitizedAvailableViews[0] || 'kanban');
     });
+
+    // Track visited custom views for CSS keep-alive (dashboards stay mounted once visited)
+    const [visitedCustomViews, setVisitedCustomViews] = useState<Set<string>>(() => new Set());
+
     const [showAddViewMenu, setShowAddViewMenu] = useState(false);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
@@ -509,6 +513,32 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
             localStorage.setItem(storageKey, activeView);
         }
     }, [activeView, storageKey]);
+
+    // Track visited custom views for CSS keep-alive
+    const CUSTOM_VIEW_TYPES = [
+        'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast',
+        'sales_funnel', 'sales_segmentation', 'sales_promotions',
+        'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control',
+        'purchase_funnel', 'dependency_risk', 'forecast_planning',
+        'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy',
+        'reorder_planning', 'warehouse_performance', 'inventory_forecast',
+        'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies',
+        'approval_flow', 'dept_accountability', 'forecast_optimization',
+        'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn',
+        'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk',
+        'supplier_overview', 'supplier_delivery', 'supplier_cost', 'supplier_quality',
+        'supplier_lead_time', 'supplier_risk', 'supplier_strategic'
+    ];
+
+    useEffect(() => {
+        const baseView = getBaseViewType(activeView);
+        if (CUSTOM_VIEW_TYPES.includes(baseView) && renderCustomView) {
+            setVisitedCustomViews(prev => {
+                if (prev.has(baseView)) return prev;
+                return new Set([...prev, baseView]);
+            });
+        }
+    }, [activeView, renderCustomView]);
 
     // Track previous views to detect deletions vs additions
     const prevAvailableViewsRef = useRef<BoardViewType[]>(sanitizedAvailableViews);
@@ -949,16 +979,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
             case 'supplier_lead_time':
             case 'supplier_risk':
             case 'supplier_strategic':
-                if (renderCustomView) {
-                    const custom = renderCustomView(baseViewType);
-                    if (custom) {
-                        return (
-                            <div key={`${board.id}-${baseViewType}`} className="w-full h-full overflow-y-auto relative">
-                                {custom}
-                            </div>
-                        );
-                    }
-                }
+                // Custom views are rendered via CSS keep-alive below, return null here
                 return null;
             case 'kanban':
                 return (
@@ -1206,7 +1227,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
 
                         {/* Tabs Row */}
                         <div className={`flex items-center gap-0 border-b border-gray-200 dark:border-gray-800 -ml-[24px] -mr-[20px] ${dir === 'rtl' ? 'pr-[24px] pl-6' : 'pl-[24px] pr-6'}`}>
-                            <div className={`flex items-center gap-[11.5px] overflow-x-auto no-scrollbar max-w-full ${dir === 'rtl' ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
+                            <div dir={dir} className="flex items-center gap-[11.5px] overflow-x-auto no-scrollbar max-w-full">
                                 {/* Fixed "Overview" Tab */}
                                 {sanitizedAvailableViews.includes('overview' as any) && (() => {
                                     const overviewOption = effectiveViewOptions.find(v => v.id === 'overview');
@@ -1223,7 +1244,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                                                 }
                                                 handleContextMenu(e, 'overview');
                                             }}
-                                            className={`flex items-center justify-start text-left gap-2 py-1.5 border-b-2 text-[13.6px] font-medium transition-colors whitespace-nowrap ${activeView === 'overview'
+                                            className={`flex items-center gap-2 py-1.5 border-b-2 text-[13.6px] font-medium transition-colors whitespace-nowrap ${activeView === 'overview'
                                                 ? 'border-slate-900 text-slate-900 dark:text-slate-100'
                                                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                                                 }`}
@@ -1429,6 +1450,21 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                                 </div>
                             }>
                                 {renderView()}
+
+                                {/* CSS keep-alive for custom dashboard views - stay mounted once visited */}
+                                {renderCustomView && Array.from(visitedCustomViews).map(viewType => {
+                                    const isActive = getBaseViewType(activeView) === viewType;
+                                    const customContent = renderCustomView(viewType);
+                                    if (!customContent) return null;
+                                    return (
+                                        <div
+                                            key={`${board.id}-${viewType}-keepalive`}
+                                            className={isActive ? 'w-full h-full overflow-y-auto relative' : 'hidden'}
+                                        >
+                                            {customContent}
+                                        </div>
+                                    );
+                                })}
                             </React.Suspense>
                         </div>
 

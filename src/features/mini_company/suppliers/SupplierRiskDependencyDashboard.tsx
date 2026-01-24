@@ -221,17 +221,43 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
     // Network Graph
     const networkOption: EChartsOption = {
         tooltip: {},
-        legend: [{ data: [t('company'), t('tier_1'), t('tier_2')] }],
+        legend: {
+            data: [t('company'), t('tier_1'), t('tier_2')],
+            bottom: 0
+        },
         animationDuration: 1500,
         animationEasingUpdate: 'quinticInOut',
         series: [{
             type: 'graph',
             layout: 'force',
-            data: TRANSLATED_NETWORK_NODES.map(node => ({ ...node, itemStyle: node.category === 0 ? { color: '#3b82f6' } : node.category === 1 ? { color: '#10b981' } : { color: '#9ca3af' } })),
+            categories: [
+                { name: t('company') },
+                { name: t('tier_1') },
+                { name: t('tier_2') }
+            ],
+            data: TRANSLATED_NETWORK_NODES.map(node => ({
+                ...node,
+                itemStyle: node.category === 0 ? { color: '#3b82f6' } : node.category === 1 ? { color: '#10b981' } : { color: '#9ca3af' }
+            })),
             links: NETWORK_LINKS,
             roam: true,
-            label: { position: isRTL ? 'left' : 'right', formatter: '{b}' },
-            force: { repulsion: 200 }
+            label: {
+                show: true,
+                position: isRTL ? 'left' : 'right',
+                formatter: '{b}'
+            },
+            lineStyle: {
+                color: 'source',
+                curveness: 0.3
+            },
+            emphasis: {
+                focus: 'adjacency',
+                lineStyle: { width: 4 }
+            },
+            force: {
+                repulsion: 200,
+                edgeLength: [50, 100]
+            }
         }]
     };
 
