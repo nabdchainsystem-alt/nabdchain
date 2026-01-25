@@ -196,31 +196,34 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
 
     // Pie Chart: Passed vs Failed
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10 } },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('inspection_outcome'),
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_INSPECTION_OUTCOMES
         }]
     }), [TRANSLATED_INSPECTION_OUTCOMES, t]);
 
     // Pie Chart: Defect Categories
     const defectPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('defect_type'),
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_DEFECT_CATEGORIES,
             color: ['#3b82f6', '#8b5cf6', '#ef4444', '#f59e0b', '#6b7280']
         }]
@@ -228,14 +231,16 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
 
     // Compliance Status Pie
     const compliancePieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_COMPLIANCE_STATUS,
             color: ['#10b981', '#f59e0b', '#ef4444']
         }]
@@ -328,7 +333,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
             position: isRTL ? 'right' : 'left',
             min: 0,
             max: 100,
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -400,7 +405,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                     <>
                         {/* ECharts: Defects & Inspections (Dual Y-Axis Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('defect_analysis')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_supplier')}</p>
                             </div>
@@ -409,7 +414,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
 
                         {/* ECharts: Quality by Supplier (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('quality_scores')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_supplier')}</p>
                             </div>
@@ -441,7 +446,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-6">
                             {/* ECharts: Inspection Outcomes (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('inspection_outcomes')}</h3>
                                     <p className="text-xs text-gray-400">{t('pass_fail_distribution')}</p>
                                 </div>
@@ -450,7 +455,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
 
                             {/* ECharts: Compliance Status (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('compliance_status')}</h3>
                                     <p className="text-xs text-gray-400">{t('overall_distribution')}</p>
                                 </div>
@@ -482,28 +487,28 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('compliance_registry')}</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table dir={dir} className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                            <table dir={dir} className={`w-full text-sm text-start`}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
                                         <th className="px-5 py-3 text-center">{t('inspections')}</th>
                                         <th className="px-5 py-3 text-center">{t('defects')}</th>
                                         <th className="px-5 py-3 text-center">{t('compliance')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('status')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {TRANSLATED_SUPPLIER_TABLE.map((row, index) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.name}</td>
                                             <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.inspections}</td>
                                             <td className="px-5 py-3 text-center font-medium text-red-500">{row.defects}</td>
                                             <td className="px-5 py-3 text-center font-bold text-gray-700 dark:text-gray-300">{row.compliance}</td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === t('high_risk') ? 'bg-red-100 text-red-700' :
                                                     row.status === t('watchlist') ? 'bg-yellow-100 text-yellow-700' :
                                                         'bg-green-100 text-green-700'
@@ -526,7 +531,7 @@ export const SupplierQualityComplianceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-2 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('metrics_radar')}</h3>
                             <p className="text-xs text-gray-400">{t('quality_vs_other_kpis')}</p>
                         </div>

@@ -120,15 +120,16 @@ export const DeptAccountabilityDashboard: React.FC = () => {
 
     // Pie Chart
     const pieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: DEPT_SHARE,
             color: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1', '#ec4899']
         }]
@@ -136,14 +137,16 @@ export const DeptAccountabilityDashboard: React.FC = () => {
 
     // Variance Status Pie
     const variancePieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: VARIANCE_STATUS,
             color: ['#ef4444', '#3b82f6', '#10b981']
         }]
@@ -164,7 +167,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -193,7 +196,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },

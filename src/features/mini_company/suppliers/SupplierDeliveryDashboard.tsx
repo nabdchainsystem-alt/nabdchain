@@ -148,14 +148,16 @@ export const SupplierDeliveryDashboard: React.FC = () => {
 
     // Issue Categories Pie
     const issuePieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_ISSUE_CATEGORIES,
             color: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#6b7280']
         }]
@@ -163,14 +165,16 @@ export const SupplierDeliveryDashboard: React.FC = () => {
 
     // Delivery Mode Pie
     const deliveryModePieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_DELIVERY_MODE,
             color: ['#10b981', '#3b82f6', '#8b5cf6']
         }]
@@ -192,7 +196,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -233,7 +237,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -316,7 +320,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                     <>
                         {/* ECharts: On-Time vs Late (Stacked Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('delivery_volume')}</h3>
                                 <p className="text-xs text-gray-400">{t('on_time_vs_late')}</p>
                             </div>
@@ -325,7 +329,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
 
                         {/* ECharts: Delivery by Carrier (Stacked Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('carrier_performance')}</h3>
                                 <p className="text-xs text-gray-400">{t('on_time_vs_late_carrier')}</p>
                             </div>
@@ -357,7 +361,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-6">
                             {/* ECharts: Issue Categories (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('issue_breakdown')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
@@ -366,7 +370,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
 
                             {/* ECharts: Delivery Mode (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('delivery_mode')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_transport_type')}</p>
                                 </div>
@@ -398,30 +402,30 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('performance_log')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
                                         <th className="px-5 py-3 text-center">{t('orders')}</th>
                                         <th className="px-5 py-3 text-center">{t('on_time')}</th>
                                         <th className="px-5 py-3 text-center">{t('lead_time')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('open_issues')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('open_issues')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {DELIVERY_TABLE.map((row, index) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.supplier}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.supplier}</td>
                                             <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.orders}</td>
                                             <td className={`px-5 py-3 text-center font-bold ${parseInt(row.onTime) >= 95 ? 'text-green-600' : parseInt(row.onTime) >= 85 ? 'text-amber-500' : 'text-red-500'}`}>
                                                 {row.onTime}
                                             </td>
                                             <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.leadTime}</td>
-                                            <td className={`px-5 py-3 text-xs text-gray-500 dark:text-gray-400 ${isRTL ? 'text-left' : 'text-right'}`}>{row.issues}</td>
+                                            <td className={`px-5 py-3 text-xs text-gray-500 dark:text-gray-400 text-end`}>{row.issues}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -437,7 +441,7 @@ export const SupplierDeliveryDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-2 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('monthly_consistency')}</h3>
                             <p className="text-xs text-gray-400">{t('on_time_performance_heatmap')}</p>
                         </div>

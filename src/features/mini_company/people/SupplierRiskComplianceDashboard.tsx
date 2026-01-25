@@ -65,14 +65,16 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
     };
 
     const riskPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: RISK_DISTRIBUTION,
             color: ['#ef4444', '#f59e0b', '#10b981']
         }]
@@ -93,7 +95,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -120,7 +122,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
         yAxis: {
             type: 'category',
             data: COMPLIANCE_BY_CATEGORY.map(d => d.name),
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
             inverse: !isRTL,
@@ -141,7 +143,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
 
             {/* Header */}
             <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-end' : ''}`}>
                     <Shield size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">{t('risk_compliance')}</h1>
@@ -172,7 +174,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
                     <div className="col-span-2"><ChartSkeleton height="h-[300px]" title={t('risk_trend')} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_trend')}</h3>
                             <p className="text-xs text-gray-400">{t('suppliers_by_risk_level')}</p>
                         </div>
@@ -185,7 +187,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
                     <div className="col-span-2"><ChartSkeleton height="h-[300px]" title={t('compliance_by_category')} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('compliance_by_category')}</h3>
                             <p className="text-xs text-gray-400">{t('compliance_percentage')}</p>
                         </div>
@@ -199,7 +201,7 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_risk_level')}</p>
                             </div>
@@ -229,41 +231,41 @@ export const SupplierRiskComplianceDashboard: React.FC = () => {
                     <div className="col-span-4"><TableSkeleton rows={5} columns={6} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-4 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('high_risk_suppliers')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('supplier')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('risk_level')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('risk_score')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('open_issues')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('last_audit')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('cert_expiry')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('risk_level')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('risk_score')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('open_issues')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('last_audit')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('cert_expiry')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {RISK_TABLE_DATA.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>
                                                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                     <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold">{row.name.charAt(0)}</div>
                                                     {row.name}
                                                 </div>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>
+                                            <td className={`px-5 py-3 text-start`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.riskLevel === 'high' ? 'bg-red-100 text-red-700' : row.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
                                                     {t(row.riskLevel)}
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${row.riskScore >= 70 ? 'text-red-600' : row.riskScore >= 40 ? 'text-amber-600' : 'text-green-600'}`}>{row.riskScore}</span>
                                             </td>
-                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 ${isRTL ? 'text-start' : 'text-end'}`}>{row.issues}</td>
-                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs ${isRTL ? 'text-start' : 'text-end'}`}>{row.lastAudit}</td>
-                                            <td className={`px-5 py-3 text-xs ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{row.issues}</td>
+                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-end`}>{row.lastAudit}</td>
+                                            <td className={`px-5 py-3 text-xs text-end`}>
                                                 <span className={`font-medium ${parseInt(row.certExpiry) <= 30 ? 'text-red-600' : parseInt(row.certExpiry) <= 90 ? 'text-amber-600' : 'text-gray-500'}`}>{row.certExpiry}</span>
                                             </td>
                                         </tr>

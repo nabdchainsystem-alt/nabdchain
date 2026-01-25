@@ -128,41 +128,63 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
         { value: 42, name: t('orders_placed') },
     ], [t]);
 
-    // ECharts Funnel Option
+    // ECharts Funnel Vertical Bar Chart Option
     const funnelOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item', formatter: '{b} : {c}%' },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}: {c}%' },
+        grid: { left: 40, right: 20, top: 30, bottom: 50 },
+        xAxis: {
+            type: 'category',
+            data: translatedFunnelData.map(d => d.name),
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+                color: '#64748b',
+                fontSize: 10,
+                fontWeight: 500,
+                interval: 0,
+                rotate: 0,
+            },
+            inverse: isRTL,
+        },
+        yAxis: {
+            type: 'value',
+            max: 100,
+            position: isRTL ? 'right' : 'left',
+            axisLine: { show: true },
+            axisTick: { show: false },
+            splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
+            axisLabel: { color: '#94a3b8', fontSize: 10, formatter: '{value}%' },
+        },
         series: [{
             name: t('sales_funnel'),
-            type: 'funnel',
-            left: '10%',
-            top: 20,
-            bottom: 20,
-            width: '80%',
-            min: 0,
-            max: 100,
-            minSize: '0%',
-            maxSize: '100%',
-            sort: 'descending',
-            gap: 4,
-            label: { show: true, position: 'inside', formatter: '{b} ({c}%)', fontSize: 11, fontWeight: 'bold' },
-            labelLine: { show: false },
-            itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 8 },
-            emphasis: { label: { fontSize: 14 } },
-            data: translatedFunnelData.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
+            type: 'bar',
+            data: translatedFunnelData.map(d => d.value),
+            itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+            barWidth: 50,
+            label: {
+                show: true,
+                position: 'top',
+                formatter: '{c}%',
+                color: '#64748b',
+                fontSize: 12,
+                fontWeight: 'bold'
+            },
         }]
-    }), [translatedFunnelData, t]);
+    }), [translatedFunnelData, t, isRTL]);
 
     // ECharts Won vs Lost Pie Option
     const wonLostPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-        legend: { bottom: '0%', left: 'center', textStyle: { fontSize: 10, color: '#94a3b8' } },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: [
                 { value: 42, name: t('won_deals'), itemStyle: { color: '#10b981' } },
                 { value: 58, name: t('lost_dropped'), itemStyle: { color: '#f43f5e' } },
@@ -184,7 +206,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
         yAxis: {
             type: 'category',
             data: [t('hardware'), t('software'), t('support'), t('other')],
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitArea: { show: true }
         },
@@ -227,7 +249,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -257,7 +279,7 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -381,16 +403,16 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                         </div>
                     )}
 
-                    {/* Leakage Heatmap */}
+                    {/* Stage Velocity Analysis */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title={t('leakage_heatmap')} />
+                        <ChartSkeleton height="h-[250px]" title={t('stage_velocity_analysis')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4 text-start">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('leakage_heatmap')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('stage_vs_category')}</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('stage_velocity_analysis')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('avg_time_conversion_stage')}</p>
                             </div>
-                            <MemoizedChart option={heatmapOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={stageVelocityOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>
@@ -483,19 +505,19 @@ export const SalesFunnelDashboard: React.FC<SalesFunnelDashboardProps> = ({ hide
                         </div>
                     )}
 
-                    {/* Companion Chart: Stage Velocity */}
+                    {/* Companion Chart: Leakage Heatmap */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[450px]" title={t('stage_velocity_analysis')} />
+                        <ChartSkeleton height="h-[450px]" title={t('leakage_heatmap')} />
                     ) : (
                         <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                    {t('stage_velocity_analysis')}
+                                    {t('leakage_heatmap')}
                                 </h3>
-                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('avg_time_conversion_stage')}</p>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('stage_vs_category')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
-                                <MemoizedChart option={stageVelocityOption} style={{ height: '100%', width: '100%' }} />
+                                <MemoizedChart option={heatmapOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal">

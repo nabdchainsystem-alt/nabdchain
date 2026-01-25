@@ -135,7 +135,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                 label: { show: true, position: 'inside' },
                 labelLine: { length: 10, lineStyle: { width: 1, type: 'solid' } },
                 itemStyle: { borderColor: '#fff', borderWidth: 1 },
-                emphasis: { label: { fontSize: 20 } },
+                
                 data: FUNNEL_DATA,
                 color: ['#0f766e', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4']
             }
@@ -144,14 +144,16 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
 
     // Drop Point Split Pie
     const dropPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: DROP_POINT_SPLIT,
             color: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
         }]
@@ -172,7 +174,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -200,7 +202,7 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -363,18 +365,18 @@ export const JourneyTouchpointsDashboard: React.FC = () => {
                                 <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">{t('journey_id')}</th>
-                                            <th className="px-5 py-3">{t('touchpoints')}</th>
-                                            <th className="px-5 py-3">{t('duration')}</th>
+                                            <th className="px-5 py-3 text-start">{t('journey_id')}</th>
+                                            <th className="px-5 py-3 text-start">{t('touchpoints')}</th>
+                                            <th className="px-5 py-3 text-start">{t('duration')}</th>
                                             <th className="px-5 py-3 text-end">{t('outcome')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {TRANSLATED_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.touchpointsCount}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs">{row.durationDays}d</td>
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.id}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs text-start">{row.touchpointsCount}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs text-start">{row.durationDays}d</td>
                                                 <td className="px-5 py-3 text-end">
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.outcomeKey === 'converted' ? 'bg-green-100 text-green-700' :
                                                         row.outcomeKey === 'pending' ? 'bg-yellow-100 text-yellow-700' :

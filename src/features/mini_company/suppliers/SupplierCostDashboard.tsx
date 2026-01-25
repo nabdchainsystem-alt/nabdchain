@@ -129,14 +129,16 @@ export const SupplierCostDashboard: React.FC = () => {
 
     // Spend Distribution Pie
     const spendDistPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_SPEND_DISTRIBUTION,
             color: ['#3b82f6', '#8b5cf6', '#9ca3af']
         }]
@@ -144,14 +146,16 @@ export const SupplierCostDashboard: React.FC = () => {
 
     // Category Spend Pie
     const categorySpendPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_CATEGORY_SPEND,
             color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
         }]
@@ -212,7 +216,7 @@ export const SupplierCostDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -253,7 +257,7 @@ export const SupplierCostDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -325,7 +329,7 @@ export const SupplierCostDashboard: React.FC = () => {
                     <>
                         {/* ECharts: Monthly Spend Trend (Area) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_trend')}</h3>
                                 <p className="text-xs text-gray-400">{t('monthly_run_rate')}</p>
                             </div>
@@ -334,7 +338,7 @@ export const SupplierCostDashboard: React.FC = () => {
 
                         {/* ECharts: Savings by Category (Bar) */}
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('savings_sources')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_initiative_type')}</p>
                             </div>
@@ -366,7 +370,7 @@ export const SupplierCostDashboard: React.FC = () => {
                         <div className="col-span-2 grid grid-cols-2 gap-6">
                             {/* ECharts: Spend Distribution (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_distribution')}</h3>
                                     <p className="text-xs text-gray-400">{t('concentration_analysis')}</p>
                                 </div>
@@ -375,7 +379,7 @@ export const SupplierCostDashboard: React.FC = () => {
 
                             {/* ECharts: Category Spend (Pie) */}
                             <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                                <div className={`mb-2 text-start`}>
                                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('category_split')}</h3>
                                     <p className="text-xs text-gray-400">{t('by_category')}</p>
                                 </div>
@@ -407,30 +411,30 @@ export const SupplierCostDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_analysis')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t('supplier')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('contract')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('actual')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('contract')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('actual')}</th>
                                         <th className="px-5 py-3 text-center">{t('variance')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('savings')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('savings')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {COST_TABLE.map((row, index) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.supplier}</td>
-                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 ${isRTL ? 'text-left' : 'text-right'}`}>{row.contract}</td>
-                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 ${isRTL ? 'text-left' : 'text-right'}`}>{row.actual}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.supplier}</td>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{row.contract}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 text-end`}>{row.actual}</td>
                                             <td className={`px-5 py-3 text-center font-bold ${row.variance.includes('-') ? 'text-green-600' : 'text-red-500'}`}>
                                                 {row.variance}
                                             </td>
-                                            <td className={`px-5 py-3 text-green-600 font-medium ${isRTL ? 'text-left' : 'text-right'}`}>{row.savings}</td>
+                                            <td className={`px-5 py-3 text-green-600 font-medium text-end`}>{row.savings}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -446,7 +450,7 @@ export const SupplierCostDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-2 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('cost_bridge')}</h3>
                             <p className="text-xs text-gray-400">{t('budget_to_actual_walk')}</p>
                         </div>

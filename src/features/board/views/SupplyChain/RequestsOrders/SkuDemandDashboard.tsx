@@ -26,13 +26,18 @@ export const SkuDemandDashboard: React.FC = () => {
     };
 
     const demandByCategory = {
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [
             {
                 name: 'Category Usage',
                 type: 'pie',
-                radius: ['40%', '70%'],
+                selectedMode: 'multiple',
+                radius: '65%',
+                center: ['50%', '45%'],
+                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+                label: { show: false },
+                emphasis: { label: { show: false } },
                 data: [
                     { value: 40, name: 'PPE' },
                     { value: 25, name: 'Spare Parts' },

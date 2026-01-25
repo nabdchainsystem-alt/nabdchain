@@ -130,15 +130,17 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
 
     // ECharts Revenue Type Pie Option
     const typePieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-        legend: { bottom: '0%', left: 'center', textStyle: { fontSize: 10, color: '#94a3b8' } },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: translatedRevenueTypeData.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
         }]
     }), [translatedRevenueTypeData]);
@@ -187,7 +189,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -216,7 +218,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -246,7 +248,7 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -370,16 +372,16 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                         </div>
                     )}
 
-                    {/* Campaign Impact Bubble */}
+                    {/* Campaign ROI Analysis */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title={t('campaign_impact')} />
+                        <ChartSkeleton height="h-[250px]" title={t('campaign_roi_analysis')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4 text-start">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('campaign_impact')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('roi_vs_conversion')}</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('campaign_roi_analysis')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('budget_vs_revenue')}</p>
                             </div>
-                            <MemoizedChart option={impactBubbleOption} style={{ height: '210px' }} />
+                            <MemoizedChart option={campaignRoiOption} style={{ height: '210px' }} />
                         </div>
                     )}
                 </div>
@@ -472,19 +474,19 @@ export const SalesPromotionsDashboard: React.FC<SalesPromotionsDashboardProps> =
                     </div>
                 )}
 
-                    {/* Campaign ROI Companion */}
+                    {/* Campaign Impact Bubble */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[450px]" title={t('campaign_roi_analysis')} />
+                        <ChartSkeleton height="h-[450px]" title={t('campaign_impact')} />
                     ) : (
                         <div className="lg:col-span-1 bg-white dark:bg-monday-dark-elevated rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full text-start animate-fade-in-up">
                             <div className="mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-normal">
-                                    {t('campaign_roi_analysis')}
+                                    {t('campaign_impact')}
                                 </h3>
-                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('budget_vs_revenue')}</p>
+                                <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">{t('roi_vs_conversion')}</p>
                             </div>
                             <div className="flex-1 min-h-[300px]">
-                                <MemoizedChart option={campaignRoiOption} style={{ height: '100%', width: '100%' }} />
+                                <MemoizedChart option={impactBubbleOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                             <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <p className="text-[10px] text-blue-700 dark:text-blue-400 leading-normal text-start">

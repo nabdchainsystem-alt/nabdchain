@@ -135,55 +135,58 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         { id: '8', label: t('deviation_avg'), subtitle: t('forecast_error'), value: '6.2%', change: '-1.5%', trend: 'up', icon: <ChartLine size={18} />, sparklineData: [9, 8.5, 8, 7.5, 7, 6.5, 6.2] },
     ], [t]);
 
-    // ECharts Actual vs Forecast Option
+    // ECharts Actual vs Forecast Option (Grouped Bar Chart)
     const lineOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-        legend: { data: [t('actual'), t('forecast')], textStyle: { color: '#94a3b8' }, bottom: 0 },
-        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: [t('actual'), t('forecast')], textStyle: { color: '#94a3b8', fontSize: 10 }, bottom: 0 },
+        grid: { left: '3%', right: '4%', bottom: '15%', top: '5%', containLabel: true },
         xAxis: {
             type: 'category',
             data: ACTUAL_VS_FORECAST_DATA.slice(1).map(d => d[0]),
-            axisLine: { lineStyle: { color: '#e2e8f0' } },
-            axisTick: { show: false }
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: '#94a3b8', fontSize: 10 },
+            inverse: isRTL,
         },
         yAxis: {
             type: 'value',
-            axisLine: { show: false },
-            splitLine: { lineStyle: { color: '#f1f5f9' } }
+            position: isRTL ? 'right' : 'left',
+            axisLine: { show: true },
+            axisTick: { show: false },
+            splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
+            axisLabel: { color: '#94a3b8', fontSize: 10 },
         },
         series: [
             {
                 name: t('actual'),
-                type: 'line',
-                smooth: true,
+                type: 'bar',
                 data: ACTUAL_VS_FORECAST_DATA.slice(1).map(d => d[1]),
-                itemStyle: { color: '#6366f1' },
-                lineStyle: { width: 3 },
-                symbolSize: 8
+                itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] },
+                barWidth: 12,
             },
             {
                 name: t('forecast'),
-                type: 'line',
-                smooth: true,
+                type: 'bar',
                 data: ACTUAL_VS_FORECAST_DATA.slice(1).map(d => d[2]),
-                itemStyle: { color: '#10b981' },
-                lineStyle: { width: 3, type: 'dashed' },
-                symbolSize: 8
+                itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] },
+                barWidth: 12,
             }
         ]
-    }), [t]);
+    }), [t, isRTL]);
 
     // ECharts Risk Distribution Option
     const riskPieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-        legend: { orient: 'vertical', left: 'left', textStyle: { fontSize: 11, color: '#94a3b8' } },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: [
                 { value: 65, name: t('low_risk'), itemStyle: { color: '#10b981' } },
                 { value: 25, name: t('medium_risk'), itemStyle: { color: '#f59e0b' } },
@@ -251,7 +254,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -289,7 +292,7 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -353,18 +356,18 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
 
                 {/* --- Row 2: Two Charts Side by Side --- */}
 
-                {/* Actual vs Forecast (Left) */}
+                {/* Regional Forecast (Left) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     {isLoading ? (
-                        <ChartSkeleton height="h-[280px]" title={t('actual_vs_forecast')} />
+                        <ChartSkeleton height="h-[280px]" title={t('regional_forecast')} />
                     ) : (
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-5 text-start">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('actual_vs_forecast')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('trend_comparison')}</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_forecast')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('territory_performance')}</p>
                             </div>
                             <div className="h-[260px]">
-                                <MemoizedChart option={lineOption} style={{ height: '100%', minHeight: 100 }} />
+                                <MemoizedChart option={regionalForecastOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                         </div>
                     )}
@@ -404,17 +407,17 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
                         </div>
                     )}
 
-                    {/* Regional Forecast */}
+                    {/* Actual vs Forecast */}
                     {isLoading ? (
-                        <ChartSkeleton height="h-[250px]" title={t('regional_forecast')} />
+                        <ChartSkeleton height="h-[250px]" title={t('actual_vs_forecast')} />
                     ) : (
                         <div className="col-span-1 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[250px] animate-fade-in-up">
                             <div className="flex flex-col gap-0.5 mb-4 text-start">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('regional_forecast')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('territory_performance')}</p>
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('actual_vs_forecast')}</h3>
+                                <p className="text-xs text-gray-400 mt-1">{t('trend_comparison')}</p>
                             </div>
                             <div className="h-[210px]">
-                                <MemoizedChart option={regionalForecastOption} style={{ height: '100%', width: '100%' }} />
+                                <MemoizedChart option={lineOption} style={{ height: '100%', minHeight: 100 }} />
                             </div>
                         </div>
                     )}

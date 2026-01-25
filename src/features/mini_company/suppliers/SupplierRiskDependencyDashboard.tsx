@@ -186,42 +186,50 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
 
     // Pie: Dependency
     const dependencyPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { show: false },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('dependency'),
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_DEPENDENCY_LEVELS
         }]
     }), [TRANSLATED_DEPENDENCY_LEVELS, t]);
 
     // Pie: Risk Categories
     const riskPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { show: false },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('risk_type'),
             type: 'pie',
-            radius: '70%',
-            center: ['50%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_RISK_CATEGORIES
         }]
     }), [TRANSLATED_RISK_CATEGORIES, t]);
 
     // Mitigation Status Pie
     const mitigationPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_MITIGATION_STATUS,
             color: ['#10b981', '#3b82f6', '#f59e0b']
         }]
@@ -285,7 +293,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -316,7 +324,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
             position: isRTL ? 'right' : 'left',
             min: 0,
             max: 100,
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -387,7 +395,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('exposure_analysis')}</h3>
                                 <p className="text-xs text-gray-400">{t('dependency_vs_risk')}</p>
                             </div>
@@ -395,7 +403,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('risk_scores')}</h3>
                                 <p className="text-xs text-gray-400">{t('by_supplier')}</p>
                             </div>
@@ -427,11 +435,11 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('sourcing_mix')}</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 text-start`}>{t('sourcing_mix')}</h3>
                                 <MemoizedChart option={dependencyPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('risk_types')}</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 text-start`}>{t('risk_types')}</h3>
                                 <MemoizedChart option={riskPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
@@ -463,28 +471,28 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('dependency_details')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table dir={dir} className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                                <table dir={dir} className={`w-full text-sm text-start`}>
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>{t('supplier')}</th>
+                                            <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
                                             <th className="px-5 py-3 text-center">{t('dependency')}</th>
                                             <th className="px-5 py-3 text-center">{t('risk')}</th>
                                             <th className="px-5 py-3 text-center">{t('backup')}</th>
-                                            <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('status')}</th>
+                                            <th className={`px-5 py-3 text-end`}>{t('status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {TRANSLATED_SUPPLIER_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
+                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.name}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.dependency}</td>
                                                 <td className="px-5 py-3 text-center font-medium text-amber-500">{row.risk}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.backup}</td>
-                                                <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
+                                                <td className={`px-5 py-3 text-end`}>
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.status === t('critical') ? 'bg-red-100 text-red-700' :
                                                         row.status === t('check') ? 'bg-yellow-100 text-yellow-700' :
                                                             'bg-green-100 text-green-700'
@@ -500,7 +508,7 @@ export const SupplierRiskDependencyDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('dependency_map')}</h3>
                                 <p className="text-xs text-gray-400">{t('multi_tier_view')}</p>
                             </div>

@@ -112,7 +112,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -140,7 +140,7 @@ export const ReorderPlanningDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -155,14 +155,16 @@ export const ReorderPlanningDashboard: React.FC = () => {
 
     // Pie Chart - Stock Coverage Status
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: STOCK_COVERAGE_STATUS,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
         }]
@@ -170,14 +172,16 @@ export const ReorderPlanningDashboard: React.FC = () => {
 
     // Pie Chart - Urgency Level
     const urgencyPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: URGENCY_LEVEL,
             color: ['#22c55e', '#eab308', '#f97316', '#dc2626']
         }]
@@ -351,24 +355,24 @@ export const ReorderPlanningDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Suggested Reorders</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">SKU</th>
-                                        <th className="px-5 py-3 text-right">Stock</th>
-                                        <th className="px-5 py-3 text-right">Point</th>
-                                        <th className="px-5 py-3 text-right">Sug. Qty</th>
-                                        <th className="px-5 py-3">Supplier</th>
+                                        <th className="px-5 py-3 text-start">SKU</th>
+                                        <th className="px-5 py-3 text-end">Stock</th>
+                                        <th className="px-5 py-3 text-end">Point</th>
+                                        <th className="px-5 py-3 text-end">Sug. Qty</th>
+                                        <th className="px-5 py-3 text-start">Supplier</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {REORDER_PLAN.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.id}</td>
-                                            <td className={`px-5 py-3 text-right font-bold ${row.stock <= row.reorderPt ? 'text-red-500' : 'text-gray-600'}`}>{row.stock}</td>
-                                            <td className="px-5 py-3 text-right text-gray-600 dark:text-gray-400">{row.reorderPt}</td>
-                                            <td className="px-5 py-3 text-right font-medium text-blue-600 dark:text-blue-400">{row.suggest}</td>
-                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">{row.supplier}</td>
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.id}</td>
+                                            <td className={`px-5 py-3 text-end font-bold ${row.stock <= row.reorderPt ? 'text-red-500' : 'text-gray-600'}`}>{row.stock}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.reorderPt}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-blue-600 dark:text-blue-400">{row.suggest}</td>
+                                            <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-start">{row.supplier}</td>
                                         </tr>
                                     ))}
                                 </tbody>

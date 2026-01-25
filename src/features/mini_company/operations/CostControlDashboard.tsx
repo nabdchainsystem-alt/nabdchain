@@ -122,7 +122,7 @@ export const CostControlDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -166,7 +166,7 @@ export const CostControlDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -182,14 +182,15 @@ export const CostControlDashboard: React.FC = () => {
     // Pie Chart - Cost Allocation
     const pieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: COST_ALLOCATION
         }]
     }), [currency.code, currency.symbol]);
@@ -197,14 +198,15 @@ export const CostControlDashboard: React.FC = () => {
     // Pie Chart - Savings Breakdown
     const savingsPieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: SAVINGS_BREAKDOWN,
             color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
         }]
@@ -213,7 +215,7 @@ export const CostControlDashboard: React.FC = () => {
     // Radar Chart
     const radarOption: EChartsOption = useMemo(() => ({
         title: { text: t('deviation_radar'), left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
         legend: { bottom: 0, left: 'center', data: [t('budget'), t('actual_cost')], itemWidth: 10, itemHeight: 10 },
         radar: {
             indicator: RADAR_INDICATORS,

@@ -108,7 +108,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -153,7 +153,7 @@ export const WarehousePerformanceDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -168,14 +168,16 @@ export const WarehousePerformanceDashboard: React.FC = () => {
 
     // Pie Chart - Capacity Usage
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: CAPACITY_USAGE,
             color: ['#8b5cf6', '#e5e7eb']
         }]
@@ -183,14 +185,16 @@ export const WarehousePerformanceDashboard: React.FC = () => {
 
     // Pie Chart - Order Status
     const orderStatusPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: ORDER_STATUS,
             color: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444']
         }]
@@ -357,23 +361,23 @@ export const WarehousePerformanceDashboard: React.FC = () => {
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Facility Metrics</h3>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-start">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className="px-5 py-3">Warehouse</th>
-                                        <th className="px-5 py-3">Capacity</th>
-                                        <th className="px-5 py-3">Usage</th>
-                                        <th className="px-5 py-3 text-right">Orders</th>
+                                        <th className="px-5 py-3 text-start">Warehouse</th>
+                                        <th className="px-5 py-3 text-start">Capacity</th>
+                                        <th className="px-5 py-3 text-start">Usage</th>
+                                        <th className="px-5 py-3 text-end">Orders</th>
                                         <th className="px-5 py-3 text-center">Score</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {WAREHOUSE_LIST.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.capacity}</td>
-                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.usage}</td>
-                                            <td className="px-5 py-3 text-right text-gray-900 dark:text-gray-100">{row.orders}</td>
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.name}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.capacity}</td>
+                                            <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.usage}</td>
+                                            <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.orders}</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.score.startsWith('A') ? 'bg-emerald-100 text-emerald-700' :
                                                     'bg-amber-100 text-amber-700'

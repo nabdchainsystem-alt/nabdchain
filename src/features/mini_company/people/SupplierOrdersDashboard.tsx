@@ -67,14 +67,16 @@ export const SupplierOrdersDashboard: React.FC = () => {
     };
 
     const statusPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: ORDER_STATUS,
             color: ['#10b981', '#3b82f6', '#6366f1', '#f59e0b', '#ef4444']
         }]
@@ -93,8 +95,8 @@ export const SupplierOrdersDashboard: React.FC = () => {
             inverse: isRTL,
         },
         yAxis: [
-            { type: 'value', position: isRTL ? 'right' : 'left', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } }, axisLabel: { color: '#9ca3af', fontSize: 10 } },
-            { type: 'value', position: isRTL ? 'left' : 'right', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { color: '#9ca3af', fontSize: 10 } },
+            { type: 'value', position: isRTL ? 'right' : 'left', axisLine: { show: true }, axisTick: { show: false }, splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } }, axisLabel: { color: '#9ca3af', fontSize: 10 } },
+            { type: 'value', position: isRTL ? 'left' : 'right', axisLine: { show: true }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { color: '#9ca3af', fontSize: 10 } },
         ],
         series: [
             { type: 'line', name: 'Orders', yAxisIndex: 0, data: ORDERS_TREND.map(d => d.Orders), smooth: true, lineStyle: { color: '#3b82f6', width: 2 }, itemStyle: { color: '#3b82f6' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59, 130, 246, 0.3)' }, { offset: 1, color: 'rgba(59, 130, 246, 0)' }] } } },
@@ -116,7 +118,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -135,7 +137,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
 
             {/* Header */}
             <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-end' : ''}`}>
                     <ShoppingCart size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">{t('supplier_orders')}</h1>
@@ -166,7 +168,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
                     <div className="col-span-3"><ChartSkeleton height="h-[300px]" title={t('orders_trend')} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-3 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('orders_trend')}</h3>
                             <p className="text-xs text-gray-400">{t('monthly_orders_value')}</p>
                         </div>
@@ -179,7 +181,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
                     <div className="col-span-1"><PieChartSkeleton title={t('order_status')} /></div>
                 ) : (
                     <div className="col-span-1 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-2 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('order_status')}</h3>
                             <p className="text-xs text-gray-400">{t('current_distribution')}</p>
                         </div>
@@ -192,7 +194,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
                     <div className="col-span-2"><ChartSkeleton height="h-[280px]" title={t('orders_by_supplier')} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[280px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('orders_by_supplier')}</h3>
                             <p className="text-xs text-gray-400">{t('top_suppliers')}</p>
                         </div>
@@ -214,32 +216,32 @@ export const SupplierOrdersDashboard: React.FC = () => {
                     <div className="col-span-4"><TableSkeleton rows={5} columns={7} /></div>
                 ) : (
                     <div className="col-span-1 md:col-span-4 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('recent_orders')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('order_id')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('supplier')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('items')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('value')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('ordered')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('expected')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('status')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('order_id')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('items')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('value')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('ordered')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('expected')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {ORDERS_TABLE_DATA.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-blue-600 dark:text-blue-400 ${isRTL ? 'text-right' : ''}`}>{row.id}</td>
-                                            <td className={`px-5 py-3 text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.supplier}</td>
-                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 ${isRTL ? 'text-start' : 'text-end'}`}>{row.items}</td>
-                                            <td className={`px-5 py-3 text-green-600 font-medium ${isRTL ? 'text-start' : 'text-end'}`}>{row.value}</td>
-                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs ${isRTL ? 'text-start' : 'text-end'}`}>{row.ordered}</td>
-                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs ${isRTL ? 'text-start' : 'text-end'}`}>{row.expected}</td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 font-medium text-blue-600 dark:text-blue-400 text-start`}>{row.id}</td>
+                                            <td className={`px-5 py-3 text-gray-900 dark:text-gray-100 text-start`}>{row.supplier}</td>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{row.items}</td>
+                                            <td className={`px-5 py-3 text-green-600 font-medium text-end`}>{row.value}</td>
+                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-end`}>{row.ordered}</td>
+                                            <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 text-xs text-end`}>{row.expected}</td>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
                                                     row.statusKey === 'delivered' ? 'bg-green-100 text-green-700' :
                                                     row.statusKey === 'in_transit' ? 'bg-blue-100 text-blue-700' :

@@ -109,29 +109,31 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
     // Pie Chart - Category Mix
     const pieOption = useMemo<EChartsOption>(() => ({
         tooltip: { trigger: 'item', formatter: (params: any) => `${params.name}: ${formatCurrency(params.value, currency.code, currency.symbol)} (${params.percent}%)` },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
-            data: CATEGORY_MIX.map(d => ({ ...d, itemStyle: { color: d.name === 'Services' ? '#3b82f6' : undefined } })) // Highlight Services
+            emphasis: { label: { show: false } },
+            data: CATEGORY_MIX.map(d => ({ ...d, itemStyle: { color: d.name === 'Services' ? '#3b82f6' : undefined } }))
         }]
     }), [currency.code, currency.symbol]);
 
     // Pie Chart - Order Source Mix
     const orderSourcePieOption = useMemo<EChartsOption>(() => ({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: ORDER_SOURCE_MIX,
             color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
         }]
@@ -177,7 +179,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -205,7 +207,7 @@ export const PurchaseBehaviorDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },

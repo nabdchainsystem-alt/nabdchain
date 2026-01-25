@@ -128,18 +128,18 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
 
     // ECharts Region Option
     const regionPieOption: EChartsOption = {
-        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['45%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 18, fontWeight: 'bold' } },
-            labelLine: { show: false },
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
             data: SALES_BY_REGION_DATA.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
-        }],
-        legend: { bottom: '5%', left: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11, color: '#94a3b8' } }
+        }]
     };
 
     // ECharts Sales by Product Option
@@ -157,7 +157,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -173,7 +173,7 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
     // ECharts Sales by Agent Option
     const salesByAgentOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'axis' },
-        grid: { left: isRTL ? 20 : 30, right: isRTL ? 30 : 20, top: 20, bottom: 30 },
+        grid: { left: isRTL ? 20 : 50, right: isRTL ? 50 : 20, top: 20, bottom: 30 },
         xAxis: {
             type: 'category',
             data: SALES_BY_PERSON_DATA.map(d => d.name),
@@ -184,7 +184,11 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
         },
         yAxis: {
             type: 'value',
-            show: false,
+            axisLine: { show: true },
+            axisTick: { show: false },
+            axisLabel: { show: true, color: '#6b7280', fontSize: 10 },
+            splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
+            position: isRTL ? 'right' : 'left',
         },
         series: [{
             type: 'bar',
@@ -194,33 +198,21 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
         }],
     }), [isRTL]);
 
-    // ECharts Regional Performance Option
+    // ECharts Regional Performance Option (Pie Chart)
     const regionalPerformanceOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'axis' },
-        grid: { left: isRTL ? 20 : 40, right: isRTL ? 40 : 20, top: 10, bottom: 30 },
-        xAxis: {
-            type: 'category',
-            data: SALES_BY_REGION_DATA.map(d => d.name),
-            axisLine: { show: false },
-            axisTick: { show: false },
-            axisLabel: { color: '#9ca3af', fontSize: 10 },
-            inverse: isRTL,
-        },
-        yAxis: {
-            type: 'value',
-            position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
-            axisTick: { show: false },
-            splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
-            axisLabel: { color: '#9ca3af', fontSize: 10 },
-        },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
-            type: 'bar',
-            data: SALES_BY_REGION_DATA.map(d => d.value),
-            itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
-            barWidth: 18,
-        }],
-    }), [isRTL]);
+            type: 'pie',
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: SALES_BY_REGION_DATA.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
+        }]
+    }), []);
 
     // --- COMPANION CHART: Sankey (Hidden Story) ---
     // Reveals flow from Region -> Salesperson -> Status
@@ -406,21 +398,21 @@ export const SalesAnalysisDashboard: React.FC<SalesAnalysisDashboardProps> = ({ 
                             <table className="w-full text-sm text-start h-full">
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-700">
                                     <tr>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('id')}>{t('order_id')}</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('date')}>{t('date')}</th>
-                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('customer')}>{t('customer')}</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors text-start" onClick={() => handleSort('id')}>{t('order_id')}</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors text-start" onClick={() => handleSort('date')}>{t('date')}</th>
+                                        <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors text-start" onClick={() => handleSort('customer')}>{t('customer')}</th>
                                         <th className="px-6 py-4 text-end">{t('total')}</th>
-                                        <th className="px-6 py-4">{t('status')}</th>
+                                        <th className="px-6 py-4 text-start">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                     {paginatedData.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors border-b dark:border-gray-700 last:border-none flex-1">
-                                            <td className="px-6 py-5 font-mono text-xs text-blue-600 dark:text-blue-400">{row.id}</td>
-                                            <td className="px-6 py-5 text-gray-500 whitespace-nowrap font-datetime">{row.date}</td>
-                                            <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap">{row.customer}</td>
+                                            <td className="px-6 py-5 font-mono text-xs text-blue-600 dark:text-blue-400 text-start">{row.id}</td>
+                                            <td className="px-6 py-5 text-gray-500 whitespace-nowrap font-datetime text-start">{row.date}</td>
+                                            <td className="px-6 py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap text-start">{row.customer}</td>
                                             <td className="px-6 py-5 text-end font-medium text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(row.total, currency.code, currency.symbol)}</td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-5 text-start">
                                                 <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
                                                     row.status === 'Pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
                                                         'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'

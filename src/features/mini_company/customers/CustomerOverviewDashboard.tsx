@@ -103,15 +103,16 @@ export const CustomerOverviewDashboard: React.FC = () => {
 
     // Pie Chart
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: CUSTOMER_DISTRIBUTION,
             color: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
         }]
@@ -119,14 +120,16 @@ export const CustomerOverviewDashboard: React.FC = () => {
 
     // Engagement Status Pie
     const engagementPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: ENGAGEMENT_STATUS,
             color: ['#10b981', '#3b82f6', '#ef4444']
         }]
@@ -135,7 +138,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
     // Sunburst (Radial Map)
     const sunburstOption: EChartsOption = useMemo(() => ({
         title: { text: 'Value Density', left: 'center', top: 0, textStyle: { fontSize: 12, color: '#9ca3af' } },
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
         series: {
             type: 'sunburst',
             data: RADIAL_DATA,
@@ -160,7 +163,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -198,7 +201,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -349,13 +352,13 @@ export const CustomerOverviewDashboard: React.FC = () => {
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {CUSTOMER_LIST.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                            <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2 text-start">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold">
                                                     {row.name.charAt(0)}
                                                 </div>
                                                 {row.name}
                                             </td>
-                                            <td className="px-5 py-3">
+                                            <td className="px-5 py-3 text-start">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.segmentKey === 'vip' ? 'bg-amber-100 text-amber-700' :
                                                     row.segmentKey === 'at_risk' ? 'bg-red-100 text-red-700' :
                                                         'bg-blue-100 text-blue-700'

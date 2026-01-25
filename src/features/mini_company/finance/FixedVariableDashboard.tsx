@@ -116,14 +116,16 @@ export const FixedVariableDashboard: React.FC = () => {
 
     // Pie Chart
     const pieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: COST_STRUCTURE,
             color: ['#64748b', '#3b82f6'] // Slate for Fixed, Blue for Variable
         }]
@@ -131,14 +133,16 @@ export const FixedVariableDashboard: React.FC = () => {
 
     // Variable Breakdown Pie
     const variablePieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: VARIABLE_BREAKDOWN,
             color: ['#3b82f6', '#0ea5e9', '#8b5cf6', '#10b981']
         }]
@@ -160,7 +164,7 @@ export const FixedVariableDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -186,7 +190,7 @@ export const FixedVariableDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -364,9 +368,9 @@ export const FixedVariableDashboard: React.FC = () => {
                                 <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-5 py-3">{t('expense_name')}</th>
-                                            <th className="px-5 py-3">{t('type')}</th>
-                                            <th className="px-5 py-3">{t('category')}</th>
+                                            <th className="px-5 py-3 text-start">{t('expense_name')}</th>
+                                            <th className="px-5 py-3 text-start">{t('type')}</th>
+                                            <th className="px-5 py-3 text-start">{t('category')}</th>
                                             <th className="px-5 py-3 text-end">{t('amount')}</th>
                                             <th className="px-5 py-3 text-end">{t('frequency')}</th>
                                         </tr>
@@ -374,9 +378,9 @@ export const FixedVariableDashboard: React.FC = () => {
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {EXPENSE_CLASSIFICATION.map((row) => (
                                             <tr key={row.name} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.name}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.type}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{row.category}</td>
+                                                <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.name}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.type}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.category}</td>
                                                 <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
                                                 <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400">{row.frequency}</td>
                                             </tr>

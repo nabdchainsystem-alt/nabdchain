@@ -77,22 +77,23 @@ export const SupplierPerformanceDashboard: React.FC = () => {
     };
 
     const distributionPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: SCORE_DISTRIBUTION,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
         }]
     }), [SCORE_DISTRIBUTION]);
 
     const categoryGaugeOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
         series: [{
             type: 'gauge',
             startAngle: 180,
@@ -154,7 +155,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
     }), [PERFORMANCE_TREND, isRTL]);
 
     const radarOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
         legend: { bottom: 0, data: [t('current'), t('target')], itemWidth: 10, itemHeight: 10 },
         radar: {
             indicator: RADAR_DATA.map(d => ({ name: d.subject, max: 100 })),
@@ -175,7 +176,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
 
             {/* Header */}
             <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-end' : ''}`}>
                     <ChartLine size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">{t('supplier_performance')}</h1>
@@ -220,7 +221,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-3 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('performance_trend')}</h3>
                             <p className="text-xs text-gray-400">{t('monthly_metrics')}</p>
                         </div>
@@ -234,7 +235,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-2 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('overall_score')}</h3>
                             <p className="text-xs text-gray-400">{t('avg_performance')}</p>
                         </div>
@@ -249,7 +250,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[280px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('performance_radar')}</h3>
                             <p className="text-xs text-gray-400">{t('current_vs_target')}</p>
                         </div>
@@ -266,7 +267,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('score_distribution')}</h3>
                                 <p className="text-xs text-gray-400">{t('supplier_ratings')}</p>
                             </div>
@@ -308,26 +309,26 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-4 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_scorecard')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('supplier')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('quality')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('delivery')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('cost')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('response')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('overall')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('trend')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('quality')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('delivery')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('cost')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('response')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('overall')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('trend')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {PERFORMANCE_TABLE_DATA.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>
                                                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                     <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold">
                                                         {row.name.charAt(0)}
@@ -335,27 +336,27 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                                     {row.name}
                                                 </div>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${row.quality >= 90 ? 'text-green-600' : row.quality >= 80 ? 'text-blue-600' : 'text-amber-600'}`}>
                                                     {row.quality}%
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${row.delivery >= 90 ? 'text-green-600' : row.delivery >= 80 ? 'text-blue-600' : 'text-amber-600'}`}>
                                                     {row.delivery}%
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${row.cost >= 90 ? 'text-green-600' : row.cost >= 80 ? 'text-blue-600' : 'text-amber-600'}`}>
                                                     {row.cost}%
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${row.response >= 90 ? 'text-green-600' : row.response >= 80 ? 'text-blue-600' : 'text-amber-600'}`}>
                                                     {row.response}%
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.overall >= 90 ? 'bg-green-100 text-green-700' :
                                                     row.overall >= 80 ? 'bg-blue-100 text-blue-700' :
                                                         'bg-amber-100 text-amber-700'
@@ -363,7 +364,7 @@ export const SupplierPerformanceDashboard: React.FC = () => {
                                                     {row.overall.toFixed(1)}%
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`inline-flex items-center gap-1 text-xs font-medium ${row.trendKey === 'up' ? 'text-green-600' : 'text-red-600'}`}>
                                                     {row.trendKey === 'up' ? '↑' : '↓'}
                                                 </span>

@@ -127,7 +127,7 @@ export const DependencyRiskDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -168,7 +168,7 @@ export const DependencyRiskDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 10 },
@@ -203,15 +203,16 @@ export const DependencyRiskDashboard: React.FC = () => {
 
     // Pie Chart - Risk Distribution
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: RISK_LEVELS.map(d => ({
                 ...d,
                 itemStyle: {
@@ -224,14 +225,15 @@ export const DependencyRiskDashboard: React.FC = () => {
     // Pie Chart - Diversification Scores
     const diversificationPieOption: EChartsOption = useMemo(() => ({
         tooltip: { trigger: 'item', formatter: `{b}: {c}% ${t('diversified')}` },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: DIVERSIFICATION_SCORES,
             color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
         }]

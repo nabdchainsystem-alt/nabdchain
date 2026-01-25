@@ -86,7 +86,7 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
         legend: { show: true, bottom: 0, itemWidth: 10, itemHeight: 10 },
         grid: { top: 10, right: 10, bottom: 40, left: 40, containLabel: true },
         xAxis: { type: 'category', data: SALES_OVER_TIME_DATA.dates, axisLine: { show: false }, axisTick: { show: false } },
-        yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
+        yAxis: { type: 'value', axisLine: { show: true }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
         series: [{
             name: 'Daily Sales',
             data: SALES_OVER_TIME_DATA.values,
@@ -101,7 +101,7 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
         legend: { show: true, bottom: 0, itemWidth: 10, itemHeight: 10 },
         grid: { top: 10, right: 20, bottom: 40, left: 10, containLabel: true },
         xAxis: { type: 'value', show: false },
-        yAxis: { type: 'category', data: SALES_BY_CHANNEL_DATA.map(d => d.name), axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: { type: 'category', data: SALES_BY_CHANNEL_DATA.map(d => d.name), axisLine: { show: true }, axisTick: { show: false } },
         series: [{
             name: 'Revenue Share',
             data: SALES_BY_CHANNEL_DATA.map(d => d.value),
@@ -112,33 +112,38 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
     };
 
     const categoryPieOption: EChartsOption = {
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            center: ['40%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: CATEGORY_DATA.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
+            emphasis: { label: { show: false } }
         }]
     };
 
     const statusPieOption: EChartsOption = {
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['0%', '70%'],
-            center: ['40%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: ORDER_STATUS_DATA.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
-            label: { show: false }
+            label: { show: false },
+            emphasis: { label: { show: false } }
         }]
     };
 
@@ -282,24 +287,24 @@ export const SalesInsightsDashboardECharts: React.FC = memo(() => {
                                 <p className="text-xs text-gray-400 mt-1">Inventory and revenue leaders</p>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 uppercase">
                                         <tr>
-                                            <th className="px-6 py-3 font-medium">Product Name</th>
-                                            <th className="px-6 py-3 font-medium text-right">Quantity</th>
-                                            <th className="px-6 py-3 font-medium text-right">Revenue</th>
-                                            <th className="px-6 py-3 font-medium text-right">Profit</th>
+                                            <th className="px-6 py-3 font-medium text-start">Product Name</th>
+                                            <th className="px-6 py-3 font-medium text-end">Quantity</th>
+                                            <th className="px-6 py-3 font-medium text-end">Revenue</th>
+                                            <th className="px-6 py-3 font-medium text-end">Profit</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {TOP_PRODUCTS_DATA.map((product, index) => (
                                             <tr key={product.id} className="border-b dark:border-gray-700 last:border-none hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 text-start">
                                                     {index + 1}. {product.name}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">{product.quantity}</td>
-                                                <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
-                                                <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-4 text-end text-gray-600 dark:text-gray-400">{product.quantity}</td>
+                                                <td className="px-6 py-4 text-end font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.revenue, currency.code, currency.symbol)}</td>
+                                                <td className="px-6 py-4 text-end text-green-600 dark:text-green-400 font-medium">{formatCurrency(product.profit, currency.code, currency.symbol)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

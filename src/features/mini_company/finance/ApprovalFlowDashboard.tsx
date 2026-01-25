@@ -132,7 +132,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
                 label: { show: true, position: 'inside' },
                 labelLine: { length: 10, lineStyle: { width: 1, type: 'solid' } },
                 itemStyle: { borderColor: '#fff', borderWidth: 1 },
-                emphasis: { label: { fontSize: 20 } },
+                
                 data: FUNNEL_DATA,
                 color: ['#3b82f6', '#0ea5e9', '#10b981', '#6366f1']
             }
@@ -141,14 +141,16 @@ export const ApprovalFlowDashboard: React.FC = () => {
 
     // Approval Outcome Pie
     const outcomePieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: APPROVAL_OUTCOME,
             color: ['#10b981', '#ef4444', '#f59e0b']
         }]
@@ -189,7 +191,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -218,7 +220,7 @@ export const ApprovalFlowDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },

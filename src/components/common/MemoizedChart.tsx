@@ -12,28 +12,11 @@ interface MemoizedChartProps {
     showLoading?: boolean;
     onEvents?: Record<string, Function>;
     onChartReady?: (instance: any) => void;
-    /** Skip initial animation (useful when returning from hidden state) */
-    skipAnimation?: boolean;
 }
 
 // Minimum dimensions to prevent ECharts 0-dimension warnings
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 100;
-
-// Track visibility for animation control
-let lastVisibilityChange = 0;
-const STABILITY_WINDOW = 500;
-
-if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            lastVisibilityChange = Date.now();
-        }
-    });
-    window.addEventListener('focus', () => {
-        lastVisibilityChange = Date.now();
-    });
-}
 
 // WeakMap cache for stringified options - avoids expensive JSON.stringify on every render
 const optionStringCache = new WeakMap<object, string>();
@@ -89,35 +72,23 @@ export const MemoizedChart: React.FC<MemoizedChartProps> = memo(({
     className,
     opts,
     theme,
-    notMerge = false,
-    lazyUpdate = true,
+    notMerge = true,
+    lazyUpdate = false,
     showLoading = false,
     onEvents,
-    onChartReady,
-    skipAnimation = false
+    onChartReady
 }) => {
     // Cache options to prevent unnecessary updates
     const optionRef = useRef<string>('');
     const cachedOption = useRef<any>(null);
-    const isFirstRender = useRef(true);
-
-    // Check if we're in stability window (recently returned from hidden)
-    const inStabilityWindow = Date.now() - lastVisibilityChange < STABILITY_WINDOW;
 
     // Use cached string comparison - avoids expensive JSON.stringify
     const optionStr = getOptionString(option);
     if (optionRef.current !== optionStr) {
         optionRef.current = optionStr;
-
-        // Disable animation if: not first render, skipAnimation requested, or in stability window
-        const shouldAnimate = isFirstRender.current && !skipAnimation && !inStabilityWindow;
-        cachedOption.current = {
-            ...option,
-            animation: shouldAnimate ? (option.animation ?? true) : false,
-            animationDuration: shouldAnimate ? (option.animationDuration ?? 800) : 0,
-        };
-
-        isFirstRender.current = false;
+        // Pass through option as-is, don't modify animations
+        // ECharts handles hover/emphasis animations internally
+        cachedOption.current = option;
     }
 
     // Handle chart ready - pass through to user callback

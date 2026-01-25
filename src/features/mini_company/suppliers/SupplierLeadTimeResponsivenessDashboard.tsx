@@ -165,29 +165,34 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
 
     // Pie Chart: Lead Time Buckets
     const bucketsPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 10 } },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('lead_time_range'),
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_LEAD_TIME_BUCKETS
         }]
     }), [TRANSLATED_LEAD_TIME_BUCKETS, t]);
 
     // Pie Chart: Urgency
     const urgencyPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { show: false },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             name: t('urgency'),
             type: 'pie',
-            radius: ['0%', '70%'],
-            center: ['50%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_ORDER_URGENCY,
             color: ['#3b82f6', '#f59e0b']
         }]
@@ -195,14 +200,16 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
 
     // Performance Tier Pie
     const performancePieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: TRANSLATED_PERFORMANCE_TIER,
             color: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
         }]
@@ -255,7 +262,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -293,7 +300,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -364,7 +371,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('speed_analysis')}</h3>
                                 <p className="text-xs text-gray-400">{t('lead_time_vs_response')}</p>
                             </div>
@@ -372,7 +379,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-4 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('response_times')}</h3>
                                 <p className="text-xs text-gray-400">{t('hours_to_rfq_response')}</p>
                             </div>
@@ -404,11 +411,11 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                     <>
                         <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('lead_time_mix')}</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 text-start`}>{t('lead_time_mix')}</h3>
                                 <MemoizedChart option={bucketsPieOption} style={{ height: '180px' }} />
                             </div>
                             <div className="bg-white dark:bg-monday-dark-elevated p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 ${isRTL ? 'text-right' : ''}`}>{t('order_urgency')}</h3>
+                                <h3 className={`text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase mb-2 text-start`}>{t('order_urgency')}</h3>
                                 <MemoizedChart option={urgencyPieOption} style={{ height: '180px' }} />
                             </div>
                         </div>
@@ -440,28 +447,28 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('speed_performance')}</h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table dir={dir} className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                                <table dir={dir} className={`w-full text-sm text-start`}>
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>{t('supplier')}</th>
+                                            <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
                                             <th className="px-5 py-3 text-center">{t('lead_time')}</th>
                                             <th className="px-5 py-3 text-center">{t('response')}</th>
                                             <th className="px-5 py-3 text-center">{t('variance')}</th>
-                                            <th className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>{t('score')}</th>
+                                            <th className={`px-5 py-3 text-end`}>{t('score')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {TRANSLATED_SUPPLIER_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>{row.name}</td>
+                                                <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.name}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.leadTime}</td>
                                                 <td className="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{row.response}</td>
                                                 <td className="px-5 py-3 text-center font-medium text-amber-500">{row.variance}</td>
-                                                <td className={`px-5 py-3 ${isRTL ? 'text-left' : 'text-right'}`}>
+                                                <td className={`px-5 py-3 text-end`}>
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${Number(row.score) < 80 ? 'bg-red-100 text-red-700' :
                                                         Number(row.score) < 90 ? 'bg-blue-100 text-blue-700' :
                                                             'bg-green-100 text-green-700'
@@ -477,7 +484,7 @@ export const SupplierLeadTimeResponsivenessDashboard: React.FC = () => {
                         </div>
 
                         <div className="col-span-2 bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('predictability_analysis')}</h3>
                                 <p className="text-xs text-gray-400">{t('lead_time_variability_boxplot')}</p>
                             </div>

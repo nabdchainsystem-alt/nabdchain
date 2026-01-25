@@ -64,7 +64,8 @@ const Test1Content: React.FC = () => {
         legend: { orient: 'vertical', right: isRTL ? 'auto' : 10, left: isRTL ? 10 : 'auto', top: 'center' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '70%',
             center: [isRTL ? '60%' : '40%', '50%'],
             data: PIE_DATA.map((d, i) => ({ ...d, itemStyle: { color: PIE_COLORS[i] } })),
             label: { show: false },

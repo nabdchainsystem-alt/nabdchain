@@ -125,34 +125,40 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
 
     // --- Chart Options (ECharts used for specific complex or pie visualizations) ---
     const newVsReturningOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            center: ['35%', '50%'],
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: translatedNewVsReturningData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981'][i] }
             })),
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
+            emphasis: { label: { show: false } }
         }]
     }), [translatedNewVsReturningData]);
 
     const discountPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            center: ['35%', '50%'],
+            selectedMode: 'multiple',
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: translatedDiscountData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#10b981', '#f59e0b'][i] }
             })),
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
+            emphasis: { label: { show: false } }
         }]
     }), [translatedDiscountData]);
 
@@ -171,7 +177,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
         },
         yAxis: {
             type: 'value',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             axisLabel: { color: '#9ca3af', fontSize: 12 },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
@@ -215,9 +221,9 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
         },
         yAxis: {
             type: 'value',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
-            axisLabel: { show: false },
+            axisLabel: { show: true, color: '#6b7280', fontSize: 10, formatter: (value: number) => formatCurrency(value, currency.code, currency.symbol) },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             position: isRTL ? 'right' : 'left',
         },
@@ -420,7 +426,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                 <table className="w-full text-sm text-start">
                                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                         <tr>
-                                            <th className="px-6 py-3">{t('product_name')}</th>
+                                            <th className="px-6 py-3 text-start">{t('product_name')}</th>
                                             <th className="px-6 py-3 text-end">{t('views')}</th>
                                             <th className="px-6 py-3 text-end">{t('orders')}</th>
                                             <th className="px-6 py-3 text-end">{t('conv_rate')}</th>
@@ -429,7 +435,7 @@ export const SalesPerformanceDashboard: React.FC<SalesPerformanceDashboardProps>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {LOW_PERFORMANCE_PRODUCTS.map((product) => (
                                             <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                                <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{product.name}</td>
+                                                <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{product.name}</td>
                                                 <td className="px-6 py-3 text-end text-gray-600 dark:text-gray-400">{product.views}</td>
                                                 <td className="px-6 py-3 text-end text-gray-600 dark:text-gray-400">{product.orders}</td>
                                                 <td className="px-6 py-3 text-end text-orange-500 font-medium">{product.conversion}</td>

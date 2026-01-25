@@ -88,31 +88,31 @@ export const PurchaseOverviewDashboard: React.FC = () => {
 
     // --- ECharts Options ---
     const pieOption1 = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10 }, itemGap: 15 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['35%', '65%'],
-            center: ['50%', '40%'],
-            avoidLabelOverlap: false,
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: SPEND_DISTRIBUTION.map((d, i) => ({ ...d, itemStyle: { color: COLORS_SEQUENCE[i % COLORS_SEQUENCE.length] } }))
         }]
     }), []);
 
     const pieOption2 = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10 }, itemGap: 15 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['35%', '65%'],
-            center: ['50%', '40%'],
-            avoidLabelOverlap: false,
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: SUPPLIER_SHARE.map((d, i) => ({ ...d, itemStyle: { color: COLORS_SEQUENCE[(i + 2) % COLORS_SEQUENCE.length] } }))
         }]
     }), []);
@@ -202,7 +202,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -236,7 +236,7 @@ export const PurchaseOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },

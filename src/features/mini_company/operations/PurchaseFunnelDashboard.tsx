@@ -135,7 +135,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
                 label: { show: true, position: 'inside' },
                 labelLine: { length: 10, lineStyle: { width: 1, type: 'solid' } },
                 itemStyle: { borderColor: '#fff', borderWidth: 1 },
-                emphasis: { label: { fontSize: 20 } },
+                
                 data: FUNNEL_DATA,
                 color: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
             }
@@ -145,14 +145,15 @@ export const PurchaseFunnelDashboard: React.FC = () => {
     // Pie Chart - Stage Status Distribution
     const stageStatusPieOption = useMemo<EChartsOption>(() => ({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 12, fontWeight: 'bold' } },
+            emphasis: { label: { show: false } },
             data: STAGE_STATUS_MIX,
             color: ['#10b981', '#f59e0b', '#ef4444', '#6b7280']
         }]
@@ -194,7 +195,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
@@ -222,7 +223,7 @@ export const PurchaseFunnelDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             axisLabel: { color: '#94a3b8', fontSize: 12 },

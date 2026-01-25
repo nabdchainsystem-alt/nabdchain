@@ -80,6 +80,35 @@ const SALES_BY_CHANNEL_DATA = [
     { name: 'WhatsApp', value: 8 },
 ];
 
+// Sales by Channel data for different time periods
+const SALES_BY_CHANNEL_HOURLY = [
+    { name: 'Online', value: 2800 },
+    { name: 'Store', value: 650 },
+    { name: 'Marketplace', value: 420 },
+    { name: 'WhatsApp', value: 280 },
+];
+
+const SALES_BY_CHANNEL_WEEKLY = [
+    { name: 'Online', value: 45000 },
+    { name: 'Store', value: 12500 },
+    { name: 'Marketplace', value: 8200 },
+    { name: 'WhatsApp', value: 5800 },
+];
+
+const SALES_BY_CHANNEL_MONTHLY = [
+    { name: 'Online', value: 185000 },
+    { name: 'Store', value: 48000 },
+    { name: 'Marketplace', value: 32000 },
+    { name: 'WhatsApp', value: 22000 },
+];
+
+const SALES_BY_CHANNEL_YEARLY = [
+    { name: 'Online', value: 2150000 },
+    { name: 'Store', value: 580000 },
+    { name: 'Marketplace', value: 385000 },
+    { name: 'WhatsApp', value: 265000 },
+];
+
 const CATEGORY_DATA = [
     { name: 'Electronics', value: 400 },
     { name: 'Clothing', value: 300 },
@@ -146,6 +175,9 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
     // State for sales time period filter (must be declared before useMemo that uses it)
     const [salesTimePeriod, setSalesTimePeriod] = useState<'hourly' | 'weekly' | 'monthly' | 'yearly'>('hourly');
 
+    // State for channel time period filter
+    const [channelTimePeriod, setChannelTimePeriod] = useState<'hourly' | 'weekly' | 'monthly' | 'yearly'>('hourly');
+
     // Memoize chart data - stable references prevent chart re-renders
     const translatedSalesOverTimeData = useMemo(() => {
         if (salesTimePeriod === 'hourly') {
@@ -168,10 +200,22 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
         }
     }, [t, salesTimePeriod]);
 
-    const translatedSalesByChannelData = useMemo(() => SALES_BY_CHANNEL_DATA.map((item, index) => ({
-        ...item,
-        name: [t('channel_online'), t('channel_store'), t('channel_marketplace'), t('channel_whatsapp')][index],
-    })), [t]);
+    const translatedSalesByChannelData = useMemo(() => {
+        let data;
+        if (channelTimePeriod === 'hourly') {
+            data = SALES_BY_CHANNEL_HOURLY;
+        } else if (channelTimePeriod === 'weekly') {
+            data = SALES_BY_CHANNEL_WEEKLY;
+        } else if (channelTimePeriod === 'monthly') {
+            data = SALES_BY_CHANNEL_MONTHLY;
+        } else {
+            data = SALES_BY_CHANNEL_YEARLY;
+        }
+        return data.map((item, index) => ({
+            ...item,
+            name: [t('channel_online'), t('channel_store'), t('channel_marketplace'), t('channel_whatsapp')][index],
+        }));
+    }, [t, channelTimePeriod]);
 
     const translatedCategoryData = useMemo(() => CATEGORY_DATA.map((item, index) => ({
         ...item,
@@ -227,35 +271,40 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
 
     // Memoize ECharts options to prevent recreation and chart re-render
     const categoryPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
-        animation: false, // Disable animation on re-renders
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['50%', '70%'],
-            center: ['40%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            selectedMode: 'multiple',
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: stableCategoryData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
             label: { show: false },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
+            emphasis: { label: { show: false } }
         }]
     }), [stableCategoryData]);
 
     const statusPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { orient: 'vertical', right: 0, top: 'center', itemWidth: 10, itemHeight: 10 },
-        animation: false,
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['0%', '70%'],
-            center: ['40%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            selectedMode: 'multiple',
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: stableStatusData.map((d, i) => ({
                 ...d,
                 itemStyle: { color: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'][i % 4] }
             })),
-            label: { show: false }
+            label: { show: false },
+            emphasis: { label: { show: false } }
         }]
     }), [stableStatusData]);
 
@@ -278,7 +327,6 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
             textStyle: { color: '#1f2937' },
             padding: 10
         },
-        animation: false,
         series: [{
             type: 'treemap',
             roam: false,
@@ -328,7 +376,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
         },
         yAxis: {
             type: 'value',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             axisLabel: { color: '#94a3b8', fontSize: 12 },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
@@ -356,9 +404,9 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
         },
         yAxis: {
             type: 'value',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
-            axisLabel: { show: false },
+            axisLabel: { color: '#94a3b8', fontSize: 12 },
             splitLine: { lineStyle: { type: 'dashed', color: '#e5e7eb' } },
             position: isRTL ? 'right' : 'left',
         },
@@ -464,12 +512,34 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
                     {isLoading ? (
                         <ChartSkeleton height="h-[280px]" title={t('sales_by_channel')} />
                     ) : (
-                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full min-h-[300px] animate-fade-in-up">
-                            <div className="flex flex-col gap-0.5 mb-5">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_by_channel')}</h3>
-                                <p className="text-xs text-gray-400 mt-1">{t('revenue_distribution_source')}</p>
+                        <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col animate-fade-in-up">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex flex-col gap-0.5">
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('sales_by_channel')}</h3>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {channelTimePeriod === 'hourly' ? t('hourly_performance_overview') :
+                                         channelTimePeriod === 'weekly' ? t('weekly_performance_overview') :
+                                         channelTimePeriod === 'monthly' ? t('monthly_performance_overview') :
+                                         t('yearly_performance_overview')}
+                                    </p>
+                                </div>
+                                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                                    {(['hourly', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
+                                        <button
+                                            key={period}
+                                            onClick={() => setChannelTimePeriod(period)}
+                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                                channelTimePeriod === period
+                                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                            }`}
+                                        >
+                                            {t(period)}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="h-[260px]">
+                            <div className="h-[220px]">
                                 <ReactECharts option={salesByChannelOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                         </div>
@@ -530,10 +600,10 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
                                 <p className="text-xs text-gray-400 mt-1">{t('inventory_revenue_leaders')}</p>
                             </div>
                             <div className="overflow-x-auto h-auto flex flex-col justify-center">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-start">
                                     <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 uppercase sticky top-0">
                                         <tr>
-                                            <th className="px-6 py-3 font-medium">{t('product_name')}</th>
+                                            <th className="px-6 py-3 font-medium text-start">{t('product_name')}</th>
                                             <th className="px-6 py-3 font-medium text-end">{t('qty')}</th>
                                             <th className="px-6 py-3 font-medium text-end">{t('revenue')}</th>
                                             <th className="px-6 py-3 font-medium text-end">{t('profit')}</th>
@@ -542,7 +612,7 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
                                     <tbody>
                                         {TOP_PRODUCTS_DATA.map((product, index) => (
                                             <tr key={product.id} className="border-b dark:border-gray-700 last:border-none hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 text-start">
                                                     {index + 1}. {product.name}
                                                 </td>
                                                 <td className="px-6 py-4 text-end text-gray-600 dark:text-gray-400">{product.quantity}</td>

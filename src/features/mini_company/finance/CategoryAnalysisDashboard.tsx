@@ -111,14 +111,16 @@ export const CategoryAnalysisDashboard: React.FC = () => {
 
     // Pie Chart
     const pieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: '70%',
-            center: ['50%', '50%'],
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: CATEGORY_SHARE,
             color: ['#6366f1', '#e11d48', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6']
         }]
@@ -126,14 +128,16 @@ export const CategoryAnalysisDashboard: React.FC = () => {
 
     // Budget Status Pie
     const budgetStatusPieOption = useMemo<EChartsOption>(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: BUDGET_STATUS,
             color: ['#3b82f6', '#10b981', '#ef4444']
         }]
@@ -154,7 +158,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -183,7 +187,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -386,7 +390,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                         <table className="w-full text-sm text-start">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                 <tr>
-                                    <th className="px-5 py-3">{t('category')}</th>
+                                    <th className="px-5 py-3 text-start">{t('category')}</th>
                                     <th className="px-5 py-3 text-end">{t('budget')}</th>
                                     <th className="px-5 py-3 text-end">{t('actual')}</th>
                                     <th className="px-5 py-3 text-end">{t('variance')}</th>
@@ -396,7 +400,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {CATEGORY_TABLE.map((row, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
+                                        <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.category}</td>
                                         <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.budget}</td>
                                         <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.actual}</td>
                                         <td className={`px-5 py-3 text-end font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-emerald-500'}`}>{row.variance}</td>

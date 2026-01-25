@@ -81,29 +81,32 @@ export const SupplierOverviewDashboard: React.FC = () => {
     };
 
     const pieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+            selectedMode: 'multiple',
+            radius: '65%',
+            center: ['50%', '45%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            emphasis: { label: { show: false } },
             data: SUPPLIER_DISTRIBUTION,
             color: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
         }]
     }), [SUPPLIER_DISTRIBUTION]);
 
     const statusPieOption: EChartsOption = useMemo(() => ({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, left: 'center', itemWidth: 10, itemHeight: 10 },
+        tooltip: { trigger: 'item', formatter: '{b}  {c}' },
+        legend: { orient: 'horizontal', bottom: 0, left: 'center', itemWidth: 6, itemHeight: 6, itemGap: 4, textStyle: { fontSize: 8 }, selectedMode: 'multiple' },
         series: [{
             type: 'pie',
-            radius: ['40%', '70%'],
+            selectedMode: 'multiple',
+            radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
+            emphasis: { label: { show: false } },
             data: SUPPLIER_STATUS,
             color: ['#10b981', '#3b82f6', '#ef4444']
         }]
@@ -123,7 +126,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -148,7 +151,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
         yAxis: {
             type: 'value',
             position: isRTL ? 'right' : 'left',
-            axisLine: { show: false },
+            axisLine: { show: true },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
             axisLabel: { color: '#9ca3af', fontSize: 10 },
@@ -167,7 +170,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
 
             {/* Header */}
             <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                <div className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse text-end' : ''}`}>
                     <Package size={28} className="text-blue-600 dark:text-blue-400 mt-1" />
                     <div>
                         <h1 className="text-2xl font-bold">{t('supplier_overview')}</h1>
@@ -212,7 +215,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_growth')}</h3>
                             <p className="text-xs text-gray-400">{t('total_vs_new')}</p>
                         </div>
@@ -226,7 +229,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-2 min-h-[300px] bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`mb-4 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('spend_by_category')}</h3>
                             <p className="text-xs text-gray-400">{t('total_spend')}</p>
                         </div>
@@ -245,14 +248,14 @@ export const SupplierOverviewDashboard: React.FC = () => {
                 ) : (
                     <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_categories')}</h3>
                                 <p className="text-xs text-gray-400">{t('distribution_by_type')}</p>
                             </div>
                             <MemoizedChart option={pieOption} style={{ height: '180px' }} />
                         </div>
                         <div className="bg-white dark:bg-monday-dark-elevated p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow animate-fade-in-up">
-                            <div className={`mb-2 ${isRTL ? 'text-right' : ''}`}>
+                            <div className={`mb-2 text-start`}>
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('supplier_status')}</h3>
                                 <p className="text-xs text-gray-400">{t('relationship_health')}</p>
                             </div>
@@ -282,25 +285,25 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="col-span-1 md:col-span-4 bg-white dark:bg-monday-dark-elevated rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow animate-fade-in-up">
-                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 ${isRTL ? 'text-right' : ''}`}>
+                        <div className={`p-5 border-b border-gray-100 dark:border-gray-700 text-start`}>
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">{t('top_suppliers')}</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm" dir={dir}>
                                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-500 dark:text-gray-400 font-semibold">
                                     <tr>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('supplier')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-right' : 'text-start'}`}>{t('category')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('orders')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('total_value')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('on_time')}</th>
-                                        <th className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>{t('status')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('supplier')}</th>
+                                        <th className={`px-5 py-3 text-start`}>{t('category')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('orders')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('total_value')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('on_time')}</th>
+                                        <th className={`px-5 py-3 text-end`}>{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {SUPPLIER_LIST.map((row) => (
                                         <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 ${isRTL ? 'text-right' : ''}`}>
+                                            <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>
                                                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                     <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold">
                                                         {row.name.charAt(0)}
@@ -308,19 +311,19 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                                     {row.name}
                                                 </div>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-right' : ''}`}>
+                                            <td className={`px-5 py-3 text-start`}>
                                                 <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
                                                     {row.category}
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 ${isRTL ? 'text-start' : 'text-end'}`}>{row.orders}</td>
-                                            <td className={`px-5 py-3 text-green-600 font-medium ${isRTL ? 'text-start' : 'text-end'}`}>{row.value}</td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{row.orders}</td>
+                                            <td className={`px-5 py-3 text-green-600 font-medium text-end`}>{row.value}</td>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`font-medium ${parseFloat(row.onTime) >= 90 ? 'text-green-600' : parseFloat(row.onTime) >= 80 ? 'text-amber-600' : 'text-red-600'}`}>
                                                     {row.onTime}
                                                 </span>
                                             </td>
-                                            <td className={`px-5 py-3 ${isRTL ? 'text-start' : 'text-end'}`}>
+                                            <td className={`px-5 py-3 text-end`}>
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.statusKey === 'preferred' ? 'bg-green-100 text-green-700' :
                                                     row.statusKey === 'at_risk' ? 'bg-red-100 text-red-700' :
                                                         'bg-blue-100 text-blue-700'
