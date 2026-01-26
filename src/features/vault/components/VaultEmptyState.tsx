@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, Key, CreditCard, Note as StickyNote, Plus, DownloadSimple as Import, MagnifyingGlass as Search, ArrowRight, Folder } from 'phosphor-react';
+import { Shield, Key, CreditCard, Note as StickyNote, Plus, DownloadSimple as Import, MagnifyingGlass as Search, ArrowRight, Folder, Star, Globe, Image, FileText, Trash } from 'phosphor-react';
 import { useAppContext } from '../../../contexts/AppContext';
 
 interface VaultEmptyStateProps {
@@ -10,6 +10,92 @@ interface VaultEmptyStateProps {
     onClearSearch?: () => void;
     onCreateItem?: (type?: string) => void;
 }
+
+const getCategoryConfig = (category: string) => {
+    switch (category) {
+        case 'favorites':
+            return {
+                icon: <Star className="text-yellow-500" size={32} weight="fill" />,
+                emoji: '⭐',
+                bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+                title: 'no_favorites_yet',
+                desc: 'favorites_empty_desc',
+                canCreate: false
+            };
+        case 'folder':
+            return {
+                icon: <Folder className="text-blue-500" size={32} />,
+                emoji: '📁',
+                bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+                title: 'no_folders_yet',
+                desc: 'folders_empty_desc',
+                canCreate: true
+            };
+        case 'weblink':
+            return {
+                icon: <Globe className="text-purple-500" size={32} />,
+                emoji: '🔗',
+                bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+                title: 'no_weblinks_yet',
+                desc: 'weblinks_empty_desc',
+                canCreate: true
+            };
+        case 'document':
+            return {
+                icon: <FileText className="text-red-500" size={32} />,
+                emoji: '📄',
+                bgColor: 'bg-red-50 dark:bg-red-900/20',
+                title: 'no_documents_yet',
+                desc: 'documents_empty_desc',
+                canCreate: false // Created via upload
+            };
+        case 'image':
+            return {
+                icon: <Image className="text-pink-500" size={32} />,
+                emoji: '🖼️',
+                bgColor: 'bg-pink-50 dark:bg-pink-900/20',
+                title: 'no_images_yet',
+                desc: 'images_empty_desc',
+                canCreate: false // Created via upload
+            };
+        case 'login':
+            return {
+                icon: <Key className="text-cyan-500" size={32} />,
+                emoji: '🔑',
+                bgColor: 'bg-cyan-50 dark:bg-cyan-900/20',
+                title: 'no_logins_yet',
+                desc: 'logins_empty_desc',
+                canCreate: true
+            };
+        case 'note':
+            return {
+                icon: <StickyNote className="text-yellow-600" size={32} />,
+                emoji: '📝',
+                bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+                title: 'no_notes_yet',
+                desc: 'notes_empty_desc',
+                canCreate: true
+            };
+        case 'trash':
+            return {
+                icon: <Trash className="text-gray-500" size={32} />,
+                emoji: '🗑️',
+                bgColor: 'bg-gray-100 dark:bg-gray-800',
+                title: 'trash_is_empty',
+                desc: 'trash_empty_desc',
+                canCreate: false
+            };
+        default:
+            return {
+                icon: <Shield className="text-blue-500" size={32} />,
+                emoji: '📭',
+                bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+                title: 'no_items_yet',
+                desc: 'empty_category_desc',
+                canCreate: false
+            };
+    }
+};
 
 export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
     type,
@@ -47,26 +133,26 @@ export const VaultEmptyState: React.FC<VaultEmptyStateProps> = ({
 
     // 2. Specific Category Empty State (e.g., "No favorites yet")
     if (type === 'empty-category') {
+        const config = getCategoryConfig(category || '');
+
         return (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in-up">
-                <div className="w-20 h-20 bg-blue-50 dark:bg-monday-dark-hover rounded-full flex items-center justify-center mb-6">
-                    {category === 'favorites' ? <div className="text-4xl">⭐</div> : <div className="text-4xl">📭</div>}
+                <div className={`w-20 h-20 ${config.bgColor} rounded-full flex items-center justify-center mb-6`}>
+                    {config.icon}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                    {category === 'favorites' ? t('no_favorites_yet') : t('no_category_yet').replace('{category}', t(category || '') || category || '')}
+                    {t(config.title) || config.title}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8">
-                    {category === 'favorites'
-                        ? t('favorites_empty_desc')
-                        : t('empty_folder_desc').replace('{category}', t(category || '') || category || '')}
+                    {t(config.desc) || config.desc}
                 </p>
-                {onCreateItem && (
+                {onCreateItem && config.canCreate && (
                     <button
                         onClick={() => onCreateItem(category)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-monday-blue hover:bg-blue-600 text-white rounded-md font-medium shadow-sm transition-all hover:shadow-md"
                     >
                         <Plus size={18} />
-                        <span>{category === 'favorites' ? 'Item' : t('create_category_item').replace('{category}', t(category || '') || category || '')}</span>
+                        <span>{t('create_new') || 'Create New'}</span>
                     </button>
                 )}
             </div>

@@ -84,14 +84,14 @@ export const DEFAULT_COLUMNS: Column[] = [
     { id: 'dueDate', label: 'Due Date', type: 'date', width: 140, minWidth: 120, resizable: true },
 ];
 
-// Status styles
+// Status styles - using light colors matching the display
 export const STATUS_STYLES: Record<string, string> = {
-    'Done': 'bg-emerald-600 text-white',
-    'Working on it': 'bg-amber-500 text-white',
-    'In Progress': 'bg-blue-600 text-white',
-    'Stuck': 'bg-orange-500 text-white',
-    'To Do': 'bg-gray-100 text-gray-700',
-    'Rejected': 'bg-rose-600 text-white',
+    'Done': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    'Working on it': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    'In Progress': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    'Stuck': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    'To Do': 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
+    'Rejected': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 };
 
 // Priority styles
@@ -138,7 +138,11 @@ export const formatDate = (date: string | null, locale?: string): string => {
         const d = new Date(date);
         if (isNaN(d.getTime())) return date;
         // Use provided locale or browser default
-        const loc = locale || navigator.language || 'en-GB';
+        // Force Gregorian calendar for Arabic locales to avoid Hijri dates
+        let loc = locale || navigator.language || 'en-GB';
+        if (loc.startsWith('ar')) {
+            loc = 'ar-EG'; // ar-EG uses Gregorian by default
+        }
         const datePart = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short' }).format(d);
         const timePart = new Intl.DateTimeFormat(loc, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
         return `${datePart} - ${timePart}`;

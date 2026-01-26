@@ -27,6 +27,18 @@ export interface FileMetadata {
     uploadedBy?: string;
 }
 
+export interface LoginMetadata {
+    url?: string;
+    username: string;
+    password?: string; // In real app, this would be encrypted
+    notes?: string;
+}
+
+export interface NoteMetadata {
+    content?: string;
+    tags?: string[];
+}
+
 export interface VaultItem {
     id: string;
     type: VaultItemType;
@@ -34,10 +46,12 @@ export interface VaultItem {
     subtitle?: string; // e.g. username for login, or masked card number
     lastModified: string;
     isFavorite: boolean;
+    isDeleted?: boolean;
+    deletedAt?: string;
     folderId?: string;
     icon?: any; // Lucide icon component
     color?: string;
-    metadata?: FolderMetadata | LinkMetadata | FileMetadata;
+    metadata?: FolderMetadata | LinkMetadata | FileMetadata | LoginMetadata | NoteMetadata;
     previewUrl?: string; // For images or link favicons
 }
 

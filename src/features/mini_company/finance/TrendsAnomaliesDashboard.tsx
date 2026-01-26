@@ -8,12 +8,13 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Lightning, ChartLine, Shie
 import { TrendsAnomaliesInfo } from './TrendsAnomaliesInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data (as functions to support translation) ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
     { id: '1', label: t('trend_direction'), subtitle: t('last_3_months'), value: t('rising'), change: '+5%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 48, 50, 52], color: 'blue' },
     { id: '2', label: t('spike_count'), subtitle: t('last_30_days'), value: '5', change: '+2', trend: 'up', icon: <Lightning size={18} />, sparklineData: [1, 0, 1, 0, 2, 1], color: 'blue' },
-    { id: '3', label: t('anomaly_value'), subtitle: t('total_excess'), value: '$4,250', change: '+12%', trend: 'down', icon: <Warning size={18} />, sparklineData: [1000, 1200, 800, 3000, 4250, 4250], color: 'blue' },
+    { id: '3', label: t('anomaly_value'), subtitle: t('total_excess'), value: '0', rawValue: 4250, isCurrency: true, change: '+12%', trend: 'down', icon: <Warning size={18} />, sparklineData: [1000, 1200, 800, 3000, 4250, 4250], color: 'blue' },
     { id: '4', label: t('avg_daily_variance'), subtitle: t('volatility'), value: '8.2%', change: '+1.5%', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [5, 6, 8, 7, 8, 8.2], color: 'blue' },
 ];
 
@@ -52,11 +53,11 @@ const getAnomalySplit = (t: (key: string) => string) => [
 ];
 
 const getAnomaliesTable = (t: (key: string) => string) => [
-    { date: '2023-06-12', category: t('travel'), amount: '$1,200', deviation: '+45%', flag: t('high') },
-    { date: '2023-06-18', category: t('software'), amount: '$850', deviation: '+25%', flag: t('medium') },
-    { date: '2023-05-22', category: t('marketing'), amount: '$3,000', deviation: '+60%', flag: t('critical') },
-    { date: '2023-05-05', category: t('office'), amount: '$450', deviation: '+30%', flag: t('medium') },
-    { date: '2023-04-15', category: t('rent'), amount: '$200', deviation: '+10%', flag: t('low') },
+    { date: '2023-06-12', category: t('travel'), rawAmount: 1200, deviation: '+45%', flag: t('high') },
+    { date: '2023-06-18', category: t('software'), rawAmount: 850, deviation: '+25%', flag: t('medium') },
+    { date: '2023-05-22', category: t('marketing'), rawAmount: 3000, deviation: '+60%', flag: t('critical') },
+    { date: '2023-05-05', category: t('office'), rawAmount: 450, deviation: '+30%', flag: t('medium') },
+    { date: '2023-04-15', category: t('rent'), rawAmount: 200, deviation: '+10%', flag: t('low') },
 ];
 
 const getAnomalyByCategory = (t: (key: string) => string) => [
@@ -310,6 +311,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                         />
                     </div>
@@ -368,6 +370,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                         >
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                             />
@@ -398,7 +401,7 @@ export const TrendsAnomaliesDashboard: React.FC = () => {
                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                         <td className="px-5 py-3 text-start text-gray-600 dark:text-gray-400 font-datetime">{row.date}</td>
                                         <td className="px-5 py-3 text-start font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
-                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{formatCurrency(row.rawAmount, currency.code, currency.symbol)}</td>
                                         <td className="px-5 py-3 text-end text-red-500 font-medium">{row.deviation}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.flag === 'Critical' ? 'bg-red-100 text-red-700' :

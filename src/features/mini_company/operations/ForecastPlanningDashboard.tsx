@@ -7,6 +7,7 @@ import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/comp
 import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Target, ListChecks, CurrencyDollar, ArrowRight } from 'phosphor-react';
 import { ForecastPlanningInfo } from './ForecastPlanningInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data: Charts ---
 const FORECAST_VS_LAST = [
@@ -45,11 +46,11 @@ const BUDGET_UTILIZATION = [
 
 // --- Mock Data: Table & Confidence Cone ---
 const FORECAST_DETAILS = [
-    { id: 1, category: 'Electronics', last: '$12,000', forecast: '$14,500', delta: '+20.8%' },
-    { id: 2, category: 'Office', last: '$4,500', forecast: '$5,100', delta: '+13.3%' },
-    { id: 3, category: 'Services', last: '$8,000', forecast: '$8,200', delta: '+2.5%' },
-    { id: 4, category: 'SaaS', last: '$6,000', forecast: '$6,500', delta: '+8.3%' },
-    { id: 5, category: 'Furniture', last: '$2,000', forecast: '$1,800', delta: '-10.0%' },
+    { id: 1, category: 'Electronics', rawLast: 12000, rawForecast: 14500, delta: '+20.8%' },
+    { id: 2, category: 'Office', rawLast: 4500, rawForecast: 5100, delta: '+13.3%' },
+    { id: 3, category: 'Services', rawLast: 8000, rawForecast: 8200, delta: '+2.5%' },
+    { id: 4, category: 'SaaS', rawLast: 6000, rawForecast: 6500, delta: '+8.3%' },
+    { id: 5, category: 'Furniture', rawLast: 2000, rawForecast: 1800, delta: '-10.0%' },
 ];
 
 // Confidence Cone Data (Simple simulation)
@@ -78,7 +79,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
 
     // --- KPI Data (inside component for translations) ---
     const TOP_KPIS = useMemo(() => [
-        { id: '1', label: t('forecasted_spend'), subtitle: t('next_30_days'), value: '$42k', change: '+5%', trend: 'up' as const, icon: <CurrencyDollar size={18} />, sparklineData: [38, 39, 40, 40, 41, 41, 42] },
+        { id: '1', label: t('forecasted_spend'), subtitle: t('next_30_days'), value: '0', rawValue: 42000, isCurrency: true, change: '+5%', trend: 'up' as const, icon: <CurrencyDollar size={18} />, sparklineData: [38, 39, 40, 40, 41, 41, 42] },
         { id: '2', label: t('forecast_accuracy'), subtitle: t('last_period'), value: '92%', change: '+1%', trend: 'up' as const, icon: <Target size={18} />, sparklineData: [88, 89, 90, 90, 91, 91, 92] },
         { id: '3', label: t('est_cat_growth'), subtitle: t('highest_office'), value: '+12%', change: '+2%', trend: 'up' as const, icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 11, 12] },
         { id: '4', label: t('confidence_level'), subtitle: t('model_certainty'), value: t('high'), change: '', trend: 'neutral' as const, icon: <Target size={18} />, sparklineData: [0, 0, 0, 0, 0, 0, 0] },
@@ -281,6 +282,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -360,6 +362,7 @@ export const ForecastPlanningDashboard: React.FC = () => {
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 loading={isLoading}
                             />
@@ -393,8 +396,8 @@ export const ForecastPlanningDashboard: React.FC = () => {
                                     {FORECAST_DETAILS.map((r) => (
                                         <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                             <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{r.category}</td>
-                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{r.last}</td>
-                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">{r.forecast}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(r.rawLast, currency.code, currency.symbol)}</td>
+                                            <td className="px-5 py-3 text-end font-medium text-gray-900 dark:text-gray-100">{formatCurrency(r.rawForecast, currency.code, currency.symbol)}</td>
                                             <td className={`px-5 py-3 text-end font-medium ${r.delta.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
                                                 {r.delta}
                                             </td>

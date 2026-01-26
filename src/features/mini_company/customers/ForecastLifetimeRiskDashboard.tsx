@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Lightning, Sparkle, Target
 import { ForecastLifetimeRiskInfo } from './ForecastLifetimeRiskInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // Cone Data (Mocking a prediction interval) - static values don't need translation
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -25,11 +26,11 @@ const CONE_DATA = MONTHS.map((m, i) => {
 
 // Raw table data with action keys for styling
 const RISK_TABLE_DATA = [
-    { customer: 'Omega Corp', currentCLV: '$120k', forecastCLV: '$150k', riskKey: 'low', actionKey: 'upsell_gold_plan' },
-    { customer: 'Zeta Inc', currentCLV: '$85k', forecastCLV: '$90k', riskKey: 'medium', actionKey: 'schedule_qbr' },
-    { customer: 'Theta LLC', currentCLV: '$200k', forecastCLV: '$180k', riskKey: 'high', actionKey: 'exec_intervention' },
-    { customer: 'Sigma Co', currentCLV: '$45k', forecastCLV: '$60k', riskKey: 'low', actionKey: 'nurture_campaign' },
-    { customer: 'Kappa Ltd', currentCLV: '$95k', forecastCLV: '$95k', riskKey: 'medium', actionKey: 'monitor_usage' },
+    { customer: 'Omega Corp', rawCurrentCLV: 120000, rawForecastCLV: 150000, riskKey: 'low', actionKey: 'upsell_gold_plan' },
+    { customer: 'Zeta Inc', rawCurrentCLV: 85000, rawForecastCLV: 90000, riskKey: 'medium', actionKey: 'schedule_qbr' },
+    { customer: 'Theta LLC', rawCurrentCLV: 200000, rawForecastCLV: 180000, riskKey: 'high', actionKey: 'exec_intervention' },
+    { customer: 'Sigma Co', rawCurrentCLV: 45000, rawForecastCLV: 60000, riskKey: 'low', actionKey: 'nurture_campaign' },
+    { customer: 'Kappa Ltd', rawCurrentCLV: 95000, rawForecastCLV: 95000, riskKey: 'medium', actionKey: 'monitor_usage' },
 ];
 
 export const ForecastLifetimeRiskDashboard: React.FC = () => {
@@ -39,14 +40,14 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
 
     // --- KPI Data with translations ---
     const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
-        { id: '1', label: t('predicted_clv'), subtitle: t('ml_prediction'), value: '$2.4M', change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'blue' },
+        { id: '1', label: t('predicted_clv'), subtitle: t('ml_prediction'), value: '0', rawValue: 2400000, isCurrency: true, change: '+15%', trend: 'up', icon: <Sparkle size={18} />, sparklineData: [2.0, 2.1, 2.2, 2.3, 2.3, 2.4], color: 'blue' },
         { id: '2', label: t('lifetime_forecast'), subtitle: t('projected_value'), value: '92%', change: '+1%', trend: 'up', icon: <Target size={18} />, sparklineData: [88, 89, 90, 91, 91, 92], color: 'blue' },
         { id: '3', label: t('churn_probability'), subtitle: t('likelihood_to_churn'), value: '18', change: '-3', trend: 'up', icon: <Warning size={18} />, sparklineData: [25, 24, 22, 20, 19, 18], color: 'blue' },
         { id: '4', label: t('risk_score'), subtitle: t('composite_risk'), value: '5.2%', change: '-0.5%', trend: 'up', icon: <ChartLineUp size={18} />, sparklineData: [6.0, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'blue' },
     ], [t]);
 
     const SIDE_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
-        { id: '5', label: t('upsell_opportunity'), subtitle: t('cross_sell_potential'), value: '$450k', change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'blue' },
+        { id: '5', label: t('upsell_opportunity'), subtitle: t('cross_sell_potential'), value: '0', rawValue: 450000, isCurrency: true, change: '+8%', trend: 'up', icon: <Lightning size={18} />, sparklineData: [400, 410, 420, 430, 440, 450], color: 'blue' },
         { id: '6', label: t('growth_potential'), subtitle: t('expansion_potential'), value: '+12%', change: '+2%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
         { id: '7', label: t('revenue_at_risk'), subtitle: t('potential_loss'), value: t('high'), change: t('stable'), trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
         { id: '8', label: t('next_purchase'), subtitle: t('expected_date'), value: '12mo', change: t('stable'), trend: 'neutral', icon: <Target size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
@@ -283,6 +284,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                         />
                     </div>
@@ -351,6 +353,7 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                                 <div key={kpi.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
+                                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                         color="blue"
                                         className="h-full"
                                     />
@@ -388,8 +391,8 @@ export const ForecastLifetimeRiskDashboard: React.FC = () => {
                                         {RISK_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                                 <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.customer}</td>
-                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs text-start">{row.currentCLV}</td>
-                                                <td className="px-5 py-3 font-medium text-blue-600 dark:text-blue-400 text-start">{row.forecastCLV}</td>
+                                                <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-xs text-start">{formatCurrency(row.rawCurrentCLV, currency.code, currency.symbol)}</td>
+                                                <td className="px-5 py-3 font-medium text-blue-600 dark:text-blue-400 text-start">{formatCurrency(row.rawForecastCLV, currency.code, currency.symbol)}</td>
                                                 <td className="px-5 py-3 text-start">
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.riskKey === 'high' ? 'bg-red-100 text-red-700' :
                                                         row.riskKey === 'medium' ? 'bg-orange-100 text-orange-700' :

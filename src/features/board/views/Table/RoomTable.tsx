@@ -203,13 +203,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 const parsed = JSON.parse(saved);
                 if (parsed.length > 0) {
                     // Ensure select and name are pinned (migration)
-                    // Also migrate "Data 2" label to Arabic
+                    // Also ensure Data 2 label is in English
                     return parsed.map((col: Column) => {
                         if (col.id === 'select' || col.id === 'name') {
                             return { ...col, pinned: true };
                         }
-                        if (col.id === 'data2' && col.label === 'Data 2') {
-                            return { ...col, label: 'بيانات 2' };
+                        if (col.id === 'data2' && col.label === 'بيانات 2') {
+                            return { ...col, label: 'Data 2' };
                         }
                         return col;
                     });
@@ -1998,7 +1998,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const onMouseMove = useCallback((e: MouseEvent) => {
         if (!resizingColId.current) return;
-        const diff = e.clientX - startX.current;
+        // In RTL mode, dragging left should increase width, so we reverse the diff
+        const diff = isRTL
+            ? (startX.current - e.clientX)
+            : (e.clientX - startX.current);
         const newWidth = startWidth.current + diff;
 
         setColumns(cols => cols.map(col => {
@@ -2007,7 +2010,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             }
             return col;
         }));
-    }, []);
+    }, [isRTL]);
 
     const onMouseUp = useCallback(() => {
         resizingColId.current = null;
@@ -2101,12 +2104,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Secondary Toolbar */}
-                <div className="flex items-center h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface pl-[24px] pr-[20px] shrink-0 transition-colors z-20 gap-4">
+                <div className="flex items-center min-h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface px-4 shrink-0 transition-colors z-20 gap-2 overflow-x-auto">
                     {/* Left: New Table */}
 
 
                     {/* Left: Action Icons */}
-                    <div className="flex items-center gap-3 text-stone-500 dark:text-stone-400 relative">
+                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 relative flex-wrap">
                         {/* Export Button */}
 
 
@@ -2549,12 +2552,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         </div>
 
                         {/* Selection Actions (Always Visible, Grey if disabled) */}
-                        <div className="flex items-center gap-4 ms-4">
-                            <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
+                        <div className="flex items-center gap-2 ms-2 flex-shrink-0">
+                            <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-1" />
 
                             <button
                                 disabled={checkedRows.size === 0}
-                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                className={`flex items-center gap-1.5 transition-colors group ${checkedRows.size > 0
                                     ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
                                     : 'cursor-default text-stone-300 dark:text-stone-700'
                                     }`}
@@ -2565,7 +2568,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                             <button
                                 disabled={checkedRows.size === 0}
-                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                className={`flex items-center gap-1.5 transition-colors group ${checkedRows.size > 0
                                     ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600'
                                     : 'cursor-default text-stone-300 dark:text-stone-700'
                                     }`}
@@ -2604,7 +2607,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                         }
                                     });
                                 }}
-                                className={`flex items-center gap-2 transition-colors group ${checkedRows.size > 0
+                                className={`flex items-center gap-1.5 transition-colors group ${checkedRows.size > 0
                                     ? 'cursor-pointer text-stone-600 dark:text-stone-300 hover:text-red-600'
                                     : 'cursor-default text-stone-300 dark:text-stone-700'
                                     }`}
@@ -2613,11 +2616,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 <span className="text-[13px] font-medium">{t('delete')}</span>
                             </button>
 
-                            <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-2" />
+                            <div className="h-4 w-px bg-stone-200 dark:bg-stone-700" />
 
                             <button
                                 onClick={handleExportTable}
-                                className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600"
+                                className="flex items-center gap-1.5 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-blue-600"
                                 title={checkedRows.size > 0 ? t('export_selected_rows').replace('{0}', String(checkedRows.size)) : t('export_all_rows')}
                             >
                                 <Export size={16} weight="regular" className="group-hover:scale-110 transition-transform" />
@@ -2626,7 +2629,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
                             <button
                                 onClick={handleImportClick}
-                                className="flex items-center gap-2 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-green-600"
+                                className="flex items-center gap-1.5 transition-colors group cursor-pointer text-stone-600 dark:text-stone-300 hover:text-green-600"
                                 title={t('import_from_file')}
                             >
                                 <UploadCloud size={16} className="group-hover:scale-110 transition-transform" />
@@ -2635,7 +2638,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                         </div>
                     </div>
 
-                    <div className="flex-1" />
+                    <div className="flex-1 min-w-0" />
 
                     {/* Right: Custom Actions */}
                     <div className="flex items-center gap-4">
@@ -2932,7 +2935,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                                     <div className="w-full h-full flex items-center justify-center px-2">
                                                                                         {/* Empty */}
                                                                                     </div>
-                                                                                ) : col.id === 'name' ? (
+                                                                                ) : col.id === (visibleColumns.find(c => c.id === 'name') || visibleColumns.find(c => c.id !== 'select'))?.id ? (
                                                                                     renderCellContent(col, creationRowData)
                                                                                 ) : null}
                                                                             </div>

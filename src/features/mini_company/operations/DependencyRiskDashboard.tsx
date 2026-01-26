@@ -7,6 +7,7 @@ import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/comp
 import { ArrowsOut, ArrowsIn, Info, ShieldWarning, Warning, LinkBreak, UserSwitch, CurrencyDollar, Compass } from 'phosphor-react';
 import { DependencyRiskInfo } from './DependencyRiskInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data: Charts ---
 const DEPENDENCY_BY_CATEGORY = [
@@ -70,7 +71,7 @@ const GRAPH_LINKS = [
 ];
 
 export const DependencyRiskDashboard: React.FC = () => {
-    const { t, dir } = useAppContext();
+    const { currency, t, dir } = useAppContext();
     const isRTL = dir === 'rtl';
     const [showInfo, setShowInfo] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
@@ -98,7 +99,7 @@ export const DependencyRiskDashboard: React.FC = () => {
 
     const SIDE_KPIS = useMemo(() => [
         { id: '5', label: t('backup_suppliers'), subtitle: t('avg_per_category'), value: '1.8', change: '+0.1', trend: 'up' as const, icon: <UserSwitch size={18} />, sparklineData: [1.5, 1.5, 1.6, 1.6, 1.7, 1.7, 1.8] },
-        { id: '6', label: t('avg_switching_cost'), subtitle: t('est_impact'), value: '$12k', change: '0', trend: 'neutral' as const, icon: <CurrencyDollar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12, 12] },
+        { id: '6', label: t('avg_switching_cost'), subtitle: t('est_impact'), value: '0', rawValue: 12000, isCurrency: true, change: '0', trend: 'neutral' as const, icon: <CurrencyDollar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12, 12] },
         { id: '7', label: t('active_risk_alerts'), subtitle: t('critical_issues'), value: '2', change: '+1', trend: 'down' as const, icon: <Warning size={18} />, sparklineData: [0, 0, 1, 1, 1, 2, 2] },
         { id: '8', label: t('mitigation_progress'), subtitle: t('actions_completed'), value: '72%', change: '+8%', trend: 'up' as const, icon: <Compass size={18} />, sparklineData: [58, 62, 64, 66, 68, 70, 72] },
     ], [t]);
@@ -309,6 +310,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -388,6 +390,7 @@ export const DependencyRiskDashboard: React.FC = () => {
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 loading={isLoading}
                             />

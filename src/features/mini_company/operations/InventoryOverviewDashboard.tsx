@@ -68,7 +68,7 @@ export const InventoryOverviewDashboard: React.FC = () => {
 
     // --- KPI Data ---
     const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
-        { id: '1', label: t('total_stock_value'), subtitle: t('current_holdings'), value: '$245k', rawValue: 245000, isCurrency: true, change: '+2.4%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [230, 235, 238, 240, 242, 245], color: 'blue' },
+        { id: '1', label: t('total_stock_value'), subtitle: t('current_holdings'), value: '0', rawValue: 245000, isCurrency: true, change: '+2.4%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [230, 235, 238, 240, 242, 245], color: 'blue' },
         { id: '2', label: t('total_skus'), subtitle: t('active_items'), value: '1,240', change: '+12', trend: 'up', icon: <Package size={18} />, sparklineData: [1200, 1210, 1220, 1230, 1235, 1240], color: 'blue' },
         { id: '3', label: t('in_stock_rate'), subtitle: t('availability'), value: '98.5%', change: '-0.2%', trend: 'down', icon: <CheckCircle size={18} />, sparklineData: [99, 99, 98.8, 98.6, 98.5, 98.5], color: 'blue' },
         { id: '4', label: t('out_of_stock_items'), subtitle: t('stockouts'), value: '18', change: '+3', trend: 'down', icon: <Warning size={18} />, sparklineData: [15, 15, 16, 17, 18, 18], color: 'blue' },

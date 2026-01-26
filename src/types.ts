@@ -62,7 +62,8 @@ export type BoardViewType =
   | 'customer_overview' | 'segmentation_value' | 'behavior_patterns'
   | 'retention_churn' | 'journey_touchpoints' | 'satisfaction_feedback' | 'forecast_risk'
   | 'supplier_overview' | 'supplier_delivery' | 'supplier_cost' | 'supplier_quality' | 'supplier_lead_time' | 'supplier_risk' | 'supplier_strategic'
-  | 'supplier_performance' | 'supplier_risk_compliance' | 'supplier_orders';
+  | 'supplier_performance' | 'supplier_risk_compliance' | 'supplier_orders'
+  | 'dept_data';
 
 export interface Board {
   id: string;

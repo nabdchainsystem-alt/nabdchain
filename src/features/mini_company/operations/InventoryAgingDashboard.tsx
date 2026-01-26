@@ -7,6 +7,7 @@ import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/comp
 import { ArrowsOut, ArrowsIn, Info, Clock, Warning, Hourglass, Coin, Tag, Fire } from 'phosphor-react';
 import { InventoryAgingInfo } from './InventoryAgingInfo';
 import { useAppContext } from '../../../contexts/AppContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data: Charts ---
 const AGING_BUCKETS = [
@@ -75,8 +76,8 @@ export const InventoryAgingDashboard: React.FC = () => {
     // --- KPI Data ---
     const TOP_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
         { id: '1', label: t('avg_stock_age'), subtitle: t('global_mean'), value: '48d', change: '+2d', trend: 'down', icon: <Clock size={18} />, sparklineData: [45, 45, 46, 47, 48, 48], color: 'blue' },
-        { id: '2', label: t('aging_stock_value'), subtitle: t('over_90_days'), value: '$35k', rawValue: 35000, isCurrency: true, change: '+5%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [30, 31, 32, 33, 34, 35], color: 'blue' },
-        { id: '3', label: t('dead_stock_value'), subtitle: t('over_365_days'), value: '$12k', rawValue: 12000, isCurrency: true, change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
+        { id: '2', label: t('aging_stock_value'), subtitle: t('over_90_days'), value: '0', rawValue: 35000, isCurrency: true, change: '+5%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [30, 31, 32, 33, 34, 35], color: 'blue' },
+        { id: '3', label: t('dead_stock_value'), subtitle: t('over_365_days'), value: '0', rawValue: 12000, isCurrency: true, change: '+1%', trend: 'down', icon: <Warning size={18} />, sparklineData: [11, 11, 12, 12, 12, 12], color: 'blue' },
         { id: '4', label: t('capital_locked'), subtitle: t('pct_in_dead_stock'), value: '8.5%', change: '+0.2%', trend: 'down', icon: <Coin size={18} />, sparklineData: [8, 8.2, 8.3, 8.4, 8.5, 8.5], color: 'blue' },
     ], [t]);
 
@@ -84,7 +85,7 @@ export const InventoryAgingDashboard: React.FC = () => {
         { id: '5', label: t('stock_over_90_days'), subtitle: t('pct_volume'), value: '15%', change: '+1%', trend: 'down', icon: <Hourglass size={18} />, sparklineData: [12, 13, 13, 14, 15, 15], color: 'blue' },
         { id: '6', label: t('slow_moving_skus'), subtitle: t('low_velocity'), value: '85', change: '+5', trend: 'down', icon: <Clock size={18} />, sparklineData: [70, 75, 78, 80, 82, 85], color: 'blue' },
         { id: '7', label: t('clearance_targets'), subtitle: t('recommended'), value: '25', change: '+2', trend: 'up', icon: <Tag size={18} />, sparklineData: [20, 21, 22, 23, 24, 25], color: 'blue' },
-        { id: '8', label: t('write_off_risk'), subtitle: t('potential_loss'), value: '$8.2k', change: '-$500', trend: 'up', icon: <Fire size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.5, 8.2], color: 'blue' },
+        { id: '8', label: t('write_off_risk'), subtitle: t('potential_loss'), value: '0', rawValue: 8200, isCurrency: true, change: '-$500', trend: 'up', icon: <Fire size={18} />, sparklineData: [10, 9.5, 9.2, 8.8, 8.5, 8.2], color: 'blue' },
     ], [t]);
 
 
@@ -243,6 +244,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -322,6 +324,7 @@ export const InventoryAgingDashboard: React.FC = () => {
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 loading={isLoading}
                             />

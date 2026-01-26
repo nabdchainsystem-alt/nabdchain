@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { ChartLineUp, ShoppingCart, Truck, TrendUp, CurrencyDollar, Funnel, ShieldWarning, Target } from 'phosphor-react';
+import { ChartLineUp, ShoppingCart, Truck, TrendUp, CurrencyDollar, Funnel, ShieldWarning, Target, Database } from 'phosphor-react';
 import { PurchaseOverviewDashboard } from './PurchaseOverviewDashboard';
 import { SupplierPerformanceDashboard } from './SupplierPerformanceDashboard';
 import { PurchaseBehaviorDashboard } from './PurchaseBehaviorDashboard';
@@ -9,6 +9,7 @@ import { CostControlDashboard } from './CostControlDashboard';
 import { PurchaseFunnelDashboard } from './PurchaseFunnelDashboard';
 import { DependencyRiskDashboard } from './DependencyRiskDashboard';
 import { ForecastPlanningDashboard } from './ForecastPlanningDashboard';
+import { PurchaseDeptData } from './PurchaseDeptData';
 import { useAppContext } from '../../../contexts/AppContext';
 
 const INITIAL_BOARD: Board = {
@@ -23,7 +24,7 @@ const INITIAL_BOARD: Board = {
         { id: 'date', title: 'Date', type: 'date' }
     ],
     tasks: [],
-    availableViews: ['purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'datatable'],
+    availableViews: ['purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'dept_data'],
     defaultView: 'overview'
 };
 
@@ -78,6 +79,12 @@ const PurchasesPage: React.FC = () => {
                     description: t('forecast_planning_desc')
                 }
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') }
+            ]
         }
     ], [t]);
 
@@ -94,8 +101,8 @@ const PurchasesPage: React.FC = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban, datatable) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -145,6 +152,8 @@ const PurchasesPage: React.FC = () => {
                 return <DependencyRiskDashboard />;
             case 'forecast_planning':
                 return <ForecastPlanningDashboard />;
+            case 'dept_data':
+                return <PurchaseDeptData />;
             default:
                 return null;
         }

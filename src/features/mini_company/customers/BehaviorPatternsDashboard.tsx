@@ -8,14 +8,15 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Activity, ShoppingCart, Cl
 import { BehaviorPatternsInfo } from './BehaviorPatternsInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data: Table (customer names don't need translation) ---
 const BEHAVIOR_LOG_DATA = [
-    { customer: 'Alice Smith', orders: 12, aov: '$120', lastDate: 'Oct 24', trendKey: 'stable' },
-    { customer: 'Bob Jones', orders: 4, aov: '$45', lastDate: 'Oct 20', trendKey: 'declining' },
-    { customer: 'Charlie Day', orders: 25, aov: '$210', lastDate: 'Today', trendKey: 'surging' },
-    { customer: 'Dana White', orders: 8, aov: '$85', lastDate: 'Yesterday', trendKey: 'stable' },
-    { customer: 'Eve Black', orders: 1, aov: '$35', lastDate: 'Oct 15', trendKey: 'new_trend' },
+    { customer: 'Alice Smith', orders: 12, rawAov: 120, lastDate: 'Oct 24', trendKey: 'stable' },
+    { customer: 'Bob Jones', orders: 4, rawAov: 45, lastDate: 'Oct 20', trendKey: 'declining' },
+    { customer: 'Charlie Day', orders: 25, rawAov: 210, lastDate: 'Today', trendKey: 'surging' },
+    { customer: 'Dana White', orders: 8, rawAov: 85, lastDate: 'Yesterday', trendKey: 'stable' },
+    { customer: 'Eve Black', orders: 1, rawAov: 35, lastDate: 'Oct 15', trendKey: 'new_trend' },
 ];
 
 // Wave Timeline Data (months will be translated)
@@ -356,7 +357,7 @@ export const BehaviorPatternsDashboard: React.FC = () => {
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                             <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.customer}</td>
                                             <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.orders}</td>
-                                            <td className="px-5 py-3 text-end text-green-600 font-medium">{row.aov}</td>
+                                            <td className="px-5 py-3 text-end text-green-600 font-medium">{formatCurrency(row.rawAov, currency.code, currency.symbol)}</td>
                                             <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400 text-xs">{row.lastDate}</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${getTrendClass(row.trendKey)}`}>

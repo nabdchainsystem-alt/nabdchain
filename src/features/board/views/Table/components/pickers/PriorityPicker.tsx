@@ -65,7 +65,7 @@ export const PriorityPicker: React.FC<PriorityPickerProps> = ({
                             <button
                                 key={label}
                                 onClick={() => handleSelect(label)}
-                                className={`w-full flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded shadow-sm transition-transform active:scale-95 ${styleClass} ${isActive ? 'ring-2 ring-offset-1 ring-stone-400 dark:ring-stone-600' : ''}`}
+                                className={`w-full flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded transition-transform active:scale-95 ${styleClass}`}
                             >
                                 {getPriorityLabel(label)}
                             </button>

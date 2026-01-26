@@ -8,18 +8,19 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Wallet, ChartBar, Receipt,
 import { ExpensesOverviewInfo } from './ExpensesOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data getter functions ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
-    { id: '1', label: t('total_expenses'), subtitle: t('ytd'), value: '$145,230', change: '+12%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [120, 125, 130, 135, 140, 145], color: 'blue' },
-    { id: '2', label: t('monthly_expenses'), subtitle: t('current_month'), value: '$12,450', change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'blue' },
+    { id: '1', label: t('total_expenses'), subtitle: t('ytd'), value: '0', rawValue: 145230, isCurrency: true, change: '+12%', trend: 'up', icon: <Wallet size={18} />, sparklineData: [120, 125, 130, 135, 140, 145], color: 'blue' },
+    { id: '2', label: t('monthly_expenses'), subtitle: t('current_month'), value: '0', rawValue: 12450, isCurrency: true, change: '-5%', trend: 'down', icon: <CalendarBlank size={18} />, sparklineData: [11, 13, 12, 14, 13, 12], color: 'blue' },
     { id: '3', label: t('expense_growth'), subtitle: t('mom'), value: '4.2%', change: '+1.1%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [3, 3.5, 3.8, 4.0, 4.1, 4.2], color: 'blue' },
     { id: '4', label: t('expense_categories'), subtitle: t('active'), value: '12', change: '0', trend: 'neutral', icon: <ChartBar size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
 const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
     { id: '5', label: t('fixed_vs_variable'), subtitle: t('ratio'), value: '60/40', change: '0', trend: 'neutral', icon: <Receipt size={18} />, sparklineData: [60, 60, 60, 60, 60, 60], color: 'blue' },
-    { id: '6', label: t('avg_expense_day'), subtitle: t('based_on_30_days'), value: '$415', change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'blue' },
+    { id: '6', label: t('avg_expense_day'), subtitle: t('based_on_30_days'), value: '0', rawValue: 415, isCurrency: true, change: '-2%', trend: 'down', icon: <CurrencyDollar size={18} />, sparklineData: [420, 425, 430, 420, 415, 415], color: 'blue' },
     { id: '7', label: t('high_cost_alerts'), subtitle: t('above_threshold'), value: '3', change: '+1', trend: 'up', icon: <Warning size={18} />, sparklineData: [1, 1, 2, 2, 2, 3], color: 'blue' },
     { id: '8', label: t('budget_variance'), subtitle: t('vs_plan'), value: '-2.3%', change: '+0.5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [-4, -3.5, -3, -2.8, -2.5, -2.3], color: 'blue' },
 ];
@@ -56,11 +57,11 @@ const getExpenseTypeSplit = (t: (key: string) => string) => [
 
 // --- Table Data getter function ---
 const getExpenseTable = (t: (key: string) => string) => [
-    { id: 'EXP-101', category: t('marketing'), amount: '$4,500', date: '2023-06-15', type: t('variable'), status: t('approved'), statusKey: 'approved' },
-    { id: 'EXP-102', category: t('software'), amount: '$299', date: '2023-06-16', type: t('fixed'), status: t('pending'), statusKey: 'pending' },
-    { id: 'EXP-103', category: t('travel'), amount: '$1,200', date: '2023-06-18', type: t('variable'), status: t('approved'), statusKey: 'approved' },
-    { id: 'EXP-104', category: t('office'), amount: '$150', date: '2023-06-20', type: t('variable'), status: t('pending'), statusKey: 'pending' },
-    { id: 'EXP-105', category: t('rent'), amount: '$5,000', date: '2023-06-01', type: t('fixed'), status: t('paid'), statusKey: 'paid' },
+    { id: 'EXP-101', category: t('marketing'), rawAmount: 4500, date: '2023-06-15', type: t('variable'), status: t('approved'), statusKey: 'approved' },
+    { id: 'EXP-102', category: t('software'), rawAmount: 299, date: '2023-06-16', type: t('fixed'), status: t('pending'), statusKey: 'pending' },
+    { id: 'EXP-103', category: t('travel'), rawAmount: 1200, date: '2023-06-18', type: t('variable'), status: t('approved'), statusKey: 'approved' },
+    { id: 'EXP-104', category: t('office'), rawAmount: 150, date: '2023-06-20', type: t('variable'), status: t('pending'), statusKey: 'pending' },
+    { id: 'EXP-105', category: t('rent'), rawAmount: 5000, date: '2023-06-01', type: t('fixed'), status: t('paid'), statusKey: 'paid' },
 ];
 
 // Radial Data getter function
@@ -267,6 +268,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color={kpi.color as any || 'blue'}
                             loading={isLoading}
                         />
@@ -346,6 +348,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                         <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 loading={isLoading}
                             />
@@ -382,7 +385,7 @@ export const ExpensesOverviewDashboard: React.FC = () => {
                                             <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.type}</td>
                                             <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.category}</td>
                                             <td className="px-5 py-3 text-gray-600 dark:text-gray-400 font-datetime text-start">{row.date}</td>
-                                            <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                            <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{formatCurrency(row.rawAmount, currency.code, currency.symbol)}</td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.statusKey === 'approved' || row.statusKey === 'paid' ? 'bg-emerald-100 text-emerald-700' :
                                                     'bg-amber-100 text-amber-700'

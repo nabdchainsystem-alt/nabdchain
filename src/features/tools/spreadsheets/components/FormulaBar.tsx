@@ -1,37 +1,131 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface FormulaBarProps {
     selectedCell: string;
     value: string | number;
+    onChange: (value: string) => void;
+    isEditing: boolean;
 }
 
-export const FormulaBar: React.FC<FormulaBarProps> = ({ selectedCell, value }) => {
+export const FormulaBar: React.FC<FormulaBarProps> = ({
+    selectedCell,
+    value,
+    onChange,
+    isEditing,
+}) => {
+    const [inputValue, setInputValue] = useState(String(value));
+    const [isFocused, setIsFocused] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Sync with external value
+    useEffect(() => {
+        if (!isFocused) {
+            setInputValue(String(value));
+        }
+    }, [value, isFocused]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            onChange(inputValue);
+            inputRef.current?.blur();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setInputValue(String(value));
+            inputRef.current?.blur();
+        }
+    };
+
+    const handleBlur = () => {
+        setIsFocused(false);
+        if (inputValue !== String(value)) {
+            onChange(inputValue);
+        }
+    };
+
+    const handleFocus = () => {
+        setIsFocused(true);
+    };
+
     return (
-        <div className="flex items-center gap-0 px-2 py-1 bg-white border-b border-gray-200 h-10">
+        <div className="flex items-center bg-white border-b border-[#dadce0] h-[30px]">
             {/* Name Box */}
-            <div className="relative group flex items-center h-full">
+            <div className="flex items-center h-full border-r border-[#dadce0]">
                 <input
-                    className="w-20 px-2 py-1 text-sm font-medium text-center border-none focus:ring-1 focus:ring-black rounded hover:bg-gray-50 bg-transparent text-gray-700"
+                    className="w-[80px] px-2 text-[13px] font-medium text-center border-none outline-none hover:bg-[#f1f3f4] bg-transparent text-[#202124] h-full cursor-pointer focus:bg-[#e8f0fe] focus:text-[#1a73e8] transition-colors"
                     type="text"
                     value={selectedCell}
                     readOnly
+                    title="Name Box"
                 />
-                <div className="w-[1px] h-4 bg-gray-300 mx-2"></div>
             </div>
 
-            {/* Fx Button */}
-            <button className="px-3 text-gray-500 hover:text-black font-serif italic font-bold text-lg flex items-center justify-center h-full">
-                fx
-            </button>
-            <div className="w-[1px] h-6 bg-gray-300 mx-1"></div>
+            {/* Function buttons */}
+            <div className="flex items-center h-full border-r border-[#dadce0]">
+                {(isFocused || inputValue !== String(value)) ? (
+                    <>
+                        <button
+                            onClick={() => {
+                                setInputValue(String(value));
+                                inputRef.current?.blur();
+                            }}
+                            className="w-[30px] h-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] transition-colors"
+                            title="Cancel (Escape)"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                onChange(inputValue);
+                                inputRef.current?.blur();
+                            }}
+                            className="w-[30px] h-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] transition-colors"
+                            title="Confirm (Enter)"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">check</span>
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            className="w-[30px] h-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] transition-colors opacity-50"
+                            disabled
+                        >
+                            <span className="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                        <button
+                            className="w-[30px] h-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] transition-colors opacity-50"
+                            disabled
+                        >
+                            <span className="material-symbols-outlined text-[20px]">check</span>
+                        </button>
+                    </>
+                )}
+                <button
+                    className="w-[30px] h-full flex items-center justify-center text-[#5f6368] hover:bg-[#f1f3f4] transition-colors font-serif italic font-bold text-[16px]"
+                    title="Insert function"
+                >
+                    <span className="italic">fx</span>
+                </button>
+            </div>
 
             {/* Input Area */}
             <input
-                className="flex-1 px-2 py-1 text-sm text-gray-900 border-none focus:ring-0 placeholder:text-gray-400 font-display h-full"
-                placeholder="Enter text or formula"
+                ref={inputRef}
+                className={`flex-1 px-3 text-[13px] text-[#202124] border-none outline-none h-full transition-colors ${
+                    isFocused || isEditing ? 'bg-white ring-2 ring-inset ring-[#1a73e8]' : 'bg-white hover:bg-[#f8f9fa]'
+                }`}
+                placeholder=""
                 type="text"
-                value={value}
-                readOnly // Readonly for this demo
+                value={inputValue}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                onFocus={handleFocus}
             />
         </div>
     );

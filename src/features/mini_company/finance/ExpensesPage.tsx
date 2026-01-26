@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { Wallet, Tag, Receipt } from 'phosphor-react';
+import { Wallet, Tag, Receipt, Database } from 'phosphor-react';
 import { ExpensesOverviewDashboard } from './ExpensesOverviewDashboard';
 import { CategoryAnalysisDashboard } from './CategoryAnalysisDashboard';
 import { FixedVariableDashboard } from './FixedVariableDashboard';
@@ -9,6 +9,7 @@ import { TrendsAnomaliesDashboard } from './TrendsAnomaliesDashboard';
 import { ApprovalFlowDashboard } from './ApprovalFlowDashboard';
 import { DeptAccountabilityDashboard } from './DeptAccountabilityDashboard';
 import { ForecastOptimizationDashboard } from './ForecastOptimizationDashboard';
+import { ExpensesDeptData } from './ExpensesDeptData';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 const INITIAL_BOARD: Board = {
@@ -32,7 +33,7 @@ const INITIAL_BOARD: Board = {
         'approval_flow',
         'dept_accountability',
         'forecast_optimization',
-        'datatable'
+        'dept_data'
     ],
     defaultView: 'overview'
 };
@@ -93,6 +94,12 @@ const ExpensesPage: React.FC = () => {
                     description: t('forecast_optimization_desc')
                 }
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') }
+            ]
         }
     ], [t]);
 
@@ -109,8 +116,8 @@ const ExpensesPage: React.FC = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban, datatable) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -149,6 +156,8 @@ const ExpensesPage: React.FC = () => {
                 return <DeptAccountabilityDashboard />;
             case 'forecast_optimization':
                 return <ForecastOptimizationDashboard />;
+            case 'dept_data':
+                return <ExpensesDeptData />;
             default:
                 return null;
         }

@@ -8,14 +8,15 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Users, UserPlus, Warning, Activity,
 import { CustomerOverviewInfo } from './CustomerOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Static Data (values only) ---
 const CUSTOMER_LIST_DATA = [
-    { id: 'C-001', name: 'Acme Corp', segmentKey: 'vip', orders: 150, revenue: '$45,000', lastActive: '2 hours ago' },
-    { id: 'C-002', name: 'Globex Inc', segmentKey: 'loyal', orders: 85, revenue: '$22,500', lastActive: '1 day ago' },
-    { id: 'C-003', name: 'Soylent Corp', segmentKey: 'standard', orders: 12, revenue: '$3,200', lastActive: '5 days ago' },
-    { id: 'C-004', name: 'Initech', segmentKey: 'at_risk', orders: 45, revenue: '$12,000', lastActive: '30 days ago' },
-    { id: 'C-005', name: 'Umbrella Corp', segmentKey: 'vip', orders: 200, revenue: '$60,000', lastActive: '10 mins ago' },
+    { id: 'C-001', name: 'Acme Corp', segmentKey: 'vip', orders: 150, rawRevenue: 45000, lastActive: '2 hours ago' },
+    { id: 'C-002', name: 'Globex Inc', segmentKey: 'loyal', orders: 85, rawRevenue: 22500, lastActive: '1 day ago' },
+    { id: 'C-003', name: 'Soylent Corp', segmentKey: 'standard', orders: 12, rawRevenue: 3200, lastActive: '5 days ago' },
+    { id: 'C-004', name: 'Initech', segmentKey: 'at_risk', orders: 45, rawRevenue: 12000, lastActive: '30 days ago' },
+    { id: 'C-005', name: 'Umbrella Corp', segmentKey: 'vip', orders: 200, rawRevenue: 60000, lastActive: '10 mins ago' },
 ];
 
 export const CustomerOverviewDashboard: React.FC = () => {
@@ -42,7 +43,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
     ], [t]);
 
     const SIDE_KPIS = useMemo(() => [
-        { id: '5', label: t('avg_revenue_user'), subtitle: t('lifetime'), value: '$450', change: '+$10', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [430, 435, 438, 440, 445, 450], color: 'blue' },
+        { id: '5', label: t('avg_revenue_user'), subtitle: t('lifetime'), value: '0', rawValue: 450, isCurrency: true, change: '+$10', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [430, 435, 438, 440, 445, 450], color: 'blue' },
         { id: '6', label: t('engagement_rate'), subtitle: t('weekly_visits'), value: '42%', change: '+1%', trend: 'up' as const, icon: <Activity size={18} />, sparklineData: [40, 41, 40, 41, 42, 42], color: 'blue' },
         { id: '7', label: t('customer_growth_rate'), subtitle: t('month_over_month'), value: '8.5%', change: '+0.5%', trend: 'up' as const, icon: <TrendUp size={18} />, sparklineData: [7, 7.5, 7.8, 8, 8.2, 8.5], color: 'blue' },
         { id: '8', label: t('avg_session_duration'), subtitle: t('per_visit'), value: '4.2m', change: '+0.3m', trend: 'up' as const, icon: <User size={18} />, sparklineData: [3.5, 3.7, 3.9, 4.0, 4.1, 4.2], color: 'blue' },
@@ -252,6 +253,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -320,6 +322,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
                         <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                                 loading={isLoading}
@@ -367,7 +370,7 @@ export const CustomerOverviewDashboard: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.orders}</td>
-                                            <td className="px-5 py-3 text-end text-green-600 font-medium">{row.revenue}</td>
+                                            <td className="px-5 py-3 text-end text-green-600 font-medium">{formatCurrency(row.rawRevenue, currency.code, currency.symbol)}</td>
                                             <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400 text-xs">{row.lastActive}</td>
                                         </tr>
                                     ))}

@@ -278,7 +278,6 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
             selectedMode: 'multiple',
             radius: '65%',
             center: ['50%', '45%'],
-            selectedMode: 'multiple',
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: stableCategoryData.map((d, i) => ({
                 ...d,
@@ -297,7 +296,6 @@ export const SalesInsightsDashboard: React.FC<SalesInsightsDashboardProps> = mem
             selectedMode: 'multiple',
             radius: '65%',
             center: ['50%', '45%'],
-            selectedMode: 'multiple',
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
             data: stableStatusData.map((d, i) => ({
                 ...d,

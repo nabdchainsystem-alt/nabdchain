@@ -199,9 +199,9 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
         const viewsWithoutOverview = views.filter(v => (v as any) !== 'overview' && (v as any) !== 'listboard' && (v as any) !== 'list_board');
         let finalViews = ['overview', ...viewsWithoutOverview] as BoardViewType[];
 
-        // Enforce 'datatable' view for department layouts if missing
-        if (isDepartmentLayout && !finalViews.includes('datatable')) {
-            finalViews = [...finalViews, 'datatable'];
+        // Enforce 'dept_data' view for department layouts if missing
+        if (isDepartmentLayout && !finalViews.includes('dept_data' as any)) {
+            finalViews = [...finalViews, 'dept_data' as BoardViewType];
         }
 
         return finalViews;
@@ -399,6 +399,21 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
         return () => window.removeEventListener('dashboard-toggle-fullscreen', handleDashboardFullscreen);
     }, []);
 
+    // Listen for external view change requests (e.g., from GTD Quick Capture)
+    useEffect(() => {
+        const handleSetBoardView = (e: CustomEvent<{ boardId: string; view: string }>) => {
+            if (e.detail.boardId === board.id && e.detail.view) {
+                const normalizedView = normalizeViewId(e.detail.view);
+                if (normalizedView && sanitizedAvailableViews.includes(normalizedView)) {
+                    setActiveView(normalizedView);
+                }
+            }
+        };
+
+        window.addEventListener('set-board-view', handleSetBoardView as EventListener);
+        return () => window.removeEventListener('set-board-view', handleSetBoardView as EventListener);
+    }, [board.id, sanitizedAvailableViews]);
+
     // Animation state for view transitions
     const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -517,7 +532,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
     // Track visited custom views for CSS keep-alive
     const CUSTOM_VIEW_TYPES = [
         'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast',
-        'sales_funnel', 'sales_segmentation', 'sales_promotions',
+        'sales_funnel', 'sales_segmentation', 'sales_promotions', 'dept_data',
         'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control',
         'purchase_funnel', 'dependency_risk', 'forecast_planning',
         'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy',
@@ -1420,7 +1435,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
             {(() => {
                 const type = getBaseViewType(activeView);
                 const isDashboardBoard = ['dept-sales', 'supplier-data', 'customer-data'].includes(board.id);
-                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost', 'supplier_quality', 'supplier_lead_time', 'supplier_risk', 'supplier_strategic'].includes(type) || (type === 'overview' && isDashboardBoard);
+                const isFullWidth = ['table', 'datatable', 'gantt', 'spreadsheet', 'calendar', 'dept_data', 'sales_insights', 'sales_performance', 'sales_analysis', 'sales_forecast', 'sales_funnel', 'sales_segmentation', 'sales_promotions', 'purchase_overview', 'supplier_performance', 'purchase_behavior', 'cost_control', 'purchase_funnel', 'dependency_risk', 'forecast_planning', 'inventory_overview', 'stock_movement', 'inventory_aging', 'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast', 'expenses_overview', 'category_analysis', 'fixed_variable', 'trends_anomalies', 'approval_flow', 'dept_accountability', 'forecast_optimization', 'customer_overview', 'segmentation_value', 'behavior_patterns', 'retention_churn', 'journey_touchpoints', 'satisfaction_feedback', 'forecast_risk', 'supplier_overview', 'supplier_delivery', 'supplier_cost', 'supplier_quality', 'supplier_lead_time', 'supplier_risk', 'supplier_strategic'].includes(type) || (type === 'overview' && isDashboardBoard);
                 const currentViewIndex = fullscreenNavigableViews.indexOf(activeView);
                 const currentViewOption = effectiveViewOptions.find(v => v.id === getBaseViewType(activeView));
 

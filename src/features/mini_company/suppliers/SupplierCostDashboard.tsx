@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Money, ChartLineUp, Wallet, Coins, 
 import { SupplierCostInfo } from './SupplierCostInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data: Charts ---
 const SPEND_BY_SUPPLIER = [
@@ -29,11 +30,11 @@ const MONTHLY_SPEND_TREND = [
 
 // Cost Table
 const COST_TABLE = [
-    { supplier: 'Acme Mfg', contract: '$1.1M', actual: '$1.2M', variance: '+9%', savings: '$0' },
-    { supplier: 'Globex Corp', contract: '$900k', actual: '$850k', variance: '-5.5%', savings: '$50k' },
-    { supplier: 'Soylent Corp', contract: '$600k', actual: '$650k', variance: '+8.3%', savings: '$0' },
-    { supplier: 'Initech', contract: '$420k', actual: '$400k', variance: '-4.7%', savings: '$20k' },
-    { supplier: 'Umbrella Corp', contract: '$350k', actual: '$350k', variance: '0%', savings: '$0' },
+    { supplier: 'Acme Mfg', rawContract: 1100000, rawActual: 1200000, variance: '+9%', rawSavings: 0 },
+    { supplier: 'Globex Corp', rawContract: 900000, rawActual: 850000, variance: '-5.5%', rawSavings: 50000 },
+    { supplier: 'Soylent Corp', rawContract: 600000, rawActual: 650000, variance: '+8.3%', rawSavings: 0 },
+    { supplier: 'Initech', rawContract: 420000, rawActual: 400000, variance: '-4.7%', rawSavings: 20000 },
+    { supplier: 'Umbrella Corp', rawContract: 350000, rawActual: 350000, variance: '0%', rawSavings: 0 },
 ];
 
 // Waterfall Data
@@ -78,16 +79,16 @@ export const SupplierCostDashboard: React.FC = () => {
 
     // Translated KPI Data
     const TOP_KPIS = useMemo(() => [
-        { id: '1', label: t('total_spend'), subtitle: t('ytd_actuals'), value: '$4.2M', change: '+12%', trend: 'up' as const, icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
-        { id: '2', label: t('avg_spend_supplier'), subtitle: t('vendor_concentration'), value: '$48k', change: '+5%', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [42, 43, 45, 46, 47, 48], color: 'blue' },
+        { id: '1', label: t('total_spend'), subtitle: t('ytd_actuals'), value: '0', rawValue: 4200000, isCurrency: true, change: '+12%', trend: 'up' as const, icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
+        { id: '2', label: t('avg_spend_supplier'), subtitle: t('vendor_concentration'), value: '0', rawValue: 48000, isCurrency: true, change: '+5%', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [42, 43, 45, 46, 47, 48], color: 'blue' },
         { id: '3', label: t('cost_variance_pct'), subtitle: t('actual_vs_contract'), value: '2.4%', change: '-0.5%', trend: 'down' as const, icon: <Percent size={18} />, sparklineData: [3.0, 2.9, 2.8, 2.6, 2.5, 2.4], color: 'blue' },
-        { id: '4', label: t('savings_achieved'), subtitle: t('cost_avoidance'), value: '$120k', change: '+20%', trend: 'up' as const, icon: <Coins size={18} />, sparklineData: [80, 90, 95, 100, 110, 120], color: 'blue' },
+        { id: '4', label: t('savings_achieved'), subtitle: t('cost_avoidance'), value: '0', rawValue: 120000, isCurrency: true, change: '+20%', trend: 'up' as const, icon: <Coins size={18} />, sparklineData: [80, 90, 95, 100, 110, 120], color: 'blue' },
     ], [t]);
 
     const SIDE_KPIS = useMemo(() => [
         { id: '5', label: t('tail_spend'), subtitle: t('pct_of_total'), value: '15%', change: '-2%', trend: 'down' as const, icon: <ChartLineUp size={18} />, sparklineData: [18, 17, 17, 16, 15, 15], color: 'blue' },
-        { id: '6', label: t('open_po_value'), subtitle: t('committed_cost'), value: '$850k', change: t('stable'), trend: 'neutral' as const, icon: <TreeStructure size={18} />, sparklineData: [850, 850, 850, 850, 850, 850], color: 'blue' },
-        { id: '7', label: t('sourcing_savings'), subtitle: t('projected'), value: '$50k', change: '+5%', trend: 'up' as const, icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 46, 48, 50], color: 'blue' },
+        { id: '6', label: t('open_po_value'), subtitle: t('committed_cost'), value: '0', rawValue: 850000, isCurrency: true, change: t('stable'), trend: 'neutral' as const, icon: <TreeStructure size={18} />, sparklineData: [850, 850, 850, 850, 850, 850], color: 'blue' },
+        { id: '7', label: t('sourcing_savings'), subtitle: t('projected'), value: '0', rawValue: 50000, isCurrency: true, change: '+5%', trend: 'up' as const, icon: <TrendUp size={18} />, sparklineData: [40, 42, 45, 46, 48, 50], color: 'blue' },
         { id: '8', label: t('budget_utilization'), subtitle: t('pct_of_allocated'), value: '78%', change: '+3%', trend: 'up' as const, icon: <Percent size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
     ], [t]);
 
@@ -309,6 +310,7 @@ export const SupplierCostDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -393,6 +395,7 @@ export const SupplierCostDashboard: React.FC = () => {
                                 <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
+                                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                         color="blue"
                                         loading={isLoading}
                                     />
@@ -429,12 +432,12 @@ export const SupplierCostDashboard: React.FC = () => {
                                     {COST_TABLE.map((row, index) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                             <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.supplier}</td>
-                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{row.contract}</td>
-                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 text-end`}>{row.actual}</td>
+                                            <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-end`}>{formatCurrency(row.rawContract, currency.code, currency.symbol)}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 text-end`}>{formatCurrency(row.rawActual, currency.code, currency.symbol)}</td>
                                             <td className={`px-5 py-3 text-center font-bold ${row.variance.includes('-') ? 'text-green-600' : 'text-red-500'}`}>
                                                 {row.variance}
                                             </td>
-                                            <td className={`px-5 py-3 text-green-600 font-medium text-end`}>{row.savings}</td>
+                                            <td className={`px-5 py-3 text-green-600 font-medium text-end`}>{formatCurrency(row.rawSavings, currency.code, currency.symbol)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

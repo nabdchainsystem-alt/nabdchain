@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { Package, ArrowsLeftRight, Clock, Target, ShoppingCart, Buildings, TrendUp, ChartLineUp } from 'phosphor-react';
+import { Package, ArrowsLeftRight, Clock, Target, ShoppingCart, Buildings, TrendUp, ChartLineUp, Database } from 'phosphor-react';
 import InventoryInsights from './InventoryInsights';
 import { InventoryOverviewDashboard } from './InventoryOverviewDashboard';
 import { StockMovementDashboard } from './StockMovementDashboard';
@@ -10,6 +10,7 @@ import { StockAccuracyDashboard } from './StockAccuracyDashboard';
 import { ReorderPlanningDashboard } from './ReorderPlanningDashboard';
 import { WarehousePerformanceDashboard } from './WarehousePerformanceDashboard';
 import { InventoryForecastDashboard } from './InventoryForecastDashboard';
+import { InventoryDeptData } from './InventoryDeptData';
 import { useAppContext } from '../../../contexts/AppContext';
 
 const InventoryPage: React.FC = () => {
@@ -31,7 +32,7 @@ const InventoryPage: React.FC = () => {
             'inventory_insights',
             'inventory_overview', 'stock_movement', 'inventory_aging',
             'stock_accuracy', 'reorder_planning', 'warehouse_performance', 'inventory_forecast',
-            'datatable'
+            'dept_data'
         ],
         defaultView: 'inventory_insights'
     }), [t]);
@@ -90,6 +91,12 @@ const InventoryPage: React.FC = () => {
                     description: t('forecast_risk_desc')
                 }
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') }
+            ]
         }
     ], [t]);
 
@@ -106,8 +113,8 @@ const InventoryPage: React.FC = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban, datatable) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -148,6 +155,8 @@ const InventoryPage: React.FC = () => {
                 return <WarehousePerformanceDashboard />;
             case 'inventory_forecast':
                 return <InventoryForecastDashboard />;
+            case 'dept_data':
+                return <InventoryDeptData />;
             default:
                 return null;
         }

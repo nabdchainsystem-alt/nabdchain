@@ -8,13 +8,14 @@ import { ArrowsOut, Info, TrendUp, Package, Truck, Warning, Activity, Wallet, Ch
 import { SupplierOverviewInfo } from './SupplierOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 const SUPPLIER_LIST_DATA = [
-    { id: 'S-001', name: 'Global Materials Co', categoryKey: 'raw_materials', orders: 150, value: '$245,000', onTime: '98%', statusKey: 'active' },
-    { id: 'S-002', name: 'TechParts Ltd', categoryKey: 'electronics', orders: 85, value: '$122,500', onTime: '95%', statusKey: 'active' },
-    { id: 'S-003', name: 'PackPro Solutions', categoryKey: 'packaging', orders: 42, value: '$53,200', onTime: '88%', statusKey: 'active' },
-    { id: 'S-004', name: 'MetalWorks Inc', categoryKey: 'raw_materials', orders: 65, value: '$89,000', onTime: '72%', statusKey: 'at_risk' },
-    { id: 'S-005', name: 'LogiShip Express', categoryKey: 'logistics', orders: 200, value: '$160,000', onTime: '99%', statusKey: 'preferred' },
+    { id: 'S-001', name: 'Global Materials Co', categoryKey: 'raw_materials', orders: 150, value: '0', rawValue: 245000, isCurrency: true, onTime: '98%', statusKey: 'active' },
+    { id: 'S-002', name: 'TechParts Ltd', categoryKey: 'electronics', orders: 85, value: '0', rawValue: 122500, isCurrency: true, onTime: '95%', statusKey: 'active' },
+    { id: 'S-003', name: 'PackPro Solutions', categoryKey: 'packaging', orders: 42, value: '0', rawValue: 53200, isCurrency: true, onTime: '88%', statusKey: 'active' },
+    { id: 'S-004', name: 'MetalWorks Inc', categoryKey: 'raw_materials', orders: 65, value: '0', rawValue: 89000, isCurrency: true, onTime: '72%', statusKey: 'at_risk' },
+    { id: 'S-005', name: 'LogiShip Express', categoryKey: 'logistics', orders: 200, value: '0', rawValue: 160000, isCurrency: true, onTime: '99%', statusKey: 'preferred' },
 ];
 
 export const SupplierOverviewDashboard: React.FC = () => {
@@ -31,7 +32,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
     ], [t]);
 
     const SIDE_KPIS = useMemo(() => [
-        { id: '5', label: t('avg_order_value'), subtitle: t('per_supplier'), value: '$12,450', change: '+$850', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [11000, 11200, 11600, 11900, 12200, 12450], color: 'blue' },
+        { id: '5', label: t('avg_order_value'), subtitle: t('per_supplier'), value: '0', rawValue: 12450, isCurrency: true, change: '+$850', trend: 'up' as const, icon: <Wallet size={18} />, sparklineData: [11000, 11200, 11600, 11900, 12200, 12450], color: 'blue' },
         { id: '6', label: t('on_time_delivery'), subtitle: t('avg_rate'), value: '94.2%', change: '+1.5%', trend: 'up' as const, icon: <Clock size={18} />, sparklineData: [91, 92, 92.5, 93, 93.8, 94.2], color: 'blue' },
         { id: '7', label: t('quality_score'), subtitle: t('avg_rating'), value: '4.6/5', change: '+0.2', trend: 'up' as const, icon: <CheckCircle size={18} />, sparklineData: [4.2, 4.3, 4.4, 4.5, 4.5, 4.6], color: 'blue' },
         { id: '8', label: t('lead_time'), subtitle: t('avg_days'), value: '5.2d', change: '-0.3d', trend: 'up' as const, icon: <Truck size={18} />, sparklineData: [6, 5.8, 5.6, 5.5, 5.3, 5.2], color: 'blue' },
@@ -202,6 +203,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -270,6 +272,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                         <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                                 loading={isLoading}

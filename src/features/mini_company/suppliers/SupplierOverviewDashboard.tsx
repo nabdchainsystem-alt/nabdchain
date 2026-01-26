@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Truck, Factory, Money, Sta
 import { SupplierOverviewInfo } from './SupplierOverviewInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Mock Data (Non-translatable) ---
 
@@ -30,11 +31,11 @@ const CATEGORY_SPLIT = [
 
 // Supplier Table
 const SUPPLIER_TABLE = [
-    { name: 'Acme Mfg', category: 'Raw Materials', spend: '$1.2M', rating: '4.8', status: 'Strategic' },
-    { name: 'Globex Corp', category: 'Logistics', spend: '$850k', rating: '4.2', status: 'Preferred' },
-    { name: 'Soylent Corp', category: 'Packaging', spend: '$650k', rating: '3.9', status: 'Active' },
-    { name: 'Initech', category: 'IT/SaaS', spend: '$400k', rating: '4.5', status: 'Active' },
-    { name: 'Umbrella Corp', category: 'Services', spend: '$350k', rating: '2.5', status: 'Probation' },
+    { name: 'Acme Mfg', category: 'Raw Materials', rawSpend: 1200000, rating: '4.8', status: 'Strategic' },
+    { name: 'Globex Corp', category: 'Logistics', rawSpend: 850000, rating: '4.2', status: 'Preferred' },
+    { name: 'Soylent Corp', category: 'Packaging', rawSpend: 650000, rating: '3.9', status: 'Active' },
+    { name: 'Initech', category: 'IT/SaaS', rawSpend: 400000, rating: '4.5', status: 'Active' },
+    { name: 'Umbrella Corp', category: 'Services', rawSpend: 350000, rating: '2.5', status: 'Probation' },
 ];
 
 // Bubble Chart Data: [Spend (x), Rating (y), Risk Score (size), Supplier Name]
@@ -86,7 +87,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
     const TOP_KPIS = useMemo(() => [
         { id: '1', label: t('total_suppliers'), subtitle: t('global_vendor_base'), value: '142', change: '+5', trend: 'up' as const, icon: <Buildings size={18} />, sparklineData: [130, 132, 135, 138, 140, 142], color: 'blue' },
         { id: '2', label: t('active_suppliers'), subtitle: t('engaged_ytd'), value: '88', change: '+2', trend: 'up' as const, icon: <Handshake size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
-        { id: '3', label: t('total_spend'), subtitle: t('ytd_procurement'), value: '$4.2M', change: '+12%', trend: 'up' as const, icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
+        { id: '3', label: t('total_spend'), subtitle: t('ytd_procurement'), value: '0', rawValue: 4200000, isCurrency: true, change: '+12%', trend: 'up' as const, icon: <Money size={18} />, sparklineData: [3.5, 3.6, 3.8, 3.9, 4.0, 4.2], color: 'blue' },
         { id: '4', label: t('avg_rating'), subtitle: t('performance_score'), value: '4.2', change: '+0.1', trend: 'up' as const, icon: <Star size={18} />, sparklineData: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2], color: 'blue' },
     ], [t]);
 
@@ -282,6 +283,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -366,6 +368,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                 <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
+                                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                         color="blue"
                                         loading={isLoading}
                                     />
@@ -403,7 +406,7 @@ export const SupplierOverviewDashboard: React.FC = () => {
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                             <td className={`px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start`}>{row.name}</td>
                                             <td className={`px-5 py-3 text-gray-600 dark:text-gray-400 text-xs text-start`}>{row.category}</td>
-                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 text-end`}>{row.spend}</td>
+                                            <td className={`px-5 py-3 font-medium text-gray-800 dark:text-gray-200 text-end`}>{formatCurrency(row.rawSpend, currency.code, currency.symbol)}</td>
                                             <td className={`px-5 py-3 text-amber-500 font-bold text-start`}>
                                                 <span className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
                                                     {row.rating} <Star size={12} weight="fill" />

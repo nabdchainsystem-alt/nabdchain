@@ -1,5 +1,5 @@
 import React from 'react';
-import { DotsThree as MoreHorizontal, Star, Copy, File as FileIcon, Key, CreditCard, Note as StickyNote, Folder, Trash as Trash2, ArrowSquareOut as ExternalLink, PencilSimple as Edit2 } from 'phosphor-react';
+import { DotsThree as MoreHorizontal, Star, Copy, File as FileIcon, Key, CreditCard, Note as StickyNote, Folder, Trash as Trash2, ArrowSquareOut as ExternalLink, PencilSimple as Edit2, ArrowCounterClockwise as Restore } from 'phosphor-react';
 import { VaultItem } from '../types';
 
 interface VaultListProps {
@@ -9,6 +9,7 @@ interface VaultListProps {
     onToggleFavorite: (item: VaultItem) => void;
     onRename: (item: VaultItem) => void;
     onMove: (item: VaultItem) => void;
+    onRestore?: (item: VaultItem) => void;
 }
 
 const getItemIcon = (type: string, title: string = '') => {
@@ -28,7 +29,7 @@ const getItemIcon = (type: string, title: string = '') => {
     }
 };
 
-export const VaultList: React.FC<VaultListProps> = ({ items, onNavigate, onDelete, onToggleFavorite, onRename, onMove }) => {
+export const VaultList: React.FC<VaultListProps> = ({ items, onNavigate, onDelete, onToggleFavorite, onRename, onMove, onRestore }) => {
 
     const handleItemClick = (item: VaultItem) => {
         // Placeholder selection
@@ -90,34 +91,59 @@ export const VaultList: React.FC<VaultListProps> = ({ items, onNavigate, onDelet
                             </td>
                             <td className="py-3 px-4 text-right">
                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(item); }}
-                                        className={`p-1 rounded transition-colors ${item.isFavorite ? 'text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                                        title={item.isFavorite ? "Unfavorite" : "Favorite"}
-                                    >
-                                        <Star size={16} className={item.isFavorite ? "fill-current" : ""} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onRename(item); }}
-                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500 hover:text-monday-blue"
-                                        title="Rename"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onMove(item); }}
-                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500 hover:text-monday-blue"
-                                        title="Move to Folder"
-                                    >
-                                        <Folder size={16} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-                                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-500 hover:text-red-500"
-                                        title="Delete"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    {item.isDeleted ? (
+                                        // Trash item actions
+                                        <>
+                                            {onRestore && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRestore(item); }}
+                                                    className="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 rounded text-gray-500 hover:text-green-600"
+                                                    title="Restore"
+                                                >
+                                                    <Restore size={16} />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                                                className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-500 hover:text-red-500"
+                                                title="Delete Permanently"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // Normal item actions
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onToggleFavorite(item); }}
+                                                className={`p-1 rounded transition-colors ${item.isFavorite ? 'text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                                title={item.isFavorite ? "Unfavorite" : "Favorite"}
+                                            >
+                                                <Star size={16} className={item.isFavorite ? "fill-current" : ""} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onRename(item); }}
+                                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500 hover:text-monday-blue"
+                                                title="Rename"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onMove(item); }}
+                                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500 hover:text-monday-blue"
+                                                title="Move to Folder"
+                                            >
+                                                <Folder size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                                                className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-500 hover:text-red-500"
+                                                title="Move to Trash"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </td>
                         </tr>

@@ -70,6 +70,8 @@ export interface VaultMetadata {
     url?: string;
     username?: string;
     password?: string;
+    // Note metadata
+    content?: string;
     // File metadata
     size?: string;
     mimeType?: string;
@@ -83,11 +85,13 @@ export interface VaultItem {
     id: string;
     userId: string;
     title: string;
-    type: 'folder' | 'file' | 'image' | 'note' | 'weblink' | 'document';
+    type: 'folder' | 'file' | 'image' | 'note' | 'weblink' | 'document' | 'login';
     subtitle?: string;
     content?: string;
     metadata?: VaultMetadata;
     isFavorite: boolean;
+    isDeleted?: boolean;
+    deletedAt?: string;
     folderId?: string; // null in DB but string/undefined in frontend usually
     color?: string;
     createdAt?: string;

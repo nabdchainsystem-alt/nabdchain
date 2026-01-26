@@ -181,7 +181,6 @@ export const SalesForecastDashboard: React.FC<SalesForecastDashboardProps> = ({ 
         series: [{
             type: 'pie',
             selectedMode: 'multiple',
-            selectedMode: 'multiple',
             radius: '65%',
             center: ['50%', '45%'],
             itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },

@@ -82,7 +82,7 @@ export const StockAccuracyDashboard: React.FC = () => {
     // --- KPI Data ---
     const TOP_KPIS = useMemo(() => [
         { id: '1', label: t('stock_accuracy'), subtitle: t('audit_match_pct'), value: '98.2%', change: '+0.5%', trend: 'up' as const, icon: <Target size={18} />, sparklineData: [96, 97, 97.5, 98, 98.1, 98.2], color: 'blue' },
-        { id: '2', label: t('shrinkage_value'), subtitle: t('lost_inventory'), value: '$8.2k', rawValue: 8200, isCurrency: true, change: '-5.0%', trend: 'up' as const, icon: <Warning size={18} />, sparklineData: [9, 8.8, 8.6, 8.5, 8.3, 8.2], color: 'blue' },
+        { id: '2', label: t('shrinkage_value'), subtitle: t('lost_inventory'), value: '0', rawValue: 8200, isCurrency: true, change: '-5.0%', trend: 'up' as const, icon: <Warning size={18} />, sparklineData: [9, 8.8, 8.6, 8.5, 8.3, 8.2], color: 'blue' },
         { id: '3', label: t('adjustment_count'), subtitle: t('manual_fixes'), value: '142', change: '-10', trend: 'up' as const, icon: <Lightning size={18} />, sparklineData: [160, 155, 150, 148, 145, 142], color: 'blue' },
         { id: '4', label: t('loss_rate'), subtitle: t('pct_of_total_value'), value: '0.45%', change: '-0.02%', trend: 'up' as const, icon: <XCircle size={18} />, sparklineData: [0.5, 0.49, 0.48, 0.47, 0.46, 0.45], color: 'blue' },
     ], [t]);

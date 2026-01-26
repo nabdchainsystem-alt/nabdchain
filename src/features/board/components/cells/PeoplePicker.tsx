@@ -5,6 +5,7 @@ import { useAuth, useUser } from '../../../../auth-adapter';
 import { teamService, TeamMember } from '../../../../services/teamService';
 import { assignmentService } from '../../../../services/assignmentService';
 import { boardLogger } from '../../../../utils/logger';
+import { useAppContext } from '../../../../contexts/AppContext';
 
 interface Person {
     id: string;
@@ -36,6 +37,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
     const menuRef = useRef<HTMLDivElement>(null);
     const { getToken } = useAuth();
     const { user } = useUser();
+    const { t } = useAppContext();
     const [teamMembers, setTeamMembers] = useState<Person[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAssigning, setIsAssigning] = useState(false);
@@ -171,7 +173,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
                 style={positionStyle}
             >
                 <div className="px-3 py-2 bg-stone-50 dark:bg-stone-900/50 border-b border-stone-100 dark:border-stone-800 mb-1">
-                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-stone-400">Assign To</span>
+                    <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-stone-400">{t('assign_to')}</span>
                 </div>
 
                 <div className="max-h-60 overflow-y-auto">
@@ -182,8 +184,8 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
                     ) : teamMembers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
                             <Users size={24} className="text-stone-300 dark:text-stone-600 mb-2" />
-                            <p className="text-xs text-stone-500 dark:text-stone-400">No team members</p>
-                            <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Connect with team members first</p>
+                            <p className="text-xs text-stone-500 dark:text-stone-400">{t('no_team_members')}</p>
+                            <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t('connect_team_first')}</p>
                         </div>
                     ) : (
                         teamMembers.map(person => {

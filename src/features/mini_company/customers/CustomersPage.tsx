@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { Users, Diamond, Activity, Table, Kanban, ListDashes } from 'phosphor-react';
+import { Users, Diamond, Activity, Table, Kanban, ListDashes, Database } from 'phosphor-react';
 import { CustomerOverviewDashboard } from './CustomerOverviewDashboard';
 import { SegmentationValueDashboard } from './SegmentationValueDashboard';
 import { BehaviorPatternsDashboard } from './BehaviorPatternsDashboard';
@@ -9,6 +9,7 @@ import { RetentionChurnDashboard } from './RetentionChurnDashboard';
 import { JourneyTouchpointsDashboard } from './JourneyTouchpointsDashboard';
 import { SatisfactionFeedbackDashboard } from './SatisfactionFeedbackDashboard';
 import { ForecastLifetimeRiskDashboard } from './ForecastLifetimeRiskDashboard';
+import { CustomerDeptData } from './CustomerDeptData';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 const INITIAL_BOARD: Board = {
@@ -30,7 +31,7 @@ const INITIAL_BOARD: Board = {
         'journey_touchpoints',
         'satisfaction_feedback',
         'forecast_risk',
-        'datatable'
+        'dept_data'
     ],
     defaultView: 'overview'
 };
@@ -52,8 +53,8 @@ export const CustomersPage = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban, datatable) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -122,6 +123,12 @@ export const CustomersPage = () => {
                     description: t('forecast_lifetime_risk_desc')
                 }
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') }
+            ]
         }
     ], [t]);
 
@@ -142,6 +149,8 @@ export const CustomersPage = () => {
                 return <SatisfactionFeedbackDashboard />;
             case 'forecast_risk':
                 return <ForecastLifetimeRiskDashboard />;
+            case 'dept_data':
+                return <CustomerDeptData />;
             default:
                 return null;
         }

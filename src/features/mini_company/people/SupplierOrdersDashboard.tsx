@@ -7,13 +7,14 @@ import { ChartSkeleton, TableSkeleton, PieChartSkeleton } from '../../board/comp
 import { ArrowsOut, Info, ShoppingCart, Truck, Clock, Package, CurrencyDollar, CheckCircle, Warning, Hourglass } from 'phosphor-react';
 import { SupplierOrdersInfo } from './SupplierOrdersInfo';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 const ORDERS_TABLE_DATA = [
-    { id: 'PO-2024-001', supplier: 'Global Materials Co', items: 25, value: '$45,200', ordered: '2024-01-15', expected: '2024-01-22', statusKey: 'delivered' },
-    { id: 'PO-2024-002', supplier: 'TechParts Ltd', items: 12, value: '$28,500', ordered: '2024-01-16', expected: '2024-01-25', statusKey: 'in_transit' },
-    { id: 'PO-2024-003', supplier: 'LogiShip Express', items: 8, value: '$12,800', ordered: '2024-01-17', expected: '2024-01-24', statusKey: 'processing' },
-    { id: 'PO-2024-004', supplier: 'PackPro Solutions', items: 50, value: '$8,500', ordered: '2024-01-18', expected: '2024-01-28', statusKey: 'pending' },
-    { id: 'PO-2024-005', supplier: 'MetalWorks Inc', items: 15, value: '$32,000', ordered: '2024-01-10', expected: '2024-01-20', statusKey: 'delayed' },
+    { id: 'PO-2024-001', supplier: 'Global Materials Co', items: 25, value: '0', rawValue: 45200, isCurrency: true, ordered: '2024-01-15', expected: '2024-01-22', statusKey: 'delivered' },
+    { id: 'PO-2024-002', supplier: 'TechParts Ltd', items: 12, value: '0', rawValue: 28500, isCurrency: true, ordered: '2024-01-16', expected: '2024-01-25', statusKey: 'in_transit' },
+    { id: 'PO-2024-003', supplier: 'LogiShip Express', items: 8, value: '0', rawValue: 12800, isCurrency: true, ordered: '2024-01-17', expected: '2024-01-24', statusKey: 'processing' },
+    { id: 'PO-2024-004', supplier: 'PackPro Solutions', items: 50, value: '0', rawValue: 8500, isCurrency: true, ordered: '2024-01-18', expected: '2024-01-28', statusKey: 'pending' },
+    { id: 'PO-2024-005', supplier: 'MetalWorks Inc', items: 15, value: '0', rawValue: 32000, isCurrency: true, ordered: '2024-01-10', expected: '2024-01-20', statusKey: 'delayed' },
 ];
 
 export const SupplierOrdersDashboard: React.FC = () => {
@@ -23,7 +24,7 @@ export const SupplierOrdersDashboard: React.FC = () => {
 
     const TOP_KPIS = useMemo(() => [
         { id: '1', label: t('total_orders'), subtitle: t('this_month'), value: '248', change: '+18%', trend: 'up' as const, icon: <ShoppingCart size={18} />, sparklineData: [200, 210, 225, 235, 242, 248], color: 'blue' },
-        { id: '2', label: t('order_value'), subtitle: t('total_spend'), value: '$1.24M', change: '+12%', trend: 'up' as const, icon: <CurrencyDollar size={18} />, sparklineData: [1.0, 1.05, 1.1, 1.15, 1.2, 1.24], color: 'blue' },
+        { id: '2', label: t('order_value'), subtitle: t('total_spend'), value: '0', rawValue: 1240000, isCurrency: true, change: '+12%', trend: 'up' as const, icon: <CurrencyDollar size={18} />, sparklineData: [1.0, 1.05, 1.1, 1.15, 1.2, 1.24], color: 'blue' },
         { id: '3', label: t('on_time_orders'), subtitle: t('delivery_rate'), value: '94.2%', change: '+2.1%', trend: 'up' as const, icon: <CheckCircle size={18} />, sparklineData: [90, 91, 92, 93, 93.5, 94.2], color: 'blue' },
         { id: '4', label: t('pending_orders'), subtitle: t('awaiting_delivery'), value: '32', change: '-5', trend: 'up' as const, icon: <Hourglass size={18} />, sparklineData: [42, 40, 38, 36, 34, 32], color: 'blue' },
     ], [t]);

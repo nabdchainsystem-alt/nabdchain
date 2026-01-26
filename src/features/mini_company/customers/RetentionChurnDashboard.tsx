@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, FirstAid, Prohibit, Heart,
 import { RetentionChurnInfo } from './RetentionChurnInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // Spiral Heatmap Data (Months x Risk Level)
 // Simulating a polar heatmap for "spiral" effect
@@ -45,7 +46,7 @@ export const RetentionChurnDashboard: React.FC = () => {
 
     const SIDE_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
         { id: '5', label: t('reactivated'), subtitle: t('returning_lost'), value: '12', change: '+2', trend: 'up', icon: <FirstAid size={18} />, sparklineData: [8, 9, 10, 10, 11, 12], color: 'blue' },
-        { id: '6', label: t('churn_rate'), subtitle: t('monthly_churn'), value: '$12.5k', change: '+$1k', trend: 'down', icon: <Coin size={18} />, sparklineData: [10, 11, 11.5, 12, 12.2, 12.5], color: 'blue' },
+        { id: '6', label: t('churn_rate'), subtitle: t('monthly_churn'), value: '0', rawValue: 12500, isCurrency: true, change: '+$1k', trend: 'down', icon: <Coin size={18} />, sparklineData: [10, 11, 11.5, 12, 12.2, 12.5], color: 'blue' },
         { id: '7', label: t('loyalty_score'), subtitle: t('nps_based'), value: '72', change: '-1', trend: 'neutral', icon: <Heart size={18} />, sparklineData: [74, 74, 73, 73, 72, 72], color: 'blue' },
         { id: '8', label: t('win_back_rate'), subtitle: t('returning_lost'), value: '18%', change: '+3%', trend: 'up', icon: <FirstAid size={18} />, sparklineData: [12, 13, 14, 15, 16, 18], color: 'blue' },
     ], [t]);
@@ -279,6 +280,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -347,6 +349,7 @@ export const RetentionChurnDashboard: React.FC = () => {
                         <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                                 loading={isLoading}

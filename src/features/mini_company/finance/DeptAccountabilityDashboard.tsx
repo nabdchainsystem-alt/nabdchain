@@ -8,20 +8,21 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, UsersThree, Buildings, Tar
 import { DeptAccountabilityInfo } from './DeptAccountabilityInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data (will be translated in component) ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
     { id: '1', label: t('departments_count'), subtitle: t('active'), value: '8', change: '0', trend: 'neutral', icon: <Buildings size={18} />, sparklineData: [8, 8, 8, 8, 8, 8], color: 'blue' },
-    { id: '2', label: t('highest_spending'), subtitle: t('engineering'), value: '$120k', change: '+5%', trend: 'up', icon: <UsersThree size={18} />, sparklineData: [110, 115, 112, 118, 120, 120], color: 'blue' },
-    { id: '3', label: t('budget_variance'), subtitle: t('total_excess'), value: '$12.5k', change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'blue' },
-    { id: '4', label: t('avg_dept_expense'), subtitle: t('per_month'), value: '$45k', change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'blue' },
+    { id: '2', label: t('highest_spending'), subtitle: t('engineering'), value: '0', rawValue: 120000, isCurrency: true, change: '+5%', trend: 'up', icon: <UsersThree size={18} />, sparklineData: [110, 115, 112, 118, 120, 120], color: 'blue' },
+    { id: '3', label: t('budget_variance'), subtitle: t('total_excess'), value: '0', rawValue: 12500, isCurrency: true, change: '+2k', trend: 'down', icon: <Warning size={18} />, sparklineData: [8, 9, 10, 11, 12, 12.5], color: 'blue' },
+    { id: '4', label: t('avg_dept_expense'), subtitle: t('per_month'), value: '0', rawValue: 45000, isCurrency: true, change: '+3%', trend: 'up', icon: <Target size={18} />, sparklineData: [42, 43, 44, 44, 45, 45], color: 'blue' },
 ];
 
 const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
     { id: '5', label: t('over_budget_depts'), subtitle: t('red_flags'), value: '2', change: '+1', trend: 'down', icon: <Warning size={18} />, sparklineData: [1, 1, 0, 1, 1, 2], color: 'blue' },
     { id: '6', label: t('efficiency_score'), subtitle: t('org_wide'), value: '85/100', change: '+2', trend: 'up', icon: <Trophy size={18} />, sparklineData: [80, 82, 83, 84, 84, 85], color: 'blue' },
     { id: '7', label: t('accountability_index'), subtitle: t('compliance'), value: '92%', change: '0%', trend: 'neutral', icon: <ChartPieSlice size={18} />, sparklineData: [90, 91, 92, 92, 92, 92], color: 'blue' },
-    { id: '8', label: t('cost_per_employee'), subtitle: t('avg_monthly'), value: '$2,850', change: '-2%', trend: 'down', icon: <UsersThree size={18} />, sparklineData: [3000, 2950, 2900, 2880, 2860, 2850], color: 'blue' },
+    { id: '8', label: t('cost_per_employee'), subtitle: t('avg_monthly'), value: '0', rawValue: 2850, isCurrency: true, change: '-2%', trend: 'down', icon: <UsersThree size={18} />, sparklineData: [3000, 2950, 2900, 2880, 2860, 2850], color: 'blue' },
 ];
 
 // --- Translated Data Functions ---
@@ -44,11 +45,11 @@ const getDeptShare = (t: (key: string) => string) => [
 ];
 
 const getDeptPerformance = (t: (key: string) => string) => [
-    { dept: t('engineering'), budget: '$110,000', actual: '$120,000', variance: '+$10,000', owner: 'Mike Ross' },
-    { dept: t('sales'), budget: '$100,000', actual: '$95,000', variance: '-$5,000', owner: 'Harvey Specter' },
-    { dept: t('marketing'), budget: '$80,000', actual: '$85,000', variance: '+$5,000', owner: 'Donna Paulsen' },
-    { dept: t('operations'), budget: '$50,000', actual: '$45,000', variance: '-$5,000', owner: 'Louis Litt' },
-    { dept: t('hr'), budget: '$25,000', actual: '$25,000', variance: '$0', owner: 'Rachel Zane' },
+    { dept: t('engineering'), rawBudget: 110000, rawActual: 120000, rawVariance: 10000, owner: 'Mike Ross' },
+    { dept: t('sales'), rawBudget: 100000, rawActual: 95000, rawVariance: -5000, owner: 'Harvey Specter' },
+    { dept: t('marketing'), rawBudget: 80000, rawActual: 85000, rawVariance: 5000, owner: 'Donna Paulsen' },
+    { dept: t('operations'), rawBudget: 50000, rawActual: 45000, rawVariance: -5000, owner: 'Louis Litt' },
+    { dept: t('hr'), rawBudget: 25000, rawActual: 25000, rawVariance: 0, owner: 'Rachel Zane' },
 ];
 
 // Network Graph Data (needs translation for labels)
@@ -317,6 +318,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                         />
                     </div>
@@ -375,6 +377,7 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                         >
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                             />
@@ -404,10 +407,10 @@ export const DeptAccountabilityDashboard: React.FC = () => {
                                 {DEPT_PERFORMANCE.map((row, index) => (
                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.dept}</td>
-                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.budget}</td>
-                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.actual}</td>
-                                        <td className={`px-5 py-3 text-end font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
-                                            {row.variance}
+                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(row.rawBudget, currency.code, currency.symbol)}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{formatCurrency(row.rawActual, currency.code, currency.symbol)}</td>
+                                        <td className={`px-5 py-3 text-end font-medium ${row.rawVariance > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                            {row.rawVariance > 0 ? '+' : ''}{formatCurrency(row.rawVariance, currency.code, currency.symbol)}
                                         </td>
                                         <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400 text-xs">{row.owner}</td>
                                     </tr>

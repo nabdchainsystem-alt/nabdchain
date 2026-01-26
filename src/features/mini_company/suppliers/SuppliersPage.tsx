@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { Truck, Factory, Money, Star, Package, Clock, ShieldCheck, MapTrifold, Handshake, Rocket, ShieldWarning } from 'phosphor-react';
+import { Truck, Factory, Money, Star, Package, Clock, ShieldCheck, MapTrifold, Handshake, Rocket, ShieldWarning, Database } from 'phosphor-react';
 import { SupplierOverviewDashboard } from './SupplierOverviewDashboard';
 import { SupplierDeliveryDashboard } from './SupplierDeliveryDashboard';
 import { SupplierCostDashboard } from './SupplierCostDashboard';
@@ -9,6 +9,7 @@ import { SupplierQualityComplianceDashboard } from './SupplierQualityComplianceD
 import { SupplierLeadTimeResponsivenessDashboard } from './SupplierLeadTimeResponsivenessDashboard';
 import { SupplierRiskDependencyDashboard } from './SupplierRiskDependencyDashboard';
 import { SupplierStrategicValueGrowthDashboard } from './SupplierStrategicValueGrowthDashboard';
+import { SupplierDeptData } from './SupplierDeptData';
 import { useAppContext } from '../../../contexts/AppContext';
 
 const INITIAL_BOARD: Board = {
@@ -30,7 +31,7 @@ const INITIAL_BOARD: Board = {
         'supplier_lead_time',
         'supplier_risk',
         'supplier_strategic',
-        'datatable'
+        'dept_data'
     ],
     defaultView: 'overview'
 };
@@ -51,8 +52,8 @@ export const SuppliersPage = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban, datatable) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -121,6 +122,12 @@ export const SuppliersPage = () => {
                     description: 'Innovation & Partnerships'
                 }
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') }
+            ]
         }
     ], [t]);
 
@@ -141,6 +148,8 @@ export const SuppliersPage = () => {
                 return <SupplierRiskDependencyDashboard />;
             case 'supplier_strategic':
                 return <SupplierStrategicValueGrowthDashboard />;
+            case 'dept_data':
+                return <SupplierDeptData />;
             default:
                 return null;
         }

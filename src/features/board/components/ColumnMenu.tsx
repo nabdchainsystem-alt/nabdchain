@@ -141,13 +141,40 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
     });
-    const [dropdownOptions, setDropdownOptions] = useState<{ id: string, label: string, color: string }[]>([
+    const [dropdownOptions, setDropdownOptions] = useState<{ id: string, label: string, color: string }[]>(() => [
         { id: 'opt1', label: 'Option 1', color: 'bg-rose-500' },
         { id: 'opt2', label: 'Option 2', color: 'bg-purple-500' }
     ]);
     const [newOptionName, setNewOptionName] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownInputRef = useRef<HTMLInputElement>(null);
+
+    // Set translated default options on mount and when language changes
+    const prevLangRef = React.useRef<string | null>(null);
+    React.useEffect(() => {
+        // Get current language from dir (rtl = Arabic, ltr = English)
+        const currentLang = dir === 'rtl' ? 'ar' : 'en';
+
+        // Check if this is first mount or language changed
+        const isFirstMount = prevLangRef.current === null;
+        const languageChanged = prevLangRef.current !== null && prevLangRef.current !== currentLang;
+
+        // Check if options still have default/untranslated labels
+        const hasDefaultLabels = dropdownOptions.some(o =>
+            o.label === 'Option 1' || o.label === 'Option 2' ||
+            o.label === 'option_1' || o.label === 'option_2' ||
+            o.label === 'الخيار 1' || o.label === 'الخيار 2'
+        );
+
+        if (isFirstMount || languageChanged || hasDefaultLabels) {
+            setDropdownOptions([
+                { id: 'opt1', label: t('option_1'), color: 'bg-rose-500' },
+                { id: 'opt2', label: t('option_2'), color: 'bg-purple-500' }
+            ]);
+        }
+
+        prevLangRef.current = currentLang;
+    }, [t, dir, dropdownOptions]);
     const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
     const [currencyName, setCurrencyName] = useState('');
     const [selectedCurrency, setSelectedCurrency] = useState(CURRENCIES[0]);

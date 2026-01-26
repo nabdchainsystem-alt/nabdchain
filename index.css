@@ -224,6 +224,33 @@
     animation: fade-in-up 0.4s ease-out forwards;
 }
 
+/* Toast slide-in animation */
+@keyframes slideIn {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+[dir="rtl"] @keyframes slideIn {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slideIn {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
 .animate-pulse-subtle {
     animation: pulse-subtle 2s ease-in-out infinite;
 }

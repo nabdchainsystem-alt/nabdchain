@@ -25,6 +25,28 @@ const STATUS_TRANSLATION_KEYS: Record<string, string> = {
     'Rejected': 'rejected',
 };
 
+// Helper to get style from color name - using light colors matching the display
+const getColorStyle = (color: string): string => {
+    const colorMap: Record<string, string> = {
+        'gray': 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
+        'blue': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        'emerald': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        'green': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        'orange': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+        'amber': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        'rose': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+        'red': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+        'purple': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+        'violet': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+        'indigo': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+        'cyan': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+        'teal': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+        'pink': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+        'yellow': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+    };
+    return colorMap[color.toLowerCase()] || 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400';
+};
+
 interface StatusPickerProps {
     onSelect: (status: string) => void;
     onClose: () => void;
@@ -90,14 +112,18 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                     {displayStatuses.map((s) => {
                         const statusTitle = typeof s === 'string' ? s : s.title;
                         const statusId = typeof s === 'string' ? s : s.id;
-                        const statusStyle = STATUS_STYLES[statusTitle] || 'bg-gray-100 text-gray-800';
-                        const isActive = current === statusTitle;
+                        const statusColor = typeof s === 'string' ? null : s.color;
+                        // Look up style by ID first (which is always in English), then by title, then use color-based fallback
+                        const statusStyle = STATUS_STYLES[statusId] || STATUS_STYLES[statusTitle] ||
+                            (statusColor ? getColorStyle(statusColor) : 'bg-gray-100 text-gray-800');
+                        // Compare with both ID and title for backwards compatibility
+                        const isActive = current === statusId || current === statusTitle;
 
                         return (
                             <div key={statusId} className="group relative flex items-center">
                                 <button
-                                    onClick={() => { onSelect(statusTitle); onClose(); }}
-                                    className={`flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded shadow-sm transition-transform active:scale-95 ${statusStyle}`}
+                                    onClick={() => { onSelect(statusId); onClose(); }}
+                                    className={`flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded transition-transform active:scale-95 ${statusStyle}`}
                                 >
                                     {getStatusLabel(statusTitle)}
                                 </button>
@@ -105,7 +131,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (onDelete) onDelete(statusTitle);
+                                            if (onDelete) onDelete(statusId);
                                         }}
                                         className={`absolute top-0 bottom-0 px-2 flex items-center justify-center text-stone-400 hover:text-red-500 bg-white/50 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'left-0 rounded-s' : 'right-0 rounded-e'}`}
                                         title={t('delete_status')}

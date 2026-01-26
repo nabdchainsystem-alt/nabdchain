@@ -26,7 +26,6 @@ import { useUserPreferences } from './hooks/useUserPreferences';
 // Core Layout (lazy but preloaded)
 const Sidebar = lazyWithRetry(() => import('./components/layout/Sidebar').then(m => ({ default: m.Sidebar })));
 const TopBar = lazyWithRetry(() => import('./components/layout/TopBar').then(m => ({ default: m.TopBar })));
-const AIBrainButton = lazyWithRetry(() => import('./components/AIBrainButton').then(m => ({ default: m.AIBrainButton })));
 
 // Auth & Landing Pages
 const LandingPage = lazyWithRetry(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -382,7 +381,28 @@ const AppContent: React.FC = () => {
       try {
         const token = await getToken();
         if (token) {
-          const fetchedBoards = await boardService.getAllBoards(token, activeWorkspaceId);
+          // CRITICAL FIX: If we're on a board URL, first check if the board belongs to the current workspace
+          // If not, switch to the board's workspace before fetching all boards
+          let workspaceIdToUse = activeWorkspaceId;
+          const path = window.location.pathname;
+          if (path.startsWith('/board/')) {
+            const boardIdFromPath = path.split('/board/')[1]?.split('/')[0];
+            if (boardIdFromPath) {
+              // Fetch the specific board to check its workspace
+              const targetBoard = await boardService.getBoard(token, boardIdFromPath);
+              if (targetBoard && targetBoard.workspaceId && targetBoard.workspaceId !== activeWorkspaceId) {
+                boardLogger.info('[Boards Fetch] Board belongs to different workspace, switching:', {
+                  boardId: boardIdFromPath,
+                  boardWorkspaceId: targetBoard.workspaceId,
+                  currentWorkspaceId: activeWorkspaceId
+                });
+                workspaceIdToUse = targetBoard.workspaceId;
+                setActiveWorkspaceId(targetBoard.workspaceId);
+              }
+            }
+          }
+
+          const fetchedBoards = await boardService.getAllBoards(token, workspaceIdToUse);
 
           // CRITICAL: Read deletedBoardIds directly from localStorage to avoid stale closure issues
           const savedDeletedIds = localStorage.getItem('app-deleted-boards');
@@ -1433,7 +1453,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
       <Suspense fallback={<div className="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700" />}>
-        <TopBar onNavigate={handleNavigate} boards={workspaceBoards} onCreateTask={handleCreateTaskOnBoard} />
+        <TopBar onNavigate={handleNavigate} boards={workspaceBoards} onCreateTask={handleCreateTaskOnBoard} activeBoardId={activeBoardId} activeView={activeView} />
       </Suspense>
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
         <SidebarWrapper
@@ -1611,10 +1631,6 @@ const AppContent: React.FC = () => {
         </main>
       </div>
 
-      {/* NABD Brain - Floating AI Assistant */}
-      <Suspense fallback={null}>
-        <AIBrainButton />
-      </Suspense>
     </div>
   );
 };

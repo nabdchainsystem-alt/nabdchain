@@ -8,17 +8,18 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, MagicWand, Graph, Crosshai
 import { ForecastOptimizationInfo } from './ForecastOptimizationInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data (as functions to support translation) ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
-    { id: '1', label: t('forecasted_expenses'), subtitle: t('next_month'), value: '$135k', change: '+5%', trend: 'up', icon: <Graph size={18} />, sparklineData: [120, 125, 128, 130, 132, 135], color: 'blue' },
+    { id: '1', label: t('forecasted_expenses'), subtitle: t('next_month'), value: '0', rawValue: 135000, isCurrency: true, change: '+5%', trend: 'up', icon: <Graph size={18} />, sparklineData: [120, 125, 128, 130, 132, 135], color: 'blue' },
     { id: '2', label: t('forecast_accuracy'), subtitle: t('historical'), value: '94%', change: '+1%', trend: 'up', icon: <Crosshair size={18} />, sparklineData: [92, 93, 93, 94, 94, 94], color: 'blue' },
-    { id: '3', label: t('expected_savings'), subtitle: t('identified'), value: '$8,500', change: '+500', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [5, 6, 7, 7, 8, 8.5], color: 'blue' },
+    { id: '3', label: t('expected_savings'), subtitle: t('identified'), value: '0', rawValue: 8500, isCurrency: true, change: '+500', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [5, 6, 7, 7, 8, 8.5], color: 'blue' },
     { id: '4', label: t('cost_reduction'), subtitle: t('potential'), value: '12%', change: '0%', trend: 'neutral', icon: <TrendUp size={18} />, sparklineData: [12, 12, 12, 12, 12, 12], color: 'blue' },
 ];
 
 const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
-    { id: '5', label: t('risk_exposure'), subtitle: t('unbudgeted'), value: '$2k', change: '-500', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 2.8, 2.5, 2.2, 2.1, 2], color: 'blue' },
+    { id: '5', label: t('risk_exposure'), subtitle: t('unbudgeted'), value: '0', rawValue: 2000, isCurrency: true, change: '-500', trend: 'down', icon: <Warning size={18} />, sparklineData: [3, 2.8, 2.5, 2.2, 2.1, 2], color: 'blue' },
     { id: '6', label: t('optimization_actions'), subtitle: t('open_items'), value: '5', change: '+2', trend: 'up', icon: <MagicWand size={18} />, sparklineData: [3, 3, 3, 4, 4, 5], color: 'blue' },
     { id: '7', label: t('confidence_level'), subtitle: t('model'), value: t('high'), change: '', trend: 'neutral', icon: <ShieldCheck size={18} />, sparklineData: [90, 90, 90, 90, 90, 90], color: 'blue' },
     { id: '8', label: t('roi_expected'), subtitle: t('initiatives'), value: '18%', change: '+3%', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [12, 13, 14, 15, 16, 18], color: 'blue' },
@@ -42,11 +43,11 @@ const getFutureAllocation = (t: (key: string) => string) => [
 ];
 
 const getOptimizationTable = (t: (key: string) => string) => [
-    { category: t('software'), current: '$40,000', forecast: '$42,000', action: t('consolidate_licenses'), saving: '$3,500' },
-    { category: t('travel'), current: '$25,000', forecast: '$28,000', action: t('use_partner_hotels'), saving: '$2,000' },
-    { category: t('office'), current: '$15,000', forecast: '$14,500', action: t('bulk_supplier'), saving: '$1,500' },
-    { category: t('marketing'), current: '$30,000', forecast: '$35,000', action: t('review_ad_spend'), saving: '$1,000' },
-    { category: t('utilities'), current: '$5,000', forecast: '$5,200', action: t('energy_audit'), saving: '$500' },
+    { category: t('software'), rawCurrent: 40000, rawForecast: 42000, action: t('consolidate_licenses'), rawSaving: 3500 },
+    { category: t('travel'), rawCurrent: 25000, rawForecast: 28000, action: t('use_partner_hotels'), rawSaving: 2000 },
+    { category: t('office'), rawCurrent: 15000, rawForecast: 14500, action: t('bulk_supplier'), rawSaving: 1500 },
+    { category: t('marketing'), rawCurrent: 30000, rawForecast: 35000, action: t('review_ad_spend'), rawSaving: 1000 },
+    { category: t('utilities'), rawCurrent: 5000, rawForecast: 5200, action: t('energy_audit'), rawSaving: 500 },
 ];
 
 const getLandscapeData = (t: (key: string) => string) => [
@@ -260,6 +261,7 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color={kpi.color as any || 'blue'}
                         />
                     </div>
@@ -337,6 +339,7 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                         >
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color={kpi.color as any || 'indigo'}
                                 className="h-full"
                             />
@@ -372,10 +375,10 @@ export const ForecastOptimizationDashboard: React.FC = () => {
                                         {OPTIMIZATION_TABLE.map((row, index) => (
                                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                                 <td className="px-5 py-3 text-start font-medium text-gray-900 dark:text-gray-100">{row.category}</td>
-                                                <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.current}</td>
-                                                <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.forecast}</td>
+                                                <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(row.rawCurrent, currency.code, currency.symbol)}</td>
+                                                <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(row.rawForecast, currency.code, currency.symbol)}</td>
                                                 <td className="px-5 py-3 text-start text-indigo-600 font-medium">{row.action}</td>
-                                                <td className="px-5 py-3 text-end text-green-600 font-bold">{row.saving}</td>
+                                                <td className="px-5 py-3 text-end text-green-600 font-bold">{formatCurrency(row.rawSaving, currency.code, currency.symbol)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

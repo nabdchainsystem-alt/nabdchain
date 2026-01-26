@@ -1,66 +1,67 @@
-import { GridData } from './types';
+import { GridData, Sheet, SpreadsheetState } from './types';
 
-export const COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
-export const NUM_ROWS = 30;
+// Extend columns to Z
+export const COLS = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+];
+export const NUM_ROWS = 100;
+export const DEFAULT_COL_WIDTH = 100;
+export const DEFAULT_ROW_HEIGHT = 28;
+export const MIN_COL_WIDTH = 50;
+export const MIN_ROW_HEIGHT = 20;
 
-// Initial data mocking the "Financial Report" from the prompt
-export const INITIAL_DATA: GridData = {
-    // Header
-    'C1': { value: 'Financial Report', style: { bold: true, color: 'text-gray-900' } },
+// Font options
+export const FONT_FAMILIES = [
+    'Inter',
+    'Arial',
+    'Helvetica',
+    'Times New Roman',
+    'Georgia',
+    'Courier New',
+    'Verdana',
+    'Trebuchet MS',
+];
 
-    // Table Headers
-    'C2': { value: 'Item Name', style: { bold: true, bg: 'bg-gray-100', borderBottom: true } },
-    'D2': { value: 'Price', style: { bold: true, align: 'right', bg: 'bg-gray-100', borderBottom: true } },
-    'E2': { value: 'Quantity', style: { bold: true, align: 'right', bg: 'bg-gray-100', borderBottom: true } },
-    'F2': { value: 'Total', style: { bold: true, align: 'right', bg: 'bg-gray-100', borderBottom: true } },
-    'G2': { value: 'In Stock', style: { bold: true, align: 'center', bg: 'bg-gray-100', borderBottom: true } },
-    'H2': { value: 'Category', style: { bold: true, bg: 'bg-gray-100', borderBottom: true } },
+export const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
 
-    // Row 3
-    'C3': { value: 'Ergonomic Office Chair' },
-    'D3': { value: 150.00, displayValue: '$150.00', style: { align: 'right' } },
-    'E3': { value: 5, style: { align: 'right' } },
-    'F3': { value: 750.00, displayValue: '$750.00', style: { align: 'right' } },
-    'G3': { value: 'Yes', style: { align: 'center', color: 'text-green-600' } },
-    'H3': { value: 'Furniture' },
+// Color presets for text and background
+export const COLOR_PRESETS = [
+    '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
+    '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
+    '#e6b8af', '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#c9daf8', '#cfe2f3', '#d9d2e9', '#ead1dc',
+];
 
-    // Row 4
-    'C4': { value: 'Wireless Mouse' },
-    'D4': { value: 25.99, displayValue: '$25.99', style: { align: 'right' } },
-    'E4': { value: 12, style: { align: 'right' } },
-    'F4': { value: 311.88, displayValue: '$311.88', style: { align: 'right' } },
-    'G4': { value: 'Yes', style: { align: 'center', color: 'text-green-600' } },
-    'H4': { value: 'Electronics' },
+// Empty initial data
+export const INITIAL_DATA: GridData = {};
 
-    // Row 5
-    'C5': { value: 'USB-C Hub' },
-    'D5': { value: 45.00, displayValue: '$45.00', style: { align: 'right' } },
-    'E5': { value: 3, style: { align: 'right' } },
-    'F5': { value: 135.00, displayValue: '$135.00', style: { align: 'right' } },
-    'G5': { value: 'Low', style: { align: 'center', color: 'text-red-600' } },
-    'H5': { value: 'Electronics' },
-
-    // Row 6
-    'C6': { value: 'Mechanical Keyboard' },
-    'D6': { value: 120.00, displayValue: '$120.00', style: { align: 'right' } },
-    'E6': { value: 8, style: { align: 'right' } },
-    'F6': { value: 960.00, displayValue: '$960.00', style: { align: 'right' } },
-    'G6': { value: 'Yes', style: { align: 'center', color: 'text-green-600' } },
-    'H6': { value: 'Electronics' },
-
-    // Row 7
-    'C7': { value: 'Monitor Stand' },
-    'D7': { value: 29.50, displayValue: '$29.50', style: { align: 'right' } },
-    'E7': { value: 15, style: { align: 'right' } },
-    'F7': { value: 442.50, displayValue: '$442.50', style: { align: 'right' } },
-    'G7': { value: 'Yes', style: { align: 'center', color: 'text-green-600' } },
-    'H7': { value: 'Accessories' },
-
-    // Row 8 (Totals)
-    'C8': { value: 'Grand Total', style: { bold: true, bg: 'bg-gray-50' } },
-    'D8': { value: '', style: { bg: 'bg-gray-50' } },
-    'E8': { value: 43, style: { bold: true, align: 'right', bg: 'bg-gray-50' } },
-    'F8': { value: 2599.38, displayValue: '$2,599.38', style: { bold: true, align: 'right', bg: 'bg-gray-50' } },
-    'G8': { value: '', style: { bg: 'bg-gray-50' } },
-    'H8': { value: '', style: { bg: 'bg-gray-50' } },
+// Generate a unique ID
+export const generateId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
+
+// Create a new empty sheet
+export const createEmptySheet = (name: string = 'Sheet1'): Sheet => ({
+    id: generateId(),
+    name,
+    data: {},
+    columnWidths: {},
+    rowHeights: {},
+});
+
+// Initial spreadsheet state
+export const createInitialState = (): SpreadsheetState => {
+    const sheet = createEmptySheet('Sheet1');
+    return {
+        title: 'Untitled Spreadsheet',
+        sheets: [sheet],
+        activeSheetId: sheet.id,
+        selectedCell: { col: 'A', row: 1 },
+        selectedRange: undefined,
+        editingCell: null,
+        clipboard: undefined,
+    };
+};
+
+// Storage key for persistence
+export const STORAGE_KEY = 'nabd-spreadsheet-data';

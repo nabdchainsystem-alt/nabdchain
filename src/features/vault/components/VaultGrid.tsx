@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Folder, Image, FileText, Globe, DotsThreeVertical as MoreVertical, Trash as Trash2, ArrowSquareOut as ExternalLink, File, Star, PencilSimple as Edit2 } from 'phosphor-react';
+import { Folder, Image, FileText, Globe, DotsThreeVertical as MoreVertical, Trash as Trash2, ArrowSquareOut as ExternalLink, File, Star, PencilSimple as Edit2, ArrowCounterClockwise as Restore } from 'phosphor-react';
 import { VaultItem } from '../types';
 
 interface Props {
@@ -9,10 +9,11 @@ interface Props {
     onToggleFavorite: (item: VaultItem) => void;
     onRename: (item: VaultItem) => void;
     onMove: (item: VaultItem) => void;
+    onRestore?: (item: VaultItem) => void;
     activeDragItem?: VaultItem | null;
 }
 
-export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onToggleFavorite, onRename, onMove }) => {
+export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onToggleFavorite, onRename, onMove, onRestore }) => {
     const [contextMenu, setContextMenu] = useState<{ id: string, x: number, y: number } | null>(null);
 
     const handleContextMenu = (e: React.MouseEvent, itemId: string) => {
@@ -69,59 +70,90 @@ export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onTogg
                             style={{ position: 'absolute' }} // Simplified positioning for now
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (item.type === 'folder') onNavigate(item.id);
-                                    else if (item.previewUrl) window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
-                                    setContextMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                                <ExternalLink size={14} /> Open
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRename(item);
-                                    setContextMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                                <Edit2 size={14} /> Rename
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onMove(item);
-                                    setContextMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                                <Folder size={14} /> Move to
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleFavorite(item);
-                                    setContextMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                                <Star size={14} className={item.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''} />
-                                {item.isFavorite ? 'Unfavorite' : 'Favorite'}
-                            </button>
-                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete(item.id);
-                                    setContextMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                            >
-                                <Trash2 size={14} /> Delete
-                            </button>
+                            {item.isDeleted ? (
+                                // Trash item context menu
+                                <>
+                                    {onRestore && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRestore(item);
+                                                setContextMenu(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                        >
+                                            <Restore size={14} /> Restore
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(item.id);
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                    >
+                                        <Trash2 size={14} /> Delete Permanently
+                                    </button>
+                                </>
+                            ) : (
+                                // Normal item context menu
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (item.type === 'folder') onNavigate(item.id);
+                                            else if (item.previewUrl) window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                        <ExternalLink size={14} /> Open
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRename(item);
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                        <Edit2 size={14} /> Rename
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onMove(item);
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                        <Folder size={14} /> Move to
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleFavorite(item);
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                        <Star size={14} className={item.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''} />
+                                        {item.isFavorite ? 'Unfavorite' : 'Favorite'}
+                                    </button>
+                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(item.id);
+                                            setContextMenu(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                    >
+                                        <Trash2 size={14} /> Move to Trash
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
 

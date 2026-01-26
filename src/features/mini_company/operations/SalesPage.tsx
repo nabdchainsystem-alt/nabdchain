@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BoardView } from '../../board/BoardView';
 import { Board } from '../../../types';
-import { ChartLineUp, Gauge, ChartBar, TrendUp, Funnel, UsersThree, Megaphone } from 'phosphor-react';
+import { ChartLineUp, Gauge, ChartBar, TrendUp, Funnel, UsersThree, Megaphone, Database } from 'phosphor-react';
 import { useAppContext } from '../../../contexts/AppContext';
 
 // Import dashboard components
@@ -12,6 +12,7 @@ import { SalesForecastDashboard } from './SalesForecastDashboard';
 import { SalesFunnelDashboard } from './SalesFunnelDashboard';
 import { SalesSegmentationDashboard } from './SalesSegmentationDashboard';
 import { SalesPromotionsDashboard } from './SalesPromotionsDashboard';
+import { SalesDeptData } from './SalesDeptData';
 
 const INITIAL_BOARD: Board = {
     id: 'dept-sales',
@@ -35,7 +36,7 @@ const INITIAL_BOARD: Board = {
         'sales_funnel',
         'sales_segmentation',
         'sales_promotions',
-        'datatable'
+        'dept_data'
     ],
     defaultView: 'overview'
 };
@@ -56,6 +57,12 @@ const SalesPage: React.FC = () => {
                 { id: 'sales_segmentation', label: t('segmentation'), icon: UsersThree, description: t('customer_segments') },
                 { id: 'sales_promotions', label: t('promotions'), icon: Megaphone, description: t('campaign_effectiveness') },
             ]
+        },
+        {
+            title: t('data_management'),
+            options: [
+                { id: 'dept_data', label: 'Dept Data', icon: Database, description: t('dept_data_desc') },
+            ]
         }
     ], [t]);
 
@@ -72,8 +79,8 @@ const SalesPage: React.FC = () => {
                     mergedViews.push(view);
                 }
             });
-            // Remove unwanted views (table, kanban) - keep only datatable
-            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban');
+            // Remove unwanted views (table, kanban) - keep only dept_data
+            const filteredViews = mergedViews.filter((v: string) => v !== 'table' && v !== 'kanban' && v !== 'datatable');
             return { ...parsed, availableViews: filteredViews };
         }
         return INITIAL_BOARD;
@@ -123,6 +130,8 @@ const SalesPage: React.FC = () => {
                 return <SalesSegmentationDashboard />;
             case 'sales_promotions':
                 return <SalesPromotionsDashboard />;
+            case 'dept_data':
+                return <SalesDeptData />;
             default:
                 return null;
         }

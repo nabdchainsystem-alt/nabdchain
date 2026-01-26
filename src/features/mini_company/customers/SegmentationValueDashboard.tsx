@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Diamond, Crown, ChartPieSl
 import { SegmentationValueInfo } from './SegmentationValueInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- Static Data (no translation needed) ---
 const SCATTER_DATA = [
@@ -22,11 +23,11 @@ const SCATTER_DATA = [
 
 // Table data with segmentKey for translation
 const CUSTOMER_VALUE_TABLE = [
-    { id: 'C-001', name: 'Acme Corp', segmentKey: 'high_value', clv: '$125,000', revenue: '$45,000', freq: 'Weekly' },
-    { id: 'C-005', name: 'Umbrella Corp', segmentKey: 'high_value', clv: '$210,000', revenue: '$60,000', freq: 'Daily' },
-    { id: 'C-010', name: 'Stark Ind', segmentKey: 'mid_value', clv: '$8,500', revenue: '$2,500', freq: 'Monthly' },
-    { id: 'C-023', name: 'Wayne Ent', segmentKey: 'mid_value', clv: '$9,200', revenue: '$3,100', freq: 'Monthly' },
-    { id: 'C-099', name: 'Cyberdyne', segmentKey: 'low_value', clv: '$800', revenue: '$150', freq: 'Rarely' },
+    { id: 'C-001', name: 'Acme Corp', segmentKey: 'high_value', rawClv: 125000, rawRevenue: 45000, freq: 'Weekly' },
+    { id: 'C-005', name: 'Umbrella Corp', segmentKey: 'high_value', rawClv: 210000, rawRevenue: 60000, freq: 'Daily' },
+    { id: 'C-010', name: 'Stark Ind', segmentKey: 'mid_value', rawClv: 8500, rawRevenue: 2500, freq: 'Monthly' },
+    { id: 'C-023', name: 'Wayne Ent', segmentKey: 'mid_value', rawClv: 9200, rawRevenue: 3100, freq: 'Monthly' },
+    { id: 'C-099', name: 'Cyberdyne', segmentKey: 'low_value', rawClv: 800, rawRevenue: 150, freq: 'Rarely' },
 ];
 
 export const SegmentationValueDashboard: React.FC = () => {
@@ -52,7 +53,7 @@ export const SegmentationValueDashboard: React.FC = () => {
         { id: '1', label: t('high_value_clients'), subtitle: t('spend_over_10k'), value: '125', change: '+5', trend: 'up', icon: <Crown size={18} />, sparklineData: [115, 118, 120, 122, 124, 125], color: 'blue' },
         { id: '2', label: t('mid_value_clients'), subtitle: t('spend_1k_10k'), value: '850', change: '+20', trend: 'up', icon: <Diamond size={18} />, sparklineData: [800, 810, 820, 830, 840, 850], color: 'blue' },
         { id: '3', label: t('low_value_clients'), subtitle: t('spend_under_1k'), value: '1,475', change: '-10', trend: 'down', icon: <Coin size={18} />, sparklineData: [1500, 1490, 1480, 1475, 1470, 1475], color: 'blue' },
-        { id: '4', label: t('avg_clv'), subtitle: t('lifetime_value'), value: '$2,850', change: '+$150', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [2600, 2650, 2700, 2750, 2800, 2850], color: 'blue' },
+        { id: '4', label: t('avg_clv'), subtitle: t('lifetime_value'), value: '0', rawValue: 2850, isCurrency: true, change: '+$150', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [2600, 2650, 2700, 2750, 2800, 2850], color: 'blue' },
     ], [t]);
 
     const SIDE_KPIS = useMemo<(KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[]>(() => [
@@ -256,6 +257,7 @@ export const SegmentationValueDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -324,6 +326,7 @@ export const SegmentationValueDashboard: React.FC = () => {
                         <div key={kpi.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                                 loading={isLoading}
@@ -365,8 +368,8 @@ export const SegmentationValueDashboard: React.FC = () => {
                                                     {row.segment}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3 text-end text-emerald-600 font-bold">{row.clv}</td>
-                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.revenue}</td>
+                                            <td className="px-5 py-3 text-end text-emerald-600 font-bold">{formatCurrency(row.rawClv, currency.code, currency.symbol)}</td>
+                                            <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(row.rawRevenue, currency.code, currency.symbol)}</td>
                                             <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400 text-xs">{row.freq}</td>
                                         </tr>
                                     ))}

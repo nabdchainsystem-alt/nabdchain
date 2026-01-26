@@ -20,7 +20,7 @@ const DataTable: React.FC<DataTableProps & { viewId?: string }> = ({ roomId, vie
         // We reuse the 'name' column for Data 1 to keep text editing
         { id: 'name', label: 'Data 1', type: 'text', width: 200, minWidth: 100, resizable: true, pinned: true },
         // Data 2 - generic text column
-        { id: 'data2', label: 'بيانات 2', type: 'text', width: 200, minWidth: 100, resizable: true }
+        { id: 'data2', label: 'Data 2', type: 'text', width: 200, minWidth: 100, resizable: true }
     ];
 
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>, setRows: React.Dispatch<React.SetStateAction<Row[]>>, setColumns: React.Dispatch<React.SetStateAction<Column[]>>) => {

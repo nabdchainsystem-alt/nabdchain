@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Plus,
     FolderPlus,
@@ -17,7 +17,8 @@ import {
     Key,
     Image,
     FileText,
-    Note
+    Note,
+    Trash
 } from 'phosphor-react';
 import { MOCK_CATEGORIES, VaultItem } from '../types';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -31,6 +32,7 @@ interface VaultSidebarProps {
     folders: VaultItem[];
     currentFolderId: string | null;
     onSelectFolder: (id: string | null) => void;
+    items?: VaultItem[];
     className?: string;
 }
 
@@ -47,10 +49,27 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
     folders,
     currentFolderId,
     onSelectFolder,
+    items = [],
     className = ''
 }) => {
     const { t, language } = useAppContext();
     const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
+
+    // Calculate counts for each category
+    const categoryCounts = useMemo(() => {
+        const counts: Record<string, number> = {
+            all: items.filter(i => !i.isDeleted).length,
+            favorites: items.filter(i => i.isFavorite && !i.isDeleted).length,
+            folder: items.filter(i => i.type === 'folder' && !i.isDeleted).length,
+            weblink: items.filter(i => i.type === 'weblink' && !i.isDeleted).length,
+            document: items.filter(i => i.type === 'document' && !i.isDeleted).length,
+            image: items.filter(i => i.type === 'image' && !i.isDeleted).length,
+            login: items.filter(i => i.type === 'login' && !i.isDeleted).length,
+            note: items.filter(i => i.type === 'note' && !i.isDeleted).length,
+            trash: items.filter(i => i.isDeleted).length,
+        };
+        return counts;
+    }, [items]);
 
     const categories = MOCK_CATEGORIES.map(cat => ({
         ...cat,
@@ -63,7 +82,8 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
                                 cat.id === 'login' ? t('logins') :
                                     cat.id === 'note' ? t('secure_notes') :
                                         cat.id === 'trash' ? t('trash') :
-                                            cat.label
+                                            cat.label,
+        count: categoryCounts[cat.id] || 0
     }));
 
     return (
@@ -91,6 +111,13 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
                             >
                                 <FolderPlus size={18} className="text-blue-500" />
                                 <span>{t('new_folder')}</span>
+                            </button>
+                            <button
+                                onClick={() => { onCreateItem('login'); setIsNewMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <Key size={18} className="text-cyan-500" />
+                                <span>{t('new_login') || 'New Login'}</span>
                             </button>
                             <button
                                 onClick={() => { onCreateItem('note'); setIsNewMenuOpen(false); }}
@@ -130,15 +157,13 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
                 {categories.map(category => {
                     const Icon = category.icon;
                     const isActive = activeCategory === category.id && !currentFolderId;
+                    const count = category.count;
 
                     return (
                         <button
                             key={category.id}
-                            onClick={() => {
-                                onSelectCategory(category.id);
-                                onSelectFolder(null);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium
+                            onClick={() => onSelectCategory(category.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium cursor-pointer
                             ${isActive
                                     ? 'bg-blue-50 dark:bg-blue-900/20 text-monday-blue shadow-sm border border-blue-100/50 dark:border-blue-900/30'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover'
@@ -146,7 +171,18 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
                         `}
                         >
                             <Icon size={18} weight={isActive ? "fill" : "regular"} />
-                            <span className="truncate">{category.label}</span>
+                            <span className="truncate flex-1 text-start">{category.label}</span>
+                            {count > 0 && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                                    isActive
+                                        ? 'bg-monday-blue/20 text-monday-blue'
+                                        : category.id === 'trash'
+                                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                                }`}>
+                                    {count}
+                                </span>
+                            )}
                         </button>
                     );
                 })}

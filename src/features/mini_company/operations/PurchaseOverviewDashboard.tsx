@@ -69,10 +69,10 @@ export const PurchaseOverviewDashboard: React.FC = () => {
 
     // --- KPI Data ---
     const TOP_KPIS = useMemo<KPIData[]>(() => [
-        { id: '1', label: t('total_purchase_spend'), subtitle: t('ytd_approved'), value: '$1.2M', rawValue: 1245000, isCurrency: true, change: '+8.5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [90, 95, 100, 98, 105, 110, 120], color: 'blue' },
+        { id: '1', label: t('total_purchase_spend'), subtitle: t('ytd_approved'), value: '0', rawValue: 1245000, isCurrency: true, change: '+8.5%', trend: 'up', icon: <CurrencyDollar size={18} />, sparklineData: [90, 95, 100, 98, 105, 110, 120], color: 'blue' },
         { id: '2', label: t('total_purchase_orders'), subtitle: t('all_time'), value: '145', change: '+12', trend: 'up', icon: <ShoppingCart size={18} />, sparklineData: [120, 125, 130, 128, 135, 140, 145], color: 'blue' },
         { id: '3', label: t('active_suppliers'), subtitle: t('engaged_this_month'), value: '24', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [20, 21, 21, 22, 22, 23, 24], color: 'blue' },
-        { id: '4', label: t('avg_purchase_value'), subtitle: t('per_order'), value: '$8.5k', rawValue: 8586, isCurrency: true, change: '-1.2%', trend: 'down', icon: <Hash size={18} />, sparklineData: [8.8, 8.7, 8.6, 8.9, 8.7, 8.6, 8.5], color: 'blue' },
+        { id: '4', label: t('avg_purchase_value'), subtitle: t('per_order'), value: '0', rawValue: 8586, isCurrency: true, change: '-1.2%', trend: 'down', icon: <Hash size={18} />, sparklineData: [8.8, 8.7, 8.6, 8.9, 8.7, 8.6, 8.5], color: 'blue' },
     ], [t]);
 
     const SIDE_KPIS = useMemo<KPIData[]>(() => [

@@ -354,6 +354,8 @@ model VaultItem {
   content    String?
   metadata   String?
   isFavorite Boolean     @default(false)
+  isDeleted  Boolean     @default(false)
+  deletedAt  DateTime?
   folderId   String?
   color      String?
   createdAt  DateTime    @default(now())
@@ -365,6 +367,7 @@ model VaultItem {
   @@index([userId])
   @@index([folderId])
   @@index([type])
+  @@index([isDeleted])
 }
 
 model Conversation {

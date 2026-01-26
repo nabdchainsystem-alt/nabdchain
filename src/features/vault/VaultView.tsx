@@ -5,6 +5,8 @@ import { VaultSidebar } from './components/VaultSidebar';
 import { VaultGrid } from './components/VaultGrid';
 import { VaultList } from './components/VaultList';
 import { VaultEmptyState } from './components/VaultEmptyState';
+import { LoginsTable } from './components/LoginsTable';
+import { WebLinksTable } from './components/WebLinksTable';
 import { VaultItem, FolderMetadata, VaultItemType } from './types';
 
 // API response item type (different from VaultItem state type)
@@ -15,6 +17,8 @@ interface VaultApiItem {
     subtitle?: string;
     updatedAt?: string;
     isFavorite?: boolean;
+    isDeleted?: boolean;
+    deletedAt?: string;
     folderId?: string;
     color?: string;
     metadata?: string;
@@ -24,6 +28,8 @@ interface VaultApiItem {
 import { CreateFolderModal } from './components/CreateFolderModal';
 import { CreateLinkModal } from './components/CreateLinkModal';
 import { CreateGroupModal } from './components/CreateGroupModal';
+import { CreateLoginModal } from './components/CreateLoginModal';
+import { CreateSecureNoteModal } from './components/CreateSecureNoteModal';
 import { RenameItemModal } from './components/RenameItemModal';
 import { MoveToFolderModal } from './components/MoveToFolderModal';
 import { vaultService } from '../../services/vaultService';
@@ -45,6 +51,8 @@ export const VaultView: React.FC = () => {
     const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
     const [isCreateLinkModalOpen, setIsCreateLinkModalOpen] = useState(false);
     const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+    const [isCreateLoginModalOpen, setIsCreateLoginModalOpen] = useState(false);
+    const [isCreateSecureNoteModalOpen, setIsCreateSecureNoteModalOpen] = useState(false);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -125,13 +133,13 @@ export const VaultView: React.FC = () => {
 
             // Calculate folder counts locally
             const folderCounts = new Map<string, number>();
-            data.forEach((item: VaultApiItem) => {
+            data.forEach((item) => {
                 if (item.folderId) {
                     folderCounts.set(item.folderId, (folderCounts.get(item.folderId) || 0) + 1);
                 }
             });
 
-            const transformedItems: VaultItem[] = data.map((i: VaultApiItem) => {
+            const transformedItems: VaultItem[] = data.map((i) => {
                 const count = folderCounts.get(i.id) || 0;
                 return {
                     id: i.id,
@@ -140,6 +148,8 @@ export const VaultView: React.FC = () => {
                     subtitle: i.subtitle || (i.type === 'folder' ? `${count} item${count !== 1 ? 's' : ''}` : ''),
                     lastModified: i.updatedAt ? new Date(i.updatedAt).toLocaleDateString() : 'Just now',
                     isFavorite: !!i.isFavorite,
+                    isDeleted: !!i.isDeleted,
+                    deletedAt: i.deletedAt,
                     folderId: i.folderId,
                     color: i.color,
                     metadata: i.metadata ? (typeof i.metadata === 'string' ? JSON.parse(i.metadata) : i.metadata) : undefined,
@@ -186,13 +196,20 @@ export const VaultView: React.FC = () => {
 
     const filteredItems = useMemo(() => {
         const filtered = items.filter(item => {
+            // 0. Handle trash category separately - show ONLY deleted items
+            if (activeCategory === 'trash') {
+                return item.isDeleted === true;
+            }
+
+            // For all other categories, exclude deleted items
+            if (item.isDeleted) {
+                return false;
+            }
+
             // 1. Filter by category
             if (activeCategory !== 'all') {
                 if (activeCategory === 'favorites') {
                     if (!item.isFavorite) return false;
-                } else if (activeCategory === 'trash') {
-                    // In a real app we'd have a deletedAt field, here we just simulate empty or define mock logic
-                    return false; // Mock data doesn't have trash items
                 } else if (item.type !== activeCategory) {
                     return false;
                 }
@@ -210,11 +227,9 @@ export const VaultView: React.FC = () => {
             return true;
         });
 
-        // 3. Filter by folder structure (only if not searching and sorting by 'all' or 'folder')
-        // If sorting by specific types like 'login', we might want to show all logins regardless of folder?
-        // For now, let's enforce folder structure when in 'all' or 'folder' category.
-        // 3. Filter by folder structure (only if not searching and sorting by 'all' or 'folder')
-        if (activeCategory === 'all' || activeCategory === 'folder') {
+        // 3. Filter by folder structure (only if not searching and viewing 'all' or 'folder' category)
+        // Skip folder filtering for trash view
+        if ((activeCategory === 'all' || activeCategory === 'folder') && activeCategory !== 'trash') {
             if (!searchQuery) {
                 return filtered.filter(item => {
                     // If we are in a specific folder, show items with that folderId
@@ -279,6 +294,58 @@ export const VaultView: React.FC = () => {
             setIsMenuOpen(false);
         } catch (e) {
             storageLogger.error("Failed to create note", e);
+        }
+    }
+
+    const handleCreateLogin = async (data: { title: string; url: string; username: string; password: string; notes?: string }) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            await vaultService.create(token, {
+                title: data.title,
+                type: 'login',
+                userId: userId || "user-1",
+                subtitle: data.username,
+                folderId: currentFolderId || undefined,
+                color: '#06B6D4', // Cyan for logins
+                content: data.url,
+                metadata: {
+                    url: data.url,
+                    username: data.username,
+                    password: data.password,
+                    notes: data.notes
+                }
+            });
+            await loadItems();
+            setIsCreateLoginModalOpen(false);
+        } catch (e) {
+            storageLogger.error("Failed to create login", e);
+        }
+    }
+
+    const handleCreateSecureNote = async (data: { title: string; content: string; tags?: string[] }) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            await vaultService.create(token, {
+                title: data.title,
+                type: 'note',
+                userId: userId || "user-1",
+                subtitle: data.content.substring(0, 50) + (data.content.length > 50 ? '...' : ''),
+                folderId: currentFolderId || undefined,
+                color: '#FCD34D', // Yellow for notes
+                content: data.content,
+                metadata: {
+                    content: data.content,
+                    tags: data.tags
+                }
+            });
+            await loadItems();
+            setIsCreateSecureNoteModalOpen(false);
+        } catch (e) {
+            storageLogger.error("Failed to create secure note", e);
         }
     }
 
@@ -359,10 +426,22 @@ export const VaultView: React.FC = () => {
             const token = await getToken();
             if (!token) return;
 
-            await vaultService.delete(token, itemToDelete.id);
-
-            // Optimistic update
-            setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+            // If item is already in trash, permanently delete it
+            if (itemToDelete.isDeleted) {
+                await vaultService.delete(token, itemToDelete.id);
+                setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+            } else {
+                // Soft delete - move to trash
+                await vaultService.update(token, itemToDelete.id, {
+                    isDeleted: true,
+                    deletedAt: new Date().toISOString()
+                });
+                setItems(prev => prev.map(i =>
+                    i.id === itemToDelete.id
+                        ? { ...i, isDeleted: true, deletedAt: new Date().toISOString() }
+                        : i
+                ));
+            }
 
             // If we deleted the current folder, go up
             if (itemToDelete.id === currentFolderId) {
@@ -372,6 +451,40 @@ export const VaultView: React.FC = () => {
             setItemToDelete(null);
         } catch (e) {
             storageLogger.error("Failed to delete item", e);
+        }
+    };
+
+    const handleRestoreItem = async (item: VaultItem) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            await vaultService.update(token, item.id, {
+                isDeleted: false,
+                deletedAt: undefined
+            });
+            setItems(prev => prev.map(i =>
+                i.id === item.id
+                    ? { ...i, isDeleted: false, deletedAt: undefined }
+                    : i
+            ));
+        } catch (e) {
+            storageLogger.error("Failed to restore item", e);
+        }
+    };
+
+    const handleEmptyTrash = async () => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const trashItems = items.filter(i => i.isDeleted);
+            for (const item of trashItems) {
+                await vaultService.delete(token, item.id);
+            }
+            setItems(prev => prev.filter(i => !i.isDeleted));
+        } catch (e) {
+            storageLogger.error("Failed to empty trash", e);
         }
     };
 
@@ -500,11 +613,15 @@ export const VaultView: React.FC = () => {
             />
             <VaultSidebar
                 activeCategory={activeCategory}
-                onSelectCategory={setActiveCategory}
+                onSelectCategory={(category) => {
+                    setActiveCategory(category);
+                    setCurrentFolderId(null); // Clear folder when selecting a category
+                }}
                 onCreateItem={(type) => {
                     if (type === 'folder') setIsCreateFolderModalOpen(true);
                     else if (type === 'weblink') setIsCreateLinkModalOpen(true);
-                    else if (type === 'note') handleCreateNote();
+                    else if (type === 'note') setIsCreateSecureNoteModalOpen(true);
+                    else if (type === 'login') setIsCreateLoginModalOpen(true);
                 }}
                 onCreateGroup={() => setIsCreateGroupModalOpen(true)}
                 onUploadClick={handleUploadClick}
@@ -512,8 +629,9 @@ export const VaultView: React.FC = () => {
                 currentFolderId={currentFolderId}
                 onSelectFolder={(id) => {
                     setCurrentFolderId(id);
-                    setActiveCategory('all');
+                    if (id) setActiveCategory('all'); // Only set to 'all' when selecting a folder
                 }}
+                items={items}
             />
 
             {/* Main Content */}
@@ -782,6 +900,31 @@ export const VaultView: React.FC = () => {
                                     });
                                 }
 
+                                // Use specialized tables for login and weblink categories
+                                if (activeCategory === 'login') {
+                                    return (
+                                        <LoginsTable
+                                            items={sortedItems}
+                                            onDelete={handleDeleteRequest}
+                                            onToggleFavorite={handleToggleFavorite}
+                                            onRename={handleRenameRequest}
+                                            onMove={handleMoveRequest}
+                                        />
+                                    );
+                                }
+
+                                if (activeCategory === 'weblink') {
+                                    return (
+                                        <WebLinksTable
+                                            items={sortedItems}
+                                            onDelete={handleDeleteRequest}
+                                            onToggleFavorite={handleToggleFavorite}
+                                            onRename={handleRenameRequest}
+                                            onMove={handleMoveRequest}
+                                        />
+                                    );
+                                }
+
                                 if (groupBy === 'none') {
                                     return viewMode === 'grid' ? (
                                         <VaultGrid
@@ -791,6 +934,7 @@ export const VaultView: React.FC = () => {
                                             onToggleFavorite={handleToggleFavorite}
                                             onRename={handleRenameRequest}
                                             onMove={handleMoveRequest}
+                                            onRestore={handleRestoreItem}
                                         />
                                     ) : (
                                         <VaultList
@@ -800,6 +944,7 @@ export const VaultView: React.FC = () => {
                                             onToggleFavorite={handleToggleFavorite}
                                             onRename={handleRenameRequest}
                                             onMove={handleMoveRequest}
+                                            onRestore={handleRestoreItem}
                                         />
                                     );
                                 }
@@ -824,6 +969,7 @@ export const VaultView: React.FC = () => {
                                                             onToggleFavorite={handleToggleFavorite}
                                                             onRename={handleRenameRequest}
                                                             onMove={handleMoveRequest}
+                                                            onRestore={handleRestoreItem}
                                                         />
                                                     </div>
                                                 ) : (
@@ -835,6 +981,7 @@ export const VaultView: React.FC = () => {
                                                             onToggleFavorite={handleToggleFavorite}
                                                             onRename={handleRenameRequest}
                                                             onMove={handleMoveRequest}
+                                                            onRestore={handleRestoreItem}
                                                         />
                                                     </div>
                                                 )}
@@ -864,6 +1011,18 @@ export const VaultView: React.FC = () => {
                 isOpen={isCreateGroupModalOpen}
                 onClose={() => setIsCreateGroupModalOpen(false)}
                 onCreate={handleCreateGroup}
+            />
+
+            <CreateLoginModal
+                isOpen={isCreateLoginModalOpen}
+                onClose={() => setIsCreateLoginModalOpen(false)}
+                onCreate={handleCreateLogin}
+            />
+
+            <CreateSecureNoteModal
+                isOpen={isCreateSecureNoteModalOpen}
+                onClose={() => setIsCreateSecureNoteModalOpen(false)}
+                onCreate={handleCreateSecureNote}
             />
 
             {itemToRename && (

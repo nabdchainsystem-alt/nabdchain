@@ -86,6 +86,64 @@ const getShortName = (name: string): string => {
     return baseName.slice(0, 15) + '...' + (ext ? '.' + ext : '');
 };
 
+// Priority translation keys
+const PRIORITY_TRANSLATION_KEYS: Record<string, string> = {
+    'Urgent': 'urgent',
+    'High': 'high',
+    'Medium': 'medium',
+    'Low': 'low',
+};
+
+// Reverse mapping for Arabic priority values to English IDs
+const ARABIC_PRIORITY_TO_ID: Record<string, string> = {
+    'عاجل': 'Urgent',
+    'مرتفع': 'High',
+    'متوسط': 'Medium',
+    'منخفض': 'Low',
+};
+
+// Normalize priority value to English ID
+const normalizePriorityValue = (value: string): string => {
+    if (!value) return value;
+    // If it's already an English key, return as-is
+    if (PRIORITY_TRANSLATION_KEYS[value]) return value;
+    // If it's an Arabic value, convert to English ID
+    if (ARABIC_PRIORITY_TO_ID[value]) return ARABIC_PRIORITY_TO_ID[value];
+    // Otherwise return as-is
+    return value;
+};
+
+// Status translation keys (English ID -> translation key)
+const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+    'To Do': 'to_do',
+    'In Progress': 'in_progress',
+    'Q&A': 'qa',
+    'Done': 'done',
+    'Stuck': 'stuck',
+    'Rejected': 'rejected',
+};
+
+// Reverse mapping for Arabic status values to English IDs (for backwards compatibility)
+const ARABIC_STATUS_TO_ID: Record<string, string> = {
+    'للتنفيذ': 'To Do',
+    'قيد التنفيذ': 'In Progress',
+    'سؤال وجواب': 'Q&A',
+    'تم': 'Done',
+    'متوقف': 'Stuck',
+    'مرفوض': 'Rejected',
+};
+
+// Normalize status value to English ID
+const normalizeStatusValue = (value: string): string => {
+    if (!value) return value;
+    // If it's already an English key, return as-is
+    if (STATUS_TRANSLATION_KEYS[value]) return value;
+    // If it's an Arabic value, convert to English ID
+    if (ARABIC_STATUS_TO_ID[value]) return ARABIC_STATUS_TO_ID[value];
+    // Otherwise return as-is (custom status)
+    return value;
+};
+
 export const TableCell: React.FC<TableCellProps> = ({
     col,
     row,
@@ -141,23 +199,27 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Status column
     if (col.type === 'status') {
-        const statusObj = customStatuses.find(s => s.title === value || s.id === value);
+        // Normalize the value to English ID for consistent lookup
+        const normalizedValue = value ? normalizeStatusValue(value) : value;
+        const statusObj = customStatuses.find(s => s.title === normalizedValue || s.id === normalizedValue || s.title === value || s.id === value);
         const color = statusObj?.color ||
-            (value === 'Done' ? 'emerald' :
-                value === 'In Progress' ? 'blue' :
-                    value === 'Stuck' ? 'orange' :
-                        value === 'Rejected' ? 'rose' : 'gray');
+            (normalizedValue === 'Done' ? 'emerald' :
+                normalizedValue === 'In Progress' ? 'blue' :
+                    normalizedValue === 'Stuck' ? 'orange' :
+                        normalizedValue === 'Rejected' ? 'rose' : 'gray');
 
         const statusStyle = value ? getStatusColorClasses(color) : 'bg-transparent text-stone-400';
+        // Get translated status label using normalized value
+        const translatedStatus = normalizedValue && STATUS_TRANSLATION_KEYS[normalizedValue] ? t(STATUS_TRANSLATION_KEYS[normalizedValue]) : value;
 
         return (
             <div className="relative w-full h-full flex items-center justify-center p-1">
                 <button
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
-                    className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded-md shadow-sm border border-transparent' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
+                    className={`w-full h-full flex items-center justify-center px-2 transition-all overflow-hidden ${value ? statusStyle + ' rounded-md' : 'hover:bg-stone-100 dark:hover:bg-stone-800/50 rounded'}`}
                 >
                     {value ? (
-                        <span className="text-xs font-semibold font-sans truncate">{value}</span>
+                        <span className="text-xs font-semibold font-sans truncate">{translatedStatus}</span>
                     ) : (
                         <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400 group-hover:text-stone-500`}>-</span>
                     )}
@@ -180,8 +242,8 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Date column
     if (col.type === 'date') {
-        // Map language to locale for date formatting
-        const dateLocale = language === 'ar' ? 'ar-SA' : 'en-GB';
+        // Map language to locale for date formatting (ar-EG uses Gregorian calendar)
+        const dateLocale = language === 'ar' ? 'ar-EG' : 'en-GB';
         return (
             <div className="relative w-full h-full">
                 <button
@@ -412,8 +474,12 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     // Priority column
     if (col.type === 'priority') {
-        const normalized = value ? formatPriorityLabel(value) : null;
+        // First normalize Arabic values to English, then format
+        const normalizedValue = value ? normalizePriorityValue(value) : null;
+        const normalized = normalizedValue ? formatPriorityLabel(normalizedValue) : null;
         const bgClass = (normalized && PRIORITY_STYLES[normalized]) ? PRIORITY_STYLES[normalized] : 'hover:bg-stone-100 dark:hover:bg-stone-800/50';
+        // Get translated priority label
+        const translatedPriority = normalized && PRIORITY_TRANSLATION_KEYS[normalized] ? t(PRIORITY_TRANSLATION_KEYS[normalized]) : normalized;
 
         return (
             <div className="relative w-full h-full p-1">
@@ -422,7 +488,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                     className={`w-full h-full rounded flex items-center justify-center gap-1.5 px-2 transition-all ${normalized ? bgClass + ' shadow-sm' : bgClass}`}
                 >
                     {normalized ? (
-                        <span className="text-xs font-medium truncate">{normalized}</span>
+                        <span className="text-xs font-medium truncate">{translatedPriority}</span>
                     ) : (
                         <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>-</span>
                     )}
@@ -638,9 +704,10 @@ export const TableCell: React.FC<TableCellProps> = ({
     const cellStyle: React.CSSProperties = {};
     if (textColor) cellStyle.color = textColor;
 
-    // Show placeholder for creation row on name column
+    // Show placeholder for creation row on primary column (first non-select column)
     const isCreationRow = row.id === CREATION_ROW_ID;
-    const placeholder = isCreationRow && col.id === 'name' ? t('start_typing_to_add') : '';
+    const primaryColId = (columns.find(c => c.id === 'name') || columns.find(c => c.id !== 'select'))?.id;
+    const placeholder = isCreationRow && col.id === primaryColId ? t('start_typing_to_add') : '';
 
     return (
         <div className="h-full w-full">
@@ -663,7 +730,7 @@ export const TableCell: React.FC<TableCellProps> = ({
                         position: { x: e.clientX, y: e.clientY }
                     });
                 }}
-                style={{ ...cellStyle, textAlign: col.id === 'name' ? 'start' : 'center' }}
+                style={{ ...cellStyle, textAlign: col.id === primaryColId ? 'start' : 'center' }}
                 className="w-full h-full bg-transparent border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors"
             />
         </div>

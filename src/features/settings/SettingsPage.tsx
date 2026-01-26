@@ -152,7 +152,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             onFeatureFlagsChange?.();
         } catch (error) {
             appLogger.error('Failed to toggle feature:', error);
-            alert('Failed to toggle feature');
+            showToast('Failed to toggle feature', 'error');
         } finally {
             setTogglingFeature(null);
         }
@@ -172,7 +172,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             ));
         } catch (error) {
             appLogger.error('Failed to change user role:', error);
-            alert(error instanceof Error ? error.message : 'Failed to change user role');
+            showToast(error instanceof Error ? error.message : 'Failed to change user role', 'error');
         } finally {
             setChangingRole(null);
         }
@@ -198,7 +198,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             setUserPermissions(response.permissions);
         } catch (error) {
             appLogger.error('Failed to load user permissions:', error);
-            alert('Failed to load user permissions');
+            showToast('Failed to load user permissions', 'error');
         } finally {
             setIsLoadingUserPerms(false);
         }
@@ -230,7 +230,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             ));
         } catch (error) {
             appLogger.error('Failed to update user permission:', error);
-            alert('Failed to update permission');
+            showToast('Failed to update permission', 'error');
         } finally {
             setSavingUserPerm(null);
         }
@@ -258,7 +258,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             ));
         } catch (error) {
             appLogger.error('Failed to reset user permission:', error);
-            alert('Failed to reset permission');
+            showToast('Failed to reset permission', 'error');
         } finally {
             setSavingUserPerm(null);
         }
@@ -285,7 +285,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             })));
         } catch (error) {
             appLogger.error('Failed to reset user permissions:', error);
-            alert('Failed to reset permissions');
+            showToast('Failed to reset permissions', 'error');
         } finally {
             setIsLoadingUserPerms(false);
         }
@@ -315,7 +315,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             })));
         } catch (error) {
             appLogger.error('Failed to enable all permissions:', error);
-            alert('Failed to enable all permissions');
+            showToast('Failed to enable all permissions', 'error');
         } finally {
             setIsLoadingUserPerms(false);
         }
@@ -347,7 +347,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
             })));
         } catch (error) {
             appLogger.error('Failed to disable all permissions:', error);
-            alert('Failed to disable all permissions');
+            showToast('Failed to disable all permissions', 'error');
         } finally {
             setIsLoadingUserPerms(false);
         }
@@ -408,12 +408,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
     const [profileImage, setProfileImage] = useState(() => localStorage.getItem('user_profile_image') || user?.imageUrl || '');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Toast notification state
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' } | null>(null);
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => {
+            setToast(null);
+        }, 3000);
+    };
+
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             // Validate file size (max 10MB)
             if (file.size > 10 * 1024 * 1024) {
-                alert('File size too large. Please upload an image smaller than 10MB.');
+                showToast('File size too large. Please upload an image smaller than 10MB.', 'error');
                 return;
             }
 
@@ -451,16 +461,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                 appLogger.error('Failed to sync profile image:', error);
 
                 if (error instanceof Error && error.message.includes('quota')) {
-                    alert('Image is too large to save locally. Please try a smaller image.');
+                    showToast('Image is too large to save locally. Please try a smaller image.', 'error');
                 } else {
-                    alert('Failed to sync profile picture with backend. Others might not see your update.');
+                    showToast('Failed to sync profile picture with backend. Others might not see your update.', 'error');
                 }
                 return;
             }
         }
 
         // Visual feedback
-        alert('Profile saved successfully!');
+        showToast(t('profile_saved') || 'Profile saved successfully!', 'success');
     };
 
     const handleSaveViews = () => {
@@ -1146,6 +1156,49 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
 
     return (
         <div className="flex h-full bg-[#FCFCFD] dark:bg-monday-dark-bg">
+            {/* Toast Notification */}
+            {toast && (
+                <div
+                    className={`fixed top-6 right-6 rtl:right-auto rtl:left-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg border backdrop-blur-sm animate-slideIn ${
+                        toast.type === 'success'
+                            ? 'bg-green-50/95 dark:bg-green-900/90 border-green-200 dark:border-green-700'
+                            : 'bg-red-50/95 dark:bg-red-900/90 border-red-200 dark:border-red-700'
+                    }`}
+                    style={{
+                        animation: 'slideIn 0.3s ease-out'
+                    }}
+                >
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                        toast.type === 'success'
+                            ? 'bg-green-100 dark:bg-green-800'
+                            : 'bg-red-100 dark:bg-red-800'
+                    }`}>
+                        {toast.type === 'success' ? (
+                            <Check size={18} className="text-green-600 dark:text-green-300" weight="bold" />
+                        ) : (
+                            <Warning size={18} className="text-red-600 dark:text-red-300" weight="bold" />
+                        )}
+                    </div>
+                    <span className={`font-medium ${
+                        toast.type === 'success'
+                            ? 'text-green-800 dark:text-green-100'
+                            : 'text-red-800 dark:text-red-100'
+                    }`}>
+                        {toast.message}
+                    </span>
+                    <button
+                        onClick={() => setToast(null)}
+                        className={`ml-2 p-1 rounded-lg transition-colors ${
+                            toast.type === 'success'
+                                ? 'hover:bg-green-200 dark:hover:bg-green-700 text-green-600 dark:text-green-300'
+                                : 'hover:bg-red-200 dark:hover:bg-red-700 text-red-600 dark:text-red-300'
+                        }`}
+                    >
+                        <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                </div>
+            )}
+
             {/* Left Sidebar for Settings */}
             <div className="w-64 border-r border-gray-200 dark:border-monday-dark-border bg-white dark:bg-monday-dark-surface flex flex-col">
                 <div className="p-6">

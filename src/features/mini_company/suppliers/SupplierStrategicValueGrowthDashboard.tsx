@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, Handshake, TrendUp, Star, Lightbulb, Users, 
 import { SupplierStrategicValueGrowthInfo } from './SupplierStrategicValueGrowthInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data ---
 const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
@@ -19,7 +20,7 @@ const TOP_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: 
 
 const SIDE_KPIS: (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] = [
     { id: '5', label: 'Long-Term Contracts', subtitle: '> 3 Years', value: '8', change: '+2', trend: 'up', icon: <Users size={18} />, sparklineData: [6, 6, 7, 7, 7, 8], color: 'blue' },
-    { id: '6', label: 'Revenue Impact', subtitle: 'Supplier Enabled', value: '$1.2M', change: '+10%', trend: 'up', icon: <Rocket size={18} />, sparklineData: [0.9, 1.0, 1.0, 1.1, 1.1, 1.2], color: 'blue' },
+    { id: '6', label: 'Revenue Impact', subtitle: 'Supplier Enabled', value: '0', rawValue: 1200000, isCurrency: true, change: '+10%', trend: 'up', icon: <Rocket size={18} />, sparklineData: [0.9, 1.0, 1.0, 1.1, 1.1, 1.2], color: 'blue' },
     { id: '7', label: 'Strategic Fit', subtitle: 'Alignment Score', value: '95%', change: 'Stable', trend: 'neutral', icon: <Star size={18} />, color: 'blue' },
     { id: '8', label: 'Joint Initiatives', subtitle: 'Active Projects', value: '6', change: '+1', trend: 'up', icon: <Handshake size={18} />, sparklineData: [3, 4, 4, 5, 5, 6], color: 'blue' },
 ];
@@ -124,7 +125,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
 
     const TRANSLATED_SIDE_KPIS = useMemo(() => [
         { id: '5', label: t('long_term_contracts'), subtitle: t('over_3_years'), value: '8', change: '+2', trend: 'up' as const, icon: <Users size={18} />, sparklineData: [6, 6, 7, 7, 7, 8], color: 'blue' },
-        { id: '6', label: t('revenue_impact'), subtitle: t('supplier_enabled'), value: '$1.2M', change: '+10%', trend: 'up' as const, icon: <Rocket size={18} />, sparklineData: [0.9, 1.0, 1.0, 1.1, 1.1, 1.2], color: 'blue' },
+        { id: '6', label: t('revenue_impact'), subtitle: t('supplier_enabled'), value: '0', rawValue: 1200000, isCurrency: true, change: '+10%', trend: 'up' as const, icon: <Rocket size={18} />, sparklineData: [0.9, 1.0, 1.0, 1.1, 1.1, 1.2], color: 'blue' },
         { id: '7', label: t('strategic_fit'), subtitle: t('alignment_score'), value: '95%', change: t('stable'), trend: 'neutral' as const, icon: <Star size={18} />, color: 'blue' },
         { id: '8', label: t('joint_initiatives'), subtitle: t('active_projects'), value: '6', change: '+1', trend: 'up' as const, icon: <Handshake size={18} />, sparklineData: [3, 4, 4, 5, 5, 6], color: 'blue' },
     ], [t]);
@@ -376,6 +377,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1" style={{ animationDelay: `${index * 100}ms` }}>
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                             loading={isLoading}
                         />
@@ -449,6 +451,7 @@ export const SupplierStrategicValueGrowthDashboard: React.FC = () => {
                                 <div key={kpi.id} style={{ animationDelay: `${index * 100}ms` }}>
                                     <KPICard
                                         {...kpi}
+                                        value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                         color="blue"
                                         loading={isLoading}
                                     />

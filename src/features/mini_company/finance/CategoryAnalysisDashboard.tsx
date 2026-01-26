@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Tag, ChartBar, Target, Arr
 import { CategoryAnalysisInfo } from './CategoryAnalysisInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // --- KPI Data getter functions ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
@@ -18,7 +19,7 @@ const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: numbe
 ];
 
 const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
-    { id: '5', label: t('avg_category_spend'), subtitle: t('per_month'), value: '$8,250', change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'blue' },
+    { id: '5', label: t('avg_category_spend'), subtitle: t('per_month'), value: '0', rawValue: 8250, isCurrency: true, change: '+3%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [8000, 8100, 8050, 8200, 8250, 8250], color: 'blue' },
     { id: '6', label: t('volatility_index'), subtitle: t('fluctuation_score'), value: t('medium'), change: '', trend: 'neutral', icon: <Activity size={18} />, sparklineData: [40, 45, 42, 48, 45, 45], color: 'blue' },
     { id: '7', label: t('control_score'), subtitle: t('budget_adherence'), value: '88/100', change: '+2', trend: 'up', icon: <Target size={18} />, sparklineData: [82, 84, 85, 86, 87, 88], color: 'blue' },
     { id: '8', label: t('category_growth_rate'), subtitle: t('mom_average'), value: '+2.3%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [3.2, 3.0, 2.8, 2.6, 2.4, 2.3], color: 'blue' },
@@ -46,11 +47,11 @@ const getCategoryShare = (t: (key: string) => string) => [
 
 // --- Table Data getter function ---
 const getCategoryTable = (t: (key: string) => string) => [
-    { category: t('payroll'), budget: '$46,000', actual: '$45,000', variance: '-$1,000', status: t('under_budget'), statusKey: 'under' },
-    { category: t('rent'), budget: '$20,000', actual: '$20,000', variance: '$0', status: t('on_track'), statusKey: 'on_track' },
-    { category: t('marketing'), budget: '$12,000', actual: '$15,000', variance: '+$3,000', status: t('over_budget'), statusKey: 'over' },
-    { category: t('r_and_d'), budget: '$10,000', actual: '$12,000', variance: '+$2,000', status: t('over_budget'), statusKey: 'over' },
-    { category: t('it'), budget: '$9,000', actual: '$8,000', variance: '-$1,000', status: t('under_budget'), statusKey: 'under' },
+    { category: t('payroll'), rawBudget: 46000, rawActual: 45000, rawVariance: -1000, status: t('under_budget'), statusKey: 'under' },
+    { category: t('rent'), rawBudget: 20000, rawActual: 20000, rawVariance: 0, status: t('on_track'), statusKey: 'on_track' },
+    { category: t('marketing'), rawBudget: 12000, rawActual: 15000, rawVariance: 3000, status: t('over_budget'), statusKey: 'over' },
+    { category: t('r_and_d'), rawBudget: 10000, rawActual: 12000, rawVariance: 2000, status: t('over_budget'), statusKey: 'over' },
+    { category: t('it'), rawBudget: 9000, rawActual: 8000, rawVariance: -1000, status: t('under_budget'), statusKey: 'under' },
 ];
 
 // Radar Data getter function
@@ -314,6 +315,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                         />
                     </div>
@@ -372,6 +374,7 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                         >
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                             />
@@ -401,9 +404,9 @@ export const CategoryAnalysisDashboard: React.FC = () => {
                                 {CATEGORY_TABLE.map((row, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.category}</td>
-                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{row.budget}</td>
-                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.actual}</td>
-                                        <td className={`px-5 py-3 text-end font-medium ${row.variance.startsWith('+') ? 'text-red-500' : 'text-emerald-500'}`}>{row.variance}</td>
+                                        <td className="px-5 py-3 text-end text-gray-600 dark:text-gray-400">{formatCurrency(row.rawBudget, currency.code, currency.symbol)}</td>
+                                        <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{formatCurrency(row.rawActual, currency.code, currency.symbol)}</td>
+                                        <td className={`px-5 py-3 text-end font-medium ${row.rawVariance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{row.rawVariance > 0 ? '+' : ''}{formatCurrency(row.rawVariance, currency.code, currency.symbol)}</td>
                                         <td className="px-5 py-3 text-center">
                                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${row.statusKey === 'over' ? 'bg-red-100 text-red-700' :
                                                 row.statusKey === 'under' ? 'bg-emerald-100 text-emerald-700' :

@@ -8,6 +8,7 @@ import { ArrowsOut, ArrowsIn, Info, TrendUp, Warning, Receipt, ChartBar, Lock, A
 import { FixedVariableInfo } from './FixedVariableInfo';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { formatCurrency } from '../../../utils/formatters';
 
 // Helper icon
 const TargetIcon = ({ size }: { size: number }) => (
@@ -20,15 +21,15 @@ const TargetIcon = ({ size }: { size: number }) => (
 
 // --- KPI Data getter functions ---
 const getTopKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
-    { id: '1', label: t('fixed_expenses'), subtitle: t('annualized'), value: '$840,000', change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'blue' },
-    { id: '2', label: t('variable_expenses'), subtitle: t('last_30_days'), value: '$45,230', change: '+5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [40, 42, 41, 44, 43, 45], color: 'blue' },
+    { id: '1', label: t('fixed_expenses'), subtitle: t('annualized'), value: '0', rawValue: 840000, isCurrency: true, change: '0%', trend: 'neutral', icon: <Lock size={18} />, sparklineData: [70, 70, 70, 70, 70, 70], color: 'blue' },
+    { id: '2', label: t('variable_expenses'), subtitle: t('last_30_days'), value: '0', rawValue: 45230, isCurrency: true, change: '+5%', trend: 'up', icon: <ChartBar size={18} />, sparklineData: [40, 42, 41, 44, 43, 45], color: 'blue' },
     { id: '3', label: t('flexibility_ratio'), subtitle: t('var_total'), value: '35%', change: '+1.5%', trend: 'up', icon: <ArrowDown size={18} />, sparklineData: [32, 33, 33, 34, 34, 35], color: 'blue' },
     { id: '4', label: t('fixed_cost_growth'), subtitle: t('yoy'), value: '2.1%', change: '-0.5%', trend: 'down', icon: <TrendUp size={18} />, sparklineData: [2.5, 2.4, 2.3, 2.2, 2.1, 2.1], color: 'blue' },
 ];
 
 const getSideKPIs = (t: (key: string) => string): (KPIConfig & { rawValue?: number, isCurrency?: boolean, color?: string })[] => [
     { id: '5', label: t('var_cost_volatility'), subtitle: t('std_dev'), value: t('high'), change: '', trend: 'neutral', icon: <Warning size={18} />, sparklineData: [60, 75, 50, 80, 65, 70], color: 'blue' },
-    { id: '6', label: t('break_even_impact'), subtitle: t('revenue_needed'), value: '$1.2M', change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'blue' },
+    { id: '6', label: t('break_even_impact'), subtitle: t('revenue_needed'), value: '0', rawValue: 1200000, isCurrency: true, change: '0', trend: 'neutral', icon: <TargetIcon size={18} />, sparklineData: [1.2, 1.2, 1.2, 1.2, 1.2, 1.2], color: 'blue' },
     { id: '7', label: t('cost_rigidity'), subtitle: t('fixed_total'), value: '65%', change: '-1.5%', trend: 'down', icon: <Lock size={18} />, sparklineData: [68, 67, 67, 66, 66, 65], color: 'blue' },
     { id: '8', label: t('optimization_score'), subtitle: t('cost_efficiency'), value: '78/100', change: '+4', trend: 'up', icon: <TrendUp size={18} />, sparklineData: [70, 72, 74, 75, 76, 78], color: 'blue' },
 ];
@@ -50,11 +51,11 @@ const getCostStructure = (t: (key: string) => string) => [
 
 // --- Table Data getter function ---
 const getExpenseClassification = (t: (key: string) => string) => [
-    { name: t('office_rent'), type: t('fixed'), amount: '$20,000', frequency: t('monthly'), category: t('facilities') },
-    { name: t('salaries'), type: t('fixed'), amount: '$45,000', frequency: t('monthly'), category: t('payroll') },
-    { name: t('ad_spend'), type: t('variable'), amount: '$12,000', frequency: t('ad_hoc'), category: t('marketing') },
-    { name: t('shipping'), type: t('variable'), amount: '$5,000', frequency: t('per_order'), category: t('logistics') },
-    { name: t('utilities'), type: t('semi_var'), amount: '$1,500', frequency: t('monthly'), category: t('facilities') },
+    { name: t('office_rent'), type: t('fixed'), rawAmount: 20000, frequency: t('monthly'), category: t('facilities') },
+    { name: t('salaries'), type: t('fixed'), rawAmount: 45000, frequency: t('monthly'), category: t('payroll') },
+    { name: t('ad_spend'), type: t('variable'), rawAmount: 12000, frequency: t('ad_hoc'), category: t('marketing') },
+    { name: t('shipping'), type: t('variable'), rawAmount: 5000, frequency: t('per_order'), category: t('logistics') },
+    { name: t('utilities'), type: t('semi_var'), rawAmount: 1500, frequency: t('monthly'), category: t('facilities') },
 ];
 
 // Matrix Data getter function
@@ -267,6 +268,7 @@ export const FixedVariableDashboard: React.FC = () => {
                     <div key={kpi.id} className="col-span-1">
                         <KPICard
                             {...kpi}
+                            value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                             color="blue"
                         />
                     </div>
@@ -344,6 +346,7 @@ export const FixedVariableDashboard: React.FC = () => {
                         >
                             <KPICard
                                 {...kpi}
+                                value={kpi.isCurrency && kpi.rawValue ? formatCurrency(kpi.rawValue, currency.code, currency.symbol) : kpi.value}
                                 color="blue"
                                 className="h-full"
                             />
@@ -381,7 +384,7 @@ export const FixedVariableDashboard: React.FC = () => {
                                                 <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100 text-start">{row.name}</td>
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.type}</td>
                                                 <td className="px-5 py-3 text-gray-600 dark:text-gray-400 text-start">{row.category}</td>
-                                                <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{row.amount}</td>
+                                                <td className="px-5 py-3 text-end text-gray-900 dark:text-gray-100">{formatCurrency(row.rawAmount, currency.code, currency.symbol)}</td>
                                                 <td className="px-5 py-3 text-end text-gray-500 dark:text-gray-400">{row.frequency}</td>
                                             </tr>
                                         ))}

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note, VideoCamera, ChatCircleText, Lock } from 'phosphor-react';
+import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note, VideoCamera, ChatCircleText, Lock, ListChecks } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
@@ -14,6 +14,8 @@ import { appLogger } from '../../utils/logger';
 
 import { NabdSmartBar } from '../ui/NabdSmartBar';
 import { QuickNotesPanel } from './QuickNotesPanel';
+import { GTDQuickCapturePanel } from './GTDQuickCapturePanel';
+import { useGTDCapture } from '../../hooks/useGTDCapture';
 import { Board } from '../../types';
 import { AICreditsDisplay } from '../AICreditsDisplay';
 
@@ -24,9 +26,11 @@ interface TopBarProps {
   onNavigate: (view: string, boardId?: string) => void;
   boards?: Board[];
   onCreateTask?: (boardId: string, task: any) => void;
+  activeBoardId?: string | null;
+  activeView?: string;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreateTask = () => { } }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreateTask = () => { }, activeBoardId, activeView }) => {
   const { theme, toggleTheme, language, toggleLanguage, t } = useAppContext();
   // const { user, logout } = useAuth();
   const { user } = useUser();
@@ -56,8 +60,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const quickNotesRef = useRef<HTMLDivElement>(null);
 
+  // GTD Quick Capture state
+  const [isGTDCaptureOpen, setIsGTDCaptureOpen] = useState(false);
+  const gtdCaptureRef = useRef<HTMLDivElement>(null);
+  const { inboxCount } = useGTDCapture();
+
   // Live Session modal state
   const [isLiveSessionOpen, setIsLiveSessionOpen] = useState(false);
+
 
   // Search results
   const searchResults = React.useMemo(() => {
@@ -117,6 +127,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       }
       if (quickNotesRef.current && !quickNotesRef.current.contains(event.target as Node)) {
         setIsQuickNotesOpen(false);
+      }
+      if (gtdCaptureRef.current && !gtdCaptureRef.current.contains(event.target as Node)) {
+        setIsGTDCaptureOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -248,7 +261,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
         </div>
 
         {/* Center: Search Bar */}
-        <div ref={searchRef} className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md hidden md:block z-10">
+        <div ref={searchRef} className={`absolute top-1/2 transform -translate-y-1/2 hidden md:block z-10 transition-all duration-300 ${isSessionActive ? 'left-[40%] -translate-x-1/2 w-full max-w-[200px]' : 'left-1/2 -translate-x-1/2 w-full max-w-xs'}`}>
           <div className="relative w-full group">
             <MagnifyingGlass className="absolute ms-3 top-2 text-gray-400 dark:text-monday-dark-text-secondary group-focus-within:text-monday-blue transition-colors" size={16} weight="light" />
             <input
@@ -355,18 +368,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           <button
             onClick={() => setIsLiveSessionOpen(true)}
             title={t('live_session') || 'Live Session'}
-            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+            className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${isLiveSessionOpen ? 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
           >
-            <VideoCamera size={21} weight="light" />
+            <VideoCamera size={21} weight={isLiveSessionOpen ? 'duotone' : 'light'} />
           </button>
 
           {/* Arcade Button */}
           <button
             onClick={() => onNavigate('arcade')}
             title="Arcade"
-            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+            className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${activeView === 'arcade' ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-500 dark:text-pink-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
           >
-            <GameController size={21} weight="light" />
+            <GameController size={21} weight={activeView === 'arcade' ? 'duotone' : 'light'} />
           </button>
 
           <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>
@@ -375,27 +388,27 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           <button
             onClick={() => onNavigate('my_work')}
             title={t('my_work')}
-            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+            className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${activeView === 'my_work' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
           >
-            <SquaresFour size={21} weight="light" />
+            <SquaresFour size={21} weight={activeView === 'my_work' ? 'duotone' : 'light'} />
           </button>
 
           {/* Talk */}
           <button
             onClick={() => onNavigate('talk')}
             title={t('talk')}
-            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+            className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${activeView === 'talk' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
           >
-            <ChatCircleText size={21} weight="light" />
+            <ChatCircleText size={21} weight={activeView === 'talk' ? 'duotone' : 'light'} />
           </button>
 
           {/* Vault */}
           <button
             onClick={() => onNavigate('vault')}
             title={t('vault')}
-            className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center"
+            className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${activeView === 'vault' ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-500 dark:text-violet-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
           >
-            <Lock size={21} weight="light" />
+            <Lock size={21} weight={activeView === 'vault' ? 'duotone' : 'light'} />
           </button>
 
           <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>
@@ -403,9 +416,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           <div className="relative" ref={notificationRef}>
             <button
               onClick={handleToggleNotifications}
-              className="text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text relative transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover"
+              className={`relative transition-colors p-1.5 rounded ${isNotificationOpen ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
             >
-              <Bell size={21} weight="light" />
+              <Bell size={21} weight={isNotificationOpen ? 'duotone' : 'light'} />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-white dark:border-monday-dark-surface flex items-center justify-center text-[10px] font-bold text-white px-1">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -429,9 +442,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             <button
               onClick={() => setIsQuickNotesOpen(!isQuickNotesOpen)}
               title={t('quick_notes')}
-              className={`text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center ${isQuickNotesOpen ? 'bg-gray-100 dark:bg-monday-dark-hover text-[#323338] dark:text-monday-dark-text' : ''}`}
+              className={`transition-colors p-1.5 rounded w-8 h-8 flex items-center justify-center ${isQuickNotesOpen ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400' : 'text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text hover:bg-gray-100 dark:hover:bg-monday-dark-hover'}`}
             >
-              <Note size={21} weight="light" />
+              <Note size={21} weight={isQuickNotesOpen ? 'duotone' : 'light'} />
             </button>
             <QuickNotesPanel
               isOpen={isQuickNotesOpen}
@@ -439,13 +452,41 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             />
           </div>
 
-          {/* AI Credits Display */}
-          <AICreditsDisplay showMode={true} />
+          {/* GTD Quick Capture */}
+          <div className="relative" ref={gtdCaptureRef}>
+            <button
+              onClick={() => setIsGTDCaptureOpen(!isGTDCaptureOpen)}
+              title={t('quick_capture') || 'Quick Capture (GTD)'}
+              className={`text-gray-500 dark:text-monday-dark-text-secondary hover:text-[#323338] dark:hover:text-monday-dark-text transition-colors p-1.5 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover w-8 h-8 flex items-center justify-center relative ${isGTDCaptureOpen ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : ''}`}
+            >
+              <ListChecks size={21} weight={isGTDCaptureOpen ? 'duotone' : 'light'} />
+              {inboxCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-yellow-500 rounded-full border-2 border-white dark:border-monday-dark-surface flex items-center justify-center text-[9px] font-bold text-white px-0.5">
+                  {inboxCount > 9 ? '9+' : inboxCount}
+                </span>
+              )}
+            </button>
+            <GTDQuickCapturePanel
+              isOpen={isGTDCaptureOpen}
+              onClose={() => setIsGTDCaptureOpen(false)}
+              boards={boards}
+              activeBoardId={activeBoardId}
+              onNavigateToBoard={(boardId, view) => {
+                // Set view in localStorage before navigating so BoardView loads with GTD view
+                localStorage.setItem(`board-active-view-${boardId}`, view);
+                // Navigate to board
+                onNavigate('board', boardId);
+              }}
+            />
+          </div>
 
           {/* NABD AI Assistant */}
           <div className="relative">
             <NabdSmartBar boards={boards} onCreateTask={onCreateTask} onNavigate={onNavigate} />
           </div>
+
+          {/* AI Credits Display with Brain */}
+          <AICreditsDisplay showMode={true} />
 
           <div className="w-px h-5 bg-gray-300 dark:bg-monday-dark-border mx-2 hidden md:block"></div>
 
@@ -534,6 +575,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
           </Suspense>
         </div>
       )}
+
     </>
   );
 };
