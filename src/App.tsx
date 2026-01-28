@@ -12,7 +12,7 @@ import { AIProvider, useAI } from './contexts/AIContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
-import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage } from './utils/storage';
+import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage, getStorageItem, getStorageString, setStorageItem, setStorageString } from './utils/storage';
 import { appLogger, boardLogger } from './utils/logger';
 import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
 import { API_URL } from './config/api';
@@ -296,20 +296,19 @@ const AppContent: React.FC = () => {
     }
     // On root URL ('/'), check localStorage but don't restore 'board' view
     // because there's no board ID in the URL - go to dashboard instead
-    const saved = localStorage.getItem('app-active-view');
+    const saved = getStorageString('app-active-view', '');
     if (saved === 'board') {
       return 'dashboard';
     }
     return saved || 'dashboard';
   });
 
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
-    const saved = localStorage.getItem('app-workspaces');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => {
-    return localStorage.getItem('app-active-workspace') || '';
-  });
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() =>
+    getStorageItem<Workspace[]>('app-workspaces', [])
+  );
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() =>
+    getStorageString('app-active-workspace', '')
+  );
 
   // Fetch Workspaces from API
   useEffect(() => {
@@ -364,25 +363,22 @@ const AppContent: React.FC = () => {
   }, [isSignedIn, getToken]); // Only runs once on sign-in
 
   // Switch to standard state, fetched from API OR local storage
-  const [boards, setBoards] = useState<Board[]>(() => {
-    const saved = localStorage.getItem('app-boards');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [boards, setBoards] = useState<Board[]>(() =>
+    getStorageItem<Board[]>('app-boards', [])
+  );
 
   // Track if we're still loading boards from API
   const [isBoardsLoading, setIsBoardsLoading] = useState(true);
 
   // Track boards that haven't been synced to server yet
-  const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('app-unsynced-boards');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
+  const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(() =>
+    new Set(getStorageItem<string[]>('app-unsynced-boards', []))
+  );
 
   // Track boards that have been deleted locally but might still be on server
-  const [deletedBoardIds, setDeletedBoardIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('app-deleted-boards');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
+  const [deletedBoardIds, setDeletedBoardIds] = useState<Set<string>>(() =>
+    new Set(getStorageItem<string[]>('app-deleted-boards', []))
+  );
 
   // Track visited department pages for lazy keep-alive (only mount once visited)
   const [visitedDeptPages, setVisitedDeptPages] = useState<Set<string>>(() => new Set());
@@ -602,8 +598,8 @@ const AppContent: React.FC = () => {
 
   const lastLoggedUpdate = React.useRef<string>('');
   const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem('app-sidebar-width');
-    return saved ? parseInt(saved, 10) : 260;
+    const saved = getStorageString('app-sidebar-width', '260');
+    return parseInt(saved, 10) || 260;
   });
   // isSidebarCollapsed state moved to UIContext
 
@@ -627,10 +623,9 @@ const AppContent: React.FC = () => {
     return boards.filter(b => b.workspaceId === activeWorkspaceId);
   }, [boards, activeWorkspaceId]);
 
-  const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('app-page-visibility');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() =>
+    getStorageItem<Record<string, boolean>>('app-page-visibility', {})
+  );
 
   // Admin and Feature Flags state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -726,21 +721,20 @@ const AppContent: React.FC = () => {
     return combined;
   }, [pageVisibility, normalizedServerFlags, isAdmin, isPermissionsLoaded]);
 
-  const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() => {
-    const saved = localStorage.getItem('app-recently-visited');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() =>
+    getStorageItem<RecentlyVisitedItem[]>('app-recently-visited', [])
+  );
 
   // --- Persistence Effects ---
 
   useEffect(() => {
-    localStorage.setItem('app-sidebar-width', sidebarWidth.toString());
+    setStorageString('app-sidebar-width', sidebarWidth.toString());
   }, [sidebarWidth]);
 
   // Sidebar persistence handled in UIContext
 
   useEffect(() => {
-    localStorage.setItem('app-active-view', activeView);
+    setStorageString('app-active-view', activeView);
   }, [activeView]);
 
   // Set AI page context when view changes
@@ -779,7 +773,7 @@ const AppContent: React.FC = () => {
   }, [activeView]);
 
   useEffect(() => {
-    localStorage.setItem('app-workspaces', JSON.stringify(workspaces));
+    setStorageItem('app-workspaces', workspaces);
   }, [workspaces]);
 
   // Boards persistence - immediate for additions/deletions, short debounce for modifications
@@ -792,7 +786,7 @@ const AppContent: React.FC = () => {
     // Immediate update for additions or deletions (count changed)
     // This prevents boards from disappearing on quick navigation
     if (currentLength !== prevLength) {
-      localStorage.setItem('app-boards', JSON.stringify(boards));
+      setStorageItem('app-boards', boards);
       boardLogger.info('[Boards Persistence] Immediate save after count change', {
         before: prevLength,
         after: currentLength,
@@ -803,7 +797,7 @@ const AppContent: React.FC = () => {
 
     // Very short debounce (50ms) for modifications only - prevents rapid writes
     const timeoutId = setTimeout(() => {
-      localStorage.setItem('app-boards', JSON.stringify(boards));
+      setStorageItem('app-boards', boards);
     }, 50);
     return () => clearTimeout(timeoutId);
   }, [boards]);
@@ -811,28 +805,28 @@ const AppContent: React.FC = () => {
   // Save boards before page unload to prevent data loss
   useEffect(() => {
     const handleBeforeUnload = () => {
-      localStorage.setItem('app-boards', JSON.stringify(boards));
+      setStorageItem('app-boards', boards);
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [boards]);
 
   useEffect(() => {
-    localStorage.setItem('app-active-workspace', activeWorkspaceId);
+    setStorageString('app-active-workspace', activeWorkspaceId);
   }, [activeWorkspaceId]);
 
   useEffect(() => {
     if (activeBoardId) {
-      localStorage.setItem('app-active-board', activeBoardId);
+      setStorageString('app-active-board', activeBoardId);
     }
   }, [activeBoardId]);
 
   useEffect(() => {
-    localStorage.setItem('app-page-visibility', JSON.stringify(pageVisibility));
+    setStorageItem('app-page-visibility', pageVisibility);
   }, [pageVisibility]);
 
   useEffect(() => {
-    localStorage.setItem('app-recently-visited', JSON.stringify(recentlyVisited));
+    setStorageItem('app-recently-visited', recentlyVisited);
   }, [recentlyVisited]);
 
   const logActivity = React.useCallback(async (type: string, content: string, metadata?: Record<string, unknown>, specificWorkspaceId?: string, specificBoardId?: string) => {

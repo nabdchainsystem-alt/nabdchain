@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { usePopupPosition } from '../../hooks/usePopupPosition';
 import { ArrowsLeftRight, MagnifyingGlass } from 'phosphor-react';
 
 const CURRENCIES = [
@@ -61,7 +60,41 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
     const [search, setSearch] = useState('');
     const [showCurrencyList, setShowCurrencyList] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const positionStyle = usePopupPosition({ triggerRect, menuHeight: 380, menuWidth: 320 });
+
+    const MENU_WIDTH = 320;
+    const MENU_HEIGHT = 380;
+
+    const positionStyle = useMemo(() => {
+        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        // Calculate left position - if popup would overflow right, position from right edge
+        let left = triggerRect.left;
+        if (left + MENU_WIDTH > windowWidth - 10) {
+            left = windowWidth - MENU_WIDTH - 10;
+        }
+        if (left < 10) left = 10;
+
+        // Calculate top position
+        const spaceBelow = windowHeight - triggerRect.bottom;
+        const openUp = spaceBelow < MENU_HEIGHT && triggerRect.top > MENU_HEIGHT;
+
+        if (openUp) {
+            return {
+                position: 'fixed' as const,
+                bottom: windowHeight - triggerRect.top + 4,
+                left,
+            };
+        }
+
+        return {
+            position: 'fixed' as const,
+            top: triggerRect.bottom + 4,
+            left,
+        };
+    }, [triggerRect]);
 
     const numericValue = parseFloat(amount) || 0;
 
@@ -108,7 +141,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 w-[320px]"
+                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 w-[320px] max-w-[calc(100vw-20px)]"
                 style={positionStyle}
             >
                 {/* Header */}
@@ -229,25 +262,27 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 p-3 border-t border-stone-100 dark:border-stone-800">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                    >
-                        Save {baseCurrency.symbol}
-                    </button>
+                <div className="flex flex-col gap-2 p-3 border-t border-stone-100 dark:border-stone-800">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 px-3 py-2 text-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors whitespace-nowrap"
+                        >
+                            Save {baseCurrency.code}
+                        </button>
+                    </div>
                     {numericValue > 0 && targetCurrency.code !== baseCurrency.code && (
                         <button
                             onClick={handleApplyConverted}
-                            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+                            className="w-full px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
                         >
-                            Use {targetCurrency.symbol}
+                            Use {targetCurrency.code} ({targetCurrency.symbol} {convertedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })})
                         </button>
                     )}
                 </div>

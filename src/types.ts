@@ -6,7 +6,7 @@ export enum StatusColor {
   EMPTY = '#aeaeae'
 }
 
-export type PriorityLevel = 'High' | 'Medium' | 'Low';
+export type PriorityLevel = 'Urgent' | 'High' | 'Medium' | 'Low';
 
 // Common task statuses - can be extended
 export type TaskStatus =

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAppContext } from '../../../contexts/AppContext';
+import { getStorageItem, setStorageItem } from '../../../utils/storage';
 
 import {
     TextT as Type,
@@ -35,8 +36,6 @@ import {
     FloppyDisk,
     Check
 } from 'phosphor-react';
-
-const DROPDOWN_PRESETS_KEY = 'nabd-dropdown-presets';
 
 interface DropdownPreset {
     id: string;
@@ -144,12 +143,9 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     // Preset state
     const [showPresets, setShowPresets] = useState(false);
     const [presetName, setPresetName] = useState('');
-    const [presets, setPresets] = useState<DropdownPreset[]>(() => {
-        try {
-            const saved = localStorage.getItem(DROPDOWN_PRESETS_KEY);
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+    const [presets, setPresets] = useState<DropdownPreset[]>(() =>
+        getStorageItem<DropdownPreset[]>('nabd-dropdown-presets', [])
+    );
     // Track if user has customized options (to avoid overwriting their changes)
     const userCustomizedRef = React.useRef(false);
 
@@ -260,11 +256,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         };
         const updatedPresets = [...presets, newPreset];
         setPresets(updatedPresets);
-        try {
-            localStorage.setItem(DROPDOWN_PRESETS_KEY, JSON.stringify(updatedPresets));
-        } catch (e) {
-            console.error('Failed to save presets - storage may be full', e);
-        }
+        setStorageItem('nabd-dropdown-presets', updatedPresets);
         setPresetName('');
         // Show success feedback
         setSaveSuccess(true);
@@ -281,11 +273,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         e.stopPropagation();
         const updatedPresets = presets.filter(p => p.id !== presetId);
         setPresets(updatedPresets);
-        try {
-            localStorage.setItem(DROPDOWN_PRESETS_KEY, JSON.stringify(updatedPresets));
-        } catch (e) {
-            console.error('Failed to save presets - storage may be full', e);
-        }
+        setStorageItem('nabd-dropdown-presets', updatedPresets);
     };
 
     const handleCreateCurrency = () => {

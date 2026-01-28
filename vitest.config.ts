@@ -45,13 +45,9 @@ export default defineConfig({
         // Timeout
         testTimeout: 10000,
 
-        // Pool options
-        pool: 'threads',
-        poolOptions: {
-            threads: {
-                singleThread: true,
-            },
-        },
+        // Use single-threaded for consistent test execution
+        pool: 'forks',
+        isolate: true,
     },
     resolve: {
         alias: {

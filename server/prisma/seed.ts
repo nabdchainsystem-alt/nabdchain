@@ -32,8 +32,7 @@ async function main() {
             email: 'master@nabd.com',
             name: 'Master Admin',
             avatarUrl: 'https://ui-avatars.com/api/?name=Master+Admin&background=0D8ABC&color=fff',
-            workspaceId: 'w1', // Set default workspace
-            role: 'admin', // Set admin role
+            role: 'admin',
             workspace: {
                 connectOrCreate: {
                     where: { id: 'w1' },
@@ -63,10 +62,9 @@ async function main() {
             email: 'master@nabdchain.com',
             name: 'Developer Admin',
             avatarUrl: 'https://ui-avatars.com/api/?name=Developer+Admin&background=000&color=fff',
-            workspaceId: 'w1', // Set default workspace
-            role: 'admin', // Set admin role
+            role: 'admin',
             workspace: {
-                connect: { id: 'w1' } // Join existing main workspace
+                connect: { id: 'w1' }
             }
         }
     });
@@ -84,7 +82,6 @@ async function main() {
             email: 'user@gmail.com',
             name: 'Google User',
             avatarUrl: 'https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff',
-            workspaceId: 'w1',
             workspace: {
                 connect: { id: 'w1' }
             }
@@ -104,7 +101,6 @@ async function main() {
             email: 'sam@nabdchain.com',
             name: 'Sam',
             avatarUrl: 'https://ui-avatars.com/api/?name=Sam&background=6366F1&color=fff',
-            workspaceId: 'w1',
             workspace: {
                 connect: { id: 'w1' }
             }

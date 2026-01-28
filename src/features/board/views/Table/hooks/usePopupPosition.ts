@@ -12,7 +12,6 @@ interface PopupPositionStyle {
     top?: number;
     bottom?: number;
     left?: number;
-    right?: number;
     maxHeight?: number;
     display?: string;
 }
@@ -50,36 +49,19 @@ function calculatePosition(
     const spaceBelow = windowHeight - triggerRect.bottom;
     const spaceAbove = triggerRect.top;
 
-    // Check if menu would overflow on the right when positioned at trigger's left edge
-    const wouldOverflowRight = triggerRect.left + menuWidth > windowWidth - 10;
-
     // Determine vertical position
     const openUp = spaceBelow < menuHeight && spaceAbove > menuHeight;
 
-    // Calculate horizontal position
-    let left: number | undefined;
-    let right: number | undefined;
-
-    if (wouldOverflowRight) {
-        // Position from the right - align popup's right edge with trigger's right edge
-        // But ensure it doesn't go off the left side
-        const rightOffset = windowWidth - triggerRect.right;
-        if (rightOffset + menuWidth > windowWidth - 10) {
-            // Menu would overflow left, just position from right edge of window
-            right = 10;
-        } else {
-            right = rightOffset;
-        }
-    } else {
-        left = triggerRect.left;
-    }
+    // Calculate horizontal position - clamp to keep popup within viewport
+    const minLeft = 10;
+    const maxLeft = windowWidth - menuWidth - 10;
+    const left = Math.max(minLeft, Math.min(triggerRect.left, maxLeft));
 
     if (openUp) {
         return {
             position: 'fixed',
             bottom: windowHeight - triggerRect.top + offset,
             left,
-            right,
             maxHeight: spaceAbove - 10
         };
     }
@@ -88,7 +70,6 @@ function calculatePosition(
         position: 'fixed',
         top: triggerRect.bottom + offset,
         left,
-        right,
         maxHeight: spaceBelow - 10
     };
 }

@@ -240,12 +240,12 @@ export const Avatar = memo(AvatarInner);
 // Skeleton Components
 // ============================================================================
 
-interface SkeletonProps {
+type SkeletonProps = {
     className?: string;
     width?: number | string;
     height?: number | string;
     rounded?: 'none' | 'sm' | 'md' | 'lg' | 'full';
-}
+} & React.HTMLAttributes<HTMLDivElement>;
 
 const roundedMap = {
     none: '',

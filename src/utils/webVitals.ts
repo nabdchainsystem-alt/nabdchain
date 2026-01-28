@@ -252,7 +252,7 @@ export function observeINP(callback?: MetricCallback): void {
     const interactions: number[] = [];
 
     const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as PerformanceEventTiming[]) {
+        for (const entry of list.getEntries() as (PerformanceEventTiming & { interactionId?: number })[]) {
             if (entry.interactionId) {
                 const duration = entry.duration;
                 interactions.push(duration);

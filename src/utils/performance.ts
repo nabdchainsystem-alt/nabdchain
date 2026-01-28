@@ -108,7 +108,7 @@ export function requestIdleCallbackFallback(
         return (window as Window & { requestIdleCallback: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number }).requestIdleCallback(callback, options);
     }
     // Fallback for Safari and older browsers
-    return window.setTimeout(callback, options.timeout ?? 1) as unknown as number;
+    return setTimeout(callback, options.timeout ?? 1) as unknown as number;
 }
 
 /**
@@ -118,7 +118,7 @@ export function cancelIdleCallbackFallback(id: number): void {
     if ('cancelIdleCallback' in window) {
         (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
     } else {
-        window.clearTimeout(id);
+        clearTimeout(id);
     }
 }
 
@@ -220,15 +220,15 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 /**
  * Create a memoized function that caches the last result
  */
-export function memoizeOne<T extends (...args: Parameters<T>) => ReturnType<T>>(
-    fn: T,
-    isEqual: (a: Parameters<T>, b: Parameters<T>) => boolean = (a, b) =>
+export function memoizeOne<TArgs extends unknown[], TResult>(
+    fn: (...args: TArgs) => TResult,
+    isEqual: (a: TArgs, b: TArgs) => boolean = (a, b) =>
         a.length === b.length && a.every((arg, i) => arg === b[i])
-): T {
-    let lastArgs: Parameters<T> | null = null;
-    let lastResult: ReturnType<T>;
+): (...args: TArgs) => TResult {
+    let lastArgs: TArgs | null = null;
+    let lastResult: TResult;
 
-    return function (this: unknown, ...args: Parameters<T>): ReturnType<T> {
+    return function (this: unknown, ...args: TArgs): TResult {
         if (lastArgs && isEqual(args, lastArgs)) {
             return lastResult;
         }
@@ -236,7 +236,7 @@ export function memoizeOne<T extends (...args: Parameters<T>) => ReturnType<T>>(
         lastResult = fn.apply(this, args);
         lastArgs = args;
         return lastResult;
-    } as T;
+    };
 }
 
 /**
@@ -540,5 +540,5 @@ export function getOptimalDuration(baseDuration: number): number {
     return prefersReducedMotion() ? 0 : baseDuration;
 }
 
-// Re-export for convenience
-export { FixedSizeList, VariableSizeList } from 'react-window';
+// Note: react-window types may not match the actual exports in v2.x
+// Import directly from 'react-window' if needed

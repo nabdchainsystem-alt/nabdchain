@@ -32,10 +32,10 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay - Delay in milliseconds
  * @returns A debounced callback
  */
-export function useDebouncedCallback<T extends (...args: Parameters<T>) => ReturnType<T>>(
-    callback: T,
+export function useDebouncedCallback<TArgs extends unknown[], TResult>(
+    callback: (...args: TArgs) => TResult,
     delay: number
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
     const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
     const callbackRef = useRef(callback);
 
@@ -54,7 +54,7 @@ export function useDebouncedCallback<T extends (...args: Parameters<T>) => Retur
     }, []);
 
     return useCallback(
-        (...args: Parameters<T>) => {
+        (...args: TArgs) => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
@@ -73,13 +73,13 @@ export function useDebouncedCallback<T extends (...args: Parameters<T>) => Retur
  * @param delay - Minimum time between calls in milliseconds
  * @returns A throttled callback
  */
-export function useThrottledCallback<T extends (...args: Parameters<T>) => ReturnType<T>>(
-    callback: T,
+export function useThrottledCallback<TArgs extends unknown[], TResult>(
+    callback: (...args: TArgs) => TResult,
     delay: number
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
     const lastCallRef = useRef<number>(0);
     const callbackRef = useRef(callback);
-    const pendingArgsRef = useRef<Parameters<T> | null>(null);
+    const pendingArgsRef = useRef<TArgs | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
     useEffect(() => {
@@ -95,7 +95,7 @@ export function useThrottledCallback<T extends (...args: Parameters<T>) => Retur
     }, []);
 
     return useCallback(
-        (...args: Parameters<T>) => {
+        (...args: TArgs) => {
             const now = Date.now();
             const timeSinceLastCall = now - lastCallRef.current;
 

@@ -771,7 +771,7 @@ export function AIProvider({ children }: AIProviderProps) {
             return {
                 totalRequests: 0,
                 totalCreditsUsed: 0,
-                byTier: { cleaner: 0, worker: 0, thinker: 0 },
+                byTier: { cleaner: 0, assistant: 0, worker: 0, analyst: 0, thinker: 0 },
                 byType: {},
                 successRate: 0,
             };

@@ -3,8 +3,16 @@
  * Use for any list with 50+ items to maintain 60fps scrolling
  */
 import React, { useCallback, useRef, useMemo, memo } from 'react';
-import { FixedSizeList, VariableSizeList, ListChildComponentProps, areEqual } from 'react-window';
-import AutoSizer from './AutoSizer';
+// @ts-expect-error - react-window types are incomplete in @types/react-window v2
+import { FixedSizeList, VariableSizeList, areEqual } from 'react-window';
+
+// Type definitions for react-window (incomplete in @types/react-window)
+interface ListChildComponentProps<T = unknown> {
+    index: number;
+    style: React.CSSProperties;
+    data: T;
+    isScrolling?: boolean;
+}
 
 // ============================================================================
 // Types

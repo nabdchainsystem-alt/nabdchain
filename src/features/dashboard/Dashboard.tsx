@@ -405,13 +405,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ onBoardCreated, recen
                   // Handle both 'person' and 'people' field names (RoomTable uses 'people')
                   const personData = row.person || row.people || '';
                   allTasksForBoard.push({
+                    ...row,
                     id: row.id,
                     name: row.name || row.title || '',
                     person: personData,
                     status: row.status || '',
                     date: row.date || row.dueDate || '',
-                    priority: row.priority || null,
-                    ...row
+                    priority: normalizePriority(row.priority),
                   });
                 });
               }
