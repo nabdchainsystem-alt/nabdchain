@@ -814,6 +814,7 @@ export default React.memo(function Lists({ roomId, viewId, tasks: externalTasks,
             title: t.title,
             status: t.status,
             statusId: t.status,
+            groupId: t.status, // CRITICAL: Include groupId to prevent task orphaning when syncing between views
             assignees: t.assignees,
             dueDate: t.dueDate,
             startDate: t.startDate,

@@ -16,7 +16,7 @@ interface TableRowContentProps {
     renderCellContent: (col: Column, row: Row) => React.ReactNode;
 }
 
-export const TableRowContent: React.FC<TableRowContentProps> = ({
+export const TableRowContent: React.FC<TableRowContentProps> = React.memo(({
     row,
     dragListeners,
     isOverlay = false,
@@ -104,4 +104,6 @@ export const TableRowContent: React.FC<TableRowContentProps> = ({
             </div>
         </>
     );
-};
+});
+
+TableRowContent.displayName = 'TableRowContent';

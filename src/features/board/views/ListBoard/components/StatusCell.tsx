@@ -16,7 +16,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ status, options, onClick
   const getStatusColor = (currentStatus: Status) => {
     // Try to find by ID first, then Label
     const option = options.find(o => o.id === currentStatus || o.label === currentStatus);
-    return option ? option.color : 'bg-[#c4c4c4]'; // Default gray
+    return option ? option.color : 'bg-[#aeaeae]'; // Default gray (10% darker)
   };
 
   // Check if current status is "set" (not empty string/null)
@@ -63,7 +63,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({ status, options, onClick
       {isOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-start" onClick={() => setIsOpen(false)}>
           <div
-            className="fixed z-50 bg-white shadow-xl rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 animate-in fade-in zoom-in-95 duration-100"
+            className="fixed z-50 bg-white shadow-xl rounded-lg p-2 flex flex-col gap-2 w-48 border border-gray-200 menu-enter"
             style={{
               top: coords.top + 4,
               left: coords.left + (coords.width / 2) - 96

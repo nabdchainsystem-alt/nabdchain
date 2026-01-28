@@ -53,9 +53,9 @@ const mapColumns = (cols: string[]): TemplateColumn[] => {
 
 // Default groups since user JSON didn't provide them, but items use them.
 const DEFAULT_GROUPS: TemplateGroup[] = [
-    { id: 'To Do', title: 'To Do', color: '#c4c4c4' },
-    { id: 'In Progress', title: 'In Progress', color: '#fdab3d' },
-    { id: 'Done', title: 'Done', color: '#00c875' }
+    { id: 'To Do', title: 'To Do', color: '#aeaeae' },
+    { id: 'In Progress', title: 'In Progress', color: '#e59935' },
+    { id: 'Done', title: 'Done', color: '#00b369' }
 ];
 
 export const BOARD_TEMPLATES: BoardTemplate[] = [

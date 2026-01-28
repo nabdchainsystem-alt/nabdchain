@@ -157,7 +157,7 @@ const DraggableTask: React.FC<{ task: ITask; onClick: (e: React.MouseEvent) => v
         touchAction: 'none' as const
     };
 
-    const dotColor = STATUS_COLORS[task.status] || '#c4c4c4';
+    const dotColor = STATUS_COLORS[task.status] || '#aeaeae';
 
     return (
         <div

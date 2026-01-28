@@ -10,7 +10,7 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'To Do',
             title: 'To Do',
-            color: '#c4c4c4',
+            color: '#aeaeae',
             tasks: [],
             columns: [],
             isPinned: false
@@ -18,7 +18,7 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'In Progress',
             title: 'In Progress',
-            color: '#fdab3d',
+            color: '#e59935',
             tasks: [],
             columns: [],
             isPinned: false
@@ -26,7 +26,7 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'Stuck',
             title: 'Stuck',
-            color: '#f97316',
+            color: '#dd6b20',
             tasks: [],
             columns: [],
             isPinned: false
@@ -34,7 +34,7 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'Done',
             title: 'Done',
-            color: '#00c875',
+            color: '#00b369',
             tasks: [],
             columns: [],
             isPinned: false
@@ -42,7 +42,7 @@ const INITIAL_BOARD: IBoard = {
         {
             id: 'Rejected',
             title: 'Rejected',
-            color: '#333333',
+            color: '#2d2d2d',
             tasks: [],
             columns: [],
             isPinned: false
@@ -325,6 +325,11 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
 
     // Task Actions
     const addTask = useCallback((groupId: string, name: string = 'New Task', defaults?: Partial<ITask>) => {
+        // Filter out undefined id from defaults to prevent overwriting the generated UUID
+        const safeDefaults = defaults ? Object.fromEntries(
+            Object.entries(defaults).filter(([key, value]) => key !== 'id' || value !== undefined)
+        ) : {};
+
         setBoard(prev => ({
             ...prev,
             groups: prev.groups.map(g => {
@@ -340,7 +345,7 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                             dueDate: '',
                             textValues: {},
                             selected: false,
-                            ...defaults
+                            ...safeDefaults
                         }, ...g.tasks]
                     };
                 }

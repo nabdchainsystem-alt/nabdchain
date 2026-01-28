@@ -123,7 +123,7 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
         <div
             ref={menuRef}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-[9999] w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1"
+            className="fixed z-[9999] w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden menu-enter flex flex-col py-1"
             style={menuStyle}
         >
             {/* Sort Options */}

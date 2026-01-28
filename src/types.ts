@@ -1,9 +1,9 @@
 
 export enum StatusColor {
-  DONE = '#00c875',
-  WORKING = '#fdab3d',
-  STUCK = '#e2445c',
-  EMPTY = '#c4c4c4'
+  DONE = '#00b369',
+  WORKING = '#e59935',
+  STUCK = '#cb3d52',
+  EMPTY = '#aeaeae'
 }
 
 export type PriorityLevel = 'High' | 'Medium' | 'Low';

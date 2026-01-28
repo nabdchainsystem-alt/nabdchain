@@ -144,7 +144,7 @@ const normalizeStatusValue = (value: string): string => {
     return value;
 };
 
-export const TableCell: React.FC<TableCellProps> = ({
+export const TableCell: React.FC<TableCellProps> = React.memo(({
     col,
     row,
     columns,
@@ -282,11 +282,10 @@ export const TableCell: React.FC<TableCellProps> = ({
                         autoFocus
                         onBlur={() => onSetActiveCell(null)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' || e.key === 'Escape') {
                                 e.preventDefault();
-                                onNavigateToNextCell(row.id, col.id);
+                                onSetActiveCell(null);
                             }
-                            if (e.key === 'Escape') onSetActiveCell(null);
                         }}
                         value={value || ''}
                         onChange={(e) => onUpdateRow(row.id, { [col.id]: e.target.value }, row.groupId)}
@@ -717,9 +716,9 @@ export const TableCell: React.FC<TableCellProps> = ({
                 placeholder={placeholder}
                 onChange={(e) => onTextChange(row.id, col.id, e.target.value, row.groupId)}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || e.key === 'Escape') {
                         e.preventDefault();
-                        onNavigateToNextCell(row.id, col.id, row.groupId);
+                        onSetActiveCell(null);
                     }
                 }}
                 onContextMenu={(e) => {
@@ -735,6 +734,8 @@ export const TableCell: React.FC<TableCellProps> = ({
             />
         </div>
     );
-};
+});
+
+TableCell.displayName = 'TableCell';
 
 export default TableCell;

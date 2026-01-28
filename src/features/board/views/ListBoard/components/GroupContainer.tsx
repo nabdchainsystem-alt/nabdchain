@@ -226,14 +226,14 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
 
               {/* Status Summary - No vertical borders */}
               <div className="bg-white px-2 py-2" style={{ width: colWidths.status }}>
-                <div className="w-full h-full flex rounded overflow-hidden bg-[#c4c4c4]">
+                <div className="w-full h-full flex rounded overflow-hidden bg-[#aeaeae]">
                   {statusOptions.map(option => {
                     // Match by ID or Label
                     const count = statusCounts[option.id] || statusCounts[option.label] || 0;
                     if (count === 0) return null;
                     const width = (count / total) * 100;
                     // Handle hex color or fallback
-                    const color = option.color.startsWith('#') ? option.color : '#c4c4c4';
+                    const color = option.color.startsWith('#') ? option.color : '#aeaeae';
                     return (
                       <div
                         key={option.id}

@@ -56,7 +56,7 @@ interface TaskCardProps {
     statusColor: string;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
+const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, boardId, onDragStart, onUpdateTask, onDeleteTask, onDuplicateTask, reminders, onOpenReminder, statusColor }) => {
     const { t } = useAppContext();
     const [activeMenu, setActiveMenu] = useState<'none' | 'priority' | 'tags' | 'context' | 'date' | 'assignee'>('none');
     const [isRenaming, setIsRenaming] = useState(false);
@@ -104,10 +104,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
     return (
         <div
             draggable={!isRenaming}
-            // ... (omitting unchanged lines for brevity if possible, keeping context)
-            // But I need to replace the whole TaskCard block or targeted sections.
-            // Let's target the SECTION relevant to assignee.
-
             onDragStart={(e) => {
                 if (activeMenu !== 'none' || isRenaming) {
                     e.preventDefault();
@@ -349,7 +345,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, boardId, onDragStart, onUpdat
                 }></div>
         </div>
     );
-};
+});
+
+TaskCard.displayName = 'TaskCard';
 
 // --- Column Component ---
 
@@ -961,6 +959,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId, viewId, tasks: exter
                 name: t.title,
                 status: t.statusId,
                 statusId: t.statusId,
+                groupId: t.statusId, // CRITICAL: Include groupId to prevent task orphaning when syncing between views
                 dueDate: t.dueDate || null,
                 priority: t.priority === 'none' ? null : (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)),
                 personId: t.assignee, // Map back to personId

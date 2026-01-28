@@ -924,19 +924,19 @@ const AppContent: React.FC = () => {
         localStorage.setItem(v4ColsKey, JSON.stringify(mappedColumns));
         localStorage.setItem(`room-table-columns-v4-${newBoardId}-default`, JSON.stringify(mappedColumns));
 
-        // Save status groups - Use standard defaults
+        // Save status groups - Use standard defaults (10% darker)
         const defaultGroups = [
-          { id: 'To Do', label: 'To Do', color: '#c4c4c4' },
-          { id: 'In Progress', label: 'In Progress', color: '#fdab3d' },
-          { id: 'Stuck', label: 'Stuck', color: '#e2445c' },
-          { id: 'Done', label: 'Done', color: '#00c875' },
-          { id: 'Rejected', label: 'Rejected', color: '#333333' }
+          { id: 'To Do', label: 'To Do', color: '#aeaeae' },
+          { id: 'In Progress', label: 'In Progress', color: '#e59935' },
+          { id: 'Stuck', label: 'Stuck', color: '#cb3d52' },
+          { id: 'Done', label: 'Done', color: '#00b369' },
+          { id: 'Rejected', label: 'Rejected', color: '#2d2d2d' }
         ];
         // If template has specific groups use them, otherwise use defaults
         const statusGroups = (template.groups && template.groups.length > 1) ? template.groups.map(g => ({
           id: g.id,
           label: g.title,
-          color: g.color || '#c4c4c4'
+          color: g.color || '#aeaeae'
         })) : defaultGroups;
 
         localStorage.setItem(`board-statuses-${newBoardId}`, JSON.stringify(statusGroups));

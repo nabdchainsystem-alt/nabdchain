@@ -49,7 +49,7 @@ export const PriorityPicker: React.FC<PriorityPickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 min-w-[200px]"
+                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col menu-enter min-w-[200px]"
                 style={positionStyle}
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">

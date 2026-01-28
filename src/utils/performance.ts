@@ -310,5 +310,235 @@ export function getVirtualWindow(
     return { start, end, offsetY };
 }
 
+// ============================================================================
+// ANIMATION & SMOOTHNESS UTILITIES
+// For buttery-smooth interactions like Monday.com and ClickUp
+// ============================================================================
+
+/**
+ * RAF-based throttle - ensures callback only runs once per animation frame
+ * This is specifically optimized for smooth visual updates
+ */
+export function rafThrottle<T extends (...args: Parameters<T>) => ReturnType<T>>(
+    callback: T
+): (...args: Parameters<T>) => void {
+    let rafId: number | null = null;
+    let lastArgs: Parameters<T> | null = null;
+
+    return function (this: unknown, ...args: Parameters<T>) {
+        lastArgs = args;
+
+        if (rafId === null) {
+            rafId = requestAnimationFrame(() => {
+                if (lastArgs) {
+                    callback.apply(this, lastArgs);
+                }
+                rafId = null;
+            });
+        }
+    };
+}
+
+/**
+ * Cancel a RAF throttle
+ */
+export function cancelRafThrottle(throttledFn: ReturnType<typeof rafThrottle>): void {
+    // This is a no-op since we don't expose the rafId externally
+    // But useful for type compatibility
+}
+
+/**
+ * Smooth scroll to element or position with easing
+ */
+export function smoothScrollTo(
+    element: HTMLElement | Window,
+    target: number | HTMLElement,
+    duration = 300,
+    easing: 'ease-out' | 'ease-in-out' | 'spring' = 'ease-out'
+): Promise<void> {
+    return new Promise((resolve) => {
+        const isWindow = element === window;
+        const startPosition = isWindow
+            ? window.scrollY
+            : (element as HTMLElement).scrollTop;
+
+        const targetPosition = typeof target === 'number'
+            ? target
+            : target.offsetTop;
+
+        const distance = targetPosition - startPosition;
+        let startTime: number | null = null;
+
+        const easingFunctions = {
+            'ease-out': (t: number) => 1 - Math.pow(1 - t, 3),
+            'ease-in-out': (t: number) => t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2,
+            'spring': (t: number) => {
+                const c4 = (2 * Math.PI) / 3;
+                return t === 0 ? 0 : t === 1 ? 1
+                    : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+            }
+        };
+
+        const ease = easingFunctions[easing];
+
+        function animate(currentTime: number) {
+            if (startTime === null) startTime = currentTime;
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            const easeProgress = ease(progress);
+            const position = startPosition + distance * easeProgress;
+
+            if (isWindow) {
+                window.scrollTo(0, position);
+            } else {
+                (element as HTMLElement).scrollTop = position;
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                resolve();
+            }
+        }
+
+        requestAnimationFrame(animate);
+    });
+}
+
+/**
+ * Create a continuous animation loop that stops when cancelled
+ */
+export function createAnimationLoop(
+    callback: (deltaTime: number, totalTime: number) => boolean | void
+): { start: () => void; stop: () => void } {
+    let rafId: number | null = null;
+    let startTime: number | null = null;
+    let lastTime: number | null = null;
+
+    const loop = (currentTime: number) => {
+        if (startTime === null) startTime = currentTime;
+        if (lastTime === null) lastTime = currentTime;
+
+        const deltaTime = currentTime - lastTime;
+        const totalTime = currentTime - startTime;
+        lastTime = currentTime;
+
+        const shouldContinue = callback(deltaTime, totalTime);
+
+        if (shouldContinue !== false && rafId !== null) {
+            rafId = requestAnimationFrame(loop);
+        }
+    };
+
+    return {
+        start: () => {
+            if (rafId === null) {
+                startTime = null;
+                lastTime = null;
+                rafId = requestAnimationFrame(loop);
+            }
+        },
+        stop: () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+        }
+    };
+}
+
+/**
+ * Spring physics animation - for natural feeling motion
+ */
+export function springAnimation(
+    from: number,
+    to: number,
+    onUpdate: (value: number) => void,
+    options: {
+        stiffness?: number;  // Spring stiffness (default: 170)
+        damping?: number;    // Damping ratio (default: 26)
+        mass?: number;       // Mass (default: 1)
+        velocity?: number;   // Initial velocity (default: 0)
+    } = {}
+): { stop: () => void } {
+    const { stiffness = 170, damping = 26, mass = 1, velocity: initialVelocity = 0 } = options;
+
+    let position = from;
+    let velocity = initialVelocity;
+    let rafId: number | null = null;
+    let lastTime: number | null = null;
+
+    const step = (currentTime: number) => {
+        if (lastTime === null) lastTime = currentTime;
+
+        // Fixed timestep for stability
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.064);
+        lastTime = currentTime;
+
+        // Spring physics
+        const displacement = position - to;
+        const springForce = -stiffness * displacement;
+        const dampingForce = -damping * velocity;
+        const acceleration = (springForce + dampingForce) / mass;
+
+        velocity += acceleration * dt;
+        position += velocity * dt;
+
+        // Check if animation is complete (at rest)
+        const isAtRest = Math.abs(velocity) < 0.01 && Math.abs(position - to) < 0.01;
+
+        if (isAtRest) {
+            onUpdate(to);
+            rafId = null;
+        } else {
+            onUpdate(position);
+            rafId = requestAnimationFrame(step);
+        }
+    };
+
+    rafId = requestAnimationFrame(step);
+
+    return {
+        stop: () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+        }
+    };
+}
+
+/**
+ * Lerp (linear interpolation) with frame-rate independent smoothing
+ */
+export function smoothLerp(
+    current: number,
+    target: number,
+    smoothing: number,
+    deltaTime: number
+): number {
+    // Frame-rate independent smoothing
+    const t = 1 - Math.pow(1 - smoothing, deltaTime / 16.67);
+    return current + (target - current) * t;
+}
+
+/**
+ * Check if reduced motion is preferred
+ */
+export function prefersReducedMotion(): boolean {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Get optimal animation duration based on user preferences
+ */
+export function getOptimalDuration(baseDuration: number): number {
+    return prefersReducedMotion() ? 0 : baseDuration;
+}
+
 // Re-export for convenience
 export { FixedSizeList, VariableSizeList } from 'react-window';

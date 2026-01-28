@@ -46,11 +46,12 @@ export function useTableDragDrop(): UseTableDragDropReturn {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [activeColumnDragId, setActiveColumnDragId] = useState<string | null>(null);
 
-    // Configure sensors
+    // Configure sensors for smooth, responsive dragging
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8, // Require 8px movement before drag starts
+                // Lower distance for more responsive drag start
+                distance: 5,
             },
         }),
         useSensor(KeyboardSensor, {

@@ -48,7 +48,7 @@ const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
                 const mainGroup: GroupData = {
                     id: 'main-group',
                     title: 'Items',
-                    color: '#579bfc', // Monday-like blue
+                    color: '#4e8be3', // Monday-like blue (10% darker)
                     items: []
                 };
 
@@ -92,18 +92,18 @@ const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
                             return { id: s, label: s, color: color };
                         });
                     } else if (Array.isArray(parsed) && typeof parsed[0] === 'object') {
-                        // Standard shared format
+                        // Standard shared format (10% darker colors)
                         loadedOptions = parsed.map((s: any) => {
-                            let color = s.color || '#c4c4c4';
+                            let color = s.color || '#aeaeae';
                             // Normalize color names to Hex if not hex
                             if (!color.startsWith('#')) {
                                 const lower = color.toLowerCase();
-                                if (lower.includes('blue')) color = '#579bfc';
-                                else if (lower.includes('green') || lower.includes('emerald')) color = '#00c875';
-                                else if (lower.includes('red') || lower.includes('rose')) color = '#e2445c';
-                                else if (lower.includes('yellow') || lower.includes('orange') || lower.includes('amber')) color = '#fdab3d';
-                                else if (lower.includes('purple') || lower.includes('violet')) color = '#a855f7';
-                                else if (lower.includes('gray') || lower.includes('slate')) color = '#c4c4c4';
+                                if (lower.includes('blue')) color = '#4e8be3';
+                                else if (lower.includes('green') || lower.includes('emerald')) color = '#00b369';
+                                else if (lower.includes('red') || lower.includes('rose')) color = '#cb3d52';
+                                else if (lower.includes('yellow') || lower.includes('orange') || lower.includes('amber')) color = '#e59935';
+                                else if (lower.includes('purple') || lower.includes('violet')) color = '#9154c6';
+                                else if (lower.includes('gray') || lower.includes('slate')) color = '#aeaeae';
                             }
                             return {
                                 id: s.id,
@@ -114,12 +114,12 @@ const ListBoard: React.FC<ListBoardProps> = ({ roomId, viewId }) => {
                     }
                 }
 
-                // Ensure defaults if nothing
+                // Ensure defaults if nothing (10% darker)
                 if (loadedOptions.length === 0) {
                     loadedOptions = [
-                        { id: 'To Do', label: 'To Do', color: '#c4c4c4' },
-                        { id: 'In Progress', label: 'In Progress', color: '#fdab3d' },
-                        { id: 'Done', label: 'Done', color: '#00c875' }
+                        { id: 'To Do', label: 'To Do', color: '#aeaeae' },
+                        { id: 'In Progress', label: 'In Progress', color: '#e59935' },
+                        { id: 'Done', label: 'Done', color: '#00b369' }
                     ];
                 }
 

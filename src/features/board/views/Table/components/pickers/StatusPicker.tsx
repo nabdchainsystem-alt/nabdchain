@@ -25,26 +25,26 @@ const STATUS_TRANSLATION_KEYS: Record<string, string> = {
     'Rejected': 'rejected',
 };
 
-// Helper to get style from color name - using light colors matching the display
+// Helper to get style from color name - using slightly darker colors (10% darker)
 const getColorStyle = (color: string): string => {
     const colorMap: Record<string, string> = {
-        'gray': 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
-        'blue': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-        'emerald': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-        'green': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-        'orange': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-        'amber': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-        'rose': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-        'red': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-        'purple': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-        'violet': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-        'indigo': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
-        'cyan': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
-        'teal': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-        'pink': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
-        'yellow': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+        'gray': 'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300',
+        'blue': 'bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+        'emerald': 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+        'green': 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+        'orange': 'bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+        'amber': 'bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+        'rose': 'bg-rose-200 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
+        'red': 'bg-rose-200 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
+        'purple': 'bg-purple-200 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+        'violet': 'bg-violet-200 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
+        'indigo': 'bg-indigo-200 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
+        'cyan': 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+        'teal': 'bg-teal-200 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',
+        'pink': 'bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300',
+        'yellow': 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
     };
-    return colorMap[color.toLowerCase()] || 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400';
+    return colorMap[color.toLowerCase()] || 'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300';
 };
 
 interface StatusPickerProps {
@@ -100,7 +100,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                className="fixed w-64 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col menu-enter"
                 style={positionStyle}
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">

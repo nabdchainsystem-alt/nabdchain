@@ -1,13 +1,13 @@
 import { ITask, IGroup, Status } from '../../types/boardTypes';
 
 export const statusColorMap: Record<Status, string> = {
-    [Status.ToDo]: '#A0A5B9',
-    [Status.WorkingOnIt]: '#FFBE66',
-    [Status.Stuck]: '#f97316',
-    [Status.Done]: '#33D995',
-    [Status.InProgress]: '#3B82F6',
-    [Status.Pending]: '#FFD940',
-    [Status.AlmostFinish]: '#C48AF0',
+    [Status.ToDo]: '#9095a6',
+    [Status.WorkingOnIt]: '#e5ab5c',
+    [Status.Stuck]: '#dd6b20',
+    [Status.Done]: '#2dc486',
+    [Status.InProgress]: '#3574dd',
+    [Status.Pending]: '#e5c339',
+    [Status.AlmostFinish]: '#b07cd8',
 };
 
 export const normalizeStatus = (raw?: string): Status => {

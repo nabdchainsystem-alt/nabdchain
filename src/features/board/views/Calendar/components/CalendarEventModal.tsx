@@ -46,13 +46,18 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({
-            id: existingTask?.id,
+        // Only include id if we're editing an existing task
+        // For new tasks, addTask will generate a UUID
+        const taskData: Partial<ITask> = {
             name: title,
             status,
             priority,
             dueDate: date ? new Date(date).toISOString() : new Date().toISOString()
-        });
+        };
+        if (existingTask?.id) {
+            taskData.id = existingTask.id;
+        }
+        onSave(taskData);
         onClose();
     };
 

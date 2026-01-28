@@ -64,13 +64,23 @@ export const SortableTaskRow: React.FC<SortableTaskRowProps> = ({
         isDragging,
     } = useSortable({ id: task.id, data: { type: 'TASK', task, group } });
 
-    const style = {
-        transform: CSS.Translate.toString(transform),
-        transition,
-        opacity: isDragging ? 0 : 1, // Hide original row completely while dragging
-        zIndex: isDragging ? 999 : 'auto',
+    // GPU-accelerated style for smooth dragging
+    const style: React.CSSProperties = {
+        // Use translate3d for GPU acceleration
+        transform: transform
+            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+            : undefined,
+        // Smooth transition only when not dragging
+        transition: isDragging
+            ? 'none'
+            : 'transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 150ms ease',
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 9999 : 'auto',
         position: 'relative' as const,
-        gridTemplateColumns: selectionColumnWidth + " " + group.columns.map(c => c.width).join(' ') + " " + actionColumnWidth
+        gridTemplateColumns: selectionColumnWidth + " " + group.columns.map(c => c.width).join(' ') + " " + actionColumnWidth,
+        // GPU hints
+        willChange: isDragging ? 'transform' : 'auto',
+        backfaceVisibility: 'hidden',
     };
 
     return (

@@ -10,10 +10,10 @@ const PRIORITY_ORDER: Record<PriorityLevel, number> = {
 };
 
 export const PRIORITY_COLORS: Record<PriorityLevel, { text: string; dot: string; badge: string }> = {
-  Urgent: { text: 'text-red-600 dark:text-red-400', dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-200' },
-  High: { text: 'text-orange-600 dark:text-orange-400', dot: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200' },
-  Medium: { text: 'text-blue-600 dark:text-blue-400', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200' },
-  Low: { text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' }
+  Urgent: { text: 'text-red-700 dark:text-red-400', dot: 'bg-red-600', badge: 'bg-red-200 text-red-800 dark:bg-red-900/40 dark:text-red-200' },
+  High: { text: 'text-orange-700 dark:text-orange-400', dot: 'bg-orange-600', badge: 'bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200' },
+  Medium: { text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-600', badge: 'bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' },
+  Low: { text: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-600', badge: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' }
 };
 
 /**

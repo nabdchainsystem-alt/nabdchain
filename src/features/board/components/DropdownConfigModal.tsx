@@ -14,12 +14,12 @@ interface DropdownConfigModalProps {
     onSave: (label: string, options: DropdownOption[]) => void;
 }
 
-// A predefined palette of "Monday-like" colors plus standard ones
+// A predefined palette of "Monday-like" colors plus standard ones (10% darker)
 const PRESET_COLORS = [
-    '#00c875', '#e2445c', '#579bfc', '#ffcb00', '#9d50dd',
-    '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff',
-    '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#333333',
-    '#805036', '#ff5722', '#795548', '#607d8b', '#009688'
+    '#00b369', '#cb3d52', '#4e8be3', '#e5b700', '#8d47c6',
+    '#e59c9c', '#e5c094', '#e5e5a3', '#b5e5ab', '#8bdde5',
+    '#8fb0e5', '#aaa0e5', '#e5b2e5', '#e5e5e2', '#2d2d2d',
+    '#724830', '#e54d1f', '#6d4d41', '#566f7a', '#008577'
 ];
 
 export const DropdownConfigModal: React.FC<DropdownConfigModalProps> = ({ isOpen, onClose, onSave }) => {
@@ -27,9 +27,9 @@ export const DropdownConfigModal: React.FC<DropdownConfigModalProps> = ({ isOpen
 
     const [columnLabel, setColumnLabel] = useState('Status');
     const [options, setOptions] = useState<DropdownOption[]>([
-        { id: '1', label: 'Done', color: '#00c875' },
-        { id: '2', label: 'Working on it', color: '#fdab3d' },
-        { id: '3', label: 'Stuck', color: '#f97316' }
+        { id: '1', label: 'Done', color: '#00b369' },
+        { id: '2', label: 'Working on it', color: '#e59935' },
+        { id: '3', label: 'Stuck', color: '#dd6b20' }
     ]);
     const [activeColorPicker, setActiveColorPicker] = useState<{ id: string; rect: DOMRect } | null>(null);
 
@@ -37,7 +37,7 @@ export const DropdownConfigModal: React.FC<DropdownConfigModalProps> = ({ isOpen
         const newOption: DropdownOption = {
             id: Date.now().toString(),
             label: 'New Option',
-            color: '#c4c4c4'
+            color: '#aeaeae'
         };
         setOptions([...options, newOption]);
     };

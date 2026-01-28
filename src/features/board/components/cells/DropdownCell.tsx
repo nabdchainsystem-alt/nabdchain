@@ -30,7 +30,7 @@ const DropdownPicker: React.FC<DropdownPickerProps> = ({ options, onSelect, onCl
     // We rely on PortalPopup's overlay or trigger handling.
 
     return (
-        <div className={`flex flex-col w-64 bg-white dark:bg-stone-900 rounded-lg shadow-xl border border-gray-200 dark:border-stone-700 p-2 gap-2 animate-in fade-in zoom-in-95 duration-100`}>
+        <div className={`flex flex-col w-64 bg-white dark:bg-stone-900 rounded-lg shadow-xl border border-gray-200 dark:border-stone-700 p-2 gap-2 menu-enter`}>
             {/* Search */}
             <div className="relative">
                 <input

@@ -231,7 +231,7 @@ export const DateCell: React.FC<DateCellProps> = ({ date, onChange }) => {
       {isOpen && createPortal(
         <div className="fixed inset-0 z-50" onClick={() => setIsOpen(false)}>
           <div
-            className="fixed z-50 bg-white dark:bg-gray-900 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-100 font-sans overflow-hidden flex"
+            className="fixed z-50 bg-white dark:bg-gray-900 shadow-2xl rounded-xl border border-gray-200 dark:border-gray-700 menu-enter font-sans overflow-hidden flex"
             style={{
               top: coords.top + 8,
               left: Math.min(coords.left - 150, window.innerWidth - 520),

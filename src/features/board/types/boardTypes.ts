@@ -17,21 +17,21 @@ export enum Priority {
 }
 
 export const STATUS_COLORS: Record<Status, string> = {
-    [Status.ToDo]: '#c4c4c4',
-    [Status.WorkingOnIt]: '#fdab3d',
-    [Status.Stuck]: '#e2445c',
-    [Status.Done]: '#00c875',
-    [Status.InProgress]: '#3B82F6',
-    [Status.Pending]: '#579bfc',
-    [Status.AlmostFinish]: '#a25ddc'
+    [Status.ToDo]: '#aeaeae',
+    [Status.WorkingOnIt]: '#e59935',
+    [Status.Stuck]: '#cb3d52',
+    [Status.Done]: '#00b369',
+    [Status.InProgress]: '#3574dd',
+    [Status.Pending]: '#4e8be3',
+    [Status.AlmostFinish]: '#9154c6'
 };
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
-    [Priority.Urgent]: '#333333',
-    [Priority.High]: '#401694',
-    [Priority.Medium]: '#5559df',
-    [Priority.Normal]: '#579bfc',
-    [Priority.Low]: '#d8d8d8'
+    [Priority.Urgent]: '#2d2d2d',
+    [Priority.High]: '#391485',
+    [Priority.Medium]: '#4c50c8',
+    [Priority.Normal]: '#4e8be3',
+    [Priority.Low]: '#c2c2c2'
 };
 
 export const PEOPLE = [

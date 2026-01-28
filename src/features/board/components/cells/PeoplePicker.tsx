@@ -169,7 +169,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl overflow-hidden w-64 p-1 animate-in fade-in zoom-in-95 duration-100"
+                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-xl overflow-hidden w-64 p-1 menu-enter"
                 style={positionStyle}
             >
                 <div className="px-3 py-2 bg-stone-50 dark:bg-stone-900/50 border-b border-stone-100 dark:border-stone-800 mb-1">

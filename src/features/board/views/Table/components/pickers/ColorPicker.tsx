@@ -60,7 +60,7 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-xl w-[190px] overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col p-2"
+                className="fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-xl w-[190px] overflow-hidden menu-enter flex flex-col p-2"
                 style={positionStyle}
             >
                 <div className="pb-2 mb-2 border-b border-stone-100 dark:border-stone-800">

@@ -84,22 +84,22 @@ export const DEFAULT_COLUMNS: Column[] = [
     { id: 'dueDate', label: 'Due Date', type: 'date', width: 140, minWidth: 120, resizable: true },
 ];
 
-// Status styles - using light colors matching the display
+// Status styles - using slightly darker colors (10% darker)
 export const STATUS_STYLES: Record<string, string> = {
-    'Done': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    'Working on it': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    'In Progress': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    'Stuck': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    'To Do': 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400',
-    'Rejected': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+    'Done': 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    'Working on it': 'bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    'In Progress': 'bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    'Stuck': 'bg-orange-200 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+    'To Do': 'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300',
+    'Rejected': 'bg-rose-200 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
 };
 
-// Priority styles - lighter colors matching status picker
+// Priority styles - slightly darker colors (10% darker)
 export const PRIORITY_STYLES: Record<string, string> = {
-    'Urgent': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    'High': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    'Medium': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    'Low': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    'Urgent': 'bg-red-200 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    'High': 'bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    'Medium': 'bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    'Low': 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
 
 // Generic fallback colors
@@ -143,9 +143,7 @@ export const formatDate = (date: string | null, locale?: string): string => {
         if (loc.startsWith('ar')) {
             loc = 'ar-EG'; // ar-EG uses Gregorian by default
         }
-        const datePart = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short' }).format(d);
-        const timePart = new Intl.DateTimeFormat(loc, { hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
-        return `${datePart} - ${timePart}`;
+        return new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short' }).format(d);
     } catch {
         return date || '';
     }

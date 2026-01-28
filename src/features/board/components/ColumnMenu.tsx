@@ -178,7 +178,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
     }, [view]);
 
     const handleSelect = (type: any) => {
-        if (type.id === 'custom') {
+        if (type.id === 'custom' || type.id === 'text') {
             setView('custom_name');
             return;
         }
@@ -287,8 +287,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
             dir={dir}
             onClick={() => {
                 handleSelect(type);
-                // For direct actions (not custom/dropdown/currency setup), close the menu
-                if (type.id !== 'custom' && type.id !== 'dropdown' && type.id !== 'currency') {
+                // For direct actions (not custom/dropdown/currency/text setup), close the menu
+                if (type.id !== 'custom' && type.id !== 'dropdown' && type.id !== 'currency' && type.id !== 'text') {
                     onClose();
                 }
             }}
@@ -304,12 +304,10 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                     onClick={(e) => {
                         e.stopPropagation();
                         handleSelect(type);
-                        // Close menu for direct actions (not custom/dropdown/currency setup)
-                        if (type.id !== 'custom' && type.id !== 'dropdown' && type.id !== 'currency') {
-                            onClose();
-                        }
+                        // Don't close menu - allow adding multiple columns
                     }}
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-stone-700 text-gray-400 group-hover:text-stone-600 dark:text-stone-500 dark:group-hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Add column (keep menu open)"
                 >
                     <Plus size={14} />
                 </button>
@@ -341,9 +339,12 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && customName.trim()) {
-                                handleCreateCustom();
-                                onClose();
+                            if (e.key === 'Enter') {
+                                const inputValue = (e.target as HTMLInputElement).value.trim();
+                                if (inputValue) {
+                                    onSelect('text', inputValue, []);
+                                    onClose();
+                                }
                             }
                             if (e.key === 'Escape') setView('list');
                         }}
@@ -359,8 +360,11 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
                         </button>
                         <button
                             onClick={() => {
-                                handleCreateCustom();
-                                onClose();
+                                const inputValue = inputRef.current?.value.trim() || customName.trim();
+                                if (inputValue) {
+                                    onSelect('text', inputValue, []);
+                                    onClose();
+                                }
                             }}
                             disabled={!customName.trim()}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"

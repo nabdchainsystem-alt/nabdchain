@@ -229,7 +229,7 @@ export function AIProvider({ children }: AIProviderProps) {
     // State
     const [aiEnabled, setAiEnabled] = useState<boolean>(() => {
         const saved = localStorage.getItem('ai_enabled');
-        return saved !== null ? saved === 'true' : true; // Default to enabled
+        return saved !== null ? saved === 'true' : false; // Default to disabled
     });
     const [credits, setCredits] = useState(0); // Start at 0, fetched from API
     const [creditsLoading, setCreditsLoading] = useState(true); // Start as loading

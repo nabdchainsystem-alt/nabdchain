@@ -34,3 +34,12 @@ export {
     useComputeWorker,
     terminateWorker,
 } from './useWorker';
+export {
+    useSpringValue,
+    useSmoothMousePosition,
+    useSmoothScrollPosition,
+    usePrefersReducedMotion,
+    useOptimalDuration,
+    useSmoothHover,
+    useSmoothVisibility,
+} from './useSmoothAnimation';
