@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
@@ -23,24 +23,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
-
-    // Track scroll position for navbar effect - triggers after scrolling past hero
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollContainer = document.querySelector('.landing-scroll-container');
-            if (scrollContainer) {
-                // Change navbar color after scrolling 400px (past hero section)
-                setIsScrolled(scrollContainer.scrollTop > 400);
-            }
-        };
-
-        const scrollContainer = document.querySelector('.landing-scroll-container');
-        if (scrollContainer) {
-            scrollContainer.addEventListener('scroll', handleScroll);
-            return () => scrollContainer.removeEventListener('scroll', handleScroll);
-        }
-    }, []);
 
     const handleSignIn = () => {
         if (onNavigateToSignIn) {
@@ -66,35 +48,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     ];
 
     return (
-        <div className="landing-scroll-container h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth">
-            {/* Navbar - responsive width with scroll effect */}
+        <div className="h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth">
+            {/* Navbar - responsive width */}
             <nav
-                className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
-                    backdrop-blur-md transition-all duration-300
-                    ${isScrolled
-                        ? 'bg-zinc-900/95 dark:bg-white/95 border-zinc-700/50 dark:border-zinc-300/50 shadow-xl shadow-black/20 dark:shadow-white/10'
-                        : 'bg-white/90 dark:bg-zinc-900/90 border-zinc-200/50 dark:border-zinc-700/50 shadow-lg shadow-black/5 dark:shadow-black/20'
-                    } border`}
+                className="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
+                    bg-white/90 dark:bg-zinc-900/90
+                    border border-zinc-200/50 dark:border-zinc-700/50
+                    backdrop-blur-md
+                    shadow-lg shadow-black/5 dark:shadow-black/20"
             >
                 <div className="w-full mx-auto px-3 sm:px-5 h-11 sm:h-12 flex items-center justify-between">
                     {/* Logo */}
                     <div
                         className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
-                        onClick={() => {
-                            const container = document.querySelector('.landing-scroll-container');
-                            if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold transition-colors duration-300 ${
-                            isScrolled
-                                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white'
-                                : 'bg-black dark:bg-white text-white dark:text-black'
-                        }`}>
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 bg-black dark:bg-white rounded-md sm:rounded-lg flex items-center justify-center text-white dark:text-black text-xs sm:text-sm font-bold">
                             N
                         </div>
-                        <span className={`text-sm sm:text-base font-semibold tracking-tight transition-colors duration-300 ${
-                            isScrolled ? 'text-white dark:text-zinc-900' : ''
-                        }`}>
+                        <span className="text-sm sm:text-base font-semibold tracking-tight">
                             nabd
                         </span>
                     </div>
@@ -105,11 +77,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             <a
                                 key={link.label}
                                 href={link.href}
-                                className={`text-sm transition-colors ${
-                                    isScrolled
-                                        ? 'text-zinc-300 dark:text-zinc-600 hover:text-white dark:hover:text-black'
-                                        : 'text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-                                }`}
+                                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
                             >
                                 {link.label}
                             </a>
@@ -122,21 +90,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <div className="hidden sm:flex items-center gap-2 sm:gap-3">
                             <button
                                 onClick={handleSignIn}
-                                className={`text-xs sm:text-sm transition-colors ${
-                                    isScrolled
-                                        ? 'text-zinc-300 dark:text-zinc-600 hover:text-white dark:hover:text-black'
-                                        : 'text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-                                }`}
+                                className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
                             >
                                 Sign in
                             </button>
                             <button
                                 onClick={handleSignUp}
-                                className={`h-7 sm:h-8 px-3 sm:px-4 rounded-full text-xs sm:text-sm transition-colors duration-300 flex items-center gap-1.5 ${
-                                    isScrolled
-                                        ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                                        : 'bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200'
-                                }`}
+                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-xs sm:text-sm
+                                hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-1.5"
                             >
                                 Dashboard
                                 <ArrowRight size={12} weight="bold" />
@@ -146,11 +107,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className={`sm:hidden w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
-                                isScrolled
-                                    ? 'hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900'
-                                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                            }`}
+                            className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                         >
                             {isMobileMenuOpen ? <X size={20} /> : <List size={20} />}
                         </button>
