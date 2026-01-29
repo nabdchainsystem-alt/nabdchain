@@ -92,8 +92,11 @@ export const DashboardPreview: React.FC = () => {
     ];
 
     return (
-        <section ref={sectionRef} className="py-32 bg-white dark:bg-black relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-6">
+        <section ref={sectionRef} className="py-32 bg-black relative overflow-hidden">
+            {/* Spotlight Gradient */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     {/* Left Content */}
                     <motion.div
@@ -101,17 +104,17 @@ export const DashboardPreview: React.FC = () => {
                         animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
                         transition={{ duration: 0.7 }}
                     >
-                        <span className="inline-block px-4 py-2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm font-semibold mb-6">
+                        <span className="inline-block px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-semibold mb-6">
                             Dashboard Preview
                         </span>
-                        <h2 className="text-4xl md:text-5xl font-bold text-black dark:text-white tracking-tight mb-6 leading-tight">
+                        <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6 leading-tight">
                             See everything
                             <br />
-                            <span className="text-zinc-400 dark:text-zinc-500">
+                            <span className="text-zinc-500">
                                 at a glance
                             </span>
                         </h2>
-                        <p className="text-lg text-zinc-500 dark:text-zinc-500 mb-8 leading-relaxed">
+                        <p className="text-lg text-zinc-400 mb-8 leading-relaxed">
                             Our intuitive dashboards give you complete visibility into your business.
                             Track projects, monitor KPIs, and make informed decisions with real-time data.
                         </p>
@@ -130,10 +133,10 @@ export const DashboardPreview: React.FC = () => {
                                     transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
                                     className="flex items-center gap-3"
                                 >
-                                    <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
-                                        <CheckCircle size={14} weight="fill" className="text-zinc-600 dark:text-zinc-400" />
+                                    <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">
+                                        <CheckCircle size={14} weight="fill" className="text-zinc-400" />
                                     </div>
-                                    <span className="text-zinc-600 dark:text-zinc-400">{item}</span>
+                                    <span className="text-zinc-400">{item}</span>
                                 </motion.div>
                             ))}
                         </div>

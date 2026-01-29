@@ -78,10 +78,10 @@ const PRICING_TIERS: PricingTier[] = [
 
 const FeatureItem: React.FC<{ feature: string; highlighted?: boolean }> = ({ feature, highlighted }) => (
     <li className="flex items-start gap-3">
-        <div className={`mt-0.5 p-1 rounded-full shrink-0 ${highlighted ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
-            <Check size={12} weight="bold" className={highlighted ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'} />
+        <div className={`mt-0.5 p-1 rounded-full shrink-0 ${highlighted ? 'bg-white/20' : 'bg-zinc-800'}`}>
+            <Check size={12} weight="bold" className={highlighted ? 'text-white' : 'text-zinc-400'} />
         </div>
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">{feature}</span>
+        <span className={`text-sm ${highlighted ? 'text-zinc-300' : 'text-zinc-400'}`}>{feature}</span>
     </li>
 );
 
@@ -102,8 +102,8 @@ const PricingCard: React.FC<PricingCardProps> = ({ tier, isYearly, onGetStarted 
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
             className={`relative rounded-3xl p-8 ${tier.highlighted
-                    ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl shadow-blue-500/25 scale-[1.02] z-10'
-                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'
+                ? 'bg-gradient-to-br from-zinc-900 via-zinc-800 to-black text-white shadow-2xl shadow-black/30 scale-[1.02] z-10 border border-zinc-700'
+                : 'bg-zinc-900 border border-zinc-800'
                 }`}
         >
             {/* Badge */}
@@ -116,16 +116,15 @@ const PricingCard: React.FC<PricingCardProps> = ({ tier, isYearly, onGetStarted 
                 </div>
             )}
 
-            {/* Header */}
             <div className="mb-6">
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${tier.highlighted ? 'bg-white/20' : 'bg-zinc-100 dark:bg-zinc-800'
+                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${tier.highlighted ? 'bg-white/10' : 'bg-zinc-800'
                     }`}>
-                    <Icon size={24} weight="duotone" className={tier.highlighted ? 'text-white' : 'text-zinc-600 dark:text-zinc-400'} />
+                    <Icon size={24} weight="duotone" className={tier.highlighted ? 'text-white' : 'text-zinc-400'} />
                 </div>
-                <h3 className={`text-xl font-bold mb-2 ${tier.highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
+                <h3 className={`text-xl font-bold mb-2 ${tier.highlighted ? 'text-white' : 'text-white'}`}>
                     {tier.name}
                 </h3>
-                <p className={`text-sm ${tier.highlighted ? 'text-blue-100' : 'text-zinc-500 dark:text-zinc-500'}`}>
+                <p className={`text-sm ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-400'}`}>
                     {tier.description}
                 </p>
             </div>
@@ -133,11 +132,11 @@ const PricingCard: React.FC<PricingCardProps> = ({ tier, isYearly, onGetStarted 
             {/* Price */}
             <div className="mb-6">
                 <div className="flex items-baseline gap-1">
-                    <span className={`text-4xl font-bold ${tier.highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
+                    <span className={`text-4xl font-bold ${tier.highlighted ? 'text-white' : 'text-white'}`}>
                         {price}
                     </span>
-                    <span className={`text-lg ${tier.highlighted ? 'text-blue-100' : 'text-zinc-500'}`}>SAR</span>
-                    <span className={`text-sm ${tier.highlighted ? 'text-blue-200' : 'text-zinc-400'}`}>/month</span>
+                    <span className={`text-lg ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>SAR</span>
+                    <span className={`text-sm ${tier.highlighted ? 'text-zinc-500' : 'text-zinc-500'}`}>/month</span>
                 </div>
                 {isYearly && (
                     <motion.div
@@ -154,8 +153,8 @@ const PricingCard: React.FC<PricingCardProps> = ({ tier, isYearly, onGetStarted 
             <button
                 onClick={onGetStarted}
                 className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 mb-8 ${tier.highlighted
-                        ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg'
-                        : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100'
+                    ? 'bg-white text-zinc-900 hover:bg-zinc-100 shadow-lg'
+                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
                     }`}
             >
                 {tier.cta}
@@ -185,10 +184,13 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
     };
 
     return (
-        <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-black relative overflow-hidden">
+        <section id="pricing" className="py-24 px-6 bg-black relative overflow-hidden">
+            {/* Spotlight Gradient */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+
             {/* Background decorations */}
-            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/5 to-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-3xl pointer-events-none opacity-30" />
+            <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/5 to-blue-500/5 rounded-full blur-3xl pointer-events-none opacity-30" />
 
             <div className="max-w-6xl mx-auto relative z-10">
                 {/* Header */}
@@ -198,14 +200,14 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                     viewport={{ once: true }}
                     className="text-center mb-12"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-purple-400 text-sm font-medium mb-6">
                         <Lightning size={16} weight="fill" />
                         Simple, Transparent Pricing
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-4">
+                    <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
                         Choose Your Perfect Plan
                     </h2>
-                    <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
+                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
                         Start free for 14 days. No credit card required. Upgrade anytime as your team grows.
                     </p>
                 </motion.div>
@@ -217,21 +219,21 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                     viewport={{ once: true }}
                     className="flex items-center justify-center gap-4 mb-16"
                 >
-                    <span className={`text-sm font-medium transition-colors ${!isYearly ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
+                    <span className={`text-sm font-medium transition-colors ${!isYearly ? 'text-white' : 'text-zinc-500'}`}>
                         Monthly
                     </span>
                     <button
                         onClick={() => setIsYearly(!isYearly)}
-                        className={`relative w-16 h-8 rounded-full transition-colors duration-300 ${isYearly ? 'bg-blue-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                        className={`relative w-16 h-8 rounded-full transition-all duration-200 ${isYearly ? 'bg-zinc-800' : 'bg-zinc-800'
                             }`}
                     >
                         <motion.div
                             animate={{ x: isYearly ? 32 : 4 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            transition={{ type: 'tween', duration: 0.15, ease: 'easeOut' }}
                             className="absolute top-1 w-6 h-6 rounded-full bg-white shadow-md"
                         />
                     </button>
-                    <span className={`text-sm font-medium transition-colors ${isYearly ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
+                    <span className={`text-sm font-medium transition-colors ${isYearly ? 'text-white' : 'text-zinc-500'}`}>
                         Yearly
                     </span>
                     <AnimatePresence>
@@ -267,11 +269,14 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                     viewport={{ once: true }}
                     className="mt-16 text-center"
                 >
-                    <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                    <p className="text-sm text-zinc-400 mb-2">
                         All plans include a 14-day free trial. Need a custom solution?{' '}
-                        <button onClick={handleGetStarted} className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                        <a href="mailto:info@nabdchain.com" className="text-white font-medium hover:underline">
                             Contact our sales team
-                        </button>
+                        </a>
+                    </p>
+                    <p className="text-sm text-zinc-600">
+                        info@nabdchain.com
                     </p>
                 </motion.div>
 

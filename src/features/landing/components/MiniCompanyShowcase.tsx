@@ -152,7 +152,7 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                         Mini Company Suite
                     </div>
                     <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-4">
-                        Everything Your Business Needs
+                        Integrated Business Suite
                     </h2>
                     <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto mb-6">
                         Six integrated departments with over {totalDashboards} ready-to-use dashboards

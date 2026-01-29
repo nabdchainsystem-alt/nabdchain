@@ -24,23 +24,78 @@ const StatCounter: React.FC<{ value: string; label: string }> = ({ value, label 
     </div>
 );
 
-const GridPattern: React.FC = () => (
-    <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-zinc-200 dark:text-zinc-800/50" />
-            </pattern>
-            <linearGradient id="fade" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="white" stopOpacity="1" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-            </linearGradient>
-            <mask id="fadeMask">
-                <rect width="100%" height="100%" fill="url(#fade)" />
-            </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" mask="url(#fadeMask)" />
-    </svg>
-);
+const NetworkBackground: React.FC = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Grid */}
+            <svg className="absolute inset-0 w-full h-full opacity-[0.15] dark:opacity-[0.1]" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="network-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-zinc-900 dark:text-zinc-100" />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#network-grid)" />
+            </svg>
+
+            {/* Animated Lines/Connections */}
+            <div className="absolute inset-0">
+                {[...Array(3)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{
+                            duration: 3 + i,
+                            repeat: Infinity,
+                            delay: i * 1.5,
+                            ease: "linear"
+                        }}
+                        className="absolute bg-gradient-to-r from-transparent via-blue-500/50 to-transparent h-[1px] w-full"
+                        style={{ top: `${20 + i * 30}%` }}
+                    />
+                ))}
+                {[...Array(3)].map((_, i) => (
+                    <motion.div
+                        key={`v-${i}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{
+                            duration: 4 + i,
+                            repeat: Infinity,
+                            delay: i * 1.2,
+                            ease: "linear"
+                        }}
+                        className="absolute bg-gradient-to-b from-transparent via-purple-500/50 to-transparent w-[1px] h-full"
+                        style={{ left: `${25 + i * 25}%` }}
+                    />
+                ))}
+            </div>
+
+            {/* Glowing Orbs */}
+            {[...Array(4)].map((_, i) => (
+                <motion.div
+                    key={`orb-${i}`}
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        delay: i * 0.5,
+                        ease: "easeInOut"
+                    }}
+                    className="absolute w-32 h-32 rounded-full blur-[60px]"
+                    style={{
+                        background: i % 2 === 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                        top: `${Math.random() * 80}%`,
+                        left: `${Math.random() * 80}%`,
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
 
 const FeaturePill: React.FC<{ icon: React.ReactNode; text: string; delay: number }> = ({ icon, text, delay }) => (
     <motion.div
@@ -56,15 +111,10 @@ const FeaturePill: React.FC<{ icon: React.ReactNode; text: string; delay: number
 
 export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterSystem }) => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-32 px-6 overflow-hidden">
+        <section className="relative min-h-[90vh] flex flex-col justify-center pt-32 pb-20 px-6 overflow-hidden">
             {/* Background Elements */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white via-zinc-50 to-white dark:from-black dark:via-zinc-950 dark:to-black" />
-            <GridPattern />
-
-            {/* Subtle Static Orbs */}
-            <FloatingOrb size={600} x={-10} y={10} />
-            <FloatingOrb size={400} x={80} y={60} />
-            <FloatingOrb size={300} x={60} y={-10} />
+            <div className="absolute inset-0 bg-white dark:bg-black" />
+            <NetworkBackground />
 
             {/* Main Content */}
             <div className="relative z-10 max-w-6xl mx-auto w-full">

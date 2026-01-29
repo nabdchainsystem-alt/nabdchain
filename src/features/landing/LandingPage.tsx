@@ -25,16 +25,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { scrollY } = useScroll();
 
-    const navBackground = useTransform(
-        scrollY,
-        [0, 100],
-        ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.95)']
-    );
-    const navBorder = useTransform(
-        scrollY,
-        [0, 100],
-        ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.05)']
-    );
+    const navWidth = useTransform(scrollY, [0, 100], ['100%', '80%']);
+    const navTop = useTransform(scrollY, [0, 100], ['0px', '24px']);
+    const navRadius = useTransform(scrollY, [0, 100], ['0px', '24px']);
+    const navBackground = useTransform(scrollY, [0, 100], ['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0.8)']);
+    const navBorder = useTransform(scrollY, [0, 100], ['rgba(0, 0, 0, 0)', 'rgba(228, 228, 231, 0.4)']);
+    const navBackdrop = useTransform(scrollY, [0, 100], ['blur(0px)', 'blur(12px)']);
 
     const handleSignIn = () => {
         if (onNavigateToSignIn) {
@@ -64,35 +60,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Navbar */}
             <motion.nav
                 style={{
+                    width: navWidth,
+                    top: navTop,
+                    borderRadius: navRadius,
                     backgroundColor: navBackground,
-                    borderBottomWidth: 1,
-                    borderBottomColor: navBorder,
+                    borderWidth: 1,
+                    borderColor: navBorder,
+                    backdropFilter: navBackdrop,
+                    left: '50%',
+                    x: '-50%',
                 }}
-                className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl"
+                className="fixed z-50 transition-all duration-300 max-w-7xl"
             >
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
                     {/* Logo */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3 cursor-pointer group"
+                        className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black text-lg font-bold">
+                        <div className="w-7 h-7 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black text-sm font-bold">
                             N
                         </div>
-                        <span className="text-xl font-bold tracking-tight">
-                            Nabd
+                        <span className="text-base font-semibold tracking-tight">
+                            nabd
                         </span>
                     </motion.div>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-8">
+                    <div className="hidden md:flex items-center gap-5">
                         {navLinks.map((link) => (
                             <a
                                 key={link.label}
                                 href={link.href}
-                                className="text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-colors"
+                                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
                             >
                                 {link.label}
                             </a>
@@ -105,19 +107,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <div className="hidden sm:flex items-center gap-3">
                             <button
                                 onClick={handleSignIn}
-                                className="h-10 px-5 rounded-lg text-zinc-600 dark:text-zinc-400 text-sm font-semibold
-                                hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all duration-200 flex items-center gap-2"
+                                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
                             >
-                                <SignIn size={18} />
-                                Sign In
+                                Sign out
                             </button>
                             <button
                                 onClick={handleSignUp}
-                                className="h-10 px-5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-sm font-semibold
-                                hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all duration-200 flex items-center gap-2"
+                                className="h-8 px-4 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-sm
+                                hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-all duration-200 flex items-center gap-1.5"
                             >
-                                <UserPlus size={18} />
-                                Get Started
+                                Dashboard
+                                <ArrowRight size={14} weight="bold" />
                             </button>
                         </div>
 

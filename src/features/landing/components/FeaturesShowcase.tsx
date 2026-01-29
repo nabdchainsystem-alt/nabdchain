@@ -81,24 +81,24 @@ const FeatureCard: React.FC<{ feature: Feature; index: number }> = ({ feature, i
             transition={{ duration: 0.6, delay: feature.delay, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="group relative"
         >
-            <div className="relative h-full p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
-                hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300
-                hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)]
+            <div className="relative h-full p-8 rounded-2xl bg-zinc-900 border border-zinc-800
+                hover:border-zinc-700 transition-all duration-300
+                hover:shadow-[0_20px_40px_-15px_rgba(255,255,255,0.05)]
                 hover:-translate-y-1">
 
                 {/* Icon Container */}
-                <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-6
-                    group-hover:bg-black dark:group-hover:bg-white transition-colors duration-300">
-                    <span className="text-zinc-600 dark:text-zinc-400 group-hover:text-white dark:group-hover:text-black transition-colors duration-300">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center mb-6
+                    group-hover:bg-white transition-colors duration-300">
+                    <span className="text-zinc-400 group-hover:text-black transition-colors duration-300">
                         {feature.icon}
                     </span>
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold text-black dark:text-white mb-3">
+                <h3 className="text-xl font-semibold text-white mb-3">
                     {feature.title}
                 </h3>
-                <p className="text-zinc-500 dark:text-zinc-500 leading-relaxed">
+                <p className="text-zinc-400 leading-relaxed">
                     {feature.description}
                 </p>
 
@@ -119,11 +119,14 @@ export const FeaturesShowcase: React.FC = () => {
     const isHeaderInView = useInView(headerRef, { once: true, margin: "-100px" });
 
     return (
-        <section className="py-32 bg-zinc-50 dark:bg-zinc-950 relative overflow-hidden">
+        <section className="py-32 bg-black relative overflow-hidden">
+            {/* Spotlight Gradient */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-30">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-zinc-300/10 dark:bg-zinc-700/5 rounded-full" />
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-zinc-300/10 dark:bg-zinc-700/5 rounded-full" />
+            <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-zinc-800/20 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-zinc-800/20 rounded-full blur-3xl" />
             </div>
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -135,17 +138,17 @@ export const FeaturesShowcase: React.FC = () => {
                     transition={{ duration: 0.7 }}
                     className="text-center mb-20"
                 >
-                    <span className="inline-block px-4 py-2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm font-semibold mb-6">
+                    <span className="inline-block px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-semibold mb-6">
                         Powerful Features
                     </span>
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white tracking-tight mb-6">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6">
                         Everything you need to
                         <br />
-                        <span className="text-zinc-400 dark:text-zinc-500">
+                        <span className="text-zinc-500">
                             run your business
                         </span>
                     </h2>
-                    <p className="text-xl text-zinc-500 dark:text-zinc-500 max-w-2xl mx-auto">
+                    <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
                         From project planning to company analytics, NABD provides all the tools
                         your team needs to succeed.
                     </p>

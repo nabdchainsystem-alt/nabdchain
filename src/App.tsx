@@ -18,6 +18,7 @@ import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
 import { API_URL } from './config/api';
 import { adminService } from './services/adminService';
 import { useUserPreferences } from './hooks/useUserPreferences';
+import { MorphingLoader } from './components/common/MorphingLoader';
 
 // ============================================================================
 // LAZY LOADED COMPONENTS - All heavy components loaded on demand
@@ -1815,6 +1816,17 @@ const AppRoutes: React.FC = () => {
   // Track if auth loading is taking too long
   const [authTimeout, setAuthTimeout] = useState(false);
 
+  // Enforce minimum loading time of 2 seconds for the animation
+  const [minLoadComplete, setMinLoadComplete] = useState(false);
+
+  useEffect(() => {
+    // Start minimum loading timer
+    const timer = setTimeout(() => {
+      setMinLoadComplete(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // View state for auth screens: 'home' (landing), 'signin', 'signup'
   // Determine initial view from URL path
   const [authView, setAuthViewState] = useState<'home' | 'signin' | 'signup'>(() => {
@@ -1872,22 +1884,24 @@ const AppRoutes: React.FC = () => {
     }
   }, [isLoaded]);
 
-  if (!isLoaded) {
+  const showLoader = !isLoaded || !minLoadComplete;
+
+  if (showLoader) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F7F9FB] dark:bg-monday-dark-bg">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <>
+        <MorphingLoader fullScreen />
         {authTimeout && (
-          <div className="mt-4 text-center">
-            <p className="text-gray-600 mb-2">Loading is taking longer than expected...</p>
+          <div className="fixed bottom-10 left-0 right-0 text-center z-[60]">
+            <p className="text-gray-500 mb-2 text-sm">Loading is taking longer than expected...</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+              className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 text-sm"
             >
               Reload Page
             </button>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
