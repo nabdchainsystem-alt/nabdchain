@@ -714,6 +714,13 @@
 
     html {
         zoom: 1.05;
+        /* Hide scrollbar globally while maintaining scroll */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    html::-webkit-scrollbar {
+        display: none; /* Chrome/Safari/Opera */
     }
 
     /* Disable zoom on mobile for proper responsive behavior */

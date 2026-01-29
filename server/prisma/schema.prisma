@@ -38,6 +38,8 @@ model User {
   talkReminders            TalkReminder[]
   talkFiles                TalkFile[]
   createdConversations     Conversation[]            @relation("ConversationCreator")
+  gtdItems                 GTDItem[]
+  quickNotes               QuickNote[]
 
   @@index([workspaceId])
   @@index([lastActiveAt])
@@ -520,4 +522,49 @@ model AIUsageLog {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// GTD (Getting Things Done) Items for mobile sync
+model GTDItem {
+  id          String    @id @default(uuid())
+  userId      String
+  boardId     String    @default("default")
+  title       String
+  category    String    // inbox, projects, nextActions, waitingFor, scheduled, someday, reference, completed
+  scheduledAt DateTime?
+  completedAt DateTime?
+  notes       String?
+  tags        String?   // JSON array
+  version     Int       @default(1)
+  clientId    String?   // For offline sync
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, category])
+  @@index([userId, isDeleted])
+  @@unique([userId, clientId])
+}
+
+// Quick Notes for mobile
+model QuickNote {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  tags      String?  // JSON array
+  pinned    Boolean  @default(false)
+  clientId  String?  // For offline sync
+  version   Int      @default(1)
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, pinned])
+  @@unique([userId, clientId])
 }

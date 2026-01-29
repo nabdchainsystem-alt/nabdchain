@@ -131,31 +131,16 @@
       width: 100%;
     }
 
+    /* Hide scrollbar globally */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 0px;
+      height: 0px;
+      display: none;
     }
 
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #c3c6d4;
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #aeb2c6;
-    }
-
-    /* Dark mode scrollbar */
-    .dark ::-webkit-scrollbar-thumb {
-      background: #424242;
-    }
-
-    .dark ::-webkit-scrollbar-thumb:hover {
-      background: #616161;
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
     .font-outfit {

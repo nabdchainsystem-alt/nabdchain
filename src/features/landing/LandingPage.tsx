@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
-import { TestimonialsSection } from './components/TestimonialsSection';
+import { ToolsShowcase } from './components/ToolsShowcase';
 import { PricingSection } from './components/PricingSection';
 import { MiniCompanyShowcase } from './components/MiniCompanyShowcase';
+import { LiveDemoSection } from './components/LiveDemoSection';
 
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
-import { List, X, SignIn, UserPlus } from 'phosphor-react';
+import { List, X, SignIn, UserPlus, ArrowRight } from 'phosphor-react';
 
 interface LandingPageProps {
     onEnterSystem: () => void;
@@ -23,14 +23,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { scrollY } = useScroll();
-
-    const navWidth = useTransform(scrollY, [0, 100], ['100%', '80%']);
-    const navTop = useTransform(scrollY, [0, 100], ['0px', '24px']);
-    const navRadius = useTransform(scrollY, [0, 100], ['0px', '24px']);
-    const navBackground = useTransform(scrollY, [0, 100], ['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0.8)']);
-    const navBorder = useTransform(scrollY, [0, 100], ['rgba(0, 0, 0, 0)', 'rgba(228, 228, 231, 0.4)']);
-    const navBackdrop = useTransform(scrollY, [0, 100], ['blur(0px)', 'blur(12px)']);
 
     const handleSignIn = () => {
         if (onNavigateToSignIn) {
@@ -50,46 +42,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     const navLinks = [
         { label: 'Features', href: '#features' },
-        { label: 'Mini Company', href: '#mini-company' },
+        { label: 'Demo', href: '#demo' },
         { label: 'Dashboard', href: '#dashboard' },
         { label: 'Pricing', href: '#pricing' },
     ];
 
     return (
         <div className="h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth">
-            {/* Navbar */}
-            <motion.nav
-                style={{
-                    width: navWidth,
-                    top: navTop,
-                    borderRadius: navRadius,
-                    backgroundColor: navBackground,
-                    borderWidth: 1,
-                    borderColor: navBorder,
-                    backdropFilter: navBackdrop,
-                    left: '50%',
-                    x: '-50%',
-                }}
-                className="fixed z-50 transition-all duration-300 max-w-7xl"
+            {/* Navbar - responsive width */}
+            <nav
+                className="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
+                    bg-white/90 dark:bg-zinc-900/90
+                    border border-zinc-200/50 dark:border-zinc-700/50
+                    backdrop-blur-md
+                    shadow-lg shadow-black/5 dark:shadow-black/20"
             >
-                <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+                <div className="w-full mx-auto px-3 sm:px-5 h-11 sm:h-12 flex items-center justify-between">
                     {/* Logo */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 cursor-pointer group"
+                    <div
+                        className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <div className="w-7 h-7 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black text-sm font-bold">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 bg-black dark:bg-white rounded-md sm:rounded-lg flex items-center justify-center text-white dark:text-black text-xs sm:text-sm font-bold">
                             N
                         </div>
-                        <span className="text-base font-semibold tracking-tight">
+                        <span className="text-sm sm:text-base font-semibold tracking-tight">
                             nabd
                         </span>
-                    </motion.div>
+                    </div>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-5">
+                    <div className="hidden md:flex items-center gap-4 lg:gap-5">
                         {navLinks.map((link) => (
                             <a
                                 key={link.label}
@@ -102,77 +85,81 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     {/* Auth Buttons */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         {/* Desktop Buttons */}
-                        <div className="hidden sm:flex items-center gap-3">
+                        <div className="hidden sm:flex items-center gap-2 sm:gap-3">
                             <button
                                 onClick={handleSignIn}
-                                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                                className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
                             >
-                                Sign out
+                                Sign in
                             </button>
                             <button
                                 onClick={handleSignUp}
-                                className="h-8 px-4 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-sm
-                                hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-all duration-200 flex items-center gap-1.5"
+                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-xs sm:text-sm
+                                hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-1.5"
                             >
                                 Dashboard
-                                <ArrowRight size={14} weight="bold" />
+                                <ArrowRight size={12} weight="bold" />
                             </button>
                         </div>
 
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                            className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                         >
-                            {isMobileMenuOpen ? <X size={24} /> : <List size={24} />}
+                            {isMobileMenuOpen ? <X size={20} /> : <List size={20} />}
                         </button>
                     </div>
                 </div>
+            </nav>
 
-                {/* Mobile Menu */}
-                <motion.div
-                    initial={false}
-                    animate={{ height: isMobileMenuOpen ? 'auto' : 0 }}
-                    className="md:hidden overflow-hidden bg-white dark:bg-black border-t border-zinc-100 dark:border-zinc-900"
-                >
-                    <div className="p-6 space-y-4">
-                        {navLinks.map((link) => (
-                            <a
-                                key={link.label}
-                                href={link.href}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className="block text-lg font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-colors"
-                            >
-                                {link.label}
-                            </a>
-                        ))}
-                        <div className="pt-4 space-y-3">
-                            <button
-                                onClick={() => {
-                                    setIsMobileMenuOpen(false);
-                                    handleSignIn();
-                                }}
-                                className="w-full h-12 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <SignIn size={18} />
-                                Sign In
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsMobileMenuOpen(false);
-                                    handleSignUp();
-                                }}
-                                className="w-full h-12 rounded-lg bg-black dark:bg-white text-white dark:text-black font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <UserPlus size={18} />
-                                Get Started Free
-                            </button>
+            {/* Mobile Menu - separate overlay for better performance */}
+            {isMobileMenuOpen && (
+                <div className="fixed inset-0 z-40 sm:hidden">
+                    <div
+                        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                    <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[92%] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden animate-fade-in-up">
+                        <div className="p-4 space-y-3">
+                            {navLinks.map((link) => (
+                                <a
+                                    key={link.label}
+                                    href={link.href}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="block py-2 text-base font-medium text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
+                            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+                                <button
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        handleSignIn();
+                                    }}
+                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <SignIn size={16} />
+                                    Sign In
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        handleSignUp();
+                                    }}
+                                    className="w-full h-10 rounded-lg bg-black dark:bg-white text-white dark:text-black font-medium text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <UserPlus size={16} />
+                                    Get Started Free
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </motion.div>
-            </motion.nav>
+                </div>
+            )}
 
             {/* Main Content */}
             <main>
@@ -190,8 +177,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <DashboardPreview />
                 </div>
 
+                <div id="demo">
+                    <LiveDemoSection onTryDemo={handleSignUp} />
+                </div>
+
                 <div id="testimonials">
-                    <TestimonialsSection />
+                    <ToolsShowcase />
                 </div>
 
                 <div id="pricing">

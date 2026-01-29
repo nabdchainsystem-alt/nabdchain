@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Table, ChartBar, SquaresFour, Sparkle } from 'phosphor-react';
 
 const icons = [
-    { icon: Table, label: "Building tables...", color: "text-blue-500" },
-    { icon: ChartBar, label: "Generating charts...", color: "text-purple-500" },
-    { icon: SquaresFour, label: "Preparing dashboard...", color: "text-emerald-500" }
+    { icon: Table, label: "Building tables...", color: "text-zinc-700 dark:text-zinc-300" },
+    { icon: ChartBar, label: "Generating charts...", color: "text-zinc-600 dark:text-zinc-400" },
+    { icon: SquaresFour, label: "Preparing dashboard...", color: "text-zinc-800 dark:text-zinc-200" }
 ];
 
 interface MorphingLoaderProps {
@@ -19,7 +19,7 @@ export const MorphingLoader: React.FC<MorphingLoaderProps> = ({ className = "", 
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % icons.length);
-        }, 800); // Switch every 800ms
+        }, 500); // Switch every 500ms (3 icons × 500ms = 1.5s total)
         return () => clearInterval(interval);
     }, []);
 
@@ -30,9 +30,9 @@ export const MorphingLoader: React.FC<MorphingLoaderProps> = ({ className = "", 
             <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
                 {/* Background Glow */}
                 <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className={`absolute inset-0 rounded-full blur-xl bg-gradient-to-tr from-blue-500/20 to-purple-500/20`}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className={`absolute inset-0 rounded-full blur-xl bg-gradient-to-tr from-zinc-400/20 to-zinc-600/20`}
                 />
 
                 {/* Animated Icon */}
@@ -56,7 +56,7 @@ export const MorphingLoader: React.FC<MorphingLoaderProps> = ({ className = "", 
                     className="absolute inset-0 z-0"
                 >
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 p-1 bg-white dark:bg-zinc-900 rounded-full shadow-lg border border-zinc-100 dark:border-zinc-700">
-                        <Sparkle size={12} weight="fill" className="text-amber-400" />
+                        <Sparkle size={12} weight="fill" className="text-zinc-400 dark:text-zinc-500" />
                     </div>
                 </motion.div>
             </div>
