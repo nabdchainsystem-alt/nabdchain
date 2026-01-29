@@ -200,7 +200,8 @@ router.get('/tasks', requireAuth, async (req, res: Response) => {
 router.patch('/tasks/:boardId/:taskId', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { boardId, taskId } = req.params;
+        const boardId = req.params.boardId as string;
+        const taskId = req.params.taskId as string;
         const { status, priority } = req.body;
 
         // Get the board

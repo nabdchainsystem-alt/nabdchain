@@ -86,7 +86,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
 router.get('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const item = await prisma.gTDItem.findFirst({
             where: { id, userId },
@@ -136,7 +136,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.put('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const data = updateGTDItemSchema.parse(req.body);
 
         // Verify ownership
@@ -184,7 +184,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
 router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { hard } = req.query;
 
         const existing = await prisma.gTDItem.findFirst({

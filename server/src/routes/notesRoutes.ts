@@ -54,7 +54,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
 router.get('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const note = await prisma.quickNote.findFirst({
             where: { id, userId },
@@ -101,7 +101,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.put('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const data = updateNoteSchema.parse(req.body);
 
         // Verify ownership
@@ -146,7 +146,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
 router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { hard } = req.query;
 
         const existing = await prisma.quickNote.findFirst({
@@ -181,7 +181,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
 router.patch('/:id/pin', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const existing = await prisma.quickNote.findFirst({
             where: { id, userId },
