@@ -11,7 +11,7 @@ import {
 
 // Mini Whiteboard Preview
 const WhiteboardPreview = memo(() => (
-    <div className="relative h-full bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
+    <div className="relative h-full bg-white dark:bg-zinc-100 rounded-lg overflow-hidden">
         <svg className="w-full h-full" viewBox="0 0 120 80">
             <rect x="10" y="15" width="30" height="20" rx="3" fill="#fbbf24" fillOpacity="0.3" stroke="#fbbf24" strokeWidth="1.5"/>
             <rect x="50" y="25" width="25" height="25" rx="3" fill="#3b82f6" fillOpacity="0.3" stroke="#3b82f6" strokeWidth="1.5"/>

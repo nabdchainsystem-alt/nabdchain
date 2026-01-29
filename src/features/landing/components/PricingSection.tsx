@@ -200,24 +200,46 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
 
                 {/* Price */}
                 <div className="mb-6">
-                    <div className="flex items-baseline gap-2">
-                        <AnimatedPrice price={price} highlighted={tier.highlighted} />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-zinc-400">
-                                SAR
-                            </span>
-                            <span className="text-xs text-zinc-500">
-                                /month
-                            </span>
-                        </div>
-                    </div>
-                    {isYearly && (
-                        <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            tier.highlighted
-                                ? 'bg-white/10 text-white'
-                                : 'bg-zinc-800 text-zinc-300'
-                        }`}>
-                            Save {savings}% yearly
+                    {isYearly ? (
+                        <>
+                            {/* Yearly total */}
+                            <div className="flex items-baseline gap-2">
+                                <AnimatedPrice price={tier.yearlyPrice * 12} highlighted={tier.highlighted} />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-zinc-400">
+                                        SAR
+                                    </span>
+                                    <span className="text-xs text-zinc-500">
+                                        /year
+                                    </span>
+                                </div>
+                            </div>
+                            {/* Per month breakdown */}
+                            <div className="mt-2 flex items-center gap-2">
+                                <span className="text-lg font-semibold text-zinc-400">
+                                    {tier.yearlyPrice} SAR
+                                </span>
+                                <span className="text-xs text-zinc-500">/month</span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    tier.highlighted
+                                        ? 'bg-white/10 text-white'
+                                        : 'bg-zinc-800 text-zinc-300'
+                                }`}>
+                                    Save {savings}%
+                                </span>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-baseline gap-2">
+                            <AnimatedPrice price={price} highlighted={tier.highlighted} />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-zinc-400">
+                                    SAR
+                                </span>
+                                <span className="text-xs text-zinc-500">
+                                    /month
+                                </span>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -388,7 +410,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                         ref={scrollRef}
                         className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch
                             overflow-x-auto sm:overflow-visible
-                            pb-4 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0
+                            pt-6 pb-4 sm:pt-8 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0
                             snap-x snap-mandatory sm:snap-none"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
