@@ -8,10 +8,12 @@ import {
     Robot,
     Cube,
     ArrowRight,
+    ArrowLeft,
     TrendUp,
     CaretLeft,
     CaretRight
 } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 // Animated mini chart component
 const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: number }> = memo(({ type, delay = 0 }) => {
@@ -143,7 +145,7 @@ const FeatureCard: React.FC<FeatureCardProps> = memo(({
 });
 
 // Hero feature card
-const HeroFeatureCard: React.FC = memo(() => {
+const HeroFeatureCard: React.FC<{ isRTL: boolean }> = memo(({ isRTL }) => {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
@@ -171,29 +173,43 @@ const HeroFeatureCard: React.FC = memo(() => {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
                     bg-white/10 border border-white/10 mb-5">
                     <TrendUp size={14} weight="bold" className="text-white" />
-                    <span className="text-xs font-medium text-white/80">Core Benefit</span>
+                    <span className="text-xs font-medium text-white/80">
+                        {isRTL ? 'الميزة الأساسية' : 'Core Benefit'}
+                    </span>
                 </div>
 
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
-                    10x Your Team's
-                    <br />
-                    <span className="text-zinc-400">Productivity</span>
+                    {isRTL ? (
+                        <>
+                            ضاعف إنتاجية
+                            <br />
+                            <span className="text-zinc-400">فريقك 10 أضعاف</span>
+                        </>
+                    ) : (
+                        <>
+                            10x Your Team's
+                            <br />
+                            <span className="text-zinc-400">Productivity</span>
+                        </>
+                    )}
                 </h3>
 
                 <p className="text-zinc-500 text-sm mb-6 max-w-sm">
-                    Replace scattered tools with one unified platform.
-                    Watch efficiency soar as your team focuses on what matters.
+                    {isRTL
+                        ? 'استبدل الأدوات المتفرقة بمنصة موحدة واحدة. شاهد الكفاءة ترتفع بينما يركز فريقك على ما يهم.'
+                        : 'Replace scattered tools with one unified platform. Watch efficiency soar as your team focuses on what matters.'
+                    }
                 </p>
 
                 {/* Live counter animation */}
                 <div className="flex gap-8">
                     <div>
                         <div className="text-3xl font-bold text-white">{count}%</div>
-                        <div className="text-xs text-zinc-500">Less switching</div>
+                        <div className="text-xs text-zinc-500">{isRTL ? 'تنقل أقل' : 'Less switching'}</div>
                     </div>
                     <div>
-                        <div className="text-3xl font-bold text-white">3hrs</div>
-                        <div className="text-xs text-zinc-500">Saved daily</div>
+                        <div className="text-3xl font-bold text-white">{isRTL ? '٣ س' : '3hrs'}</div>
+                        <div className="text-xs text-zinc-500">{isRTL ? 'توفير يومي' : 'Saved daily'}</div>
                     </div>
                 </div>
             </div>
@@ -201,60 +217,64 @@ const HeroFeatureCard: React.FC = memo(() => {
     );
 });
 
-const FEATURES: FeatureCardProps[] = [
+const getFeaturesData = (isRTL: boolean): FeatureCardProps[] => [
     {
         icon: UsersThree,
-        title: "Real-time Collaboration",
-        description: "See changes as they happen. Work together seamlessly.",
-        metric: "Live",
-        metricLabel: "Sync",
+        title: isRTL ? "تعاون في الوقت الفعلي" : "Real-time Collaboration",
+        description: isRTL ? "شاهد التغييرات فور حدوثها. اعمل مع فريقك بسلاسة." : "See changes as they happen. Work together seamlessly.",
+        metric: isRTL ? "مباشر" : "Live",
+        metricLabel: isRTL ? "مزامنة" : "Sync",
         chartType: 'line',
         index: 1
     },
     {
         icon: Robot,
-        title: "Smart Automation",
-        description: "AI handles repetitive work automatically.",
+        title: isRTL ? "أتمتة ذكية" : "Smart Automation",
+        description: isRTL ? "الذكاء الاصطناعي يتعامل مع العمل المتكرر تلقائياً." : "AI handles repetitive work automatically.",
         metric: "50+",
-        metricLabel: "Workflows",
+        metricLabel: isRTL ? "سير العمل" : "Workflows",
         chartType: 'bar',
         index: 2
     },
     {
         icon: Lightning,
-        title: "Instant Insights",
-        description: "Real-time dashboards that surface what matters.",
+        title: isRTL ? "رؤى فورية" : "Instant Insights",
+        description: isRTL ? "لوحات معلومات في الوقت الفعلي تُظهر ما يهم." : "Real-time dashboards that surface what matters.",
         metric: "< 1s",
-        metricLabel: "Updates",
+        metricLabel: isRTL ? "التحديثات" : "Updates",
         chartType: 'progress',
         index: 3
     },
     {
         icon: ChartLineUp,
-        title: "Predictive Analytics",
-        description: "Forecast trends before they happen.",
+        title: isRTL ? "تحليلات تنبؤية" : "Predictive Analytics",
+        description: isRTL ? "توقع الاتجاهات قبل حدوثها." : "Forecast trends before they happen.",
         metric: "95%",
-        metricLabel: "Accuracy",
+        metricLabel: isRTL ? "الدقة" : "Accuracy",
         chartType: 'line',
         index: 4
     },
     {
         icon: ShieldCheck,
-        title: "Enterprise Security",
-        description: "Bank-grade encryption. SOC 2 compliant.",
+        title: isRTL ? "أمان المؤسسات" : "Enterprise Security",
+        description: isRTL ? "تشفير بمستوى البنوك. متوافق مع SOC 2." : "Bank-grade encryption. SOC 2 compliant.",
         metric: "99.9%",
-        metricLabel: "Uptime",
+        metricLabel: isRTL ? "وقت التشغيل" : "Uptime",
         chartType: 'bar',
         index: 5
     }
 ];
 
 export const FeaturesShowcase: React.FC = () => {
+    const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+    const FEATURES = getFeaturesData(isRTL);
 
     const checkScroll = () => {
         if (scrollRef.current) {
@@ -302,39 +322,51 @@ export const FeaturesShowcase: React.FC = () => {
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
                             bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-medium mb-6">
                             <Cube size={16} weight="duotone" />
-                            Why NABD
+                            {isRTL ? 'لماذا نبض' : 'Why NABD'}
                         </div>
 
                         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-5 leading-[1.05]">
-                            <span className="text-white">Orchestrate Your </span>
-                            <span className="text-zinc-500">Empire</span>
+                            {isRTL ? (
+                                <>
+                                    <span className="text-white">أدِر إمبراطوريتك </span>
+                                    <span className="text-zinc-500">بكل سهولة</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-white">Orchestrate Your </span>
+                                    <span className="text-zinc-500">Empire</span>
+                                </>
+                            )}
                         </h2>
 
                         <p className="text-lg sm:text-xl text-zinc-500 max-w-2xl mx-auto">
-                            One platform to unify operations, accelerate decisions, and unlock your team's full potential.
+                            {isRTL
+                                ? 'منصة واحدة لتوحيد العمليات وتسريع القرارات وإطلاق العنان لإمكانات فريقك الكاملة.'
+                                : "One platform to unify operations, accelerate decisions, and unlock your team's full potential."
+                            }
                         </p>
                     </div>
                 )}
 
                 {/* Mobile scroll navigation */}
                 <div className="sm:hidden flex items-center justify-between mb-4">
-                    <span className="text-xs text-zinc-500">Swipe to explore</span>
+                    <span className="text-xs text-zinc-500">{isRTL ? 'مرر لاستكشاف' : 'Swipe to explore'}</span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => scroll('left')}
-                            disabled={!canScrollLeft}
+                            onClick={() => scroll(isRTL ? 'right' : 'left')}
+                            disabled={isRTL ? !canScrollRight : !canScrollLeft}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollLeft
+                                ${(isRTL ? canScrollRight : canScrollLeft)
                                     ? 'border-zinc-700 text-white hover:bg-zinc-800'
                                     : 'border-zinc-800 text-zinc-700'}`}
                         >
                             <CaretLeft size={16} />
                         </button>
                         <button
-                            onClick={() => scroll('right')}
-                            disabled={!canScrollRight}
+                            onClick={() => scroll(isRTL ? 'left' : 'right')}
+                            disabled={isRTL ? !canScrollLeft : !canScrollRight}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollRight
+                                ${(isRTL ? canScrollLeft : canScrollRight)
                                     ? 'border-zinc-700 text-white hover:bg-zinc-800'
                                     : 'border-zinc-800 text-zinc-700'}`}
                         >
@@ -353,7 +385,7 @@ export const FeaturesShowcase: React.FC = () => {
                             scrollbar-hide snap-x snap-mandatory sm:snap-none"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
-                        <HeroFeatureCard />
+                        <HeroFeatureCard isRTL={isRTL} />
                         {FEATURES.map((feature) => (
                             <FeatureCard key={feature.title} {...feature} />
                         ))}
@@ -367,8 +399,8 @@ export const FeaturesShowcase: React.FC = () => {
                         <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full
                             bg-white text-zinc-900 font-semibold text-sm
                             hover:bg-zinc-100 transition-colors group">
-                            Explore All Features
-                            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                            {isRTL ? 'استكشف جميع المميزات' : 'Explore All Features'}
+                            <ArrowIcon size={16} className={`group-hover:${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'} transition-transform`} />
                         </button>
                     </div>
                 )}

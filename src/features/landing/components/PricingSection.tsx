@@ -2,8 +2,9 @@ import React, { useState, useRef, memo, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
     Check, Crown, Lightning, Rocket, Buildings, Users, Database,
-    Headset, ChartLineUp, ArrowRight, Sparkle, Shield, CaretLeft, CaretRight
+    Headset, ChartLineUp, ArrowRight, ArrowLeft, Sparkle, Shield, CaretLeft, CaretRight
 } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 interface PricingTier {
     id: string;
@@ -18,15 +19,22 @@ interface PricingTier {
     cta: string;
 }
 
-const PRICING_TIERS: PricingTier[] = [
+const getPricingTiers = (isRTL: boolean): PricingTier[] => [
     {
         id: 'starter',
-        name: 'Starter',
+        name: isRTL ? 'المبتدئ' : 'Starter',
         icon: Rocket,
         monthlyPrice: 32,
         yearlyPrice: 16,
-        description: 'For small teams getting started',
-        features: [
+        description: isRTL ? 'للفرق الصغيرة التي تبدأ' : 'For small teams getting started',
+        features: isRTL ? [
+            'حتى 5 أعضاء فريق',
+            'عروض اللوحة والجدول وكانبان',
+            '10 جيجابايت تخزين',
+            'دعم بالبريد الإلكتروني',
+            'لوحات معلومات أساسية',
+            '5 قواعد أتمتة',
+        ] : [
             'Up to 5 team members',
             'Board, Table & Kanban views',
             '10 GB storage',
@@ -34,16 +42,25 @@ const PRICING_TIERS: PricingTier[] = [
             'Basic dashboards',
             '5 automation rules',
         ],
-        cta: 'Start Free',
+        cta: isRTL ? 'ابدأ مجاناً' : 'Start Free',
     },
     {
         id: 'professional',
-        name: 'Professional',
+        name: isRTL ? 'الاحترافي' : 'Professional',
         icon: Crown,
         monthlyPrice: 56,
         yearlyPrice: 25,
-        description: 'For growing teams that need power',
-        features: [
+        description: isRTL ? 'للفرق النامية التي تحتاج للقوة' : 'For growing teams that need power',
+        features: isRTL ? [
+            'حتى 25 عضو فريق',
+            'جميع عروض اللوحة الـ 14',
+            '50 جيجابايت تخزين',
+            'دعم ذو أولوية',
+            'الشركة المصغرة: المبيعات والمخزون',
+            'أتمتة متقدمة',
+            'تتبع الوقت',
+            '24 نوع عمود',
+        ] : [
             'Up to 25 team members',
             'All 14 board views',
             '50 GB storage',
@@ -54,17 +71,27 @@ const PRICING_TIERS: PricingTier[] = [
             '24 column types',
         ],
         highlighted: true,
-        badge: 'Most Popular',
-        cta: 'Start Free Trial',
+        badge: isRTL ? 'الأكثر شعبية' : 'Most Popular',
+        cta: isRTL ? 'ابدأ تجربة مجانية' : 'Start Free Trial',
     },
     {
         id: 'enterprise',
-        name: 'Enterprise',
+        name: isRTL ? 'المؤسسات' : 'Enterprise',
         icon: Buildings,
         monthlyPrice: 73,
         yearlyPrice: 35,
-        description: 'Full power for large organizations',
-        features: [
+        description: isRTL ? 'القوة الكاملة للمؤسسات الكبيرة' : 'Full power for large organizations',
+        features: isRTL ? [
+            'أعضاء فريق غير محدودين',
+            'مجموعة الشركة المصغرة الكاملة',
+            '500 جيجابايت تخزين',
+            'مدير دعم مخصص',
+            'تكاملات مخصصة',
+            'تحليلات متقدمة',
+            'خيارات العلامة البيضاء',
+            'الوصول لـ API',
+            'أكثر من 50 لوحة جاهزة',
+        ] : [
             'Unlimited team members',
             'Full Mini Company suite',
             '500 GB storage',
@@ -75,7 +102,7 @@ const PRICING_TIERS: PricingTier[] = [
             'API access',
             '50+ ready dashboards',
         ],
-        cta: 'Contact Sales',
+        cta: isRTL ? 'تواصل مع المبيعات' : 'Contact Sales',
     },
 ];
 
@@ -137,13 +164,15 @@ interface PricingCardProps {
     isYearly: boolean;
     onGetStarted: () => void;
     index: number;
+    isRTL: boolean;
 }
 
 // Pricing card component
-const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetStarted, index }) => {
+const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetStarted, index, isRTL }) => {
     const price = isYearly ? tier.yearlyPrice : tier.monthlyPrice;
     const Icon = tier.icon;
     const savings = Math.round((1 - tier.yearlyPrice / tier.monthlyPrice) * 100);
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
     return (
         <div
@@ -207,25 +236,25 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                                 <AnimatedPrice price={tier.yearlyPrice * 12} highlighted={tier.highlighted} />
                                 <div className="flex flex-col">
                                     <span className="text-sm font-medium text-zinc-400">
-                                        SAR
+                                        {isRTL ? 'ر.س' : 'SAR'}
                                     </span>
                                     <span className="text-xs text-zinc-500">
-                                        /year
+                                        {isRTL ? '/سنة' : '/year'}
                                     </span>
                                 </div>
                             </div>
                             {/* Per month breakdown */}
                             <div className="mt-2 flex items-center gap-2">
                                 <span className="text-lg font-semibold text-zinc-400">
-                                    {tier.yearlyPrice} SAR
+                                    {tier.yearlyPrice} {isRTL ? 'ر.س' : 'SAR'}
                                 </span>
-                                <span className="text-xs text-zinc-500">/month</span>
+                                <span className="text-xs text-zinc-500">{isRTL ? '/شهر' : '/month'}</span>
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                     tier.highlighted
                                         ? 'bg-white/10 text-white'
                                         : 'bg-zinc-800 text-zinc-300'
                                 }`}>
-                                    Save {savings}%
+                                    {isRTL ? `وفر ${savings}%` : `Save ${savings}%`}
                                 </span>
                             </div>
                         </>
@@ -234,10 +263,10 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                             <AnimatedPrice price={price} highlighted={tier.highlighted} />
                             <div className="flex flex-col">
                                 <span className="text-sm font-medium text-zinc-400">
-                                    SAR
+                                    {isRTL ? 'ر.س' : 'SAR'}
                                 </span>
                                 <span className="text-xs text-zinc-500">
-                                    /month
+                                    {isRTL ? '/شهر' : '/month'}
                                 </span>
                             </div>
                         </div>
@@ -254,7 +283,7 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                     }`}
                 >
                     {tier.cta}
-                    <ArrowRight size={14} weight="bold" className="group-hover/btn:translate-x-0.5 transition-transform" />
+                    <ArrowIcon size={14} weight="bold" className={`group-hover/btn:${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'} transition-transform`} />
                 </button>
 
                 {/* Features */}
@@ -273,12 +302,27 @@ interface PricingSectionProps {
 }
 
 export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) => {
+    const { isRTL } = useLandingContext();
     const [isYearly, setIsYearly] = useState(true);
     const sectionRef = useRef(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const PRICING_TIERS = getPricingTiers(isRTL);
+
+    const trustIndicators = isRTL ? [
+        { icon: Shield, label: 'متوافق مع SOC 2' },
+        { icon: Database, label: '99.9% وقت التشغيل' },
+        { icon: Headset, label: 'دعم على مدار الساعة' },
+        { icon: Users, label: 'أكثر من 10 آلاف مستخدم' },
+    ] : [
+        { icon: Shield, label: 'SOC 2 Compliant' },
+        { icon: Database, label: '99.9% Uptime' },
+        { icon: Headset, label: '24/7 Support' },
+        { icon: Users, label: '10K+ Users' },
+    ];
 
     const handleGetStarted = () => {
         if (onGetStarted) {
@@ -330,13 +374,13 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 text-white text-sm font-medium mb-6">
                             <Lightning size={14} weight="fill" />
-                            Pricing
+                            {isRTL ? 'الأسعار' : 'Pricing'}
                         </div>
                         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-[1.05]">
-                            Choose Your Plan
+                            {isRTL ? 'اختر خطتك' : 'Choose Your Plan'}
                         </h2>
                         <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto">
-                            Start free for 14 days. No credit card required.
+                            {isRTL ? 'ابدأ مجاناً لمدة 14 يوماً. لا حاجة لبطاقة ائتمان.' : 'Start free for 14 days. No credit card required.'}
                         </p>
                     </div>
                 )}
@@ -353,7 +397,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                                     : 'text-zinc-500 hover:text-white'
                             }`}
                         >
-                            Monthly
+                            {isRTL ? 'شهري' : 'Monthly'}
                         </button>
                         <button
                             onClick={() => setIsYearly(true)}
@@ -363,7 +407,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                                     : 'text-zinc-500 hover:text-white'
                             }`}
                         >
-                            Yearly
+                            {isRTL ? 'سنوي' : 'Yearly'}
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 isYearly
                                     ? 'bg-zinc-900/20 text-zinc-900'
@@ -377,13 +421,13 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
 
                 {/* Mobile scroll navigation */}
                 <div className="sm:hidden flex items-center justify-between mb-4">
-                    <span className="text-xs text-zinc-500">Swipe to compare plans</span>
+                    <span className="text-xs text-zinc-500">{isRTL ? 'مرر للمقارنة بين الخطط' : 'Swipe to compare plans'}</span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => scroll('left')}
-                            disabled={!canScrollLeft}
+                            onClick={() => scroll(isRTL ? 'right' : 'left')}
+                            disabled={isRTL ? !canScrollRight : !canScrollLeft}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                canScrollLeft
+                                (isRTL ? canScrollRight : canScrollLeft)
                                     ? 'border-zinc-700 text-white'
                                     : 'border-zinc-800 text-zinc-700'
                             }`}
@@ -391,10 +435,10 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             <CaretLeft size={16} />
                         </button>
                         <button
-                            onClick={() => scroll('right')}
-                            disabled={!canScrollRight}
+                            onClick={() => scroll(isRTL ? 'left' : 'right')}
+                            disabled={isRTL ? !canScrollLeft : !canScrollRight}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                canScrollRight
+                                (isRTL ? canScrollLeft : canScrollRight)
                                     ? 'border-zinc-700 text-white'
                                     : 'border-zinc-800 text-zinc-700'
                             }`}
@@ -421,6 +465,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                                 isYearly={isYearly}
                                 onGetStarted={handleGetStarted}
                                 index={index}
+                                isRTL={isRTL}
                             />
                         ))}
                     </div>
@@ -432,20 +477,15 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.4s' }}>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 sm:gap-8">
-                                {[
-                                    { icon: Shield, label: 'SOC 2 Compliant' },
-                                    { icon: Database, label: '99.9% Uptime' },
-                                    { icon: Headset, label: '24/7 Support' },
-                                    { icon: Users, label: '10K+ Users' },
-                                ].map(({ icon: Icon, label }) => (
+                                {trustIndicators.map(({ icon: Icon, label }) => (
                                     <div key={label} className="flex items-center gap-2 text-zinc-400">
                                         <Icon size={16} weight="fill" />
                                         <span className="text-xs sm:text-sm font-medium">{label}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="text-center sm:text-right">
-                                <p className="text-xs text-zinc-500 mb-1">Questions?</p>
+                            <div className={`text-center ${isRTL ? 'sm:text-left' : 'sm:text-right'}`}>
+                                <p className="text-xs text-zinc-500 mb-1">{isRTL ? 'أسئلة؟' : 'Questions?'}</p>
                                 <a href="mailto:info@nabdchain.com" className="text-sm font-medium text-white hover:underline">
                                     info@nabdchain.com
                                 </a>
@@ -459,7 +499,10 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                     <div className="mt-8 text-center"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}>
                         <p className="text-sm text-zinc-500">
-                            30-day money-back guarantee • Cancel anytime • No hidden fees
+                            {isRTL
+                                ? 'ضمان استرداد المال خلال 30 يوماً • إلغاء في أي وقت • بدون رسوم مخفية'
+                                : '30-day money-back guarantee • Cancel anytime • No hidden fees'
+                            }
                         </p>
                     </div>
                 )}

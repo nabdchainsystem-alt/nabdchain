@@ -5,9 +5,10 @@ import {
     Lightning, Table, Target, PaintBrush, Flask,
     ListBullets, Kanban, Calendar, Timer, ChartLine,
     FileText, GridFour, ShoppingCart, Truck, Rows, Columns,
-    Sparkle, Eye, ArrowRight, CaretLeft, CaretRight,
+    Sparkle, Eye, ArrowRight, ArrowLeft, CaretLeft, CaretRight,
     CheckCircle, Circle, Users, Clock, Flag
 } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 // Mini Whiteboard Preview
 const WhiteboardPreview = memo(() => (
@@ -131,12 +132,12 @@ const AutomationPreview = memo(() => (
 ));
 
 // Tools data with previews
-const tools = [
-    { name: 'Whiteboard', icon: Chalkboard, description: 'Visual canvas', preview: WhiteboardPreview },
-    { name: 'Cornell Notes', icon: Note, description: 'Smart notes', preview: NotesPreview },
-    { name: 'Dashboards', icon: ChartBar, description: 'Live analytics', preview: DashboardPreview },
-    { name: 'Workload', icon: UsersFour, description: 'Capacity', preview: WorkloadPreview },
-    { name: 'Automation', icon: Lightning, description: 'No-code flows', preview: AutomationPreview },
+const getToolsData = (isRTL: boolean) => [
+    { name: isRTL ? 'السبورة البيضاء' : 'Whiteboard', icon: Chalkboard, description: isRTL ? 'لوحة بصرية' : 'Visual canvas', preview: WhiteboardPreview },
+    { name: isRTL ? 'ملاحظات كورنيل' : 'Cornell Notes', icon: Note, description: isRTL ? 'ملاحظات ذكية' : 'Smart notes', preview: NotesPreview },
+    { name: isRTL ? 'لوحات المعلومات' : 'Dashboards', icon: ChartBar, description: isRTL ? 'تحليلات مباشرة' : 'Live analytics', preview: DashboardPreview },
+    { name: isRTL ? 'عبء العمل' : 'Workload', icon: UsersFour, description: isRTL ? 'السعة' : 'Capacity', preview: WorkloadPreview },
+    { name: isRTL ? 'الأتمتة' : 'Automation', icon: Lightning, description: isRTL ? 'بدون برمجة' : 'No-code flows', preview: AutomationPreview },
 ];
 
 // Tool Card with visual preview
@@ -263,12 +264,12 @@ const GanttViewPreview = memo(() => (
 ));
 
 // Board views with previews
-const boardViews = [
-    { name: 'Kanban', icon: Kanban, preview: KanbanViewPreview, description: 'Visual workflow boards' },
-    { name: 'Table', icon: Rows, preview: TableViewPreview, description: 'Spreadsheet-like data' },
-    { name: 'Calendar', icon: Calendar, preview: CalendarViewPreview, description: 'Date-based planning' },
-    { name: 'Timeline', icon: Timer, preview: TimelineViewPreview, description: 'Project roadmaps' },
-    { name: 'Gantt', icon: ChartLine, preview: GanttViewPreview, description: 'Project scheduling' },
+const getBoardViewsData = (isRTL: boolean) => [
+    { name: isRTL ? 'كانبان' : 'Kanban', icon: Kanban, preview: KanbanViewPreview, description: isRTL ? 'لوحات سير عمل بصرية' : 'Visual workflow boards' },
+    { name: isRTL ? 'جدول' : 'Table', icon: Rows, preview: TableViewPreview, description: isRTL ? 'بيانات كجداول' : 'Spreadsheet-like data' },
+    { name: isRTL ? 'التقويم' : 'Calendar', icon: Calendar, preview: CalendarViewPreview, description: isRTL ? 'تخطيط بالتواريخ' : 'Date-based planning' },
+    { name: isRTL ? 'الجدول الزمني' : 'Timeline', icon: Timer, preview: TimelineViewPreview, description: isRTL ? 'خرائط المشاريع' : 'Project roadmaps' },
+    { name: isRTL ? 'جانت' : 'Gantt', icon: ChartLine, preview: GanttViewPreview, description: isRTL ? 'جدولة المشاريع' : 'Project scheduling' },
 ];
 
 // View Card
@@ -316,6 +317,7 @@ const ViewCard: React.FC<{ view: typeof boardViews[0]; index: number; isActive: 
 });
 
 export const ToolsShowcase: React.FC = () => {
+    const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const toolsScrollRef = useRef<HTMLDivElement>(null);
     const viewsScrollRef = useRef<HTMLDivElement>(null);
@@ -326,6 +328,13 @@ export const ToolsShowcase: React.FC = () => {
     const [canScrollToolsRight, setCanScrollToolsRight] = useState(true);
     const [canScrollViewsLeft, setCanScrollViewsLeft] = useState(false);
     const [canScrollViewsRight, setCanScrollViewsRight] = useState(true);
+
+    const tools = getToolsData(isRTL);
+    const boardViews = getBoardViewsData(isRTL);
+
+    const additionalViews = isRTL
+        ? ['قائمة', 'نظرة عامة', 'نماذج', 'محوري', 'مستند', 'المشتريات', 'سلسلة التوريد', '+المزيد']
+        : ['List', 'Overview', 'Forms', 'Pivot', 'Doc', 'Procurement', 'Supply Chain', 'ListBoard', '+more'];
 
     const checkToolsScroll = () => {
         if (toolsScrollRef.current) {
@@ -399,28 +408,38 @@ export const ToolsShowcase: React.FC = () => {
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 text-sm font-medium mb-6">
                                 <Sparkle size={14} weight="fill" />
-                                Power Tools
+                                {isRTL ? 'أدوات قوية' : 'Power Tools'}
                             </div>
                             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-5 tracking-tight leading-[1.1]">
-                                Built for Every
-                                <br />
-                                <span className="text-zinc-500">Workflow</span>
+                                {isRTL ? (
+                                    <>
+                                        مصممة لكل
+                                        <br />
+                                        <span className="text-zinc-500">سير عمل</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Built for Every
+                                        <br />
+                                        <span className="text-zinc-500">Workflow</span>
+                                    </>
+                                )}
                             </h2>
                             <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto">
-                                Powerful tools that adapt to how you work
+                                {isRTL ? 'أدوات قوية تتكيف مع طريقة عملك' : 'Powerful tools that adapt to how you work'}
                             </p>
                         </div>
                     )}
 
                     {/* Mobile scroll navigation */}
                     <div className="sm:hidden flex items-center justify-between mb-4">
-                        <span className="text-xs text-zinc-500">Swipe to explore tools</span>
+                        <span className="text-xs text-zinc-500">{isRTL ? 'مرر لاستكشاف الأدوات' : 'Swipe to explore tools'}</span>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => scrollTools('left')}
-                                disabled={!canScrollToolsLeft}
+                                onClick={() => scrollTools(isRTL ? 'right' : 'left')}
+                                disabled={isRTL ? !canScrollToolsRight : !canScrollToolsLeft}
                                 className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                    canScrollToolsLeft
+                                    (isRTL ? canScrollToolsRight : canScrollToolsLeft)
                                         ? 'border-zinc-600 text-white'
                                         : 'border-zinc-800 text-zinc-700'
                                 }`}
@@ -428,10 +447,10 @@ export const ToolsShowcase: React.FC = () => {
                                 <CaretLeft size={16} />
                             </button>
                             <button
-                                onClick={() => scrollTools('right')}
-                                disabled={!canScrollToolsRight}
+                                onClick={() => scrollTools(isRTL ? 'left' : 'right')}
+                                disabled={isRTL ? !canScrollToolsLeft : !canScrollToolsRight}
                                 className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                    canScrollToolsRight
+                                    (isRTL ? canScrollToolsLeft : canScrollToolsRight)
                                         ? 'border-zinc-600 text-white'
                                         : 'border-zinc-800 text-zinc-700'
                                 }`}
@@ -468,7 +487,10 @@ export const ToolsShowcase: React.FC = () => {
                         <div className="mt-8 text-center"
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}>
                             <span className="text-sm text-zinc-500">
-                                + 5 more advanced tools including Spreadsheets, Goals & OKRs, and more
+                                {isRTL
+                                    ? '+ 5 أدوات متقدمة أخرى بما فيها جداول البيانات والأهداف والمزيد'
+                                    : '+ 5 more advanced tools including Spreadsheets, Goals & OKRs, and more'
+                                }
                             </span>
                         </div>
                     )}
@@ -484,28 +506,41 @@ export const ToolsShowcase: React.FC = () => {
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.2s' }}>
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm font-medium mb-6">
                                 <Eye size={14} weight="fill" />
-                                14 Board Views
+                                {isRTL ? '14 طريقة عرض' : '14 Board Views'}
                             </div>
                             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-zinc-900 dark:text-white mb-5 tracking-tight leading-[1.1]">
-                                One Board
-                                <br />
-                                <span className="text-zinc-400 dark:text-zinc-600">Every Perspective</span>
+                                {isRTL ? (
+                                    <>
+                                        لوحة واحدة
+                                        <br />
+                                        <span className="text-zinc-400 dark:text-zinc-600">كل المنظورات</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        One Board
+                                        <br />
+                                        <span className="text-zinc-400 dark:text-zinc-600">Every Perspective</span>
+                                    </>
+                                )}
                             </h2>
                             <p className="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
-                                Switch between views instantly. Same data, different insights.
+                                {isRTL
+                                    ? 'التبديل بين العروض فوراً. نفس البيانات، رؤى مختلفة.'
+                                    : 'Switch between views instantly. Same data, different insights.'
+                                }
                             </p>
                         </div>
                     )}
 
                     {/* Mobile scroll navigation */}
                     <div className="sm:hidden flex items-center justify-between mb-4">
-                        <span className="text-xs text-zinc-500">Swipe to see views</span>
+                        <span className="text-xs text-zinc-500">{isRTL ? 'مرر لرؤية العروض' : 'Swipe to see views'}</span>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => scrollViews('left')}
-                                disabled={!canScrollViewsLeft}
+                                onClick={() => scrollViews(isRTL ? 'right' : 'left')}
+                                disabled={isRTL ? !canScrollViewsRight : !canScrollViewsLeft}
                                 className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                    canScrollViewsLeft
+                                    (isRTL ? canScrollViewsRight : canScrollViewsLeft)
                                         ? 'border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white'
                                         : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
                                 }`}
@@ -513,10 +548,10 @@ export const ToolsShowcase: React.FC = () => {
                                 <CaretLeft size={16} />
                             </button>
                             <button
-                                onClick={() => scrollViews('right')}
-                                disabled={!canScrollViewsRight}
+                                onClick={() => scrollViews(isRTL ? 'left' : 'right')}
+                                disabled={isRTL ? !canScrollViewsLeft : !canScrollViewsRight}
                                 className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                                    canScrollViewsRight
+                                    (isRTL ? canScrollViewsLeft : canScrollViewsRight)
                                         ? 'border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white'
                                         : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
                                 }`}
@@ -552,7 +587,7 @@ export const ToolsShowcase: React.FC = () => {
                     {isInView && (
                         <div className="mt-8 flex flex-wrap justify-center gap-2"
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}>
-                            {['List', 'Overview', 'Forms', 'Pivot', 'Doc', 'Procurement', 'Supply Chain', 'ListBoard', '+more'].map((name, i) => (
+                            {additionalViews.map((name, i) => (
                                 <span
                                     key={i}
                                     className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400"
@@ -569,17 +604,17 @@ export const ToolsShowcase: React.FC = () => {
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.6s' }}>
                             <div className="text-center">
                                 <div className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white">14</div>
-                                <div className="text-xs text-zinc-500 mt-1">Views</div>
+                                <div className="text-xs text-zinc-500 mt-1">{isRTL ? 'طرق عرض' : 'Views'}</div>
                             </div>
                             <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800"/>
                             <div className="text-center">
                                 <div className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white">10</div>
-                                <div className="text-xs text-zinc-500 mt-1">Tools</div>
+                                <div className="text-xs text-zinc-500 mt-1">{isRTL ? 'أدوات' : 'Tools'}</div>
                             </div>
                             <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800"/>
                             <div className="text-center">
                                 <div className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white">1</div>
-                                <div className="text-xs text-zinc-500 mt-1">Platform</div>
+                                <div className="text-xs text-zinc-500 mt-1">{isRTL ? 'منصة' : 'Platform'}</div>
                             </div>
                         </div>
                     )}

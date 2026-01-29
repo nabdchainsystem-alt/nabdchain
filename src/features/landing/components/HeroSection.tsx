@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'phosphor-react';
+import { ArrowRight, ArrowLeft } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 // Animated grid background with flowing light effects - GPU accelerated CSS animations
 const NetworkBackground = memo(() => (
@@ -63,6 +64,9 @@ const LogoIcons = {
 };
 
 export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterSystem }) => {
+    const { t, isRTL } = useLandingContext();
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+
     const companies = [
         { name: 'Nexora', icon: LogoIcons.hexagon },
         { name: 'Veltrix', icon: LogoIcons.cube },
@@ -89,18 +93,32 @@ export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterS
                     {/* Main Heading */}
                     <div className="text-center mb-6 sm:mb-8">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-black dark:text-white leading-[1.08]">
-                            More than Project Management.
-                            <br />
-                            <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent">
-                                Complete Business Operations
-                            </span>
+                            {isRTL ? (
+                                <>
+                                    أكثر من مجرد إدارة مشاريع.
+                                    <br />
+                                    <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent">
+                                        عمليات تجارية متكاملة
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    More than Project Management.
+                                    <br />
+                                    <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent">
+                                        Complete Business Operations
+                                    </span>
+                                </>
+                            )}
                         </h1>
                     </div>
 
                     {/* Subtitle */}
                     <p className="text-lg sm:text-xl md:text-2xl text-zinc-500 dark:text-zinc-400 text-center max-w-3xl mx-auto mb-10 sm:mb-12 leading-relaxed">
-                        The all-in-one platform to manage projects, run operations, and unlock data-driven insights.
-                        Built for teams who want to move fast.
+                        {isRTL
+                            ? 'المنصة الشاملة لإدارة المشاريع وتشغيل العمليات واستخراج رؤى مبنية على البيانات. مصممة للفرق التي تريد التحرك بسرعة.'
+                            : 'The all-in-one platform to manage projects, run operations, and unlock data-driven insights. Built for teams who want to move fast.'
+                        }
                     </p>
 
                     {/* CTA Button */}
@@ -111,8 +129,8 @@ export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterS
                             hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all duration-200 shadow-lg shadow-black/10 dark:shadow-white/10"
                         >
                             <span className="flex items-center gap-2">
-                                Start building for free
-                                <ArrowRight size={20} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                                {isRTL ? 'ابدأ البناء مجاناً' : 'Start building for free'}
+                                <ArrowIcon size={20} weight="bold" className={`group-hover:${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'} transition-transform`} />
                             </span>
                         </button>
                     </div>
@@ -120,7 +138,7 @@ export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterS
                     {/* Trusted By Section */}
                     <div className="text-center">
                         <p className="text-sm sm:text-base text-zinc-400 dark:text-zinc-500 mb-6 sm:mb-8 font-medium">
-                            Trusted by fast-growing companies across the region
+                            {isRTL ? 'موثوق به من قبل الشركات سريعة النمو في المنطقة' : 'Trusted by fast-growing companies across the region'}
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-10">
                             {companies.map((company) => (

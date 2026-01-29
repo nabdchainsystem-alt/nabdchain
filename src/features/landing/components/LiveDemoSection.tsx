@@ -12,12 +12,14 @@ import {
     Globe,
     Shield,
     ArrowRight,
+    ArrowLeft,
     Sparkle,
     CaretLeft,
     CaretRight,
     Check,
     Circle
 } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 // Animated mini bar chart
 const MiniBarChart: React.FC<{ animate: boolean }> = memo(({ animate }) => {
@@ -68,14 +70,18 @@ const MiniLineChart: React.FC<{ animate: boolean }> = memo(({ animate }) => (
 ));
 
 // Kanban Preview Card - Enhanced with live animation
-const KanbanPreview = memo(() => {
+const KanbanPreview = memo(({ isRTL }: { isRTL: boolean }) => {
     const [animate, setAnimate] = useState(false);
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 300);
         return () => clearTimeout(timer);
     }, []);
 
-    const columns = [
+    const columns = isRTL ? [
+        { label: 'للتنفيذ', items: 3, color: 'bg-zinc-200 dark:bg-zinc-700' },
+        { label: 'قيد العمل', items: 2, color: 'bg-zinc-300 dark:bg-zinc-600' },
+        { label: 'مكتمل', items: 4, color: 'bg-zinc-900 dark:bg-white' },
+    ] : [
         { label: 'To Do', items: 3, color: 'bg-zinc-200 dark:bg-zinc-700' },
         { label: 'Working', items: 2, color: 'bg-zinc-300 dark:bg-zinc-600' },
         { label: 'Done', items: 4, color: 'bg-zinc-900 dark:bg-white' },
@@ -88,8 +94,10 @@ const KanbanPreview = memo(() => {
                     <Kanban size={20} weight="fill" className="text-white dark:text-zinc-900" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">Multiple Views</h3>
-                    <p className="text-xs text-zinc-500">10+ board layouts</p>
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                        {isRTL ? 'طرق عرض متعددة' : 'Multiple Views'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{isRTL ? 'أكثر من 10 تخطيطات' : '10+ board layouts'}</p>
                 </div>
             </div>
 
@@ -106,7 +114,7 @@ const KanbanPreview = memo(() => {
                                     key={i}
                                     className={`h-7 rounded-lg ${col.color} transition-all duration-500`}
                                     style={{
-                                        opacity: animate ? (col.label === 'Done' ? 1 : 0.7) : 0,
+                                        opacity: animate ? (col.label === 'Done' || col.label === 'مكتمل' ? 1 : 0.7) : 0,
                                         transform: animate ? 'translateY(0)' : 'translateY(10px)',
                                         transitionDelay: `${colIndex * 100 + i * 80}ms`
                                     }}
@@ -127,14 +135,14 @@ const KanbanPreview = memo(() => {
                         </div>
                     ))}
                 </div>
-                <span className="text-[10px] text-zinc-400">+7 more</span>
+                <span className="text-[10px] text-zinc-400">{isRTL ? '+7 أكثر' : '+7 more'}</span>
             </div>
         </div>
     );
 });
 
 // Automation Preview Card - Enhanced with workflow visualization
-const AutomationPreview = memo(() => {
+const AutomationPreview = memo(({ isRTL }: { isRTL: boolean }) => {
     const [activeRule, setActiveRule] = useState(0);
 
     useEffect(() => {
@@ -144,7 +152,11 @@ const AutomationPreview = memo(() => {
         return () => clearInterval(interval);
     }, []);
 
-    const rules = [
+    const rules = isRTL ? [
+        { trigger: 'الحالة → مكتمل', action: 'إشعار الفريق', icon: Check },
+        { trigger: 'تجاوز الموعد', action: 'تعيين عاجل', icon: Lightning },
+        { trigger: 'مسؤول جديد', action: 'إرسال بريد', icon: Users },
+    ] : [
         { trigger: 'Status → Done', action: 'Notify team', icon: Check },
         { trigger: 'Due date passed', action: 'Set Urgent', icon: Lightning },
         { trigger: 'New assignee', action: 'Send email', icon: Users },
@@ -157,8 +169,10 @@ const AutomationPreview = memo(() => {
                     <Lightning size={20} weight="fill" className="text-white dark:text-zinc-900" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">Automations</h3>
-                    <p className="text-xs text-zinc-500">50+ templates</p>
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                        {isRTL ? 'الأتمتة' : 'Automations'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{isRTL ? 'أكثر من 50 قالب' : '50+ templates'}</p>
                 </div>
             </div>
 
@@ -190,7 +204,11 @@ const AutomationPreview = memo(() => {
                                 </span>
                             </div>
                             <div className="flex items-center gap-1">
-                                <ArrowRight size={10} className={isActive ? 'text-zinc-400 dark:text-zinc-600' : 'text-zinc-300 dark:text-zinc-700'} />
+                                {isRTL ? (
+                                    <ArrowLeft size={10} className={isActive ? 'text-zinc-400 dark:text-zinc-600' : 'text-zinc-300 dark:text-zinc-700'} />
+                                ) : (
+                                    <ArrowRight size={10} className={isActive ? 'text-zinc-400 dark:text-zinc-600' : 'text-zinc-300 dark:text-zinc-700'} />
+                                )}
                                 <span className={`text-[10px] ${
                                     isActive ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-600'
                                 }`}>
@@ -198,7 +216,7 @@ const AutomationPreview = memo(() => {
                                 </span>
                             </div>
                             {isActive && (
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-900 animate-pulse" />
+                                <div className={`absolute ${isRTL ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-900 animate-pulse`} />
                             )}
                         </div>
                     );
@@ -206,14 +224,14 @@ const AutomationPreview = memo(() => {
             </div>
 
             <div className="mt-3 text-center">
-                <span className="text-[10px] text-zinc-400">No code required</span>
+                <span className="text-[10px] text-zinc-400">{isRTL ? 'بدون برمجة' : 'No code required'}</span>
             </div>
         </div>
     );
 });
 
 // Collaboration Preview Card - Enhanced with live presence
-const CollaborationPreview = memo(() => {
+const CollaborationPreview = memo(({ isRTL }: { isRTL: boolean }) => {
     const [cursorPos, setCursorPos] = useState({ x: 30, y: 40 });
 
     useEffect(() => {
@@ -233,8 +251,10 @@ const CollaborationPreview = memo(() => {
                     <Users size={20} weight="fill" className="text-white dark:text-zinc-900" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">Real-time</h3>
-                    <p className="text-xs text-zinc-500">Live collaboration</p>
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                        {isRTL ? 'في الوقت الفعلي' : 'Real-time'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{isRTL ? 'تعاون مباشر' : 'Live collaboration'}</p>
                 </div>
             </div>
 
@@ -254,8 +274,8 @@ const CollaborationPreview = memo(() => {
                     <svg width="16" height="16" viewBox="0 0 16 16">
                         <path d="M3 1L12 7L7 8L5 13L3 1Z" fill="#18181b" className="dark:fill-white" />
                     </svg>
-                    <div className="ml-3 -mt-1 px-1.5 py-0.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[8px] rounded whitespace-nowrap font-medium">
-                        Sarah K.
+                    <div className={`${isRTL ? 'mr-3' : 'ml-3'} -mt-1 px-1.5 py-0.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[8px] rounded whitespace-nowrap font-medium`}>
+                        {isRTL ? 'سارة ك.' : 'Sarah K.'}
                     </div>
                 </div>
 
@@ -264,8 +284,8 @@ const CollaborationPreview = memo(() => {
                     <svg width="14" height="14" viewBox="0 0 16 16" opacity="0.5">
                         <path d="M3 1L12 7L7 8L5 13L3 1Z" fill="#52525b" />
                     </svg>
-                    <div className="ml-2 px-1.5 py-0.5 bg-zinc-500 text-white text-[8px] rounded whitespace-nowrap">
-                        John D.
+                    <div className={`${isRTL ? 'mr-2' : 'ml-2'} px-1.5 py-0.5 bg-zinc-500 text-white text-[8px] rounded whitespace-nowrap`}>
+                        {isRTL ? 'أحمد م.' : 'John D.'}
                     </div>
                 </div>
 
@@ -278,7 +298,7 @@ const CollaborationPreview = memo(() => {
             </div>
 
             <div className="mt-3 flex items-center justify-between">
-                <div className="flex -space-x-2">
+                <div className={`flex ${isRTL ? '-space-x-reverse' : ''} -space-x-2`}>
                     {['SK', 'JD', 'MR'].map((initials, i) => (
                         <div key={i} className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 border-2 border-white dark:border-zinc-900 flex items-center justify-center text-[8px] text-zinc-600 dark:text-zinc-400 font-medium">
                             {initials}
@@ -287,7 +307,7 @@ const CollaborationPreview = memo(() => {
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] text-zinc-500">3 editing</span>
+                    <span className="text-[10px] text-zinc-500">{isRTL ? '3 يحررون' : '3 editing'}</span>
                 </div>
             </div>
         </div>
@@ -295,12 +315,16 @@ const CollaborationPreview = memo(() => {
 });
 
 // Dashboards Preview Card - Enhanced with animated charts
-const DashboardsPreview = memo(() => {
+const DashboardsPreview = memo(({ isRTL }: { isRTL: boolean }) => {
     const [animate, setAnimate] = useState(false);
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 400);
         return () => clearTimeout(timer);
     }, []);
+
+    const departments = isRTL
+        ? ['المالية', 'المبيعات', 'الموارد البشرية', 'العمليات']
+        : ['Finance', 'Sales', 'HR', 'Ops'];
 
     return (
         <div className="h-full flex flex-col">
@@ -309,26 +333,28 @@ const DashboardsPreview = memo(() => {
                     <ChartLine size={20} weight="fill" className="text-white dark:text-zinc-900" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">51+ Dashboards</h3>
-                    <p className="text-xs text-zinc-500">Pre-built & custom</p>
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                        {isRTL ? 'أكثر من 51 لوحة' : '51+ Dashboards'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{isRTL ? 'جاهزة ومخصصة' : 'Pre-built & custom'}</p>
                 </div>
             </div>
 
             <div className="flex-1 grid grid-cols-2 gap-2">
                 <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3">
-                    <div className="text-[10px] text-zinc-500 mb-2">Revenue</div>
+                    <div className="text-[10px] text-zinc-500 mb-2">{isRTL ? 'الإيرادات' : 'Revenue'}</div>
                     <MiniLineChart animate={animate} />
                     <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">$2.4M</div>
                 </div>
                 <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3">
-                    <div className="text-[10px] text-zinc-500 mb-2">Tasks</div>
+                    <div className="text-[10px] text-zinc-500 mb-2">{isRTL ? 'المهام' : 'Tasks'}</div>
                     <MiniBarChart animate={animate} />
                     <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">1,847</div>
                 </div>
             </div>
 
             <div className="mt-3 flex items-center gap-2">
-                {['Finance', 'Sales', 'HR', 'Ops'].map((dept, i) => (
+                {departments.map((dept, i) => (
                     <span key={i} className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[9px] text-zinc-500">
                         {dept}
                     </span>
@@ -339,8 +365,12 @@ const DashboardsPreview = memo(() => {
 });
 
 // Security Preview Card - Enhanced with visual indicators
-const SecurityPreview = memo(() => {
-    const features = [
+const SecurityPreview = memo(({ isRTL }: { isRTL: boolean }) => {
+    const features = isRTL ? [
+        { icon: Lock, label: 'تشفير شامل', status: 'نشط' },
+        { icon: Shield, label: 'متوافق مع SOC 2', status: 'موثق' },
+        { icon: Globe, label: 'SSO و SAML', status: 'جاهز' },
+    ] : [
         { icon: Lock, label: 'End-to-end encryption', status: 'Active' },
         { icon: Shield, label: 'SOC 2 Compliant', status: 'Verified' },
         { icon: Globe, label: 'SSO & SAML', status: 'Ready' },
@@ -353,8 +383,10 @@ const SecurityPreview = memo(() => {
                     <Shield size={20} weight="fill" className="text-white dark:text-zinc-900" />
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">Enterprise Security</h3>
-                    <p className="text-xs text-zinc-500">Bank-grade protection</p>
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                        {isRTL ? 'أمان المؤسسات' : 'Enterprise Security'}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{isRTL ? 'حماية بمستوى البنوك' : 'Bank-grade protection'}</p>
                 </div>
             </div>
 
@@ -376,7 +408,9 @@ const SecurityPreview = memo(() => {
             </div>
 
             <div className="mt-3 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30 text-center">
-                <span className="text-[10px] text-zinc-500">99.99% uptime SLA</span>
+                <span className="text-[10px] text-zinc-500">
+                    {isRTL ? '99.99% ضمان وقت التشغيل' : '99.99% uptime SLA'}
+                </span>
             </div>
         </div>
     );
@@ -387,11 +421,14 @@ interface LiveDemoSectionProps {
 }
 
 export const LiveDemoSection: React.FC<LiveDemoSectionProps> = ({ onTryDemo }) => {
+    const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
     const checkScroll = () => {
         if (scrollRef.current) {
@@ -420,11 +457,11 @@ export const LiveDemoSection: React.FC<LiveDemoSectionProps> = ({ onTryDemo }) =
     }, []);
 
     const cards = [
-        { id: 'kanban', component: KanbanPreview, span: 'sm:col-span-2' },
-        { id: 'automation', component: AutomationPreview, span: '' },
-        { id: 'collab', component: CollaborationPreview, span: '' },
-        { id: 'dashboards', component: DashboardsPreview, span: '' },
-        { id: 'security', component: SecurityPreview, span: 'sm:col-span-2' },
+        { id: 'kanban', component: () => <KanbanPreview isRTL={isRTL} />, span: 'sm:col-span-2' },
+        { id: 'automation', component: () => <AutomationPreview isRTL={isRTL} />, span: '' },
+        { id: 'collab', component: () => <CollaborationPreview isRTL={isRTL} />, span: '' },
+        { id: 'dashboards', component: () => <DashboardsPreview isRTL={isRTL} />, span: '' },
+        { id: 'security', component: () => <SecurityPreview isRTL={isRTL} />, span: 'sm:col-span-2' },
     ];
 
     return (
@@ -447,40 +484,53 @@ export const LiveDemoSection: React.FC<LiveDemoSectionProps> = ({ onTryDemo }) =
                             bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
                             text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-6">
                             <Sparkle size={14} weight="fill" />
-                            Platform Features
+                            {isRTL ? 'مميزات المنصة' : 'Platform Features'}
                         </div>
 
                         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 text-zinc-900 dark:text-white leading-[1.1]">
-                            Everything you need
-                            <br />
-                            <span className="text-zinc-400 dark:text-zinc-600">in one place</span>
+                            {isRTL ? (
+                                <>
+                                    كل ما تحتاجه
+                                    <br />
+                                    <span className="text-zinc-400 dark:text-zinc-600">في مكان واحد</span>
+                                </>
+                            ) : (
+                                <>
+                                    Everything you need
+                                    <br />
+                                    <span className="text-zinc-400 dark:text-zinc-600">in one place</span>
+                                </>
+                            )}
                         </h2>
 
                         <p className="text-base sm:text-lg md:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                            Built for teams that move fast. Powerful features, simple interface.
+                            {isRTL
+                                ? 'مصممة للفرق التي تتحرك بسرعة. ميزات قوية، واجهة بسيطة.'
+                                : 'Built for teams that move fast. Powerful features, simple interface.'
+                            }
                         </p>
                     </div>
                 )}
 
                 {/* Mobile scroll navigation */}
                 <div className="sm:hidden flex items-center justify-between mb-4">
-                    <span className="text-xs text-zinc-500">Swipe to explore</span>
+                    <span className="text-xs text-zinc-500">{isRTL ? 'مرر لاستكشاف' : 'Swipe to explore'}</span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => scroll('left')}
-                            disabled={!canScrollLeft}
+                            onClick={() => scroll(isRTL ? 'right' : 'left')}
+                            disabled={isRTL ? !canScrollRight : !canScrollLeft}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollLeft
+                                ${(isRTL ? canScrollRight : canScrollLeft)
                                     ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
                                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
                         >
                             <CaretLeft size={16} />
                         </button>
                         <button
-                            onClick={() => scroll('right')}
-                            disabled={!canScrollRight}
+                            onClick={() => scroll(isRTL ? 'left' : 'right')}
+                            disabled={isRTL ? !canScrollLeft : !canScrollRight}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollRight
+                                ${(isRTL ? canScrollLeft : canScrollRight)
                                     ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
                                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
                         >
@@ -534,11 +584,11 @@ export const LiveDemoSection: React.FC<LiveDemoSectionProps> = ({ onTryDemo }) =
                                 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors duration-200
                                 shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
                         >
-                            Start Free Trial
-                            <ArrowRight size={16} weight="bold" />
+                            {isRTL ? 'ابدأ تجربة مجانية' : 'Start Free Trial'}
+                            <ArrowIcon size={16} weight="bold" />
                         </button>
                         <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-600">
-                            No credit card required • Free forever plan
+                            {isRTL ? 'لا حاجة لبطاقة ائتمان • خطة مجانية للأبد' : 'No credit card required • Free forever plan'}
                         </p>
                     </div>
                 )}

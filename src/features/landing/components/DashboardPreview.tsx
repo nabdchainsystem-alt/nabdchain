@@ -1,6 +1,7 @@
 import React, { useRef, memo } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { CheckCircle, Circle, ArrowUp, ArrowDown } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 // Animated bar with smooth grow animation
 const AnimatedBar: React.FC<{ width: string; index: number; isHighlighted?: boolean }> = memo(({ width, index, isHighlighted }) => (
@@ -112,17 +113,28 @@ const AnimatedCursor: React.FC = memo(() => (
 ));
 
 export const DashboardPreview: React.FC = () => {
+    const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
 
-    const tasks = [
+    const tasks = isRTL ? [
+        { task: "مراجعة التقارير المالية للربع الرابع", completed: true, avatar: "JD" },
+        { task: "تحديث الجدول الزمني للمشروع", completed: true, avatar: "SK" },
+        { task: "إعداد عرض مجلس الإدارة", completed: false, avatar: "MR" },
+        { task: "إنهاء عقود الموردين", completed: false, avatar: "AL" },
+    ] : [
         { task: "Review Q4 financial reports", completed: true, avatar: "JD" },
         { task: "Update project timeline", completed: true, avatar: "SK" },
         { task: "Prepare board presentation", completed: false, avatar: "MR" },
         { task: "Finalize vendor contracts", completed: false, avatar: "AL" },
     ];
 
-    const features = [
+    const features = isRTL ? [
+        "تتبع المشاريع في الوقت الفعلي",
+        "أدوات قابلة للتخصيص",
+        "تحليلات الفريق",
+        "تقارير آلية"
+    ] : [
         "Real-time project tracking",
         "Customizable widgets",
         "Team analytics",
@@ -150,16 +162,28 @@ export const DashboardPreview: React.FC = () => {
                         <div className="opacity-0 animate-fade-in-up"
                              style={{ animationFillMode: 'forwards' }}>
                             <span className="inline-block px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-semibold mb-6 sm:mb-8">
-                                Dashboard Preview
+                                {isRTL ? 'معاينة لوحة التحكم' : 'Dashboard Preview'}
                             </span>
                             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 sm:mb-8 leading-[1.1]">
-                                See everything
-                                <br />
-                                <span className="text-zinc-500">at a glance</span>
+                                {isRTL ? (
+                                    <>
+                                        شاهد كل شيء
+                                        <br />
+                                        <span className="text-zinc-500">بنظرة واحدة</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        See everything
+                                        <br />
+                                        <span className="text-zinc-500">at a glance</span>
+                                    </>
+                                )}
                             </h2>
                             <p className="text-lg sm:text-xl text-zinc-400 mb-8 sm:mb-10 leading-relaxed">
-                                Our intuitive dashboards give you complete visibility into your business.
-                                Track projects, monitor KPIs, and make informed decisions with real-time data.
+                                {isRTL
+                                    ? 'توفر لك لوحات المعلومات البديهية رؤية كاملة لأعمالك. تتبع المشاريع وراقب مؤشرات الأداء واتخذ قرارات مستنيرة بالبيانات الفورية.'
+                                    : 'Our intuitive dashboards give you complete visibility into your business. Track projects, monitor KPIs, and make informed decisions with real-time data.'
+                                }
                             </p>
 
                             <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -195,7 +219,7 @@ export const DashboardPreview: React.FC = () => {
                                     </div>
                                     <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
                                         <div className="w-2 h-2 rounded-full bg-zinc-400" />
-                                        3 collaborators
+                                        {isRTL ? '3 متعاونين' : '3 collaborators'}
                                     </div>
                                 </div>
 
@@ -205,14 +229,16 @@ export const DashboardPreview: React.FC = () => {
 
                                     {/* Stats Row - responsive grid */}
                                     <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                                        <StatCard label="Completed" value="147" change={12} index={0} />
-                                        <StatCard label="Projects" value="23" change={-3} index={1} />
-                                        <StatCard label="Velocity" value="94%" change={8} index={2} />
+                                        <StatCard label={isRTL ? 'مكتمل' : 'Completed'} value="147" change={12} index={0} />
+                                        <StatCard label={isRTL ? 'المشاريع' : 'Projects'} value="23" change={-3} index={1} />
+                                        <StatCard label={isRTL ? 'السرعة' : 'Velocity'} value="94%" change={8} index={2} />
                                     </div>
 
                                     {/* Chart Section */}
                                     <div className="mb-4 sm:mb-6">
-                                        <div className="text-xs sm:text-sm text-zinc-400 mb-2 sm:mb-3">Weekly Progress</div>
+                                        <div className="text-xs sm:text-sm text-zinc-400 mb-2 sm:mb-3">
+                                            {isRTL ? 'التقدم الأسبوعي' : 'Weekly Progress'}
+                                        </div>
                                         <div className="space-y-2 sm:space-y-3">
                                             <AnimatedBar width="85%" index={0} isHighlighted />
                                             <AnimatedBar width="72%" index={1} />
@@ -224,8 +250,12 @@ export const DashboardPreview: React.FC = () => {
                                     {/* Tasks List */}
                                     <div>
                                         <div className="flex items-center justify-between mb-2 sm:mb-3">
-                                            <div className="text-xs sm:text-sm text-zinc-400">Today's Tasks</div>
-                                            <div className="text-[10px] sm:text-xs text-zinc-500 hover:text-white transition-colors cursor-pointer">View all</div>
+                                            <div className="text-xs sm:text-sm text-zinc-400">
+                                                {isRTL ? 'مهام اليوم' : "Today's Tasks"}
+                                            </div>
+                                            <div className="text-[10px] sm:text-xs text-zinc-500 hover:text-white transition-colors cursor-pointer">
+                                                {isRTL ? 'عرض الكل' : 'View all'}
+                                            </div>
                                         </div>
                                         <div className="space-y-0.5 sm:space-y-1">
                                             {tasks.map((task, i) => (
@@ -237,16 +267,20 @@ export const DashboardPreview: React.FC = () => {
                             </div>
 
                             {/* Floating Elements - hidden on small mobile */}
-                            <div className="hidden sm:block absolute -top-4 sm:-top-6 -right-2 sm:-right-6 bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-lg text-xs sm:text-sm font-medium border border-zinc-800">
-                                +23% this week
+                            <div className={`hidden sm:block absolute -top-4 sm:-top-6 ${isRTL ? '-left-2 sm:-left-6' : '-right-2 sm:-right-6'} bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-lg text-xs sm:text-sm font-medium border border-zinc-800`}>
+                                {isRTL ? '+23% هذا الأسبوع' : '+23% this week'}
                             </div>
 
-                            <div className="hidden sm:block absolute -bottom-3 sm:-bottom-4 -left-2 sm:-left-4 bg-zinc-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-xl border border-zinc-700">
+                            <div className={`hidden sm:block absolute -bottom-3 sm:-bottom-4 ${isRTL ? '-right-2 sm:-right-4' : '-left-2 sm:-left-4'} bg-zinc-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-xl border border-zinc-700`}>
                                 <div className="flex items-center gap-2 sm:gap-3">
                                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-zinc-700" />
                                     <div>
-                                        <div className="text-[10px] sm:text-xs text-zinc-500">New notification</div>
-                                        <div className="text-xs sm:text-sm font-medium text-white">Task completed!</div>
+                                        <div className="text-[10px] sm:text-xs text-zinc-500">
+                                            {isRTL ? 'إشعار جديد' : 'New notification'}
+                                        </div>
+                                        <div className="text-xs sm:text-sm font-medium text-white">
+                                            {isRTL ? 'تم إكمال المهمة!' : 'Task completed!'}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

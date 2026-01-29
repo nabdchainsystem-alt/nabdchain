@@ -136,11 +136,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div
                 dir={isRTL ? 'rtl' : 'ltr'}
                 className={`h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth ${isRTL ? 'font-arabic' : 'font-sans'}`}
-                style={isRTL ? { fontFamily: "'Cairo', 'Noto Kufi Arabic', system-ui, sans-serif" } : undefined}
+                style={isRTL ? { fontFamily: "'Noto Kufi Arabic', system-ui, sans-serif" } : undefined}
             >
+                {/* Top Announcement Bar */}
+                <div className="fixed top-0 left-0 right-0 z-[60] bg-black text-white py-2 px-4 text-center text-sm">
+                    <span className="text-zinc-300">
+                        {isRTL ? 'نبض الآن متاح للجميع' : 'Nabd is now available for everyone'}
+                    </span>
+                    <span className="mx-2 text-zinc-500">·</span>
+                    <a href="#pricing" className="text-white hover:underline font-medium">
+                        {isRTL ? 'اعرف المزيد' : 'Learn more'} →
+                    </a>
+                </div>
+
                 {/* Navbar - responsive width with dynamic theme */}
                 <nav
-                    className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
+                    className={`fixed top-10 sm:top-12 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
                         backdrop-blur-md shadow-lg transition-all duration-300
                         ${navTheme === 'light'
                             ? 'bg-white/90 border border-zinc-200/50 shadow-black/5 text-zinc-900'
@@ -232,7 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             className="fixed inset-0 z-40 sm:hidden"
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
-                        <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden rounded-2xl shadow-lg transition-colors
+                        <div className={`fixed top-24 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden rounded-2xl shadow-lg transition-colors
                             ${navTheme === 'light'
                                 ? 'bg-white border border-zinc-200'
                                 : 'bg-zinc-900 border border-zinc-800'}`}>

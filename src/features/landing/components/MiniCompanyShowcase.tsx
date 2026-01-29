@@ -8,11 +8,13 @@ import {
     ChartPie,
     Briefcase,
     ArrowRight,
+    ArrowLeft,
     ArrowsLeftRight,
     Lightning,
     CaretLeft,
     CaretRight
 } from 'phosphor-react';
+import { useLandingContext } from '../LandingPage';
 
 interface Department {
     id: string;
@@ -22,48 +24,66 @@ interface Department {
     stats: { label: string; value: string }[];
 }
 
-const DEPARTMENTS: Department[] = [
+const getDepartmentsData = (isRTL: boolean): Department[] => [
     {
         id: 'customers',
-        name: 'Customers',
+        name: isRTL ? 'العملاء' : 'Customers',
         icon: UsersThree,
-        dashboards: ['Segmentation', 'Retention', 'Analytics'],
-        stats: [{ label: 'Active Users', value: '12.4K' }, { label: 'Retention', value: '94%' }]
+        dashboards: isRTL ? ['التقسيم', 'الاحتفاظ', 'التحليلات'] : ['Segmentation', 'Retention', 'Analytics'],
+        stats: [
+            { label: isRTL ? 'المستخدمين النشطين' : 'Active Users', value: '12.4K' },
+            { label: isRTL ? 'الاحتفاظ' : 'Retention', value: '94%' }
+        ]
     },
     {
         id: 'finance',
-        name: 'Finance',
+        name: isRTL ? 'المالية' : 'Finance',
         icon: CurrencyCircleDollar,
-        dashboards: ['Budgets', 'Expenses', 'Forecasting'],
-        stats: [{ label: 'Revenue', value: '$2.4M' }, { label: 'Growth', value: '+23%' }]
+        dashboards: isRTL ? ['الميزانيات', 'المصروفات', 'التوقعات'] : ['Budgets', 'Expenses', 'Forecasting'],
+        stats: [
+            { label: isRTL ? 'الإيرادات' : 'Revenue', value: '$2.4M' },
+            { label: isRTL ? 'النمو' : 'Growth', value: '+23%' }
+        ]
     },
     {
         id: 'operations',
-        name: 'Operations',
+        name: isRTL ? 'العمليات' : 'Operations',
         icon: Package,
-        dashboards: ['Inventory', 'Sales', 'Purchasing'],
-        stats: [{ label: 'Orders', value: '1,847' }, { label: 'Fulfilled', value: '98%' }]
+        dashboards: isRTL ? ['المخزون', 'المبيعات', 'المشتريات'] : ['Inventory', 'Sales', 'Purchasing'],
+        stats: [
+            { label: isRTL ? 'الطلبات' : 'Orders', value: '1,847' },
+            { label: isRTL ? 'المنجز' : 'Fulfilled', value: '98%' }
+        ]
     },
     {
         id: 'suppliers',
-        name: 'Suppliers',
+        name: isRTL ? 'الموردين' : 'Suppliers',
         icon: Truck,
-        dashboards: ['Performance', 'Compliance', 'Contracts'],
-        stats: [{ label: 'Partners', value: '156' }, { label: 'On-time', value: '97%' }]
+        dashboards: isRTL ? ['الأداء', 'الامتثال', 'العقود'] : ['Performance', 'Compliance', 'Contracts'],
+        stats: [
+            { label: isRTL ? 'الشركاء' : 'Partners', value: '156' },
+            { label: isRTL ? 'في الوقت' : 'On-time', value: '97%' }
+        ]
     },
     {
         id: 'people',
-        name: 'People',
+        name: isRTL ? 'الموظفين' : 'People',
         icon: Briefcase,
-        dashboards: ['HR', 'Payroll', 'Attendance'],
-        stats: [{ label: 'Team Size', value: '234' }, { label: 'Engagement', value: '89%' }]
+        dashboards: isRTL ? ['الموارد البشرية', 'الرواتب', 'الحضور'] : ['HR', 'Payroll', 'Attendance'],
+        stats: [
+            { label: isRTL ? 'حجم الفريق' : 'Team Size', value: '234' },
+            { label: isRTL ? 'المشاركة' : 'Engagement', value: '89%' }
+        ]
     },
     {
         id: 'overview',
-        name: 'Overview',
+        name: isRTL ? 'نظرة عامة' : 'Overview',
         icon: ChartPie,
-        dashboards: ['Executive', 'KPIs', 'Reports'],
-        stats: [{ label: 'Dashboards', value: '51+' }, { label: 'Real-time', value: 'Yes' }]
+        dashboards: isRTL ? ['التنفيذي', 'المؤشرات', 'التقارير'] : ['Executive', 'KPIs', 'Reports'],
+        stats: [
+            { label: isRTL ? 'لوحات المعلومات' : 'Dashboards', value: '51+' },
+            { label: isRTL ? 'في الوقت الفعلي' : 'Real-time', value: isRTL ? 'نعم' : 'Yes' }
+        ]
     },
 ];
 
@@ -128,11 +148,12 @@ const MiniDashboard: React.FC<{ animate: boolean; index: number }> = memo(({ ani
 });
 
 // Department card with mini dashboard preview
-const DepartmentCard: React.FC<{ dept: Department; index: number; isActive: boolean; onClick: () => void }> = memo(({
+const DepartmentCard: React.FC<{ dept: Department; index: number; isActive: boolean; onClick: () => void; isRTL: boolean }> = memo(({
     dept,
     index,
     isActive,
-    onClick
+    onClick,
+    isRTL
 }) => {
     const Icon = dept.icon;
     const cardRef = useRef(null);
@@ -165,12 +186,12 @@ const DepartmentCard: React.FC<{ dept: Department; index: number; isActive: bool
                         }`}>
                         <Icon size={20} weight="fill" />
                     </div>
-                    <div className="text-right">
+                    <div className={isRTL ? 'text-left' : 'text-right'}>
                         <div className={`text-xl font-bold ${isActive ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
                             {dept.dashboards.length}
                         </div>
                         <div className={`text-[10px] uppercase tracking-wide ${isActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                            Dashboards
+                            {isRTL ? 'لوحات' : 'Dashboards'}
                         </div>
                     </div>
                 </div>
@@ -209,18 +230,22 @@ const DepartmentCard: React.FC<{ dept: Department; index: number; isActive: bool
 });
 
 // Connection visualization
-const ConnectionsVisualization: React.FC<{ activeDept: string }> = memo(({ activeDept }) => {
+const ConnectionsVisualization: React.FC<{ activeDept: string; isRTL: boolean }> = memo(({ activeDept, isRTL }) => {
     return (
         <div className="hidden lg:flex items-center justify-center py-8">
             <div className="relative flex items-center gap-4 px-6 py-3 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">All departments synced</span>
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+                        {isRTL ? 'جميع الأقسام متزامنة' : 'All departments synced'}
+                    </span>
                 </div>
                 <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
                 <div className="flex items-center gap-2">
                     <Lightning size={14} weight="fill" className="text-zinc-500" />
-                    <span className="text-sm text-zinc-500">Real-time updates</span>
+                    <span className="text-sm text-zinc-500">
+                        {isRTL ? 'تحديثات فورية' : 'Real-time updates'}
+                    </span>
                 </div>
             </div>
         </div>
@@ -232,12 +257,16 @@ interface MiniCompanyShowcaseProps {
 }
 
 export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExplore }) => {
+    const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
     const [activeDept, setActiveDept] = useState('customers');
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+    const DEPARTMENTS = getDepartmentsData(isRTL);
 
     const checkScroll = () => {
         if (scrollRef.current) {
@@ -273,36 +302,50 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                     <div className="max-w-2xl mb-12 sm:mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
                         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-[1.1]">
-                            Run your entire company
-                            <br />
-                            <span className="text-zinc-400 dark:text-zinc-500">from one place</span>
+                            {isRTL ? (
+                                <>
+                                    أدِر شركتك بالكامل
+                                    <br />
+                                    <span className="text-zinc-400 dark:text-zinc-500">من مكان واحد</span>
+                                </>
+                            ) : (
+                                <>
+                                    Run your entire company
+                                    <br />
+                                    <span className="text-zinc-400 dark:text-zinc-500">from one place</span>
+                                </>
+                            )}
                         </h2>
                         <p className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                            6 departments. 51+ dashboards. All connected in real-time.
-                            Every team gets the tools they need while leadership gets complete visibility.
+                            {isRTL
+                                ? '6 أقسام. أكثر من 51 لوحة معلومات. الكل متصل في الوقت الفعلي. كل فريق يحصل على الأدوات التي يحتاجها بينما تحصل القيادة على رؤية كاملة.'
+                                : '6 departments. 51+ dashboards. All connected in real-time. Every team gets the tools they need while leadership gets complete visibility.'
+                            }
                         </p>
                     </div>
                 )}
 
                 {/* Mobile scroll navigation */}
                 <div className="sm:hidden flex items-center justify-between mb-4">
-                    <span className="text-xs text-zinc-500">Swipe to explore departments</span>
+                    <span className="text-xs text-zinc-500">
+                        {isRTL ? 'مرر لاستكشاف الأقسام' : 'Swipe to explore departments'}
+                    </span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => scroll('left')}
-                            disabled={!canScrollLeft}
+                            onClick={() => scroll(isRTL ? 'right' : 'left')}
+                            disabled={isRTL ? !canScrollRight : !canScrollLeft}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollLeft
+                                ${(isRTL ? canScrollRight : canScrollLeft)
                                     ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
                                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
                         >
                             <CaretLeft size={16} />
                         </button>
                         <button
-                            onClick={() => scroll('right')}
-                            disabled={!canScrollRight}
+                            onClick={() => scroll(isRTL ? 'left' : 'right')}
+                            disabled={isRTL ? !canScrollLeft : !canScrollRight}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${canScrollRight
+                                ${(isRTL ? canScrollLeft : canScrollRight)
                                     ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
                                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
                         >
@@ -328,13 +371,14 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                                 index={idx}
                                 isActive={activeDept === dept.id}
                                 onClick={() => setActiveDept(dept.id)}
+                                isRTL={isRTL}
                             />
                         ))}
                     </div>
                 )}
 
                 {/* Connections visualization */}
-                <ConnectionsVisualization activeDept={activeDept} />
+                <ConnectionsVisualization activeDept={activeDept} isRTL={isRTL} />
 
                 {/* Bottom stats bar */}
                 {isInView && (
@@ -346,17 +390,17 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                         <div className="flex items-center gap-8 sm:gap-12">
                             <div>
                                 <div className="text-3xl font-bold text-zinc-900 dark:text-white">51+</div>
-                                <div className="text-sm text-zinc-500">Ready dashboards</div>
+                                <div className="text-sm text-zinc-500">{isRTL ? 'لوحات جاهزة' : 'Ready dashboards'}</div>
                             </div>
                             <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800" />
                             <div>
                                 <div className="text-3xl font-bold text-zinc-900 dark:text-white">&lt;1s</div>
-                                <div className="text-sm text-zinc-500">Cross-department sync</div>
+                                <div className="text-sm text-zinc-500">{isRTL ? 'مزامنة بين الأقسام' : 'Cross-department sync'}</div>
                             </div>
                             <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
                             <div className="hidden sm:block">
                                 <div className="text-3xl font-bold text-zinc-900 dark:text-white">∞</div>
-                                <div className="text-sm text-zinc-500">Custom reports</div>
+                                <div className="text-sm text-zinc-500">{isRTL ? 'تقارير مخصصة' : 'Custom reports'}</div>
                             </div>
                         </div>
 
@@ -367,8 +411,8 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                                 font-medium text-sm
                                 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
                         >
-                            Explore Mini Company
-                            <ArrowRight size={16} weight="bold" />
+                            {isRTL ? 'استكشف الشركة المصغرة' : 'Explore Mini Company'}
+                            <ArrowIcon size={16} weight="bold" />
                         </button>
                     </div>
                 )}
