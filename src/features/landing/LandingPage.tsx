@@ -264,7 +264,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                                 {/* Language Toggle - Mobile */}
                                 <button
-                                    onClick={toggleLanguage}
+                                    onClick={() => {
+                                        toggleLanguage();
+                                        setIsMobileMenuOpen(false);
+                                    }}
                                     className={`w-full py-2.5 px-3 rounded-lg text-base font-medium transition-colors flex items-center gap-2
                                         ${navTheme === 'light'
                                             ? 'text-zinc-700 hover:bg-zinc-100'
