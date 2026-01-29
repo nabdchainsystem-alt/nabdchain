@@ -184,18 +184,9 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                 animationDelay: `${0.1 + index * 0.1}s`
             }}
         >
-            {/* Animated glow effect for highlighted card */}
-            {tier.highlighted && (
-                <>
-                    <div className="absolute -inset-[2px] rounded-[26px] bg-gradient-to-r from-violet-500 via-white to-cyan-500 opacity-75 blur-sm"
-                         style={{ animation: 'glowPulse 3s ease-in-out infinite' }} />
-                    <div className="absolute -inset-[1px] rounded-[25px] bg-gradient-to-r from-violet-500 via-white to-cyan-500"
-                         style={{ animation: 'glowRotate 4s linear infinite' }} />
-                </>
-            )}
             <div className={`h-full rounded-3xl p-6 sm:p-8 transition-all duration-300 relative ${
                 tier.highlighted
-                    ? 'bg-zinc-800/70 border-2 border-transparent'
+                    ? 'bg-zinc-800/70 border-2 border-white/20 shadow-xl shadow-white/5'
                     : 'bg-zinc-800/50 border border-zinc-700/50 hover:border-zinc-600/50 hover:bg-zinc-800/70 hover:shadow-lg'
             }`}>
                 {/* Badge */}
@@ -516,14 +507,6 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                 @keyframes fadeInLeft {
                     from { opacity: 0; transform: translateX(-10px); }
                     to { opacity: 1; transform: translateX(0); }
-                }
-                @keyframes glowPulse {
-                    0%, 100% { opacity: 0.5; }
-                    50% { opacity: 0.8; }
-                }
-                @keyframes glowRotate {
-                    0% { filter: hue-rotate(0deg); }
-                    100% { filter: hue-rotate(360deg); }
                 }
                 @keyframes spotlightPulse {
                     0%, 100% { opacity: 0.6; transform: translate(-50%, 0) scale(1) translateZ(0); }
