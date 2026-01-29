@@ -75,6 +75,7 @@ import {
 } from '@dnd-kit/sortable';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ColumnMenu } from '../../components/ColumnMenu';
+import { ExcelImportModal } from '../../components/ExcelImportModal';
 import { PriorityLevel, comparePriority, normalizePriority } from '../../../priorities/priorityUtils';
 import { useReminders } from '../../../reminders/reminderStore';
 import { ReminderPanel } from '../../../reminders/ReminderPanel';
@@ -484,6 +485,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const [activeColumnMenu, setActiveColumnMenu] = useState<{ rect: DOMRect } | null>(null);
     const [isChartModalOpen, setIsChartModalOpen] = useState(false);
     const [isAIReportModalOpen, setIsAIReportModalOpen] = useState(false);
+    const [isExcelImportModalOpen, setIsExcelImportModalOpen] = useState(false);
 
     // File Upload State
     const [activeUploadCell, setActiveUploadCell] = useState<{ rowId: string, colId: string } | null>(null);
@@ -889,8 +891,38 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => {
-        fileInputRef.current?.click();
+        setIsExcelImportModalOpen(true);
     };
+
+    // Handle import from the ExcelImportModal
+    const handleExcelImport = useCallback((importedRows: Row[], newColumns?: Column[]) => {
+        if (newColumns && newColumns.length > 0) {
+            setColumns(prev => [...prev, ...newColumns]);
+        }
+
+        // Add rows to the first group
+        setTableGroups(prev => {
+            if (prev.length === 0) {
+                return [{
+                    id: 'group-1',
+                    name: 'Group 1',
+                    rows: importedRows,
+                    isCollapsed: false,
+                    color: GROUP_COLORS[0]
+                }];
+            }
+            return prev.map((g, idx) =>
+                idx === 0 ? { ...g, rows: [...g.rows, ...importedRows] } : g
+            );
+        });
+
+        if (onUpdateTasks) {
+            const allRows = [...rows, ...importedRows];
+            onUpdateTasks(allRows);
+        }
+
+        showToast(t('import_success')?.replace('{0}', String(importedRows.length)) || `Successfully imported ${importedRows.length} rows`, 'success');
+    }, [rows, onUpdateTasks, showToast, t]);
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -1018,9 +1050,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             const baseTimestamp = Date.now();
 
             dataRows.forEach((rowArray: any[], rowIndex: number) => {
-                // Skip empty rows
+                // Skip empty rows - check for null, undefined, empty string, or whitespace-only
                 if (!rowArray || rowArray.length === 0) return;
-                if (rowArray.every((cell: any) => cell == null || cell === '')) return;
+                const hasData = rowArray.some((cell: any) => {
+                    if (cell == null) return false;
+                    const strVal = String(cell).trim();
+                    return strVal !== '' && strVal !== 'undefined' && strVal !== 'null';
+                });
+                if (!hasData) return;
 
                 const rowData: any = {
                     id: `${baseTimestamp}_${rowIndex}`,
@@ -3108,6 +3145,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     columns={columns}
                     rows={rows}
                     onAddChart={handleAddPinnedChart}
+                />
+
+                <ExcelImportModal
+                    isOpen={isExcelImportModalOpen}
+                    onClose={() => setIsExcelImportModalOpen(false)}
+                    onImport={handleExcelImport}
+                    existingColumns={columns}
+                    groupId={tableGroups[0]?.id}
                 />
 
                 <SaveToVaultModal

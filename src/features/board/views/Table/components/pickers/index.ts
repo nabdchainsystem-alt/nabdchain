@@ -6,3 +6,8 @@ export { CheckboxColorPicker, PICKER_COLORS } from './ColorPicker';
 export { CurrencyPicker } from './CurrencyPicker';
 export { TimelinePicker } from './TimelinePicker';
 export { RatingPicker } from './RatingPicker';
+export { VotingPicker } from './VotingPicker';
+export { EmailPicker } from './EmailPicker';
+export { PhonePicker } from './PhonePicker';
+export { WorldClockPicker, getTimezoneDisplay } from './WorldClockPicker';
+export { TagsPicker, getTagColor } from './TagsPicker';

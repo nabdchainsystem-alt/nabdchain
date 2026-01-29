@@ -1,24 +1,22 @@
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Star } from 'phosphor-react';
+import { ThumbsUp, ThumbsDown, Minus } from 'phosphor-react';
 
-interface RatingPickerProps {
+interface VotingPickerProps {
     value: number | null;
-    maxRating?: number;
-    onSelect: (rating: number | null) => void;
+    onSelect: (vote: number | null) => void;
     onClose: () => void;
     triggerRect?: DOMRect;
 }
 
-export const RatingPicker: React.FC<RatingPickerProps> = ({
+export const VotingPicker: React.FC<VotingPickerProps> = ({
     value,
-    maxRating = 5,
     onSelect,
     onClose,
     triggerRect
 }) => {
-    const MENU_WIDTH = 200;
-    const MENU_HEIGHT = 180;
+    const MENU_WIDTH = 220;
+    const MENU_HEIGHT = 200;
     const PADDING = 16;
 
     const positionStyle = useMemo(() => {
@@ -65,8 +63,14 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
         };
     }, [triggerRect]);
 
-    const handleSelectRating = (rating: number) => {
-        onSelect(rating);
+    const handleVote = (delta: number) => {
+        const currentValue = value || 0;
+        onSelect(currentValue + delta);
+        onClose();
+    };
+
+    const handleSetValue = (newValue: number) => {
+        onSelect(newValue);
         onClose();
     };
 
@@ -74,6 +78,8 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
         onSelect(null);
         onClose();
     };
+
+    const currentValue = value || 0;
 
     const content = (
         <>
@@ -86,57 +92,67 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
                     <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
-                        Select Rating
+                        Vote
                     </span>
                 </div>
 
-                {/* Star Rating Display */}
+                {/* Current Vote Display */}
                 <div className="p-4 flex flex-col items-center gap-3">
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: maxRating }, (_, i) => i + 1).map((rating) => (
-                            <button
-                                key={rating}
-                                onClick={() => handleSelectRating(rating)}
-                                className="p-1 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors group"
-                            >
-                                <Star
-                                    size={28}
-                                    weight={value && rating <= value ? 'fill' : 'regular'}
-                                    className={`transition-all ${
-                                        value && rating <= value
-                                            ? 'text-yellow-400'
-                                            : 'text-stone-300 dark:text-stone-600 group-hover:text-yellow-300'
-                                    }`}
-                                />
-                            </button>
-                        ))}
+                    <div className={`text-4xl font-bold ${
+                        currentValue > 0
+                            ? 'text-emerald-500'
+                            : currentValue < 0
+                                ? 'text-red-500'
+                                : 'text-stone-400'
+                    }`}>
+                        {currentValue > 0 ? '+' : ''}{currentValue}
                     </div>
 
-                    {/* Current Value Display */}
-                    <div className="text-center">
-                        <span className="text-2xl font-bold text-stone-700 dark:text-stone-300">
-                            {value || 0}
-                        </span>
-                        <span className="text-sm text-stone-400 dark:text-stone-500">
-                            {' / '}{maxRating}
-                        </span>
+                    {/* Vote Buttons */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => handleVote(-1)}
+                            className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors group"
+                            title="Downvote"
+                        >
+                            <ThumbsDown size={24} weight="fill" className="group-hover:scale-110 transition-transform" />
+                        </button>
+                        <button
+                            onClick={() => handleSetValue(0)}
+                            className="p-2 rounded-lg bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 transition-colors"
+                            title="Reset to zero"
+                        >
+                            <Minus size={16} weight="bold" />
+                        </button>
+                        <button
+                            onClick={() => handleVote(1)}
+                            className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-500 transition-colors group"
+                            title="Upvote"
+                        >
+                            <ThumbsUp size={24} weight="fill" className="group-hover:scale-110 transition-transform" />
+                        </button>
                     </div>
                 </div>
 
-                {/* Quick Select Buttons */}
+                {/* Quick Set Values */}
                 <div className="px-3 pb-2">
-                    <div className="flex gap-1">
-                        {Array.from({ length: maxRating }, (_, i) => i + 1).map((rating) => (
+                    <div className="text-[10px] text-stone-400 dark:text-stone-500 mb-1.5 text-center">Quick set</div>
+                    <div className="flex gap-1 justify-center">
+                        {[-5, -1, 0, 1, 5, 10].map((val) => (
                             <button
-                                key={rating}
-                                onClick={() => handleSelectRating(rating)}
-                                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                                    value === rating
-                                        ? 'bg-yellow-400 text-yellow-900'
+                                key={val}
+                                onClick={() => handleSetValue(val)}
+                                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                                    currentValue === val
+                                        ? val > 0
+                                            ? 'bg-emerald-500 text-white'
+                                            : val < 0
+                                                ? 'bg-red-500 text-white'
+                                                : 'bg-stone-500 text-white'
                                         : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                                 }`}
                             >
-                                {rating}
+                                {val > 0 ? `+${val}` : val}
                             </button>
                         ))}
                     </div>
@@ -148,7 +164,7 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
                         onClick={handleClear}
                         className="w-full py-1.5 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear rating
+                        Clear vote
                     </button>
                 </div>
             </div>

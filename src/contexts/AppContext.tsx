@@ -305,6 +305,8 @@ const translations: Translations = {
   goals_okrs: { en: 'Goals & OKRs', ar: 'الأهداف والنتائج الرئيسية' },
   recurring: { en: 'Recurring Logic', ar: 'المنطق المتكرر' },
   whiteboard: { en: 'Whiteboard', ar: 'السبورة البيضاء' },
+  forms: { en: 'Forms', ar: 'النماذج' },
+  forms_desc: { en: 'Create and manage forms', ar: 'إنشاء وإدارة النماذج' },
   capacity_map: { en: 'Capacity Map', ar: 'خريطة السعة' },
 
   // Live Session

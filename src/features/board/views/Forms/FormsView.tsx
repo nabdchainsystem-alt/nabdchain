@@ -7,7 +7,6 @@ import {
     Eye,
     PencilSimple,
     DotsSixVertical,
-    CaretDown,
     TextT,
     ListNumbers,
     CheckSquare,
@@ -121,6 +120,9 @@ const SortableField: React.FC<{
 
     const FieldIcon = getFieldTypeIcon(field.type);
 
+    // Always use translated label for display based on field type
+    const displayLabel = getFieldTypeLabel(field.type);
+
     return (
         <div
             ref={setNodeRef}
@@ -142,13 +144,9 @@ const SortableField: React.FC<{
                     {/* Field Label */}
                     <div className="flex items-center gap-2 mb-2">
                         <FieldIcon size={16} className="text-stone-500 flex-shrink-0" />
-                        <input
-                            type="text"
-                            value={field.label}
-                            onChange={(e) => onUpdate(field.id, { label: e.target.value })}
-                            className="flex-1 font-medium text-stone-800 dark:text-stone-200 bg-transparent border-none outline-none focus:ring-0 p-0"
-                            placeholder={t('forms_field_label')}
-                        />
+                        <span className="flex-1 font-medium text-stone-800 dark:text-stone-200">
+                            {displayLabel}
+                        </span>
                         <label className="flex items-center gap-1.5 text-xs text-stone-500">
                             <input
                                 type="checkbox"

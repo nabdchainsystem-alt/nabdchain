@@ -8,6 +8,12 @@ import {
     ArrowSquareOut as ExternalLink,
     UploadSimple as UploadCloud,
     Star,
+    ThumbsUp,
+    ThumbsDown,
+    EnvelopeSimple,
+    Phone,
+    Globe,
+    Tag,
 } from 'phosphor-react';
 import { Column, Row, StatusOption, PRIORITY_STYLES, formatDate } from '../types';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
@@ -15,7 +21,7 @@ import { PortalPopup } from '../../../../../components/ui/PortalPopup';
 import { PeoplePicker } from '../../../components/cells/PeoplePicker';
 import { UrlPicker } from '../../../components/cells/UrlPicker';
 import { DocPicker } from '../../../components/cells/DocPicker';
-import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker } from './pickers';
+import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker, VotingPicker, EmailPicker, PhonePicker, WorldClockPicker, getTimezoneDisplay, TagsPicker, getTagColor } from './pickers';
 import { formatPriorityLabel, DEFAULT_CHECKBOX_COLOR } from '../utils';
 
 // Constants - must match RoomTable.tsx
@@ -838,6 +844,206 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         value={ratingValue}
                         maxRating={maxRating}
                         onSelect={(rating) => onUpdateRow(row.id, { [col.id]: rating }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Voting column
+    if (col.type === 'voting') {
+        const voteValue = typeof value === 'number' ? value : (value ? Number(value) : null);
+        const displayValue = voteValue || 0;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1.5 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    <div className="flex items-center gap-1">
+                        {displayValue > 0 ? (
+                            <ThumbsUp size={14} weight="fill" className="text-emerald-500" />
+                        ) : displayValue < 0 ? (
+                            <ThumbsDown size={14} weight="fill" className="text-red-500" />
+                        ) : (
+                            <ThumbsUp size={14} weight="regular" className="text-stone-400" />
+                        )}
+                        <span className={`text-sm font-medium ${
+                            displayValue > 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : displayValue < 0
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-stone-400'
+                        }`}>
+                            {displayValue > 0 ? `+${displayValue}` : displayValue}
+                        </span>
+                    </div>
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <VotingPicker
+                        value={voteValue}
+                        onSelect={(vote) => onUpdateRow(row.id, { [col.id]: vote }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Email column
+    if (col.type === 'email') {
+        const emailValue = typeof value === 'string' ? value : null;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1.5 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {emailValue ? (
+                        <div className="flex items-center gap-1.5 max-w-full overflow-hidden">
+                            <EnvelopeSimple size={14} className="text-blue-500 shrink-0" />
+                            <span className="text-xs text-stone-700 dark:text-stone-300 truncate">
+                                {emailValue}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1">
+                            <EnvelopeSimple size={14} className="text-stone-400" />
+                            <span className="text-xs text-stone-400">{t('add_email')}</span>
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <EmailPicker
+                        value={emailValue}
+                        onSelect={(email) => onUpdateRow(row.id, { [col.id]: email }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Phone column
+    if (col.type === 'phone') {
+        const phoneValue = typeof value === 'string' ? value : null;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1.5 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {phoneValue ? (
+                        <div className="flex items-center gap-1.5 max-w-full overflow-hidden">
+                            <Phone size={14} className="text-green-500 shrink-0" />
+                            <span className="text-xs text-stone-700 dark:text-stone-300 truncate">
+                                {phoneValue}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1">
+                            <Phone size={14} className="text-stone-400" />
+                            <span className="text-xs text-stone-400">{t('add_phone')}</span>
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <PhonePicker
+                        value={phoneValue}
+                        onSelect={(phone) => onUpdateRow(row.id, { [col.id]: phone }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // World Clock column
+    if (col.type === 'world_clock') {
+        const timezoneValue = typeof value === 'string' ? value : null;
+        const tzDisplay = timezoneValue ? getTimezoneDisplay(timezoneValue) : null;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1.5 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {tzDisplay ? (
+                        <div className="flex items-center gap-1.5 max-w-full overflow-hidden">
+                            <Globe size={14} className="text-indigo-500 shrink-0" />
+                            <span className="text-xs text-stone-700 dark:text-stone-300 truncate">
+                                {tzDisplay.city}
+                            </span>
+                            <span className="text-xs font-mono text-stone-500 dark:text-stone-400">
+                                {tzDisplay.time}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1">
+                            <Globe size={14} className="text-stone-400" />
+                            <span className="text-xs text-stone-400">{t('select_timezone')}</span>
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <WorldClockPicker
+                        value={timezoneValue}
+                        onSelect={(tz) => onUpdateRow(row.id, { [col.id]: tz }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Tags column
+    if (col.type === 'tags') {
+        const tagsValue = Array.isArray(value) ? value : null;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
+                >
+                    {tagsValue && tagsValue.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-wrap justify-center max-w-full overflow-hidden">
+                            {tagsValue.slice(0, 3).map((tag, i) => (
+                                <span
+                                    key={i}
+                                    className={`px-1.5 py-0.5 text-[10px] font-medium text-white rounded-full truncate max-w-[80px] ${getTagColor(tag)}`}
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                            {tagsValue.length > 3 && (
+                                <span className="text-[10px] text-stone-400">
+                                    +{tagsValue.length - 3}
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1">
+                            <Tag size={14} className="text-stone-400" />
+                            <span className="text-xs text-stone-400">{t('add_tags')}</span>
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <TagsPicker
+                        value={tagsValue}
+                        availableTags={col.options?.map(o => o.label) || []}
+                        onSelect={(tags) => onUpdateRow(row.id, { [col.id]: tags }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
                     />

@@ -6,6 +6,7 @@ import {
     ArrowsDownUp,
     EyeSlash,
     Export,
+    UploadSimple,
 } from 'phosphor-react';
 import { X, Plus, CaretDown as ChevronDown, Trash } from 'phosphor-react';
 import { Column, Row, FilterRule, SortRule } from '../types';
@@ -95,6 +96,9 @@ interface TableToolbarProps {
 
     // Export
     onExport?: () => void;
+
+    // Import
+    onImport?: () => void;
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -127,6 +131,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     setColumnSearchQuery,
     toggleColumnVisibility,
     onExport,
+    onImport,
 }) => {
     const { t } = useAppContext();
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -448,6 +453,17 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                     )}
                 </div>
 
+                {/* Import */}
+                {onImport && (
+                    <button
+                        onClick={onImport}
+                        className="flex items-center gap-1.5 cursor-pointer transition-colors hover:text-emerald-500"
+                    >
+                        <UploadSimple size={16} weight="regular" />
+                        <span className="text-[13px] font-medium">{t('import') || 'Import'}</span>
+                    </button>
+                )}
+
                 {/* Export */}
                 {onExport && (
                     <button
@@ -455,7 +471,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                         className="flex items-center gap-1.5 cursor-pointer transition-colors hover:text-blue-500"
                     >
                         <Export size={16} weight="regular" />
-                        <span className="text-[13px] font-medium">Export</span>
+                        <span className="text-[13px] font-medium">{t('export') || 'Export'}</span>
                     </button>
                 )}
             </div>

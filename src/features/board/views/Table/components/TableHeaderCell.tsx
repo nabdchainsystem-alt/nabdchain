@@ -87,6 +87,23 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
             return t(idTranslationKey);
         }
 
+        // Then check by column type for dynamically added columns
+        // Only use translation if the label appears to be auto-generated (not user-customized)
+        const typeTranslationKey = STANDARD_COLUMN_KEYS[column.type];
+        if (typeTranslationKey) {
+            // Check if label is still the default (matches any language's translation pattern)
+            // If user renamed it to something custom, preserve their name
+            const defaultLabel = t(typeTranslationKey);
+            const labelLower = column.label?.toLowerCase() || '';
+            const typeLower = column.type?.toLowerCase() || '';
+
+            // Use translation if: label matches current translation, or label matches type name
+            // This handles: "Status", "الحالة", "status", etc.
+            if (!column.label || column.label === defaultLabel || labelLower === typeLower || labelLower === typeTranslationKey) {
+                return defaultLabel;
+            }
+        }
+
         // For all other columns (custom columns), use their stored label
         // This preserves user-entered custom names
         return column.label;
