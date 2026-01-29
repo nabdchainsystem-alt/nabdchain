@@ -61,18 +61,24 @@ export const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
         onClose();
     };
 
+    const isRTL = dir === 'rtl';
+
     if (!isOpen) return null;
+
+    // In RTL, modal is on the left side (justify-end), so animate from left (-100%)
+    // In LTR, modal is on the right side, so animate from right (100%)
+    const slideDirection = isRTL ? "-100%" : "100%";
 
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex justify-end bg-transparent" onClick={onClose}>
                 <motion.div
-                    initial={{ x: "100%", opacity: 0.5 }}
+                    initial={{ x: slideDirection, opacity: 0.5 }}
                     animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: "100%", opacity: 0.5 }}
+                    exit={{ x: slideDirection, opacity: 0.5 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-md h-full bg-white dark:bg-monday-dark-surface shadow-2xl border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
+                    className="w-full max-w-md h-full bg-white dark:bg-monday-dark-surface shadow-2xl border-s border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
                 >
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0" dir={dir}>
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

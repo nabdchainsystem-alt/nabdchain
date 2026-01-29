@@ -421,11 +421,15 @@ const translations: Translations = {
 
   // Status
   status: { en: 'Status', ar: 'الحالة' },
+  task_status: { en: 'Task Status', ar: 'حالة المهمة' },
   to_do: { en: 'To Do', ar: 'للقيام' },
   in_progress: { en: 'In Progress', ar: 'قيد التنفيذ' },
+  qa: { en: 'Q&A', ar: 'مراجعة' },
   done: { en: 'Done', ar: 'منجز' },
   completed: { en: 'Completed', ar: 'مكتمل' },
   not_started: { en: 'Not Started', ar: 'لم يبدأ' },
+  add_new_status: { en: 'Add New Status...', ar: 'إضافة حالة جديدة...' },
+  delete_status: { en: 'Delete Status', ar: 'حذف الحالة' },
 
   // Common Actions
   confirm: { en: 'Confirm', ar: 'تأكيد' },
@@ -3016,6 +3020,9 @@ const translations: Translations = {
   column_type: { en: 'Column Type', ar: 'نوع العمود' },
   rows_per_page: { en: 'Rows per page', ar: 'صفوف في الصفحة' },
   page_x_of_y: { en: 'Page {0} of {1}', ar: 'صفحة {0} من {1}' },
+  all: { en: 'All', ar: 'الكل' },
+  show_all_warning: { en: 'Loading {0} rows may be slow. Continue?', ar: 'تحميل {0} صف قد يكون بطيئاً. هل تريد المتابعة؟' },
+  large_dataset_note: { en: 'Large dataset - may be slow', ar: 'بيانات كبيرة - قد تكون بطيئة' },
   sort_ascending: { en: 'Sort Ascending', ar: 'ترتيب تصاعدي' },
   sort_descending: { en: 'Sort Descending', ar: 'ترتيب تنازلي' },
   pin_column: { en: 'Pin Column', ar: 'تثبيت العمود' },

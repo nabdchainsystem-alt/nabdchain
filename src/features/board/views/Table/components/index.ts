@@ -14,6 +14,7 @@ export { ColumnContextMenu } from './ColumnContextMenu';
 // Drag and drop components
 export { SortableRow } from './SortableRow';
 export { GroupDragContext, SortableGroupWrapper, GroupDragHandle } from './GroupDrag';
+export { VirtualizedRows } from './VirtualizedRows';
 
 // Editable components
 export { EditableName } from './EditableName';

@@ -15,14 +15,22 @@ const DEFAULT_STATUSES: StatusOption[] = [
     { id: 'Rejected', title: 'Rejected', color: 'rose' }
 ];
 
-// Status label translation keys
+// Status label translation keys - maps ID/title to translation key
 const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+    // English IDs
     'To Do': 'to_do',
     'In Progress': 'in_progress',
     'Q&A': 'qa',
     'Done': 'done',
     'Stuck': 'stuck',
     'Rejected': 'rejected',
+    // Arabic translations (for reverse lookup when stored in Arabic)
+    'للقيام': 'to_do',
+    'قيد التنفيذ': 'in_progress',
+    'مراجعة': 'qa',
+    'منجز': 'done',
+    'متوقف': 'stuck',
+    'مرفوض': 'rejected',
 };
 
 // Helper to get style from color name - using slightly darker colors (10% darker)

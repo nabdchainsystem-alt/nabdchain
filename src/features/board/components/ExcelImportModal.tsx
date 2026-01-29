@@ -90,24 +90,44 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                     raw: false
                 });
 
-                // First row is headers
-                const headers = (jsonData[0] as string[] || []).map((h, i) =>
-                    h?.toString().trim() || `Column ${i + 1}`
-                );
+                // First row is headers - only keep columns that have actual header text
+                const rawHeaders = jsonData[0] as string[] || [];
+                const validColumnIndices: number[] = [];
+                const headers: string[] = [];
+
+                rawHeaders.forEach((h, i) => {
+                    const headerText = h?.toString().trim();
+                    // Only include columns with actual header names (not auto-generated)
+                    if (headerText && headerText !== '' && !headerText.match(/^Column \d+$/)) {
+                        validColumnIndices.push(i);
+                        headers.push(headerText);
+                    }
+                });
 
                 // Rest is data - filter out completely empty rows
                 const rows = jsonData.slice(1).map(row => {
                     const rowData: Record<string, any> = {};
-                    headers.forEach((header, index) => {
-                        rowData[header] = (row as any[])[index] ?? '';
+                    const rowArray = row as any[];
+                    // Only map data for valid columns (those with headers)
+                    validColumnIndices.forEach((colIndex, i) => {
+                        const value = rowArray[colIndex];
+                        rowData[headers[i]] = value ?? '';
                     });
                     return rowData;
                 }).filter(row => {
                     // Check if row has any non-empty, non-whitespace values
-                    return Object.values(row).some(v => {
+                    // Be more aggressive about filtering
+                    const values = Object.values(row);
+                    if (values.length === 0) return false;
+
+                    return values.some(v => {
                         if (v === null || v === undefined) return false;
                         const strVal = String(v).trim();
-                        return strVal !== '' && strVal !== 'undefined' && strVal !== 'null';
+                        // Filter out common empty/invalid values
+                        if (strVal === '' || strVal === 'undefined' || strVal === 'null') return false;
+                        // Filter out whitespace-only values
+                        if (strVal.length === 0) return false;
+                        return true;
                     });
                 });
 
@@ -170,8 +190,8 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
         const mappings: ColumnMapping[] = sheet.headers.map(header => {
             const headerLower = header.toLowerCase().trim();
 
-            // Try to find matching existing column
-            // Exclude 'select' column and columns without proper labels
+            // Try to find matching existing column - STRICT matching only
+            // Only exact matches to prevent wrong column mapping
             const matchingColumn = existingColumns.find(col => {
                 // Skip system columns
                 if (['select'].includes(col.id)) return false;
@@ -179,18 +199,9 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                 const colLabel = col.label?.toLowerCase().trim();
                 const colId = col.id?.toLowerCase().trim();
 
-                // Skip columns without proper labels for fuzzy matching
-                if (!colLabel || colLabel.length < 2) return colId === headerLower;
-
-                // Exact match on label or id
-                if (colLabel === headerLower || colId === headerLower) return true;
-
-                // Partial match only if both strings are meaningful (at least 3 chars)
-                if (headerLower.length >= 3 && colLabel.length >= 3) {
-                    return colLabel.includes(headerLower) || headerLower.includes(colLabel);
-                }
-
-                return false;
+                // Only do EXACT matches - no fuzzy/partial matching
+                // This prevents "Name 1" from matching "Name"
+                return colLabel === headerLower || colId === headerLower;
             });
 
             return {

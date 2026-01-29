@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, memo, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { boardLogger } from '../../../../utils/logger';
@@ -373,9 +373,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         });
     }, []);
 
-    // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
+    // Pagination State with transition for smooth navigation
+    const [isPending, startTransition] = useTransition();
+    const [currentPage, setCurrentPageRaw] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(showPagination ? 50 : -1);
+
+    // Wrap page changes in transition for smoother UX
+    const setCurrentPage = useCallback((page: number) => {
+        startTransition(() => {
+            setCurrentPageRaw(page);
+        });
+    }, []);
 
     // Pinned Charts State
     const storageKeyPinnedCharts = `room-table-pinned-charts-${roomId}-${viewId}`;
@@ -3095,9 +3103,12 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             currentPage={currentPage}
                             onPageChange={setCurrentPage}
                             onPageSizeChange={(size) => {
-                                setRowsPerPage(size);
-                                setCurrentPage(1);
+                                startTransition(() => {
+                                    setRowsPerPage(size);
+                                    setCurrentPageRaw(1);
+                                });
                             }}
+                            isLoading={isPending}
                         />
                     </div>
                 )}
