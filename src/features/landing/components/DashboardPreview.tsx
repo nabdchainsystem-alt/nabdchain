@@ -145,9 +145,9 @@ export const DashboardPreview: React.FC = () => {
 
             <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
-                    {/* Left Content */}
+                    {/* Left Content - Title first on all screens */}
                     {isInView && (
-                        <div className="opacity-0 animate-fade-in-up order-2 lg:order-1"
+                        <div className="opacity-0 animate-fade-in-up"
                              style={{ animationFillMode: 'forwards' }}>
                             <span className="inline-block px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-semibold mb-6 sm:mb-8">
                                 Dashboard Preview
@@ -182,7 +182,7 @@ export const DashboardPreview: React.FC = () => {
                     {/* Right - Dashboard Mockup */}
                     {isInView && (
                         <div
-                            className="relative opacity-0 animate-fade-in-up order-1 lg:order-2"
+                            className="relative opacity-0 animate-fade-in-up"
                             style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}
                         >
                             <div className="relative bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden">

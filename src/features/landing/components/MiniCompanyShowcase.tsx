@@ -1,4 +1,4 @@
-import React, { useRef, memo } from 'react';
+import React, { useRef, memo, useState, useEffect } from 'react';
 import { useInView } from 'framer-motion';
 import {
     UsersThree,
@@ -8,7 +8,10 @@ import {
     ChartPie,
     Briefcase,
     ArrowRight,
-    ArrowsLeftRight
+    ArrowsLeftRight,
+    Lightning,
+    CaretLeft,
+    CaretRight
 } from 'phosphor-react';
 
 interface Department {
@@ -16,7 +19,7 @@ interface Department {
     name: string;
     icon: React.ElementType;
     dashboards: string[];
-    color: string;
+    stats: { label: string; value: string }[];
 }
 
 const DEPARTMENTS: Department[] = [
@@ -25,109 +28,204 @@ const DEPARTMENTS: Department[] = [
         name: 'Customers',
         icon: UsersThree,
         dashboards: ['Segmentation', 'Retention', 'Analytics'],
-        color: 'bg-blue-500',
+        stats: [{ label: 'Active Users', value: '12.4K' }, { label: 'Retention', value: '94%' }]
     },
     {
         id: 'finance',
         name: 'Finance',
         icon: CurrencyCircleDollar,
         dashboards: ['Budgets', 'Expenses', 'Forecasting'],
-        color: 'bg-emerald-500',
+        stats: [{ label: 'Revenue', value: '$2.4M' }, { label: 'Growth', value: '+23%' }]
     },
     {
         id: 'operations',
         name: 'Operations',
         icon: Package,
         dashboards: ['Inventory', 'Sales', 'Purchasing'],
-        color: 'bg-amber-500',
+        stats: [{ label: 'Orders', value: '1,847' }, { label: 'Fulfilled', value: '98%' }]
     },
     {
         id: 'suppliers',
         name: 'Suppliers',
         icon: Truck,
         dashboards: ['Performance', 'Compliance', 'Contracts'],
-        color: 'bg-purple-500',
+        stats: [{ label: 'Partners', value: '156' }, { label: 'On-time', value: '97%' }]
     },
     {
         id: 'people',
         name: 'People',
         icon: Briefcase,
         dashboards: ['HR', 'Payroll', 'Attendance'],
-        color: 'bg-pink-500',
+        stats: [{ label: 'Team Size', value: '234' }, { label: 'Engagement', value: '89%' }]
     },
     {
         id: 'overview',
         name: 'Overview',
         icon: ChartPie,
         dashboards: ['Executive', 'KPIs', 'Reports'],
-        color: 'bg-indigo-500',
+        stats: [{ label: 'Dashboards', value: '51+' }, { label: 'Real-time', value: 'Yes' }]
     },
 ];
 
+// Mini animated chart for each card
+const MiniDashboard: React.FC<{ animate: boolean; index: number }> = memo(({ animate, index }) => {
+    const chartType = index % 3;
+
+    if (chartType === 0) {
+        // Bar chart
+        const heights = [40, 65, 45, 80, 55, 70, 50, 85];
+        return (
+            <div className="flex items-end gap-0.5 h-8">
+                {heights.map((h, i) => (
+                    <div
+                        key={i}
+                        className="flex-1 bg-zinc-600 dark:bg-zinc-500 rounded-t-sm transition-all duration-500"
+                        style={{
+                            height: animate ? `${h}%` : '10%',
+                            transitionDelay: `${i * 50}ms`
+                        }}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    if (chartType === 1) {
+        // Line chart
+        return (
+            <svg viewBox="0 0 80 32" className="w-full h-8">
+                <path
+                    d="M0,28 L10,24 L20,26 L30,18 L40,20 L50,12 L60,14 L70,6 L80,8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-zinc-500"
+                    strokeDasharray={animate ? "0" : "200"}
+                    strokeDashoffset={animate ? "0" : "200"}
+                    style={{ transition: 'stroke-dasharray 1s ease-out, stroke-dashoffset 1s ease-out' }}
+                />
+            </svg>
+        );
+    }
+
+    // Progress bars
+    const values = [75, 60, 85];
+    return (
+        <div className="space-y-1.5">
+            {values.map((v, i) => (
+                <div key={i} className="h-1.5 bg-zinc-700 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-zinc-500 rounded-full transition-all duration-700"
+                        style={{
+                            width: animate ? `${v}%` : '0%',
+                            transitionDelay: `${i * 150}ms`
+                        }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+});
+
 // Department card with mini dashboard preview
-const DepartmentCard: React.FC<{ dept: Department; index: number }> = memo(({ dept, index }) => {
+const DepartmentCard: React.FC<{ dept: Department; index: number; isActive: boolean; onClick: () => void }> = memo(({
+    dept,
+    index,
+    isActive,
+    onClick
+}) => {
     const Icon = dept.icon;
+    const cardRef = useRef(null);
+    const isInView = useInView(cardRef, { once: true, margin: "-50px" });
 
     return (
         <div
-            className="group relative"
+            ref={cardRef}
+            onClick={onClick}
+            className={`group relative cursor-pointer flex-shrink-0 w-[260px] sm:w-auto
+                transition-all duration-300 ${isActive ? 'scale-[1.02]' : 'hover:scale-[1.01]'}`}
             style={{
                 opacity: 0,
-                animation: 'fadeInUp 0.5s ease-out forwards',
+                animation: isInView ? 'fadeInUp 0.5s ease-out forwards' : 'none',
                 animationDelay: `${0.1 + index * 0.08}s`
             }}
         >
-            <div className="relative p-5 sm:p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800
-                bg-white dark:bg-zinc-900
-                hover:border-zinc-300 dark:hover:border-zinc-700
-                hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-none
-                hover:-translate-y-1
-                transition-all duration-300">
+            <div className={`relative p-5 rounded-2xl border transition-all duration-300
+                ${isActive
+                    ? 'bg-zinc-900 dark:bg-zinc-800 border-zinc-700 dark:border-zinc-600 shadow-xl'
+                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg'
+                }`}>
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                    <div className={`w-10 h-10 rounded-xl ${dept.color} flex items-center justify-center`}>
-                        <Icon size={20} weight="fill" className="text-white" />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors
+                        ${isActive
+                            ? 'bg-white text-zinc-900'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover:bg-zinc-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-zinc-900'
+                        }`}>
+                        <Icon size={20} weight="fill" />
                     </div>
                     <div className="text-right">
-                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{dept.dashboards.length}</div>
-                        <div className="text-[10px] text-zinc-500 uppercase tracking-wide">Dashboards</div>
+                        <div className={`text-xl font-bold ${isActive ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
+                            {dept.dashboards.length}
+                        </div>
+                        <div className={`text-[10px] uppercase tracking-wide ${isActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                            Dashboards
+                        </div>
                     </div>
                 </div>
 
+                {/* Mini Dashboard Preview */}
+                <div className={`mb-4 p-3 rounded-xl transition-colors ${isActive ? 'bg-zinc-800' : 'bg-zinc-50 dark:bg-zinc-800/50'}`}>
+                    <MiniDashboard animate={isInView} index={index} />
+                </div>
+
                 {/* Title */}
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">
+                <h3 className={`text-lg font-semibold mb-2 ${isActive ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
                     {dept.name}
                 </h3>
 
-                {/* Dashboard list */}
-                <div className="space-y-1.5">
-                    {dept.dashboards.map((dashboard, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${dept.color} opacity-60`} />
-                            <span className="text-sm text-zinc-500 dark:text-zinc-400">{dashboard}</span>
+                {/* Stats */}
+                <div className="flex gap-4">
+                    {dept.stats.map((stat, i) => (
+                        <div key={i}>
+                            <div className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-zinc-900 dark:text-white'}`}>
+                                {stat.value}
+                            </div>
+                            <div className={`text-[10px] ${isActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                {stat.label}
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Hover arrow */}
-                <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight size={16} className="text-zinc-400" />
-                </div>
+                {/* Active indicator */}
+                {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-white rounded-full" />
+                )}
             </div>
         </div>
     );
 });
 
-// Connection line between departments
-const ConnectionLine = memo(() => (
-    <div className="hidden lg:flex items-center justify-center py-4">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-            <ArrowsLeftRight size={14} className="text-zinc-400" />
-            <span className="text-xs text-zinc-500 font-medium">Real-time sync</span>
+// Connection visualization
+const ConnectionsVisualization: React.FC<{ activeDept: string }> = memo(({ activeDept }) => {
+    return (
+        <div className="hidden lg:flex items-center justify-center py-8">
+            <div className="relative flex items-center gap-4 px-6 py-3 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">All departments synced</span>
+                </div>
+                <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
+                <div className="flex items-center gap-2">
+                    <Lightning size={14} weight="fill" className="text-zinc-500" />
+                    <span className="text-sm text-zinc-500">Real-time updates</span>
+                </div>
+            </div>
         </div>
-    </div>
-));
+    );
+});
 
 interface MiniCompanyShowcaseProps {
     onExplore?: () => void;
@@ -135,14 +233,44 @@ interface MiniCompanyShowcaseProps {
 
 export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExplore }) => {
     const sectionRef = useRef(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+    const [activeDept, setActiveDept] = useState('customers');
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const checkScroll = () => {
+        if (scrollRef.current) {
+            const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+            setCanScrollLeft(scrollLeft > 0);
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+        }
+    };
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({
+                left: direction === 'left' ? -280 : 280,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (el) {
+            el.addEventListener('scroll', checkScroll);
+            checkScroll();
+            return () => el.removeEventListener('scroll', checkScroll);
+        }
+    }, []);
 
     return (
         <section ref={sectionRef} className="py-24 sm:py-32 bg-zinc-50 dark:bg-zinc-950 relative overflow-hidden">
             <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12">
-                {/* Header - Left aligned for variety */}
+                {/* Header */}
                 {isInView && (
-                    <div className="max-w-2xl mb-16"
+                    <div className="max-w-2xl mb-12 sm:mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
                         <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-[1.1]">
                             Run your entire company
@@ -156,19 +284,63 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
                     </div>
                 )}
 
-                {/* Department Grid */}
+                {/* Mobile scroll navigation */}
+                <div className="sm:hidden flex items-center justify-between mb-4">
+                    <span className="text-xs text-zinc-500">Swipe to explore departments</span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => scroll('left')}
+                            disabled={!canScrollLeft}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
+                                ${canScrollLeft
+                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
+                        >
+                            <CaretLeft size={16} />
+                        </button>
+                        <button
+                            onClick={() => scroll('right')}
+                            disabled={!canScrollRight}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
+                                ${canScrollRight
+                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'}`}
+                        >
+                            <CaretRight size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Department Grid - horizontal scroll on mobile */}
                 {isInView && (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12">
+                    <div
+                        ref={scrollRef}
+                        className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5
+                            overflow-x-auto sm:overflow-visible
+                            pb-4 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0
+                            snap-x snap-mandatory sm:snap-none"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
                         {DEPARTMENTS.map((dept, idx) => (
-                            <DepartmentCard key={dept.id} dept={dept} index={idx} />
+                            <DepartmentCard
+                                key={dept.id}
+                                dept={dept}
+                                index={idx}
+                                isActive={activeDept === dept.id}
+                                onClick={() => setActiveDept(dept.id)}
+                            />
                         ))}
                     </div>
                 )}
 
+                {/* Connections visualization */}
+                <ConnectionsVisualization activeDept={activeDept} />
+
                 {/* Bottom stats bar */}
                 {isInView && (
                     <div
-                        className="flex flex-wrap items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-6 rounded-2xl
+                            bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mt-8"
                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}
                     >
                         <div className="flex items-center gap-8 sm:gap-12">

@@ -1,6 +1,9 @@
-import React, { useState, useRef, memo } from 'react';
+import React, { useState, useRef, memo, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Check, Crown, Lightning, Rocket, Star, Buildings, Users, Database, Headset, ChartLineUp } from 'phosphor-react';
+import {
+    Check, Crown, Lightning, Rocket, Buildings, Users, Database,
+    Headset, ChartLineUp, ArrowRight, Sparkle, Shield, CaretLeft, CaretRight
+} from 'phosphor-react';
 
 interface PricingTier {
     id: string;
@@ -22,7 +25,7 @@ const PRICING_TIERS: PricingTier[] = [
         icon: Rocket,
         monthlyPrice: 32,
         yearlyPrice: 16,
-        description: 'Perfect for small teams getting started',
+        description: 'For small teams getting started',
         features: [
             'Up to 5 team members',
             'Board, Table & Kanban views',
@@ -31,7 +34,7 @@ const PRICING_TIERS: PricingTier[] = [
             'Basic dashboards',
             '5 automation rules',
         ],
-        cta: 'Start Free Trial',
+        cta: 'Start Free',
     },
     {
         id: 'professional',
@@ -39,14 +42,14 @@ const PRICING_TIERS: PricingTier[] = [
         icon: Crown,
         monthlyPrice: 56,
         yearlyPrice: 25,
-        description: 'For growing teams that need more power',
+        description: 'For growing teams that need power',
         features: [
             'Up to 25 team members',
-            'All board views (Gantt, Timeline, Calendar)',
+            'All 14 board views',
             '50 GB storage',
             'Priority support',
             'Mini Company: Sales & Inventory',
-            'Advanced automation rules',
+            'Advanced automation',
             'Time tracking',
             '24 column types',
         ],
@@ -67,7 +70,7 @@ const PRICING_TIERS: PricingTier[] = [
             '500 GB storage',
             'Dedicated support manager',
             'Custom integrations',
-            'Advanced analytics & formulas',
+            'Advanced analytics',
             'White-label options',
             'API access',
             '50+ ready dashboards',
@@ -76,14 +79,60 @@ const PRICING_TIERS: PricingTier[] = [
     },
 ];
 
-const FeatureItem: React.FC<{ feature: string; highlighted?: boolean }> = memo(({ feature, highlighted }) => (
-    <li className="flex items-start gap-2 sm:gap-3">
-        <div className={`mt-0.5 p-0.5 sm:p-1 rounded-full shrink-0 ${highlighted ? 'bg-white/20' : 'bg-zinc-800'}`}>
-            <Check size={10} weight="bold" className={highlighted ? 'text-white' : 'text-zinc-400'} />
+// Feature item with animated check
+const FeatureItem: React.FC<{ feature: string; highlighted?: boolean; index: number }> = memo(({ feature, highlighted, index }) => (
+    <li
+        className="flex items-start gap-3 opacity-0"
+        style={{
+            animation: 'fadeInLeft 0.3s ease-out forwards',
+            animationDelay: `${0.3 + index * 0.05}s`
+        }}
+    >
+        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+            highlighted
+                ? 'bg-white text-zinc-900'
+                : 'bg-zinc-800 text-zinc-400'
+        }`}>
+            <Check size={10} weight="bold" />
         </div>
-        <span className={`text-xs sm:text-sm ${highlighted ? 'text-zinc-300' : 'text-zinc-400'}`}>{feature}</span>
+        <span className={`text-sm ${highlighted ? 'text-zinc-300' : 'text-zinc-500'}`}>
+            {feature}
+        </span>
     </li>
 ));
+
+// Animated price counter
+const AnimatedPrice: React.FC<{ price: number; highlighted?: boolean }> = memo(({ price, highlighted }) => {
+    const [displayPrice, setDisplayPrice] = useState(0);
+
+    useEffect(() => {
+        let start = 0;
+        const end = price;
+        const duration = 1000;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            setDisplayPrice(Math.floor(start + (end - start) * easeOut));
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }, [price]);
+
+    return (
+        <span className={`text-5xl sm:text-6xl font-bold tracking-tight ${
+            highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'
+        }`}>
+            {displayPrice}
+        </span>
+    );
+});
 
 interface PricingCardProps {
     tier: PricingTier;
@@ -92,77 +141,100 @@ interface PricingCardProps {
     index: number;
 }
 
-// Pricing card with smooth hover animations
+// Pricing card component
 const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetStarted, index }) => {
     const price = isYearly ? tier.yearlyPrice : tier.monthlyPrice;
     const Icon = tier.icon;
+    const savings = Math.round((1 - tier.yearlyPrice / tier.monthlyPrice) * 100);
 
     return (
         <div
-            className={`group relative rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 opacity-0 animate-fade-in-up
-                transition-all duration-500 ease-out hover:-translate-y-2
-                ${tier.highlighted
-                ? 'bg-gradient-to-br from-zinc-900 via-zinc-800 to-black text-white shadow-xl shadow-violet-500/20 sm:scale-[1.02] z-10 border border-zinc-600 hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-500/30'
-                : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-600 hover:shadow-xl hover:shadow-black/30'
-                }`}
-            style={{ animationDelay: `${0.1 + index * 0.1}s`, animationFillMode: 'forwards' }}
+            className={`group relative flex-shrink-0 w-[300px] sm:w-auto
+                transition-all duration-500 ${tier.highlighted ? 'sm:scale-[1.03] z-10' : 'hover:scale-[1.01]'}`}
+            style={{
+                opacity: 0,
+                animation: 'fadeInUp 0.5s ease-out forwards',
+                animationDelay: `${0.1 + index * 0.1}s`
+            }}
         >
-            {/* Badge */}
-            {tier.badge && (
-                <div className="absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2">
-                    <div className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold shadow-lg">
-                        <Star size={12} weight="fill" />
-                        {tier.badge}
-                    </div>
-                </div>
-            )}
-
-            <div className="mb-4 sm:mb-6">
-                <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 ${tier.highlighted ? 'bg-white/10' : 'bg-zinc-800'
-                    }`}>
-                    <Icon size={20} weight="duotone" className={tier.highlighted ? 'text-white' : 'text-zinc-400'} />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold mb-1.5 sm:mb-2 text-white">
-                    {tier.name}
-                </h3>
-                <p className="text-xs sm:text-sm text-zinc-400">
-                    {tier.description}
-                </p>
-            </div>
-
-            {/* Price */}
-            <div className="mb-4 sm:mb-6">
-                <div className="flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-bold text-white">
-                        {price}
-                    </span>
-                    <span className="text-base sm:text-lg text-zinc-500">SAR</span>
-                    <span className="text-xs sm:text-sm text-zinc-500">/month</span>
-                </div>
-                {isYearly && (
-                    <div className={`mt-1.5 sm:mt-2 text-xs sm:text-sm ${tier.highlighted ? 'text-emerald-300' : 'text-emerald-400'}`}>
-                        Save {Math.round((1 - tier.yearlyPrice / tier.monthlyPrice) * 100)}% yearly
+            <div className={`h-full rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
+                tier.highlighted
+                    ? 'bg-zinc-900 border-2 border-white shadow-2xl shadow-white/10'
+                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-xl'
+            }`}>
+                {/* Badge */}
+                {tier.badge && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-zinc-900 text-xs font-bold shadow-lg">
+                            <Sparkle size={12} weight="fill" />
+                            {tier.badge}
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* CTA Button */}
-            <button
-                onClick={onGetStarted}
-                className={`w-full py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-colors duration-200 mb-5 sm:mb-8 ${tier.highlighted
-                    ? 'bg-white text-zinc-900 hover:bg-zinc-100 shadow-lg'
-                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                {/* Header */}
+                <div className="mb-6">
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${
+                        tier.highlighted
+                            ? 'bg-white text-zinc-900'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                    }`}>
+                        <Icon size={24} weight="fill" />
+                    </div>
+                    <h3 className={`text-xl font-bold mb-2 ${
+                        tier.highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'
+                    }`}>
+                        {tier.name}
+                    </h3>
+                    <p className={`text-sm ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        {tier.description}
+                    </p>
+                </div>
+
+                {/* Price */}
+                <div className="mb-6">
+                    <div className="flex items-baseline gap-2">
+                        <AnimatedPrice price={price} highlighted={tier.highlighted} />
+                        <div className="flex flex-col">
+                            <span className={`text-sm font-medium ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                SAR
+                            </span>
+                            <span className={`text-xs ${tier.highlighted ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                /month
+                            </span>
+                        </div>
+                    </div>
+                    {isYearly && (
+                        <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            tier.highlighted
+                                ? 'bg-white/10 text-white'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                        }`}>
+                            Save {savings}% yearly
+                        </div>
+                    )}
+                </div>
+
+                {/* CTA Button */}
+                <button
+                    onClick={onGetStarted}
+                    className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-300 mb-8 group/btn flex items-center justify-center gap-2 ${
+                        tier.highlighted
+                            ? 'bg-white text-zinc-900 hover:bg-zinc-100 shadow-lg shadow-white/20'
+                            : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100'
                     }`}
-            >
-                {tier.cta}
-            </button>
+                >
+                    {tier.cta}
+                    <ArrowRight size={14} weight="bold" className="group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
 
-            {/* Features */}
-            <ul className="space-y-2 sm:space-y-3">
-                {tier.features.map((feature, idx) => (
-                    <FeatureItem key={idx} feature={feature} highlighted={tier.highlighted} />
-                ))}
-            </ul>
+                {/* Features */}
+                <ul className="space-y-3">
+                    {tier.features.map((feature, idx) => (
+                        <FeatureItem key={idx} feature={feature} highlighted={tier.highlighted} index={idx} />
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 });
@@ -172,9 +244,12 @@ interface PricingSectionProps {
 }
 
 export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) => {
-    const [isYearly, setIsYearly] = useState(false);
+    const [isYearly, setIsYearly] = useState(true);
     const sectionRef = useRef(null);
-    const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(true);
 
     const handleGetStarted = () => {
         if (onGetStarted) {
@@ -182,72 +257,134 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
         }
     };
 
+    const checkScroll = () => {
+        if (scrollRef.current) {
+            const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+            setCanScrollLeft(scrollLeft > 0);
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+        }
+    };
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({
+                left: direction === 'left' ? -320 : 320,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (el) {
+            el.addEventListener('scroll', checkScroll);
+            checkScroll();
+            return () => el.removeEventListener('scroll', checkScroll);
+        }
+    }, []);
+
     return (
-        <section ref={sectionRef} id="pricing" className="py-20 sm:py-28 md:py-36 bg-black relative overflow-hidden">
-            {/* Animated background decorations */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[400px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
-                 style={{ animation: 'pricingOrb 12s ease-in-out infinite' }} />
-            <div className="absolute top-20 left-1/4 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
-                 style={{ animation: 'pricingOrb 15s ease-in-out infinite', animationDelay: '-5s' }} />
-            <div className="absolute bottom-0 right-1/4 w-[350px] h-[350px] bg-emerald-500/8 rounded-full blur-3xl pointer-events-none"
-                 style={{ animation: 'pricingOrb 10s ease-in-out infinite', animationDelay: '-8s' }} />
-            <style>{`
-                @keyframes pricingOrb {
-                    0%, 100% { opacity: 0.5; transform: translate(0, 0) scale(1) translateZ(0); }
-                    33% { opacity: 0.8; transform: translate(30px, -20px) scale(1.1) translateZ(0); }
-                    66% { opacity: 0.6; transform: translate(-20px, 30px) scale(0.95) translateZ(0); }
-                }
-            `}</style>
+        <section ref={sectionRef} id="pricing" className="py-20 sm:py-28 md:py-36 bg-zinc-50 dark:bg-black relative overflow-hidden">
+            {/* Subtle background */}
+            <div className="absolute inset-0">
+                <div className="absolute inset-0 opacity-[0.02]"
+                     style={{
+                         backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+                         backgroundSize: '40px 40px'
+                     }} />
+            </div>
 
             <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
                 {/* Header */}
                 {isInView && (
-                    <div className="text-center mb-12 sm:mb-16 opacity-0 animate-fade-in-up"
-                         style={{ animationFillMode: 'forwards' }}>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-purple-400 text-sm font-medium mb-6 sm:mb-8">
-                            <Lightning size={16} weight="fill" />
-                            Simple, Transparent Pricing
+                    <div className="text-center mb-12 sm:mb-16"
+                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 dark:bg-zinc-800 text-white text-sm font-medium mb-6">
+                            <Lightning size={14} weight="fill" />
+                            Pricing
                         </div>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 sm:mb-8 tracking-tight leading-[1.1]">
-                            Choose Your Perfect Plan
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-zinc-900 dark:text-white mb-6 tracking-tight leading-[1.05]">
+                            Choose Your Plan
                         </h2>
-                        <p className="text-lg sm:text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-                            Start free for 14 days. No credit card required. Upgrade anytime as your team grows.
+                        <p className="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
+                            Start free for 14 days. No credit card required.
                         </p>
                     </div>
                 )}
 
                 {/* Billing Toggle */}
                 {isInView && (
-                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-16 opacity-0 animate-fade-in-up"
-                         style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
-                        <span className={`text-xs sm:text-sm font-medium transition-colors ${!isYearly ? 'text-white' : 'text-zinc-500'}`}>
-                            Monthly
-                        </span>
+                    <div className="flex items-center justify-center gap-4 mb-12 sm:mb-16"
+                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.1s' }}>
                         <button
-                            onClick={() => setIsYearly(!isYearly)}
-                            className="relative w-14 sm:w-16 h-7 sm:h-8 rounded-full bg-zinc-800 transition-colors"
+                            onClick={() => setIsYearly(false)}
+                            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                                !isYearly
+                                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                            }`}
                         >
-                            <motion.div
-                                animate={{ x: isYearly ? 28 : 4 }}
-                                transition={{ type: 'tween', duration: 0.15, ease: 'easeOut' }}
-                                className="absolute top-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white shadow-md"
-                            />
+                            Monthly
                         </button>
-                        <span className={`text-xs sm:text-sm font-medium transition-colors ${isYearly ? 'text-white' : 'text-zinc-500'}`}>
+                        <button
+                            onClick={() => setIsYearly(true)}
+                            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                                isYearly
+                                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                            }`}
+                        >
                             Yearly
-                        </span>
-                        {isYearly && (
-                            <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-900/30 text-emerald-400 text-[10px] sm:text-xs font-bold">
-                                Save up to 55%
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                isYearly
+                                    ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-900'
+                                    : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                            }`}>
+                                -55%
                             </span>
-                        )}
+                        </button>
                     </div>
                 )}
 
-                {/* Pricing Cards */}
+                {/* Mobile scroll navigation */}
+                <div className="sm:hidden flex items-center justify-between mb-4">
+                    <span className="text-xs text-zinc-500">Swipe to compare plans</span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => scroll('left')}
+                            disabled={!canScrollLeft}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+                                canScrollLeft
+                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
+                            }`}
+                        >
+                            <CaretLeft size={16} />
+                        </button>
+                        <button
+                            onClick={() => scroll('right')}
+                            disabled={!canScrollRight}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+                                canScrollRight
+                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
+                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
+                            }`}
+                        >
+                            <CaretRight size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Pricing Cards - horizontal scroll on mobile */}
                 {isInView && (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 items-start">
+                    <div
+                        ref={scrollRef}
+                        className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch
+                            overflow-x-auto sm:overflow-visible
+                            pb-4 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0
+                            snap-x snap-mandatory sm:snap-none"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
                         {PRICING_TIERS.map((tier, index) => (
                             <PricingCard
                                 key={tier.id}
@@ -260,40 +397,56 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                     </div>
                 )}
 
-                {/* Bottom Note */}
+                {/* Trust indicators */}
                 {isInView && (
-                    <div className="mt-10 sm:mt-16 text-center opacity-0 animate-fade-in-up"
-                         style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
-                        <p className="text-xs sm:text-sm text-zinc-400 mb-2">
-                            All plans include a 14-day free trial. Need a custom solution?{' '}
-                            <a href="mailto:info@nabdchain.com" className="text-white font-medium hover:underline">
-                                Contact our sales team
-                            </a>
-                        </p>
-                        <p className="text-xs sm:text-sm text-zinc-600">
-                            info@nabdchain.com
-                        </p>
+                    <div className="mt-12 sm:mt-16 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.4s' }}>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 sm:gap-8">
+                                {[
+                                    { icon: Shield, label: 'SOC 2 Compliant' },
+                                    { icon: Database, label: '99.9% Uptime' },
+                                    { icon: Headset, label: '24/7 Support' },
+                                    { icon: Users, label: '10K+ Users' },
+                                ].map(({ icon: Icon, label }) => (
+                                    <div key={label} className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                                        <Icon size={16} weight="fill" />
+                                        <span className="text-xs sm:text-sm font-medium">{label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="text-center sm:text-right">
+                                <p className="text-xs text-zinc-500 mb-1">Questions?</p>
+                                <a href="mailto:info@nabdchain.com" className="text-sm font-medium text-zinc-900 dark:text-white hover:underline">
+                                    info@nabdchain.com
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* Trust Badges */}
+                {/* Money-back guarantee */}
                 {isInView && (
-                    <div className="mt-10 sm:mt-16 flex flex-wrap items-center justify-center gap-4 sm:gap-8 opacity-0 animate-fade-in-up"
-                         style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
-                        {[
-                            { icon: Users, label: '10,000+ Users' },
-                            { icon: Database, label: '99.9% Uptime' },
-                            { icon: Headset, label: '24/7 Support' },
-                            { icon: ChartLineUp, label: '50+ Dashboards' },
-                        ].map(({ icon: Icon, label }) => (
-                            <div key={label} className="flex items-center gap-1.5 sm:gap-2 text-zinc-500">
-                                <Icon size={16} />
-                                <span className="text-xs sm:text-sm font-medium">{label}</span>
-                            </div>
-                        ))}
+                    <div className="mt-8 text-center"
+                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-600">
+                            30-day money-back guarantee • Cancel anytime • No hidden fees
+                        </p>
                     </div>
                 )}
             </div>
+
+            {/* Keyframes */}
+            <style>{`
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInLeft {
+                    from { opacity: 0; transform: translateX(-10px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+            `}</style>
         </section>
     );
 };
