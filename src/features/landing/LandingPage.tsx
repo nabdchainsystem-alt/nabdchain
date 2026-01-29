@@ -49,40 +49,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             { ref: pricingRef, theme: 'dark' },         // Pricing - dark background
         ];
 
-        const observerCallback: IntersectionObserverCallback = (entries) => {
-            // Find the entry that is most visible (highest intersection ratio near top of viewport)
-            let topVisibleSection: { theme: SectionTheme; top: number } | null = null;
+        const checkNavbarTheme = () => {
+            const navbarHeight = 60; // Approximate navbar position from top
 
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    const rect = entry.boundingClientRect;
-                    const section = sectionThemes.find(s => s.ref.current === entry.target);
-
-                    if (section && rect.top <= 100) {
-                        if (!topVisibleSection || rect.top > topVisibleSection.top) {
-                            topVisibleSection = { theme: section.theme, top: rect.top };
-                        }
+            // Find which section is currently at the navbar position
+            for (let i = sectionThemes.length - 1; i >= 0; i--) {
+                const section = sectionThemes[i];
+                if (section.ref.current) {
+                    const rect = section.ref.current.getBoundingClientRect();
+                    // If the section's top is above the navbar check point, this section is "behind" the navbar
+                    if (rect.top <= navbarHeight) {
+                        setNavTheme(section.theme);
+                        return;
                     }
                 }
-            });
-
-            if (topVisibleSection) {
-                setNavTheme(topVisibleSection.theme);
             }
+            // Default to light if nothing matches (at very top)
+            setNavTheme('light');
         };
 
-        const observer = new IntersectionObserver(observerCallback, {
-            threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5],
-            rootMargin: '-50px 0px -50% 0px'
-        });
+        // Get the scrollable container
+        const scrollContainer = document.querySelector('.h-screen.overflow-y-auto');
 
-        sectionThemes.forEach(({ ref }) => {
-            if (ref.current) {
-                observer.observe(ref.current);
-            }
-        });
+        // Check on mount
+        checkNavbarTheme();
 
-        return () => observer.disconnect();
+        // Check on scroll
+        if (scrollContainer) {
+            scrollContainer.addEventListener('scroll', checkNavbarTheme, { passive: true });
+            return () => scrollContainer.removeEventListener('scroll', checkNavbarTheme);
+        }
     }, []);
 
     const handleSignIn = () => {
