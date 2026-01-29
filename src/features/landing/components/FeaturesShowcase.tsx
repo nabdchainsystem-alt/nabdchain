@@ -15,8 +15,8 @@ import {
 } from 'phosphor-react';
 import { useLandingContext } from '../LandingPage';
 
-// Animated mini chart component
-const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: number }> = memo(({ type, delay = 0 }) => {
+// Animated mini chart component - styled to match "See everything at a glance" section
+const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: number; isHighlighted?: boolean }> = memo(({ type, delay = 0, isHighlighted = false }) => {
     const [animate, setAnimate] = useState(false);
 
     useEffect(() => {
@@ -27,11 +27,15 @@ const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: numbe
     if (type === 'bar') {
         const bars = [65, 85, 45, 95, 70, 80];
         return (
-            <div className="flex items-end gap-1 h-12">
+            <div className="flex items-end gap-1.5 h-12">
                 {bars.map((height, i) => (
                     <div
                         key={i}
-                        className="flex-1 bg-white/20 rounded-sm transition-all duration-700 ease-out"
+                        className={`flex-1 rounded-sm transition-all duration-700 ease-out ${
+                            i === 3 || i === 5
+                                ? 'bg-gradient-to-t from-white to-zinc-200'
+                                : 'bg-gradient-to-t from-zinc-500 to-zinc-400'
+                        }`}
                         style={{
                             height: animate ? `${height}%` : '0%',
                             transitionDelay: `${i * 100}ms`
@@ -45,12 +49,18 @@ const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: numbe
     if (type === 'line') {
         return (
             <svg viewBox="0 0 100 40" className="w-full h-10">
+                <defs>
+                    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#a1a1aa" />
+                        <stop offset="100%" stopColor="#ffffff" />
+                    </linearGradient>
+                </defs>
                 <path
                     d="M0,35 Q10,30 20,25 T40,20 T60,15 T80,10 T100,5"
                     fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="text-white/30"
+                    stroke="url(#lineGradient)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
                     strokeDasharray="200"
                     strokeDashoffset={animate ? 0 : 200}
                     style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
@@ -58,29 +68,30 @@ const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: numbe
                 <circle
                     cx={animate ? "100" : "0"}
                     cy={animate ? "5" : "35"}
-                    r="3"
-                    className="fill-white/50"
+                    r="4"
+                    className="fill-white"
                     style={{ transition: 'all 1.5s ease-out' }}
                 />
             </svg>
         );
     }
 
-    // Progress type
+    // Progress type - styled like dashboard bars
     return (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
             {[85, 72, 93].map((value, i) => (
-                <div key={i} className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-white/40 rounded-full transition-all duration-1000 ease-out"
-                            style={{
-                                width: animate ? `${value}%` : '0%',
-                                transitionDelay: `${i * 200}ms`
-                            }}
-                        />
-                    </div>
-                    <span className="text-[10px] text-white/40 w-8">{animate ? `${value}%` : '0%'}</span>
+                <div key={i} className="h-2 bg-zinc-700 rounded-lg overflow-hidden">
+                    <div
+                        className={`h-full rounded-lg transition-all duration-1000 ease-out ${
+                            i === 0 || i === 2
+                                ? 'bg-gradient-to-r from-white to-zinc-200'
+                                : 'bg-gradient-to-r from-zinc-500 to-zinc-400'
+                        }`}
+                        style={{
+                            width: animate ? `${value}%` : '0%',
+                            transitionDelay: `${i * 200}ms`
+                        }}
+                    />
                 </div>
             ))}
         </div>
@@ -110,8 +121,8 @@ const FeatureCard: React.FC<FeatureCardProps> = memo(({
     return (
         <div
             className="flex-shrink-0 w-[280px] sm:w-auto sm:flex-1 p-5 sm:p-6 rounded-2xl
-                bg-zinc-900 border border-zinc-800
-                hover:border-zinc-700 hover:bg-zinc-900/80
+                bg-zinc-800/50 border border-zinc-700/50
+                hover:border-zinc-600/50 hover:bg-zinc-800/70 hover:shadow-lg
                 transition-all duration-300 group"
             style={{
                 opacity: 0,
@@ -121,30 +132,30 @@ const FeatureCard: React.FC<FeatureCardProps> = memo(({
         >
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700
+                <div className="w-10 h-10 rounded-xl bg-zinc-700/50 border border-zinc-600/50
                     flex items-center justify-center
                     group-hover:bg-white group-hover:border-white transition-all duration-300">
-                    <Icon size={20} weight="duotone" className="text-zinc-400 group-hover:text-zinc-900 transition-colors" />
+                    <Icon size={20} weight="duotone" className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
                 </div>
                 <div className="text-right">
                     <div className="text-2xl font-bold text-white">{metric}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide">{metricLabel}</div>
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wide">{metricLabel}</div>
                 </div>
             </div>
 
             {/* Chart */}
-            <div className="mb-4 p-3 rounded-xl bg-zinc-800/50">
+            <div className="mb-4 p-3 rounded-xl bg-zinc-900/80 border border-zinc-700/30">
                 <AnimatedChart type={chartType} delay={0.3 + index * 0.15} />
             </div>
 
             {/* Content */}
             <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
+            <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
         </div>
     );
 });
 
-// Hero feature card
+// Hero feature card - styled to match "See everything at a glance" section
 const HeroFeatureCard: React.FC<{ isRTL: boolean }> = memo(({ isRTL }) => {
     const [count, setCount] = useState(0);
 
@@ -158,22 +169,26 @@ const HeroFeatureCard: React.FC<{ isRTL: boolean }> = memo(({ isRTL }) => {
     return (
         <div
             className="flex-shrink-0 w-[320px] sm:w-auto sm:col-span-2 p-6 sm:p-8 rounded-2xl
-                bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800
+                bg-zinc-800/50 border border-zinc-700/50
                 relative overflow-hidden group"
             style={{
                 opacity: 0,
                 animation: 'fadeInUp 0.5s ease-out forwards'
             }}
         >
-            {/* Background animation */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl
-                group-hover:bg-white/10 transition-all duration-700" />
+            {/* Background spotlight gradients - matching dashboard preview */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl
+                group-hover:bg-purple-500/25 transition-all duration-700"
+                style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }} />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl
+                group-hover:bg-blue-500/20 transition-all duration-700"
+                style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }} />
 
             <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                    bg-white/10 border border-white/10 mb-5">
+                    bg-zinc-700/50 border border-zinc-600/50 mb-5">
                     <TrendUp size={14} weight="bold" className="text-white" />
-                    <span className="text-xs font-medium text-white/80">
+                    <span className="text-xs font-medium text-zinc-300">
                         {isRTL ? 'الميزة الأساسية' : 'Core Benefit'}
                     </span>
                 </div>
@@ -194,22 +209,22 @@ const HeroFeatureCard: React.FC<{ isRTL: boolean }> = memo(({ isRTL }) => {
                     )}
                 </h3>
 
-                <p className="text-zinc-500 text-sm mb-6 max-w-sm">
+                <p className="text-zinc-400 text-sm mb-6 max-w-sm">
                     {isRTL
                         ? 'استبدل الأدوات المتفرقة بمنصة موحدة واحدة. شاهد الكفاءة ترتفع بينما يركز فريقك على ما يهم.'
                         : 'Replace scattered tools with one unified platform. Watch efficiency soar as your team focuses on what matters.'
                     }
                 </p>
 
-                {/* Live counter animation */}
-                <div className="flex gap-8">
-                    <div>
-                        <div className="text-3xl font-bold text-white">{count}%</div>
-                        <div className="text-xs text-zinc-500">{isRTL ? 'تنقل أقل' : 'Less switching'}</div>
+                {/* Live counter animation - styled like dashboard stat cards */}
+                <div className="flex gap-4">
+                    <div className="bg-zinc-900/80 border border-zinc-700/30 rounded-xl p-4">
+                        <div className="text-2xl sm:text-3xl font-bold text-white">{count}%</div>
+                        <div className="text-xs text-zinc-400">{isRTL ? 'تنقل أقل' : 'Less switching'}</div>
                     </div>
-                    <div>
-                        <div className="text-3xl font-bold text-white">{isRTL ? '٣ س' : '3hrs'}</div>
-                        <div className="text-xs text-zinc-500">{isRTL ? 'توفير يومي' : 'Saved daily'}</div>
+                    <div className="bg-zinc-900/80 border border-zinc-700/30 rounded-xl p-4">
+                        <div className="text-2xl sm:text-3xl font-bold text-white">{isRTL ? '٣ س' : '3hrs'}</div>
+                        <div className="text-xs text-zinc-400">{isRTL ? 'توفير يومي' : 'Saved daily'}</div>
                     </div>
                 </div>
             </div>
@@ -304,15 +319,14 @@ export const FeaturesShowcase: React.FC = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-20 sm:py-28 md:py-32 bg-zinc-950 relative overflow-hidden">
-            {/* Subtle background */}
-            <div className="absolute inset-0 opacity-[0.02]">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                                      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                    backgroundSize: '60px 60px'
-                }} />
-            </div>
+        <section ref={sectionRef} className="py-20 sm:py-28 md:py-32 bg-black relative overflow-hidden">
+            {/* Animated Spotlight Gradients - matching "See everything at a glance" */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }} />
+            <div className="absolute top-40 left-1/4 w-[400px] h-[300px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }} />
+            <div className="absolute bottom-20 right-1/4 w-[350px] h-[250px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 12s ease-in-out infinite', animationDelay: '-2s' }} />
 
             <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
                 {/* Header */}
@@ -320,7 +334,7 @@ export const FeaturesShowcase: React.FC = () => {
                     <div className="text-center mb-12 sm:mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-                            bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-medium mb-6">
+                            bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm font-semibold mb-6">
                             <Cube size={16} weight="duotone" />
                             {isRTL ? 'لماذا نبض' : 'Why NABD'}
                         </div>
@@ -411,6 +425,10 @@ export const FeaturesShowcase: React.FC = () => {
                 @keyframes fadeInUp {
                     from { opacity: 0; transform: translateY(20px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes spotlightPulse {
+                    0%, 100% { opacity: 0.6; transform: translate(-50%, 0) scale(1) translateZ(0); }
+                    50% { opacity: 1; transform: translate(-50%, 0) scale(1.1) translateZ(0); }
                 }
                 .scrollbar-hide::-webkit-scrollbar { display: none; }
             `}</style>

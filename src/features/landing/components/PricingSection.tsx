@@ -106,7 +106,7 @@ const getPricingTiers = (isRTL: boolean): PricingTier[] => [
     },
 ];
 
-// Feature item with animated check
+// Feature item with animated check - styled to match dashboard
 const FeatureItem: React.FC<{ feature: string; highlighted?: boolean; index: number }> = memo(({ feature, highlighted, index }) => (
     <li
         className="flex items-start gap-3 opacity-0"
@@ -118,11 +118,11 @@ const FeatureItem: React.FC<{ feature: string; highlighted?: boolean; index: num
         <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
             highlighted
                 ? 'bg-white text-zinc-900'
-                : 'bg-zinc-800 text-zinc-400'
+                : 'bg-zinc-700/50 border border-zinc-600/50 text-zinc-300'
         }`}>
             <Check size={10} weight="bold" />
         </div>
-        <span className={`text-sm ${highlighted ? 'text-zinc-300' : 'text-zinc-500'}`}>
+        <span className={`text-sm ${highlighted ? 'text-zinc-300' : 'text-zinc-400'}`}>
             {feature}
         </span>
     </li>
@@ -195,8 +195,8 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
             )}
             <div className={`h-full rounded-3xl p-6 sm:p-8 transition-all duration-300 relative ${
                 tier.highlighted
-                    ? 'bg-zinc-900 border-2 border-transparent'
-                    : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:shadow-xl hover:shadow-white/5'
+                    ? 'bg-zinc-800/70 border-2 border-transparent'
+                    : 'bg-zinc-800/50 border border-zinc-700/50 hover:border-zinc-600/50 hover:bg-zinc-800/70 hover:shadow-lg'
             }`}>
                 {/* Badge */}
                 {tier.badge && (
@@ -213,7 +213,7 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                     <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${
                         tier.highlighted
                             ? 'bg-white text-zinc-900'
-                            : 'bg-zinc-800 text-zinc-400'
+                            : 'bg-zinc-700/50 border border-zinc-600/50 text-zinc-300'
                     }`}>
                         <Icon size={24} weight="fill" />
                     </div>
@@ -358,21 +358,20 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
 
     return (
         <section ref={sectionRef} id="pricing" className="py-20 sm:py-28 md:py-36 bg-black relative overflow-hidden">
-            {/* Subtle grid background */}
-            <div className="absolute inset-0">
-                <div className="absolute inset-0 opacity-[0.03]"
-                     style={{
-                         backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                         backgroundSize: '40px 40px'
-                     }} />
-            </div>
+            {/* Animated Spotlight Gradients - matching "See everything at a glance" */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }} />
+            <div className="absolute top-1/3 left-1/4 w-[400px] h-[300px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }} />
+            <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[250px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none"
+                 style={{ animation: 'spotlightPulse 12s ease-in-out infinite', animationDelay: '-2s' }} />
 
             <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
                 {/* Header */}
                 {isInView && (
                     <div className="text-center mb-12 sm:mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 text-white text-sm font-medium mb-6">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm font-semibold mb-6">
                             <Lightning size={14} weight="fill" />
                             {isRTL ? 'الأسعار' : 'Pricing'}
                         </div>
@@ -473,19 +472,19 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
 
                 {/* Trust indicators */}
                 {isInView && (
-                    <div className="mt-12 sm:mt-16 p-6 rounded-2xl bg-zinc-900 border border-zinc-800"
+                    <div className="mt-12 sm:mt-16 p-6 rounded-2xl bg-zinc-800/50 border border-zinc-700/50"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.4s' }}>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 sm:gap-8">
                                 {trustIndicators.map(({ icon: Icon, label }) => (
-                                    <div key={label} className="flex items-center gap-2 text-zinc-400">
+                                    <div key={label} className="flex items-center gap-2 text-zinc-300">
                                         <Icon size={16} weight="fill" />
                                         <span className="text-xs sm:text-sm font-medium">{label}</span>
                                     </div>
                                 ))}
                             </div>
                             <div className={`text-center ${isRTL ? 'sm:text-left' : 'sm:text-right'}`}>
-                                <p className="text-xs text-zinc-500 mb-1">{isRTL ? 'أسئلة؟' : 'Questions?'}</p>
+                                <p className="text-xs text-zinc-400 mb-1">{isRTL ? 'أسئلة؟' : 'Questions?'}</p>
                                 <a href="mailto:info@nabdchain.com" className="text-sm font-medium text-white hover:underline">
                                     info@nabdchain.com
                                 </a>
@@ -525,6 +524,10 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                 @keyframes glowRotate {
                     0% { filter: hue-rotate(0deg); }
                     100% { filter: hue-rotate(360deg); }
+                }
+                @keyframes spotlightPulse {
+                    0%, 100% { opacity: 0.6; transform: translate(-50%, 0) scale(1) translateZ(0); }
+                    50% { opacity: 1; transform: translate(-50%, 0) scale(1.1) translateZ(0); }
                 }
             `}</style>
         </section>

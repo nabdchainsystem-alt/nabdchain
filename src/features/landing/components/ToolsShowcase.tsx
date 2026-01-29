@@ -52,8 +52,8 @@ const NotesPreview = memo(() => (
     </div>
 ));
 
-// Mini Dashboard Preview with animated bars
-const DashboardPreview = memo(() => {
+// Mini Dashboard Preview with animated bars - styled to match "See everything at a glance"
+const DashboardPreviewMini = memo(() => {
     const [animate, setAnimate] = useState(false);
     useEffect(() => {
         const timer = setTimeout(() => setAnimate(true), 300);
@@ -62,20 +62,24 @@ const DashboardPreview = memo(() => {
 
     return (
         <div className="h-full grid grid-cols-2 gap-1.5">
-            <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2 flex flex-col">
+            <div className="bg-zinc-700/50 border border-zinc-600/30 rounded-lg p-2 flex flex-col">
                 <div className="text-[8px] text-zinc-400 mb-auto">Revenue</div>
-                <div className="text-sm font-bold text-zinc-900 dark:text-white">$2.4M</div>
+                <div className="text-sm font-bold text-white">$2.4M</div>
             </div>
-            <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2 flex flex-col">
+            <div className="bg-zinc-700/50 border border-zinc-600/30 rounded-lg p-2 flex flex-col">
                 <div className="text-[8px] text-zinc-400 mb-auto">Tasks</div>
-                <div className="text-sm font-bold text-zinc-900 dark:text-white">1,847</div>
+                <div className="text-sm font-bold text-white">1,847</div>
             </div>
-            <div className="col-span-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2">
+            <div className="col-span-2 bg-zinc-700/50 border border-zinc-600/30 rounded-lg p-2">
                 <div className="flex items-end gap-0.5 h-6">
                     {[40, 65, 45, 80, 55, 70].map((h, i) => (
                         <div
                             key={i}
-                            className="flex-1 bg-zinc-900 dark:bg-white rounded-t-sm transition-all duration-500"
+                            className={`flex-1 rounded-t-sm transition-all duration-500 ${
+                                i === 3 || i === 5
+                                    ? 'bg-gradient-to-t from-white to-zinc-200'
+                                    : 'bg-gradient-to-t from-zinc-500 to-zinc-400'
+                            }`}
                             style={{
                                 height: animate ? `${h}%` : '10%',
                                 transitionDelay: `${i * 50}ms`
@@ -88,7 +92,7 @@ const DashboardPreview = memo(() => {
     );
 });
 
-// Mini Workload Preview
+// Mini Workload Preview - styled to match dashboard
 const WorkloadPreview = memo(() => (
     <div className="h-full space-y-1.5">
         {[
@@ -97,35 +101,41 @@ const WorkloadPreview = memo(() => (
             { name: 'Mike', load: 95, avatar: 'M' },
         ].map((person, i) => (
             <div key={i} className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[8px] font-medium text-zinc-600 dark:text-zinc-400">
+                <div className="w-5 h-5 rounded-full bg-zinc-600 flex items-center justify-center text-[8px] font-medium text-zinc-300">
                     {person.avatar}
                 </div>
-                <div className="flex-1 h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className="flex-1 h-3 bg-zinc-700 rounded-full overflow-hidden">
                     <div
-                        className={`h-full rounded-full ${person.load > 90 ? 'bg-red-500' : person.load > 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                        className={`h-full rounded-full ${
+                            person.load > 90
+                                ? 'bg-gradient-to-r from-white to-zinc-200'
+                                : person.load > 70
+                                    ? 'bg-gradient-to-r from-zinc-400 to-zinc-300'
+                                    : 'bg-gradient-to-r from-zinc-500 to-zinc-400'
+                        }`}
                         style={{ width: `${person.load}%` }}
                     />
                 </div>
-                <span className="text-[8px] text-zinc-500 w-6">{person.load}%</span>
+                <span className="text-[8px] text-zinc-400 w-6">{person.load}%</span>
             </div>
         ))}
     </div>
 ));
 
-// Mini Automation Preview
+// Mini Automation Preview - styled to match dashboard
 const AutomationPreview = memo(() => (
     <div className="h-full flex items-center justify-center">
         <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center">
-                <Clock size={16} className="text-white dark:text-zinc-900"/>
+            <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                <Clock size={16} className="text-zinc-900"/>
             </div>
-            <ArrowRight size={12} className="text-zinc-400"/>
-            <div className="w-10 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-                <Lightning size={16} className="text-zinc-600 dark:text-zinc-400"/>
+            <ArrowRight size={12} className="text-zinc-500"/>
+            <div className="w-10 h-10 rounded-lg bg-zinc-600 border border-zinc-500/50 flex items-center justify-center">
+                <Lightning size={16} className="text-zinc-300"/>
             </div>
-            <ArrowRight size={12} className="text-zinc-400"/>
-            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                <Users size={16} className="text-zinc-500"/>
+            <ArrowRight size={12} className="text-zinc-500"/>
+            <div className="w-10 h-10 rounded-lg bg-zinc-700 border border-zinc-600/50 flex items-center justify-center">
+                <Users size={16} className="text-zinc-400"/>
             </div>
         </div>
     </div>
@@ -135,12 +145,12 @@ const AutomationPreview = memo(() => (
 const getToolsData = (isRTL: boolean) => [
     { name: isRTL ? 'السبورة البيضاء' : 'Whiteboard', icon: Chalkboard, description: isRTL ? 'لوحة بصرية' : 'Visual canvas', preview: WhiteboardPreview },
     { name: isRTL ? 'ملاحظات كورنيل' : 'Cornell Notes', icon: Note, description: isRTL ? 'ملاحظات ذكية' : 'Smart notes', preview: NotesPreview },
-    { name: isRTL ? 'لوحات المعلومات' : 'Dashboards', icon: ChartBar, description: isRTL ? 'تحليلات مباشرة' : 'Live analytics', preview: DashboardPreview },
+    { name: isRTL ? 'لوحات المعلومات' : 'Dashboards', icon: ChartBar, description: isRTL ? 'تحليلات مباشرة' : 'Live analytics', preview: DashboardPreviewMini },
     { name: isRTL ? 'عبء العمل' : 'Workload', icon: UsersFour, description: isRTL ? 'السعة' : 'Capacity', preview: WorkloadPreview },
     { name: isRTL ? 'الأتمتة' : 'Automation', icon: Lightning, description: isRTL ? 'بدون برمجة' : 'No-code flows', preview: AutomationPreview },
 ];
 
-// Tool Card with visual preview
+// Tool Card with visual preview - styled to match "See everything at a glance"
 const ToolCard: React.FC<{ tool: typeof tools[0]; index: number; isActive: boolean; onClick: () => void }> = memo(({
     tool,
     index,
@@ -163,12 +173,12 @@ const ToolCard: React.FC<{ tool: typeof tools[0]; index: number; isActive: boole
         >
             <div className={`h-full p-4 rounded-2xl border transition-all duration-300 ${
                 isActive
-                    ? 'bg-zinc-900 dark:bg-white border-zinc-700 dark:border-zinc-300 shadow-xl'
-                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg'
+                    ? 'bg-zinc-800/70 border-zinc-600/50 shadow-xl shadow-purple-500/10'
+                    : 'bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-600/50 hover:bg-zinc-800/70 hover:shadow-lg'
             }`}>
                 {/* Preview Area */}
                 <div className={`h-24 mb-4 rounded-xl overflow-hidden transition-colors ${
-                    isActive ? 'bg-zinc-800 dark:bg-zinc-100' : 'bg-zinc-50 dark:bg-zinc-800/50'
+                    isActive ? 'bg-zinc-900/80 border border-zinc-700/30' : 'bg-zinc-900/60 border border-zinc-700/20'
                 }`}>
                     <div className="h-full p-2">
                         <Preview />
@@ -179,16 +189,16 @@ const ToolCard: React.FC<{ tool: typeof tools[0]; index: number; isActive: boole
                 <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                         isActive
-                            ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white'
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover:bg-zinc-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-zinc-900'
+                            ? 'bg-white text-zinc-900'
+                            : 'bg-zinc-700/50 border border-zinc-600/50 text-zinc-300 group-hover:bg-white group-hover:text-zinc-900'
                     }`}>
                         <Icon size={18} weight="fill"/>
                     </div>
                     <div>
-                        <h4 className={`text-sm font-semibold ${isActive ? 'text-white dark:text-zinc-900' : 'text-zinc-900 dark:text-white'}`}>
+                        <h4 className="text-sm font-semibold text-white">
                             {tool.name}
                         </h4>
-                        <p className={`text-xs ${isActive ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-500'}`}>
+                        <p className="text-xs text-zinc-400">
                             {tool.description}
                         </p>
                     </div>
@@ -390,23 +400,21 @@ export const ToolsShowcase: React.FC = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="bg-zinc-950">
+        <section ref={sectionRef} className="bg-black">
             {/* Tools Section */}
             <div className="py-20 sm:py-28 md:py-32 relative overflow-hidden">
-                {/* Background */}
-                <div className="absolute inset-0 opacity-[0.02]">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                        backgroundSize: '50px 50px'
-                    }} />
-                </div>
+                {/* Animated Spotlight Gradients - matching "See everything at a glance" */}
+                <div className="absolute top-20 left-1/3 w-[500px] h-[350px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
+                     style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }} />
+                <div className="absolute bottom-20 right-1/4 w-[400px] h-[300px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
+                     style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }} />
 
                 <div className="relative z-10 max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12">
                     {/* Header */}
                     {isInView && (
                         <div className="text-center mb-12 sm:mb-16"
                              style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 text-sm font-medium mb-6">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm font-semibold mb-6">
                                 <Sparkle size={14} weight="fill" />
                                 {isRTL ? 'أدوات قوية' : 'Power Tools'}
                             </div>
@@ -626,6 +634,10 @@ export const ToolsShowcase: React.FC = () => {
                 @keyframes fadeInUp {
                     from { opacity: 0; transform: translateY(20px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes spotlightPulse {
+                    0%, 100% { opacity: 0.6; transform: scale(1) translateZ(0); }
+                    50% { opacity: 1; transform: scale(1.1) translateZ(0); }
                 }
             `}</style>
         </section>
