@@ -115,32 +115,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
             </nav>
 
-            {/* Mobile Menu - separate overlay for better performance */}
+            {/* Mobile Menu Dropdown */}
             {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-40 sm:hidden">
+                <>
+                    {/* Invisible tap-to-close area */}
                     <div
-                        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                        className="fixed inset-0 z-40 sm:hidden"
                         onClick={() => setIsMobileMenuOpen(false)}
                     />
-                    <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[92%] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden animate-fade-in-up">
-                        <div className="p-4 space-y-3">
+                    {/* Menu */}
+                    <div className="fixed top-16 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden
+                        bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg">
+                        <div className="p-4 space-y-1">
                             {navLinks.map((link) => (
                                 <a
                                     key={link.label}
                                     href={link.href}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="block py-2 text-base font-medium text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                                    className="block py-2.5 px-3 rounded-lg text-base font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                                 >
                                     {link.label}
                                 </a>
                             ))}
-                            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+                            <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
                                 <button
                                     onClick={() => {
                                         setIsMobileMenuOpen(false);
                                         handleSignIn();
                                     }}
-                                    className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                                    className="w-full h-11 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <SignIn size={16} />
                                     Sign In
@@ -150,7 +153,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         setIsMobileMenuOpen(false);
                                         handleSignUp();
                                     }}
-                                    className="w-full h-10 rounded-lg bg-black dark:bg-white text-white dark:text-black font-medium text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
+                                    className="w-full h-11 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <UserPlus size={16} />
                                     Get Started Free
@@ -158,7 +161,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
 
             {/* Main Content */}
