@@ -29,7 +29,8 @@ import {
     Cube as PhWarehouse,
     Layout as PhLayout,
     PresentationChart as PhWhiteboard,
-    Sparkle as Sparkles
+    Sparkle as Sparkles,
+    ListChecks as PhForms
 } from 'phosphor-react';
 import {
     DndContext,
@@ -81,6 +82,7 @@ const WorkloadView = React.lazy(() => import('../tools/WorkloadView'));
 const RecurringLogicView = React.lazy(() => import('../tools/RecurringLogicView'));
 const SmartSheetView = React.lazy(() => import('../tools/SpreadsheetView'));
 const TimelineView = React.lazy(() => import('./views/Timeline/TimelineView').then(m => ({ default: m.TimelineView })));
+const FormsView = React.lazy(() => import('./views/Forms/FormsView').then(m => ({ default: m.FormsView })));
 const SupplierInsights = React.lazy(() => import('../mini_company/suppliers/SupplierInsights'));
 const CustomerInsights = React.lazy(() => import('../mini_company/customers/CustomerInsights'));
 const PurchaseInsights = React.lazy(() => import('../mini_company/operations/PurchaseInsights'));
@@ -827,6 +829,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
         { label: t('goals_okrs'), icon: PhTarget, id: 'goals_okrs', description: t('goals_desc') },
         { label: t('recurring'), icon: PhRecurring, id: 'recurring', description: t('recurring_desc') },
         { label: t('timeline'), icon: PhGantt, id: 'timeline', description: t('timeline_desc') },
+        { label: t('forms'), icon: PhForms, id: 'forms', description: t('forms_desc') },
         { label: t('whiteboard'), icon: PhWhiteboard, id: 'whiteboard', description: t('whiteboard_desc') },
     ];
 
@@ -1075,6 +1078,8 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
                 return renderCustomView ? renderCustomView('warehouse_capacity_map') : null;
             case 'timeline':
                 return <TimelineView key={`${board.id}-${activeView}`} roomId={board.id} boardName={board.name} tasks={tasks} onUpdateTasks={onUpdateTasks} />;
+            case 'forms':
+                return <FormsView key={`${board.id}-${activeView}`} roomId={board.id} boardName={board.name} />;
 
             default:
                 if (renderCustomView) {

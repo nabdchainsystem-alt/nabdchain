@@ -15,6 +15,7 @@ export interface Column {
         code: string;
         symbol: string;
     };
+    maxRating?: number; // For rating columns
 }
 
 export interface Row {

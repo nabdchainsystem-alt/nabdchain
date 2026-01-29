@@ -1,13 +1,13 @@
 import React from 'react';
 import { formatCurrency } from '../../../../../utils/formatters';
 import { useAppContext } from '../../../../../contexts/AppContext';
-import { useNavigation } from '../../../../../contexts/NavigationContext';
 import { useUser } from '../../../../../auth-adapter';
 import {
     MapPin,
     FileText,
     ArrowSquareOut as ExternalLink,
     UploadSimple as UploadCloud,
+    Star,
 } from 'phosphor-react';
 import { Column, Row, StatusOption, PRIORITY_STYLES, formatDate } from '../types';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
@@ -15,7 +15,7 @@ import { PortalPopup } from '../../../../../components/ui/PortalPopup';
 import { PeoplePicker } from '../../../components/cells/PeoplePicker';
 import { UrlPicker } from '../../../components/cells/UrlPicker';
 import { DocPicker } from '../../../components/cells/DocPicker';
-import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker } from './pickers';
+import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker } from './pickers';
 import { formatPriorityLabel, DEFAULT_CHECKBOX_COLOR } from '../utils';
 
 // Constants - must match RoomTable.tsx
@@ -49,6 +49,7 @@ interface TableCellProps {
     onSetActiveTextMenu: (menu: { rowId: string; colId: string; position: { x: number; y: number } } | null) => void;
     onFileUploadRequest?: (rowId: string, colId: string) => void;
     onTextColorChange?: (rowId: string, colId: string, color: string) => void;
+    onNavigate?: (view: string) => void;
 }
 
 // Helper to get status color classes
@@ -167,12 +168,12 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     onSetActiveColorMenu,
     onSetActiveTextMenu,
     onFileUploadRequest,
+    onNavigate,
 }) => {
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
     const { user: currentUser } = useUser();
     const { currency: globalCurrency, t, dir, language } = useAppContext();
-    const { setActivePage } = useNavigation();
 
     // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
     const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
@@ -271,6 +272,51 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             onClose={() => onSetActiveCell(null)}
                         />
                     </PortalPopup>
+                )}
+            </div>
+        );
+    }
+
+    // Timeline column (date range with start and end)
+    if (col.type === 'timeline') {
+        const timelineValue = value as { startDate: string | null; endDate: string | null } | null;
+        const dateLocale = language === 'ar' ? 'ar-EG' : 'en-GB';
+
+        const formatTimelineDisplay = () => {
+            if (!timelineValue?.startDate && !timelineValue?.endDate) {
+                return null;
+            }
+            const start = timelineValue?.startDate ? formatDate(timelineValue.startDate, dateLocale) : '';
+            const end = timelineValue?.endDate ? formatDate(timelineValue.endDate, dateLocale) : '';
+            if (start && end) {
+                return `${start} - ${end}`;
+            }
+            return start || end;
+        };
+
+        const displayValue = formatTimelineDisplay();
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
+                >
+                    {displayValue ? (
+                        <span className="text-sm font-datetime text-stone-600 dark:text-stone-300 truncate" dir="ltr">
+                            {displayValue}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-stone-400">{t('set_timeline') || 'Set timeline'}</span>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <TimelinePicker
+                        value={timelineValue}
+                        onSelect={(newValue) => onUpdateRow(row.id, { [col.id]: newValue }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
                 )}
             </div>
         );
@@ -401,13 +447,13 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     // Doc column
     if (col.type === 'doc') {
         return (
-            <div className="relative w-full h-full p-1">
+            <div className="relative w-full h-full p-1 group/doc">
                 <button
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
-                    className="w-full h-full rounded flex items-center px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors group"
+                    className="w-full h-full rounded flex items-center px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
                 >
                     {value ? (
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
                             <div className="p-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">
                                 <FileText size={12} />
                             </div>
@@ -416,12 +462,27 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             </span>
                         </div>
                     ) : (
-                        <span className="text-xs text-stone-400 group-hover:text-stone-500 transition-colors">{t('select_doc')}</span>
+                        <span className="text-xs text-stone-400 group-hover/doc:text-stone-500 transition-colors">{t('select_doc')}</span>
                     )}
                 </button>
+                {value && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateRow(row.id, { [col.id]: null }, row.groupId);
+                        }}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover/doc:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-all"
+                        title={t('remove')}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
                 {isActiveCell && activeCell?.trigger && (
                     <DocPicker
                         current={value}
+                        currentBoardId={boardId}
                         onSelect={(doc) => onUpdateRow(row.id, { [col.id]: doc }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.trigger.getBoundingClientRect()}
@@ -526,13 +587,13 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
         const displayText = typeof urlData === 'object' ? urlData?.text || urlData?.url : urlData;
 
         return (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full group/url">
                 <button
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
-                    className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group/url"
+                    className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     {urlString ? (
-                        <div className="flex items-center gap-2 truncate">
+                        <div className="flex items-center gap-2 max-w-full overflow-hidden">
                             <a
                                 href={urlString}
                                 target="_blank"
@@ -548,6 +609,20 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'} text-stone-400`}>{t('add_url')}</span>
                     )}
                 </button>
+                {urlString && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateRow(row.id, { [col.id]: null }, row.groupId);
+                        }}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover/url:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-all"
+                        title={t('remove')}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
                 {isActiveCell && activeCell?.trigger && (
                     <UrlPicker
                         current={typeof urlData === 'object' ? urlData : { url: urlData || '', text: '' }}
@@ -608,7 +683,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
         const files = Array.isArray(value) ? value : (value ? [value] : []);
 
         return (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full group/files">
                 <button
                     onClick={(e) => {
                         if (files.length === 0 && onFileUploadRequest) {
@@ -617,10 +692,10 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             onToggleCell(e, row.id, col.id);
                         }
                     }}
-                    className="w-full h-full flex items-center justify-center px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden group/file"
+                    className="w-full h-full flex items-center justify-center px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     {files.length > 0 && files[0] ? (
-                        <div className="flex items-center gap-1.5 truncate">
+                        <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                             <span className="text-base">{getFileIcon(files[0]?.title || files[0]?.name, files[0]?.type)}</span>
                             <span className="text-sm text-stone-600 dark:text-stone-300 truncate">{getShortName(files[0]?.title || files[0]?.name)}</span>
                             {files.length > 1 && (
@@ -628,12 +703,26 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             )}
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 text-stone-400 group-hover/file:text-stone-500 transition-colors">
+                        <div className="flex items-center gap-1.5 text-stone-400 group-hover/files:text-stone-500 transition-colors">
                             <UploadCloud size={14} />
                             <span className={`${row.id === CREATION_ROW_ID ? 'text-[11px]' : 'text-xs'}`}>{t('upload')}</span>
                         </div>
                     )}
                 </button>
+                {files.length > 0 && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateRow(row.id, { [col.id]: null }, row.groupId);
+                        }}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover/files:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-all"
+                        title={t('remove')}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
                 {/* File picker popup when cell is active */}
                 {isActiveCell && activeCell?.trigger && files.length > 0 && (
                     <PortalPopup
@@ -669,7 +758,9 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                                                         localStorage.setItem('vault-navigate-folder', file.folderId);
                                                     }
                                                     onSetActiveCell(null);
-                                                    setActivePage('vault');
+                                                    if (onNavigate) {
+                                                        onNavigate('vault');
+                                                    }
                                                 }
                                             }}
                                         >
@@ -699,6 +790,57 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             </div>
                         </div>
                     </PortalPopup>
+                )}
+            </div>
+        );
+    }
+
+    // Rating column
+    if (col.type === 'rating') {
+        const ratingValue = typeof value === 'number' ? value : (value ? Number(value) : null);
+        const maxRating = col.maxRating || 5;
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-0.5 px-2 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {ratingValue ? (
+                        <div className="flex items-center gap-0.5">
+                            {Array.from({ length: maxRating }, (_, i) => i + 1).map((starNum) => (
+                                <Star
+                                    key={starNum}
+                                    size={14}
+                                    weight={starNum <= ratingValue ? 'fill' : 'regular'}
+                                    className={starNum <= ratingValue ? 'text-yellow-400' : 'text-stone-300 dark:text-stone-600'}
+                                />
+                            ))}
+                            <span className="ms-1 text-xs text-stone-500 dark:text-stone-400">
+                                {ratingValue}/{maxRating}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-0.5">
+                            {Array.from({ length: maxRating }, (_, i) => (
+                                <Star
+                                    key={i}
+                                    size={14}
+                                    weight="regular"
+                                    className="text-stone-300 dark:text-stone-600"
+                                />
+                            ))}
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.trigger && (
+                    <RatingPicker
+                        value={ratingValue}
+                        maxRating={maxRating}
+                        onSelect={(rating) => onUpdateRow(row.id, { [col.id]: rating }, row.groupId)}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                    />
                 )}
             </div>
         );

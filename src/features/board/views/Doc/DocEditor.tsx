@@ -245,7 +245,7 @@ export const DocEditor: React.FC<DocEditorProps> = ({ defaultTitle = '', storage
     return (
         <div className="w-full min-h-full pb-32 flex flex-col items-center relative">
             {coverImage && (
-                <div className="w-full h-48 md:h-60 relative group shrink-0 animate-in fade-in duration-500">
+                <div className="w-full h-48 md:h-60 relative group shrink-0 animate-in fade-in duration-500 mt-4">
                     <div
                         className="w-full h-full"
                         style={{

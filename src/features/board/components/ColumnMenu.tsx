@@ -115,7 +115,6 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'timeline', label: t('col_timeline'), icon: Calendar, color: 'bg-purple-500', description: t('desc_timeline') },
         { id: 'url', label: t('col_url'), icon: Link2, color: 'bg-slate-500', description: t('desc_url') },
         { id: 'checkbox', label: t('col_checkbox'), icon: CheckSquare, color: 'bg-orange-400', description: t('desc_checkbox') },
-        { id: 'doc', label: t('col_doc'), icon: FileText, color: 'bg-rose-400', description: t('desc_doc') },
         { id: 'location', label: t('col_location'), icon: MapPin, color: 'bg-red-500', description: t('desc_location') },
         { id: 'rating', label: t('col_rating'), icon: Star, color: 'bg-yellow-400', description: t('desc_rating') },
         { id: 'voting', label: t('col_voting'), icon: ThumbsUp, color: 'bg-blue-400', description: t('desc_voting') },

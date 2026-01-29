@@ -499,6 +499,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     const resizingColId = useRef<string | null>(null);
     const startX = useRef<number>(0);
     const startWidth = useRef<number>(0);
+    const justFinishedResizing = useRef<boolean>(false);
 
     // Toolbar State
     const [isBodyVisible, setIsBodyVisible] = useState(true);
@@ -1571,22 +1572,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 const currentRow = group.rows[rowIndex];
                 const updatedRow = { ...currentRow, ...updates };
 
-                // Check if status is being changed to "Done"
-                const isBeingMarkedDone =
-                    updates.status &&
-                    isDoneStatus(updates.status) &&
-                    !isDoneStatus(currentRow.status);
-
-                if (isBeingMarkedDone) {
-                    // Remove from current position and add to end
-                    const rowsWithoutCurrent = group.rows.filter(r => r.id !== id);
-                    return {
-                        ...group,
-                        rows: [...rowsWithoutCurrent, updatedRow]
-                    };
-                }
-
                 // Normal update without reordering
+                // Users can use sort feature if they want Done items at bottom
                 return {
                     ...group,
                     rows: group.rows.map(r => r.id === id ? updatedRow : r)
@@ -1882,17 +1869,27 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         setActiveDragId(null);
 
         if (over && active.id !== over.id) {
-            setRows((items) => {
-                const oldIndex = items.findIndex((item) => item.id === active.id);
-                const newIndex = items.findIndex((item) => item.id === over.id);
+            // Find which group contains the dragged row
+            setTableGroups(prevGroups => {
+                const updatedGroups = prevGroups.map(group => {
+                    const oldIndex = group.rows.findIndex(row => row.id === active.id);
+                    const newIndex = group.rows.findIndex(row => row.id === over.id);
 
-                // If indices found
-                if (oldIndex !== -1 && newIndex !== -1) {
-                    const newRows = arrayMove(items, oldIndex, newIndex);
-                    if (onUpdateTasks) onUpdateTasks(newRows);
-                    return newRows;
+                    // Only update if both rows are in this group
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        const newRows = arrayMove(group.rows, oldIndex, newIndex);
+                        return { ...group, rows: newRows };
+                    }
+                    return group;
+                });
+
+                // Call onUpdateTasks with all rows
+                if (onUpdateTasks) {
+                    const allRows = updatedGroups.flatMap(g => g.rows);
+                    onUpdateTasks(allRows);
                 }
-                return items;
+
+                return updatedGroups;
             });
         }
     };
@@ -1983,6 +1980,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     };
 
     const handleSort = (colId: string) => {
+        // Prevent sort from firing right after column resize
+        if (justFinishedResizing.current) {
+            return;
+        }
+
         // New Sort Logic (Toolbar)
         if (sortRules && sortRules.find(r => r.column === colId)) {
             setSortRules(prev => {
@@ -2022,6 +2024,11 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
         document.body.style.cursor = 'default';
+        // Prevent sort from firing immediately after resize
+        justFinishedResizing.current = true;
+        setTimeout(() => {
+            justFinishedResizing.current = false;
+        }, 100);
     }, [onMouseMove]);
 
     // --- Rendering Helpers ---
@@ -2065,6 +2072,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     setActiveUploadCell({ rowId, colId });
                     hiddenFileInputRef.current?.click();
                 }}
+                onNavigate={onNavigate}
             />
         );
     };

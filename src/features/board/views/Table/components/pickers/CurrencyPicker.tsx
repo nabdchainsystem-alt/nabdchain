@@ -63,6 +63,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
 
     const MENU_WIDTH = 320;
     const MENU_HEIGHT = 380;
+    const PADDING = 16; // Padding from viewport edges
 
     const positionStyle = useMemo(() => {
         if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
@@ -70,29 +71,58 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
 
-        // Calculate left position - if popup would overflow right, position from right edge
-        let left = triggerRect.left;
-        if (left + MENU_WIDTH > windowWidth - 10) {
-            left = windowWidth - MENU_WIDTH - 10;
-        }
-        if (left < 10) left = 10;
-
-        // Calculate top position
+        // Calculate available space in each direction
+        const spaceRight = windowWidth - triggerRect.left;
+        const spaceLeft = triggerRect.right;
         const spaceBelow = windowHeight - triggerRect.bottom;
-        const openUp = spaceBelow < MENU_HEIGHT && triggerRect.top > MENU_HEIGHT;
+        const spaceAbove = triggerRect.top;
+
+        // Determine horizontal position
+        let left: number | undefined;
+        let right: number | undefined;
+
+        // Prefer aligning to trigger's left edge, but flip if not enough space
+        if (spaceRight >= MENU_WIDTH + PADDING) {
+            // Enough space to the right - align to trigger's left
+            left = Math.max(PADDING, triggerRect.left);
+        } else if (spaceLeft >= MENU_WIDTH + PADDING) {
+            // Not enough space right, but enough left - align to trigger's right edge
+            right = Math.max(PADDING, windowWidth - triggerRect.right);
+        } else {
+            // Not enough space on either side - center horizontally with padding
+            left = Math.max(PADDING, (windowWidth - MENU_WIDTH) / 2);
+        }
+
+        // Ensure we don't overflow on the right
+        if (left !== undefined && left + MENU_WIDTH > windowWidth - PADDING) {
+            left = windowWidth - MENU_WIDTH - PADDING;
+        }
+
+        // Determine vertical position
+        const openUp = spaceBelow < MENU_HEIGHT + PADDING && spaceAbove > spaceBelow;
+
+        // Calculate max height to ensure menu fits in viewport
+        const maxHeight = openUp
+            ? Math.min(MENU_HEIGHT, spaceAbove - PADDING)
+            : Math.min(MENU_HEIGHT, spaceBelow - PADDING);
+
+        const baseStyle: React.CSSProperties = {
+            position: 'fixed',
+            maxHeight: maxHeight > 200 ? maxHeight : undefined, // Only constrain if reasonable
+        };
 
         if (openUp) {
             return {
-                position: 'fixed' as const,
+                ...baseStyle,
                 bottom: windowHeight - triggerRect.top + 4,
-                left,
+                ...(left !== undefined ? { left } : { right }),
             };
         }
 
         return {
-            position: 'fixed' as const,
+            ...baseStyle,
             top: triggerRect.bottom + 4,
-            left,
+            ...(left !== undefined ? { left } : { right }),
         };
     }, [triggerRect]);
 
@@ -141,18 +171,18 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
             <div
                 ref={menuRef}
                 onClick={(e) => e.stopPropagation()}
-                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 w-[320px] max-w-[calc(100vw-20px)]"
+                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 w-[320px] max-w-[calc(100vw-32px)]"
                 style={positionStyle}
             >
                 {/* Header */}
-                <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
+                <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800 flex-shrink-0">
                     <span className="text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400">
                         Currency Converter
                     </span>
                 </div>
 
                 {/* Amount Input */}
-                <div className="p-4 border-b border-stone-100 dark:border-stone-800">
+                <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex-shrink-0">
                     <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-2">
                         Amount ({baseCurrency.code})
                     </label>
@@ -170,7 +200,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
                 </div>
 
                 {/* Conversion Section */}
-                <div className="p-4">
+                <div className="p-4 flex-1 overflow-y-auto min-h-0">
                     <div className="flex items-center gap-2 mb-3">
                         <ArrowsLeftRight size={16} className="text-blue-500" />
                         <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Convert to</span>
@@ -262,7 +292,7 @@ export const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col gap-2 p-3 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex flex-col gap-2 p-3 border-t border-stone-100 dark:border-stone-800 flex-shrink-0">
                     <div className="flex gap-2">
                         <button
                             onClick={onClose}
