@@ -1,4 +1,4 @@
-import React, { useRef, memo, useState } from 'react';
+import React, { useRef, memo } from 'react';
 import { useInView } from 'framer-motion';
 import {
     UsersThree,
@@ -8,220 +8,192 @@ import {
     ChartPie,
     Briefcase,
     ArrowRight,
-    Lightning
+    ArrowsLeftRight
 } from 'phosphor-react';
 
-interface DepartmentCard {
+interface Department {
     id: string;
     name: string;
     icon: React.ElementType;
-    dashboardCount: number;
-    description: string;
+    dashboards: string[];
+    color: string;
 }
 
-const DEPARTMENTS: DepartmentCard[] = [
+const DEPARTMENTS: Department[] = [
     {
         id: 'customers',
         name: 'Customers',
         icon: UsersThree,
-        dashboardCount: 7,
-        description: 'Analytics, segmentation & retention',
+        dashboards: ['Segmentation', 'Retention', 'Analytics'],
+        color: 'bg-blue-500',
     },
     {
         id: 'finance',
         name: 'Finance',
         icon: CurrencyCircleDollar,
-        dashboardCount: 7,
-        description: 'Expenses, budgets & forecasting',
+        dashboards: ['Budgets', 'Expenses', 'Forecasting'],
+        color: 'bg-emerald-500',
     },
     {
         id: 'operations',
         name: 'Operations',
         icon: Package,
-        dashboardCount: 24,
-        description: 'Sales, inventory & purchasing',
+        dashboards: ['Inventory', 'Sales', 'Purchasing'],
+        color: 'bg-amber-500',
     },
     {
         id: 'suppliers',
         name: 'Suppliers',
         icon: Truck,
-        dashboardCount: 7,
-        description: 'Vendor performance & compliance',
+        dashboards: ['Performance', 'Compliance', 'Contracts'],
+        color: 'bg-purple-500',
     },
     {
         id: 'people',
         name: 'People',
         icon: Briefcase,
-        dashboardCount: 4,
-        description: 'Team management & HR analytics',
+        dashboards: ['HR', 'Payroll', 'Attendance'],
+        color: 'bg-pink-500',
     },
     {
         id: 'overview',
         name: 'Overview',
         icon: ChartPie,
-        dashboardCount: 2,
-        description: 'Executive dashboards & reports',
+        dashboards: ['Executive', 'KPIs', 'Reports'],
+        color: 'bg-indigo-500',
     },
 ];
 
-// Simple department card - clean and minimal
-const DepartmentCardComponent: React.FC<{
-    dept: DepartmentCard;
-    index: number;
-}> = memo(({ dept, index }) => {
+// Department card with mini dashboard preview
+const DepartmentCard: React.FC<{ dept: Department; index: number }> = memo(({ dept, index }) => {
     const Icon = dept.icon;
 
     return (
         <div
-            className="group relative p-5 sm:p-6 rounded-2xl
-                bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
-                hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg dark:hover:shadow-none
-                transition-all duration-300 ease-out"
+            className="group relative"
             style={{
                 opacity: 0,
                 animation: 'fadeInUp 0.5s ease-out forwards',
-                animationDelay: `${0.1 + index * 0.05}s`
+                animationDelay: `${0.1 + index * 0.08}s`
             }}
         >
-            {/* Icon and count row */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800
-                    flex items-center justify-center
-                    group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors duration-300">
-                    <Icon size={20} weight="duotone" className="text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors" />
+            <div className="relative p-5 sm:p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800
+                bg-white dark:bg-zinc-900
+                hover:border-zinc-300 dark:hover:border-zinc-700
+                hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-none
+                hover:-translate-y-1
+                transition-all duration-300">
+
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                    <div className={`w-10 h-10 rounded-xl ${dept.color} flex items-center justify-center`}>
+                        <Icon size={20} weight="fill" className="text-white" />
+                    </div>
+                    <div className="text-right">
+                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{dept.dashboards.length}</div>
+                        <div className="text-[10px] text-zinc-500 uppercase tracking-wide">Dashboards</div>
+                    </div>
                 </div>
-                <div className="px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-500 text-xs font-medium
-                    group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 group-hover:text-zinc-700 dark:group-hover:text-zinc-400 transition-colors duration-300">
-                    {dept.dashboardCount} dashboards
+
+                {/* Title */}
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">
+                    {dept.name}
+                </h3>
+
+                {/* Dashboard list */}
+                <div className="space-y-1.5">
+                    {dept.dashboards.map((dashboard, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${dept.color} opacity-60`} />
+                            <span className="text-sm text-zinc-500 dark:text-zinc-400">{dashboard}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Hover arrow */}
+                <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight size={16} className="text-zinc-400" />
                 </div>
             </div>
-
-            {/* Title */}
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-900 dark:text-white mb-1.5">
-                {dept.name}
-            </h3>
-
-            {/* Description */}
-            <p className="text-sm text-zinc-500 leading-relaxed">
-                {dept.description}
-            </p>
         </div>
     );
 });
 
-// Central hub - simplified
-const CentralHub = memo(() => (
-    <div className="flex items-center justify-center py-8 sm:py-12"
-         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
-        <div className="relative">
-            {/* Outer ring */}
-            <div className="absolute inset-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border border-zinc-300 dark:border-zinc-700 -m-2" />
-
-            {/* Core */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700
-                flex flex-col items-center justify-center">
-                <Lightning size={24} weight="duotone" className="text-zinc-600 dark:text-zinc-400 mb-1" />
-                <span className="text-[10px] sm:text-xs font-medium text-zinc-500">UNIFIED</span>
-            </div>
+// Connection line between departments
+const ConnectionLine = memo(() => (
+    <div className="hidden lg:flex items-center justify-center py-4">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+            <ArrowsLeftRight size={14} className="text-zinc-400" />
+            <span className="text-xs text-zinc-500 font-medium">Real-time sync</span>
         </div>
     </div>
 ));
-
-// Stat item - simple
-const StatItem: React.FC<{ value: string; label: string; index: number }> = ({ value, label, index }) => (
-    <div
-        className="text-center"
-        style={{
-            opacity: 0,
-            animation: 'fadeInUp 0.5s ease-out forwards',
-            animationDelay: `${0.2 + index * 0.05}s`
-        }}
-    >
-        <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight">
-            {value}
-        </div>
-        <div className="text-xs sm:text-sm text-zinc-500 mt-1">{label}</div>
-    </div>
-);
 
 interface MiniCompanyShowcaseProps {
     onExplore?: () => void;
 }
 
 export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExplore }) => {
-    const totalDashboards = DEPARTMENTS.reduce((sum, d) => sum + d.dashboardCount, 0);
     const sectionRef = useRef(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
     return (
-        <section ref={sectionRef} className="py-20 sm:py-28 md:py-32 bg-zinc-50 dark:bg-zinc-950 relative overflow-hidden">
-            {/* Subtle background */}
-            <div className="absolute inset-0 opacity-[0.5] dark:opacity-[0.02]">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)',
-                    backgroundSize: '24px 24px'
-                }} />
-            </div>
-
-            <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-                {/* Header */}
+        <section ref={sectionRef} className="py-24 sm:py-32 bg-zinc-50 dark:bg-zinc-950 relative overflow-hidden">
+            <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12">
+                {/* Header - Left aligned for variety */}
                 {isInView && (
-                    <div className="text-center mb-10 sm:mb-14"
+                    <div className="max-w-2xl mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-                            bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
-                            text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-6">
-                            <Lightning size={14} weight="duotone" />
-                            Integrated Ecosystem
-                        </div>
-
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-5 text-zinc-900 dark:text-white leading-[1.1]">
-                            One Platform. Every Team.
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6 leading-[1.1]">
+                            Run your entire company
+                            <br />
+                            <span className="text-zinc-400 dark:text-zinc-500">from one place</span>
                         </h2>
-
-                        <p className="text-base sm:text-lg md:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                            Real-time data flows across your entire organization. Every department connected, every insight unified.
+                        <p className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                            6 departments. 51+ dashboards. All connected in real-time.
+                            Every team gets the tools they need while leadership gets complete visibility.
                         </p>
                     </div>
                 )}
 
-                {/* Central Hub */}
-                {isInView && <CentralHub />}
-
-                {/* Stats Row */}
+                {/* Department Grid */}
                 {isInView && (
-                    <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 md:gap-16 mb-12 sm:mb-16">
-                        <StatItem value="6" label="Departments" index={0} />
-                        <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
-                        <StatItem value={`${totalDashboards}+`} label="Dashboards" index={1} />
-                        <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
-                        <StatItem value="<1s" label="Sync Time" index={2} />
-                    </div>
-                )}
-
-                {/* Department Cards Grid */}
-                {isInView && (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-10 sm:mb-14">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12">
                         {DEPARTMENTS.map((dept, idx) => (
-                            <DepartmentCardComponent
-                                key={dept.id}
-                                dept={dept}
-                                index={idx}
-                            />
+                            <DepartmentCard key={dept.id} dept={dept} index={idx} />
                         ))}
                     </div>
                 )}
 
-                {/* CTA */}
+                {/* Bottom stats bar */}
                 {isInView && (
-                    <div className="text-center"
-                         style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.4s' }}>
+                    <div
+                        className="flex flex-wrap items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                        style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}
+                    >
+                        <div className="flex items-center gap-8 sm:gap-12">
+                            <div>
+                                <div className="text-3xl font-bold text-zinc-900 dark:text-white">51+</div>
+                                <div className="text-sm text-zinc-500">Ready dashboards</div>
+                            </div>
+                            <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800" />
+                            <div>
+                                <div className="text-3xl font-bold text-zinc-900 dark:text-white">&lt;1s</div>
+                                <div className="text-sm text-zinc-500">Cross-department sync</div>
+                            </div>
+                            <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
+                            <div className="hidden sm:block">
+                                <div className="text-3xl font-bold text-zinc-900 dark:text-white">∞</div>
+                                <div className="text-sm text-zinc-500">Custom reports</div>
+                            </div>
+                        </div>
+
                         <button
                             onClick={onExplore}
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
                                 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900
-                                font-semibold text-sm
-                                hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors duration-200"
+                                font-medium text-sm
+                                hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
                         >
                             Explore Mini Company
                             <ArrowRight size={16} weight="bold" />
@@ -233,14 +205,8 @@ export const MiniCompanyShowcase: React.FC<MiniCompanyShowcaseProps> = ({ onExpl
             {/* Keyframes */}
             <style>{`
                 @keyframes fadeInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
         </section>
