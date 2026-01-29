@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
@@ -9,6 +9,9 @@ import { LiveDemoSection } from './components/LiveDemoSection';
 
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
 import { List, X, SignIn, UserPlus, ArrowRight } from 'phosphor-react';
+
+// Section background types for navbar color switching
+type SectionTheme = 'light' | 'dark';
 
 interface LandingPageProps {
     onEnterSystem: () => void;
@@ -23,6 +26,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [navTheme, setNavTheme] = useState<SectionTheme>('light');
+
+    // Refs for sections to observe
+    const heroRef = useRef<HTMLDivElement>(null);
+    const featuresRef = useRef<HTMLDivElement>(null);
+    const miniCompanyRef = useRef<HTMLDivElement>(null);
+    const dashboardRef = useRef<HTMLDivElement>(null);
+    const demoRef = useRef<HTMLDivElement>(null);
+    const toolsRef = useRef<HTMLDivElement>(null);
+    const pricingRef = useRef<HTMLDivElement>(null);
+
+    // Track which section is in view and update navbar theme
+    useEffect(() => {
+        const sectionThemes: { ref: React.RefObject<HTMLDivElement>; theme: SectionTheme }[] = [
+            { ref: heroRef, theme: 'light' },           // Hero - light background
+            { ref: featuresRef, theme: 'dark' },        // Features - dark background
+            { ref: miniCompanyRef, theme: 'light' },    // MiniCompany - light background
+            { ref: dashboardRef, theme: 'dark' },       // Dashboard - dark background
+            { ref: demoRef, theme: 'light' },           // LiveDemo - light background
+            { ref: toolsRef, theme: 'dark' },           // ToolsShowcase - dark background
+            { ref: pricingRef, theme: 'dark' },         // Pricing - dark background
+        ];
+
+        const observerCallback: IntersectionObserverCallback = (entries) => {
+            // Find the entry that is most visible (highest intersection ratio near top of viewport)
+            let topVisibleSection: { theme: SectionTheme; top: number } | null = null;
+
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const rect = entry.boundingClientRect;
+                    const section = sectionThemes.find(s => s.ref.current === entry.target);
+
+                    if (section && rect.top <= 100) {
+                        if (!topVisibleSection || rect.top > topVisibleSection.top) {
+                            topVisibleSection = { theme: section.theme, top: rect.top };
+                        }
+                    }
+                }
+            });
+
+            if (topVisibleSection) {
+                setNavTheme(topVisibleSection.theme);
+            }
+        };
+
+        const observer = new IntersectionObserver(observerCallback, {
+            threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5],
+            rootMargin: '-50px 0px -50% 0px'
+        });
+
+        sectionThemes.forEach(({ ref }) => {
+            if (ref.current) {
+                observer.observe(ref.current);
+            }
+        });
+
+        return () => observer.disconnect();
+    }, []);
 
     const handleSignIn = () => {
         if (onNavigateToSignIn) {
@@ -49,13 +110,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     return (
         <div className="h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth">
-            {/* Navbar - responsive width */}
+            {/* Navbar - responsive width with dynamic theme */}
             <nav
-                className="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
-                    bg-white/90 dark:bg-zinc-900/90
-                    border border-zinc-200/50 dark:border-zinc-700/50
-                    backdrop-blur-md
-                    shadow-lg shadow-black/5 dark:shadow-black/20"
+                className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
+                    backdrop-blur-md shadow-lg transition-all duration-300
+                    ${navTheme === 'light'
+                        ? 'bg-white/90 border border-zinc-200/50 shadow-black/5 text-zinc-900'
+                        : 'bg-zinc-900/90 border border-zinc-700/50 shadow-black/20 text-white'
+                    }`}
             >
                 <div className="w-full mx-auto px-3 sm:px-5 h-11 sm:h-12 flex items-center justify-between">
                     {/* Logo */}
@@ -63,7 +125,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 bg-black dark:bg-white rounded-md sm:rounded-lg flex items-center justify-center text-white dark:text-black text-xs sm:text-sm font-bold">
+                        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold transition-colors duration-300
+                            ${navTheme === 'light' ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}`}>
                             N
                         </div>
                         <span className="text-sm sm:text-base font-semibold tracking-tight">
@@ -77,7 +140,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             <a
                                 key={link.label}
                                 href={link.href}
-                                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                                className={`text-sm transition-colors ${navTheme === 'light'
+                                    ? 'text-zinc-600 hover:text-zinc-900'
+                                    : 'text-zinc-400 hover:text-white'}`}
                             >
                                 {link.label}
                             </a>
@@ -90,14 +155,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <div className="hidden sm:flex items-center gap-2 sm:gap-3">
                             <button
                                 onClick={handleSignIn}
-                                className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                                className={`text-xs sm:text-sm transition-colors ${navTheme === 'light'
+                                    ? 'text-zinc-600 hover:text-zinc-900'
+                                    : 'text-zinc-400 hover:text-white'}`}
                             >
                                 Sign in
                             </button>
                             <button
                                 onClick={handleSignUp}
-                                className="h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black text-xs sm:text-sm
-                                hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-1.5"
+                                className={`h-7 sm:h-8 px-3 sm:px-4 rounded-full text-xs sm:text-sm
+                                transition-colors duration-200 flex items-center gap-1.5
+                                ${navTheme === 'light'
+                                    ? 'bg-zinc-900 text-white hover:bg-zinc-700'
+                                    : 'bg-white text-zinc-900 hover:bg-zinc-200'}`}
                             >
                                 Dashboard
                                 <ArrowRight size={12} weight="bold" />
@@ -107,7 +177,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                            className={`sm:hidden w-8 h-8 flex items-center justify-center rounded-md transition-colors
+                                ${navTheme === 'light' ? 'hover:bg-zinc-100' : 'hover:bg-zinc-800'}`}
                         >
                             {isMobileMenuOpen ? <X size={20} /> : <List size={20} />}
                         </button>
@@ -124,26 +195,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         onClick={() => setIsMobileMenuOpen(false)}
                     />
                     {/* Menu */}
-                    <div className="fixed top-16 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden
-                        bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg">
+                    <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden rounded-2xl shadow-lg transition-colors
+                        ${navTheme === 'light'
+                            ? 'bg-white border border-zinc-200'
+                            : 'bg-zinc-900 border border-zinc-800'}`}>
                         <div className="p-4 space-y-1">
                             {navLinks.map((link) => (
                                 <a
                                     key={link.label}
                                     href={link.href}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="block py-2.5 px-3 rounded-lg text-base font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    className={`block py-2.5 px-3 rounded-lg text-base font-medium transition-colors
+                                        ${navTheme === 'light'
+                                            ? 'text-zinc-700 hover:bg-zinc-100'
+                                            : 'text-zinc-300 hover:bg-zinc-800'}`}
                                 >
                                     {link.label}
                                 </a>
                             ))}
-                            <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                            <div className={`pt-3 mt-2 border-t space-y-2 ${navTheme === 'light' ? 'border-zinc-200' : 'border-zinc-800'}`}>
                                 <button
                                     onClick={() => {
                                         setIsMobileMenuOpen(false);
                                         handleSignIn();
                                     }}
-                                    className="w-full h-11 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                                    className={`w-full h-11 rounded-xl border font-medium text-sm transition-colors flex items-center justify-center gap-2
+                                        ${navTheme === 'light'
+                                            ? 'border-zinc-200 text-zinc-900 hover:bg-zinc-50'
+                                            : 'border-zinc-700 text-white hover:bg-zinc-800'}`}
                                 >
                                     <SignIn size={16} />
                                     Sign In
@@ -153,7 +232,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         setIsMobileMenuOpen(false);
                                         handleSignUp();
                                     }}
-                                    className="w-full h-11 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
+                                    className={`w-full h-11 rounded-xl font-medium text-sm transition-colors flex items-center justify-center gap-2
+                                        ${navTheme === 'light'
+                                            ? 'bg-zinc-900 text-white hover:bg-zinc-800'
+                                            : 'bg-white text-zinc-900 hover:bg-zinc-100'}`}
                                 >
                                     <UserPlus size={16} />
                                     Get Started Free
@@ -166,29 +248,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             {/* Main Content */}
             <main>
-                <HeroSection onEnterSystem={handleSignUp} />
+                <div ref={heroRef}>
+                    <HeroSection onEnterSystem={handleSignUp} />
+                </div>
 
-                <div id="features">
+                <div id="features" ref={featuresRef}>
                     <FeaturesShowcase />
                 </div>
 
-                <div id="mini-company">
+                <div id="mini-company" ref={miniCompanyRef}>
                     <MiniCompanyShowcase onExplore={handleSignUp} />
                 </div>
 
-                <div id="dashboard">
+                <div id="dashboard" ref={dashboardRef}>
                     <DashboardPreview />
                 </div>
 
-                <div id="demo">
+                <div id="demo" ref={demoRef}>
                     <LiveDemoSection onTryDemo={handleSignUp} />
                 </div>
 
-                <div id="testimonials">
+                <div id="testimonials" ref={toolsRef}>
                     <ToolsShowcase />
                 </div>
 
-                <div id="pricing">
+                <div id="pricing" ref={pricingRef}>
                     <PricingSection onGetStarted={handleSignUp} />
                 </div>
             </main>

@@ -126,9 +126,7 @@ const AnimatedPrice: React.FC<{ price: number; highlighted?: boolean }> = memo((
     }, [price]);
 
     return (
-        <span className={`text-5xl sm:text-6xl font-bold tracking-tight ${
-            highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'
-        }`}>
+        <span className="text-5xl sm:text-6xl font-bold tracking-tight text-white">
             {displayPrice}
         </span>
     );
@@ -157,10 +155,19 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                 animationDelay: `${0.1 + index * 0.1}s`
             }}
         >
-            <div className={`h-full rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
+            {/* Animated glow effect for highlighted card */}
+            {tier.highlighted && (
+                <>
+                    <div className="absolute -inset-[2px] rounded-[26px] bg-gradient-to-r from-violet-500 via-white to-cyan-500 opacity-75 blur-sm"
+                         style={{ animation: 'glowPulse 3s ease-in-out infinite' }} />
+                    <div className="absolute -inset-[1px] rounded-[25px] bg-gradient-to-r from-violet-500 via-white to-cyan-500"
+                         style={{ animation: 'glowRotate 4s linear infinite' }} />
+                </>
+            )}
+            <div className={`h-full rounded-3xl p-6 sm:p-8 transition-all duration-300 relative ${
                 tier.highlighted
-                    ? 'bg-zinc-900 border-2 border-white shadow-2xl shadow-white/10'
-                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-xl'
+                    ? 'bg-zinc-900 border-2 border-transparent'
+                    : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:shadow-xl hover:shadow-white/5'
             }`}>
                 {/* Badge */}
                 {tier.badge && (
@@ -177,12 +184,12 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                     <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${
                         tier.highlighted
                             ? 'bg-white text-zinc-900'
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                            : 'bg-zinc-800 text-zinc-400'
                     }`}>
                         <Icon size={24} weight="fill" />
                     </div>
                     <h3 className={`text-xl font-bold mb-2 ${
-                        tier.highlighted ? 'text-white' : 'text-zinc-900 dark:text-white'
+                        tier.highlighted ? 'text-white' : 'text-white'
                     }`}>
                         {tier.name}
                     </h3>
@@ -196,10 +203,10 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                     <div className="flex items-baseline gap-2">
                         <AnimatedPrice price={price} highlighted={tier.highlighted} />
                         <div className="flex flex-col">
-                            <span className={`text-sm font-medium ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                            <span className="text-sm font-medium text-zinc-400">
                                 SAR
                             </span>
-                            <span className={`text-xs ${tier.highlighted ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                            <span className="text-xs text-zinc-500">
                                 /month
                             </span>
                         </div>
@@ -208,7 +215,7 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                         <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                             tier.highlighted
                                 ? 'bg-white/10 text-white'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                                : 'bg-zinc-800 text-zinc-300'
                         }`}>
                             Save {savings}% yearly
                         </div>
@@ -221,7 +228,7 @@ const PricingCard: React.FC<PricingCardProps> = memo(({ tier, isYearly, onGetSta
                     className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-300 mb-8 group/btn flex items-center justify-center gap-2 ${
                         tier.highlighted
                             ? 'bg-white text-zinc-900 hover:bg-zinc-100 shadow-lg shadow-white/20'
-                            : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100'
+                            : 'bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700'
                     }`}
                 >
                     {tier.cta}
@@ -284,12 +291,12 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
     }, []);
 
     return (
-        <section ref={sectionRef} id="pricing" className="py-20 sm:py-28 md:py-36 bg-zinc-50 dark:bg-black relative overflow-hidden">
-            {/* Subtle background */}
+        <section ref={sectionRef} id="pricing" className="py-20 sm:py-28 md:py-36 bg-black relative overflow-hidden">
+            {/* Subtle grid background */}
             <div className="absolute inset-0">
-                <div className="absolute inset-0 opacity-[0.02]"
+                <div className="absolute inset-0 opacity-[0.03]"
                      style={{
-                         backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+                         backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
                          backgroundSize: '40px 40px'
                      }} />
             </div>
@@ -299,14 +306,14 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                 {isInView && (
                     <div className="text-center mb-12 sm:mb-16"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 dark:bg-zinc-800 text-white text-sm font-medium mb-6">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 text-white text-sm font-medium mb-6">
                             <Lightning size={14} weight="fill" />
                             Pricing
                         </div>
-                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-zinc-900 dark:text-white mb-6 tracking-tight leading-[1.05]">
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-[1.05]">
                             Choose Your Plan
                         </h2>
-                        <p className="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto">
+                        <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto">
                             Start free for 14 days. No credit card required.
                         </p>
                     </div>
@@ -320,8 +327,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             onClick={() => setIsYearly(false)}
                             className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
                                 !isYearly
-                                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                    ? 'bg-white text-zinc-900'
+                                    : 'text-zinc-500 hover:text-white'
                             }`}
                         >
                             Monthly
@@ -330,15 +337,15 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             onClick={() => setIsYearly(true)}
                             className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                                 isYearly
-                                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                                    ? 'bg-white text-zinc-900'
+                                    : 'text-zinc-500 hover:text-white'
                             }`}
                         >
                             Yearly
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 isYearly
-                                    ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-900'
-                                    : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                    ? 'bg-zinc-900/20 text-zinc-900'
+                                    : 'bg-zinc-800 text-zinc-400'
                             }`}>
                                 -55%
                             </span>
@@ -355,8 +362,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             disabled={!canScrollLeft}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
                                 canScrollLeft
-                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
-                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
+                                    ? 'border-zinc-700 text-white'
+                                    : 'border-zinc-800 text-zinc-700'
                             }`}
                         >
                             <CaretLeft size={16} />
@@ -366,8 +373,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             disabled={!canScrollRight}
                             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
                                 canScrollRight
-                                    ? 'border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white'
-                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-300 dark:text-zinc-700'
+                                    ? 'border-zinc-700 text-white'
+                                    : 'border-zinc-800 text-zinc-700'
                             }`}
                         >
                             <CaretRight size={16} />
@@ -399,7 +406,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
 
                 {/* Trust indicators */}
                 {isInView && (
-                    <div className="mt-12 sm:mt-16 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                    <div className="mt-12 sm:mt-16 p-6 rounded-2xl bg-zinc-900 border border-zinc-800"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.4s' }}>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 sm:gap-8">
@@ -409,7 +416,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                                     { icon: Headset, label: '24/7 Support' },
                                     { icon: Users, label: '10K+ Users' },
                                 ].map(({ icon: Icon, label }) => (
-                                    <div key={label} className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                                    <div key={label} className="flex items-center gap-2 text-zinc-400">
                                         <Icon size={16} weight="fill" />
                                         <span className="text-xs sm:text-sm font-medium">{label}</span>
                                     </div>
@@ -417,7 +424,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                             </div>
                             <div className="text-center sm:text-right">
                                 <p className="text-xs text-zinc-500 mb-1">Questions?</p>
-                                <a href="mailto:info@nabdchain.com" className="text-sm font-medium text-zinc-900 dark:text-white hover:underline">
+                                <a href="mailto:info@nabdchain.com" className="text-sm font-medium text-white hover:underline">
                                     info@nabdchain.com
                                 </a>
                             </div>
@@ -429,7 +436,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                 {isInView && (
                     <div className="mt-8 text-center"
                          style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.5s' }}>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-600">
+                        <p className="text-sm text-zinc-500">
                             30-day money-back guarantee • Cancel anytime • No hidden fees
                         </p>
                     </div>
@@ -445,6 +452,14 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onGetStarted }) 
                 @keyframes fadeInLeft {
                     from { opacity: 0; transform: translateX(-10px); }
                     to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes glowPulse {
+                    0%, 100% { opacity: 0.5; }
+                    50% { opacity: 0.8; }
+                }
+                @keyframes glowRotate {
+                    0% { filter: hue-rotate(0deg); }
+                    100% { filter: hue-rotate(360deg); }
                 }
             `}</style>
         </section>
