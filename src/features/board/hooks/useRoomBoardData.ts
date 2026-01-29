@@ -59,12 +59,100 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
     const persistenceKey = `room-board-data-v2-${storageKey}`;
 
     const [board, setBoard] = useState<IBoard>(() => {
-        // ... (existing initialization logic)
-        if (initialBoardData) {
-            if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
-                return initialBoardData as IBoard;
+        // CRITICAL FIX: Always check localStorage first for saved task data
+        // localStorage contains cell-level data (time tracking, tags, dependencies, etc.)
+        // that would be lost if we only used initialBoardData
+
+        let savedBoard: IBoard | null = null;
+        try {
+            const saved = localStorage.getItem(persistenceKey);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && parsed.id) {
+                    savedBoard = parsed;
+                }
             }
+        } catch (e) {
+            boardLogger.warn('[useRoomBoardData] Failed to parse saved board data:', e);
+        }
+
+        // If we have initialBoardData, we need to merge it with saved data
+        if (initialBoardData) {
+            // Case 1: initialBoardData is already an IBoard with groups
+            if ('groups' in initialBoardData && (initialBoardData as IBoard).groups) {
+                const iboard = initialBoardData as IBoard;
+                // If we have saved data for the same board, merge task data
+                if (savedBoard && savedBoard.id === iboard.id) {
+                    // Create a map of saved tasks by ID for quick lookup
+                    const savedTaskMap = new Map<string, any>();
+                    savedBoard.groups.forEach(g => {
+                        g.tasks.forEach(t => savedTaskMap.set(t.id, t));
+                    });
+
+                    // Merge: use initialBoardData structure but preserve cell data from saved tasks
+                    return {
+                        ...iboard,
+                        groups: iboard.groups.map(g => ({
+                            ...g,
+                            tasks: g.tasks.map(t => {
+                                const savedTask = savedTaskMap.get(t.id);
+                                // Merge saved task data (preserves time_tracking, tags, dependencies, etc.)
+                                return savedTask ? { ...savedTask, ...t, ...savedTask } : t;
+                            })
+                        }))
+                    };
+                }
+                return iboard;
+            }
+
+            // Case 2: initialBoardData is a flat Board - transform it
             const flatBoard = initialBoardData as Board;
+
+            // If we have saved data for the same board, use saved tasks with their cell data
+            if (savedBoard && savedBoard.id === flatBoard.id) {
+                // Create a map of saved tasks by ID
+                const savedTaskMap = new Map<string, any>();
+                savedBoard.groups.forEach(g => {
+                    g.tasks.forEach(t => savedTaskMap.set(t.id, t));
+                });
+
+                // Transform flat board but preserve cell data from saved tasks
+                const transformedTasks = (Array.isArray(flatBoard.tasks) ? flatBoard.tasks : []).map((t: any) => {
+                    const savedTask = savedTaskMap.get(t.id);
+                    const baseTask = {
+                        id: t.id,
+                        name: t.name,
+                        status: t.status as Status,
+                        priority: t.priority as Priority,
+                        personId: t.person,
+                        dueDate: t.date,
+                        textValues: {},
+                        selected: false,
+                        ...t
+                    };
+                    // Merge saved task data to preserve cell values (time_tracking, tags, dependencies, phone, etc.)
+                    return savedTask ? { ...baseTask, ...savedTask, name: t.name, status: t.status, priority: t.priority } : baseTask;
+                });
+
+                return {
+                    id: flatBoard.id,
+                    name: flatBoard.name,
+                    description: flatBoard.description,
+                    availableViews: flatBoard.availableViews,
+                    pinnedViews: flatBoard.pinnedViews,
+                    defaultView: flatBoard.defaultView,
+                    groups: [{
+                        id: 'default-group',
+                        title: 'Tasks',
+                        color: '#579bff',
+                        tasks: transformedTasks,
+                        columns: flatBoard.columns as any[],
+                        isPinned: false
+                    }]
+                };
+            }
+
+            // No saved data - use initialBoardData as-is
             return {
                 id: flatBoard.id,
                 name: flatBoard.name,
@@ -92,38 +180,32 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                 }]
             };
         }
-        try {
-            const saved = localStorage.getItem(persistenceKey);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed && parsed.id) {
-                    // FIX: Ensure new default statuses are present if missing
-                    const requiredGroups = [
-                        { id: 'Stuck', title: 'Stuck', color: '#f97316' },
-                        { id: 'Rejected', title: 'Rejected', color: '#333333' }
-                    ];
 
-                    if (parsed.groups && Array.isArray(parsed.groups)) {
-                        requiredGroups.forEach(req => {
-                            if (!parsed.groups.find((g: any) => g.id === req.id || g.title === req.title)) {
-                                parsed.groups.push({
-                                    id: req.id,
-                                    title: req.title,
-                                    color: req.color,
-                                    tasks: [],
-                                    isPinned: false,
-                                    columns: []
-                                });
-                            }
+        // No initialBoardData - use saved board if available
+        if (savedBoard) {
+            // FIX: Ensure new default statuses are present if missing
+            const requiredGroups = [
+                { id: 'Stuck', title: 'Stuck', color: '#f97316' },
+                { id: 'Rejected', title: 'Rejected', color: '#333333' }
+            ];
+
+            if (savedBoard.groups && Array.isArray(savedBoard.groups)) {
+                requiredGroups.forEach(req => {
+                    if (!savedBoard!.groups.find((g: any) => g.id === req.id || g.title === req.title)) {
+                        savedBoard!.groups.push({
+                            id: req.id,
+                            title: req.title,
+                            color: req.color,
+                            tasks: [],
+                            isPinned: false,
+                            columns: []
                         });
                     }
-                    return parsed;
-                }
+                });
             }
-        } catch (e) {
-            // Invalid JSON in initialData prop, use defaults
-            boardLogger.warn('[useRoomBoardData] Failed to parse initialData:', e);
+            return savedBoard;
         }
+
         return INITIAL_BOARD;
     });
 

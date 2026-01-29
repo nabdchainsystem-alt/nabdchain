@@ -31,6 +31,7 @@ const TopBar = lazyWithRetry(() => import('./components/layout/TopBar').then(m =
 const LandingPage = lazyWithRetry(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
 const AcceptInvitePage = lazyWithRetry(() => import('./features/auth/AcceptInvitePage').then(m => ({ default: m.AcceptInvitePage })));
 const SignUpPage = lazyWithRetry(() => import('./features/auth/SignUpPage').then(m => ({ default: m.SignUpPage })));
+const SignInPage = lazyWithRetry(() => import('./features/auth/SignInPage').then(m => ({ default: m.SignInPage })));
 
 // Mobile
 const MobileApp = lazyWithRetry(() => import('./features/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
@@ -135,7 +136,7 @@ const DelayedSpinner = memo(({ delay = 150, size = 6 }: { delay?: number; size?:
 
   return (
     <div className={`w-${size} h-${size} border-2 border-blue-500 border-t-transparent rounded-full animate-spin`}
-         style={{ width: size * 4, height: size * 4 }} />
+      style={{ width: size * 4, height: size * 4 }} />
   );
 });
 DelayedSpinner.displayName = 'DelayedSpinner';
@@ -1909,14 +1910,18 @@ const AppRoutes: React.FC = () => {
       <SignedOut>
         {/* Show landing page */}
         {authView === 'home' && (
-          <LandingPage onEnterSystem={() => {
-            // If on main domain, redirect to app subdomain for sign-in
-            if (isMainDomain) {
-              window.location.href = 'https://app.nabdchain.com';
-            } else {
-              setAuthView('signin');
-            }
-          }} />
+          <LandingPage
+            onEnterSystem={() => {
+              // If on main domain, redirect to app subdomain for sign-in
+              if (isMainDomain) {
+                window.location.href = 'https://app.nabdchain.com';
+              } else {
+                setAuthView('signin');
+              }
+            }}
+            onNavigateToSignIn={() => setAuthView('signin')}
+            onNavigateToSignUp={() => setAuthView('signup')}
+          />
         )}
 
         {authView === 'signin' && (
@@ -2006,49 +2011,49 @@ const App: React.FC = () => {
             <FocusProvider>
               <ToastProvider>
                 <SocketProvider>
-                <AIProvider>
-                  {/* Invitation Route */}
-                  <Router>
-                    <Routes>
-                      <Route
-                        path="/invite/accept"
-                        element={
-                          <>
-                            <SignedIn>
-                              <Suspense fallback={<PageLoadingFallback />}>
-                                <AcceptInvitePage />
-                              </Suspense>
-                            </SignedIn>
-                            <SignedOut>
-                              <RedirectToSignIn />
-                            </SignedOut>
-                          </>
-                        }
-                      />
-                      {/* Live Session Route */}
-                      <Route
-                        path="/live/:roomId?"
-                        element={
-                          <>
-                            <SignedIn>
-                              <React.Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
-                                <LiveSessionPage />
-                              </React.Suspense>
-                            </SignedIn>
-                            <SignedOut>
-                              <RedirectToSignIn />
-                            </SignedOut>
-                          </>
-                        }
-                      />
-                      {/* Dashboard & Main App Routes */}
-                      <Route path="*" element={<AppRoutes />} />
-                    </Routes>
-                  </Router>
-                  <Suspense fallback={null}>
-                    <SpeedInsights />
-                  </Suspense>
-                </AIProvider>
+                  <AIProvider>
+                    {/* Invitation Route */}
+                    <Router>
+                      <Routes>
+                        <Route
+                          path="/invite/accept"
+                          element={
+                            <>
+                              <SignedIn>
+                                <Suspense fallback={<PageLoadingFallback />}>
+                                  <AcceptInvitePage />
+                                </Suspense>
+                              </SignedIn>
+                              <SignedOut>
+                                <RedirectToSignIn />
+                              </SignedOut>
+                            </>
+                          }
+                        />
+                        {/* Live Session Route */}
+                        <Route
+                          path="/live/:roomId?"
+                          element={
+                            <>
+                              <SignedIn>
+                                <React.Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                                  <LiveSessionPage />
+                                </React.Suspense>
+                              </SignedIn>
+                              <SignedOut>
+                                <RedirectToSignIn />
+                              </SignedOut>
+                            </>
+                          }
+                        />
+                        {/* Dashboard & Main App Routes */}
+                        <Route path="*" element={<AppRoutes />} />
+                      </Routes>
+                    </Router>
+                    <Suspense fallback={null}>
+                      <SpeedInsights />
+                    </Suspense>
+                  </AIProvider>
                 </SocketProvider>
               </ToastProvider>
             </FocusProvider>

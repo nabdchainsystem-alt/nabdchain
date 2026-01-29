@@ -14,6 +14,11 @@ import {
     Phone,
     Globe,
     Tag,
+    Timer,
+    Play,
+    Pause,
+    GitBranch,
+    Lightning,
 } from 'phosphor-react';
 import { Column, Row, StatusOption, PRIORITY_STYLES, formatDate } from '../types';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
@@ -21,7 +26,7 @@ import { PortalPopup } from '../../../../../components/ui/PortalPopup';
 import { PeoplePicker } from '../../../components/cells/PeoplePicker';
 import { UrlPicker } from '../../../components/cells/UrlPicker';
 import { DocPicker } from '../../../components/cells/DocPicker';
-import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker, VotingPicker, EmailPicker, PhonePicker, WorldClockPicker, getTimezoneDisplay, TagsPicker, getTagColor } from './pickers';
+import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker, VotingPicker, EmailPicker, PhonePicker, WorldClockPicker, getTimezoneDisplay, TagsPicker, getTagColor, ProgressPicker, TimeTrackingPicker, DependencyPicker, AutoNumberPicker, FormulaPicker, ButtonPicker, formatAutoNumber } from './pickers';
 import { formatPriorityLabel, DEFAULT_CHECKBOX_COLOR } from '../utils';
 
 // Constants - must match RoomTable.tsx
@@ -41,7 +46,10 @@ interface TableCellProps {
     activeCell: ActiveCell | null;
     customStatuses: StatusOption[];
     boardId?: string; // For assignment creation
+    allRows?: Row[]; // For dependency picker and auto-number calculation
+    rowIndex?: number; // Row index for auto-numbering
     onUpdateRow: (id: string, updates: Partial<Row>, groupId?: string) => void;
+    onUpdateColumn?: (colId: string, updates: Partial<Column>) => void; // For column config updates
     onTextChange: (id: string, colId: string, value: string, groupId?: string) => void;
     onToggleCell: (e: React.MouseEvent, rowId: string, colId: string) => void;
     onSetActiveCell: (cell: ActiveCell | null) => void;
@@ -161,7 +169,10 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     activeCell,
     customStatuses,
     boardId,
+    allRows = [],
+    rowIndex = 0,
     onUpdateRow,
+    onUpdateColumn,
     onTextChange,
     onToggleCell,
     onSetActiveCell,
@@ -1070,6 +1081,354 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                     style={{ accentColor: row._styles?.[col.id]?.color || col.color || DEFAULT_CHECKBOX_COLOR }}
                     className="rounded border-stone-300 dark:border-stone-600 cursor-pointer w-4 h-4"
                 />
+            </div>
+        );
+    }
+
+    // Auto Number column - displays row index automatically (simple, clean display)
+    if (col.type === 'auto_number') {
+        // Calculate auto number based on row index (1-based)
+        const displayNumber = rowIndex + 1;
+
+        return (
+            <div className="w-full h-full flex items-center justify-center">
+                <span className="text-sm text-stone-500 dark:text-stone-400">
+                    {displayNumber}
+                </span>
+            </div>
+        );
+    }
+
+    // Time Tracking column - simple timer functionality
+    if (col.type === 'time_tracking') {
+        const timeData = typeof value === 'object' && value !== null ? value : { totalTime: typeof value === 'number' ? value : 0, isRunning: false };
+        const totalSeconds = timeData?.totalTime || 0;
+        const isRunning = timeData?.isRunning || false;
+        const runningStartTime = timeData?.runningStartTime;
+
+        // Calculate current elapsed time including running time
+        const [displayTime, setDisplayTime] = React.useState(totalSeconds);
+
+        React.useEffect(() => {
+            if (isRunning && runningStartTime) {
+                const updateTime = () => {
+                    const elapsed = Math.floor((Date.now() - new Date(runningStartTime).getTime()) / 1000);
+                    setDisplayTime(totalSeconds + elapsed);
+                };
+                updateTime();
+                const interval = setInterval(updateTime, 1000);
+                return () => clearInterval(interval);
+            } else {
+                setDisplayTime(totalSeconds);
+            }
+        }, [isRunning, runningStartTime, totalSeconds]);
+
+        const formatTime = (seconds: number) => {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        };
+
+        const handleToggleTimer = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const now = new Date().toISOString();
+            if (isRunning) {
+                // Stop timer
+                const elapsed = runningStartTime ? Math.floor((Date.now() - new Date(runningStartTime).getTime()) / 1000) : 0;
+                onUpdateRow(row.id, {
+                    [col.id]: {
+                        totalTime: totalSeconds + elapsed,
+                        isRunning: false,
+                        runningStartTime: null
+                    }
+                }, row.groupId);
+            } else {
+                // Start timer
+                onUpdateRow(row.id, {
+                    [col.id]: {
+                        totalTime: totalSeconds,
+                        isRunning: true,
+                        runningStartTime: now
+                    }
+                }, row.groupId);
+            }
+        };
+
+        return (
+            <div className="w-full h-full flex items-center justify-center gap-2">
+                <button
+                    onClick={handleToggleTimer}
+                    className={`p-1 rounded transition-colors ${
+                        isRunning
+                            ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            : 'text-stone-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                    }`}
+                >
+                    {isRunning ? <Pause size={14} weight="fill" /> : <Play size={14} weight="fill" />}
+                </button>
+                <span className={`text-sm tabular-nums ${isRunning ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-500 dark:text-stone-400'}`}>
+                    {formatTime(displayTime)}
+                </span>
+            </div>
+        );
+    }
+
+    // Progress column - visual progress bar
+    if (col.type === 'progress') {
+        const progressValue = typeof value === 'number' ? value : (value ? Number(value) : 0);
+        const clampedValue = Math.min(100, Math.max(0, progressValue));
+        const isActive = activeCell?.rowId === row.id && activeCell?.colId === col.id;
+
+        const getProgressColor = (val: number) => {
+            if (val >= 100) return 'bg-emerald-500';
+            if (val >= 75) return 'bg-teal-500';
+            if (val >= 50) return 'bg-blue-500';
+            if (val >= 25) return 'bg-amber-500';
+            return 'bg-stone-400';
+        };
+
+        return (
+            <div className="relative w-full h-full">
+                <div
+                    className="w-full h-full flex items-center px-2 gap-2 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50"
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                >
+                    <div className="flex-1 h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full ${getProgressColor(clampedValue)} transition-all duration-300`}
+                            style={{ width: `${clampedValue}%` }}
+                        />
+                    </div>
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400 min-w-[36px] text-end">
+                        {clampedValue}%
+                    </span>
+                </div>
+                {isActive && activeCell?.rect && (
+                    <ProgressPicker
+                        value={clampedValue}
+                        onSelect={(val) => onUpdateRow(row.id, { [col.id]: val ?? 0 })}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Dependencies column - link related items
+    if (col.type === 'dependencies') {
+        const depValue = value as { blockedBy?: any[]; blocking?: any[] } | null;
+        const blockedBy = depValue?.blockedBy || [];
+        const blocking = depValue?.blocking || [];
+        const totalDeps = blockedBy.length + blocking.length;
+
+        // Prepare available tasks for the picker (exclude current row)
+        const availableTasks = allRows
+            .filter(r => r.id !== row.id && r.id !== CREATION_ROW_ID)
+            .map(r => ({
+                id: r.id,
+                name: r.name || r.title || `Task ${r.id.slice(-4)}`,
+                status: r.status as string
+            }));
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center gap-1.5 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {totalDeps > 0 ? (
+                        <div className="flex items-center gap-2">
+                            {blockedBy.length > 0 && (
+                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 rounded" title={t('blocked_by') || 'Blocked by'}>
+                                    <GitBranch size={12} className="text-red-500" />
+                                    <span className="text-xs font-medium text-red-600 dark:text-red-400">{blockedBy.length}</span>
+                                </div>
+                            )}
+                            {blocking.length > 0 && (
+                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded" title={t('blocking') || 'Blocking'}>
+                                    <GitBranch size={12} className="text-amber-500" />
+                                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{blocking.length}</span>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300">
+                            <GitBranch size={14} />
+                            <span className="text-xs">{t('add_dependency') || 'Link'}</span>
+                        </div>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.rect && (
+                    <DependencyPicker
+                        value={depValue}
+                        currentTaskId={row.id}
+                        currentTaskName={row.name || row.title || `Task ${row.id.slice(-4)}`}
+                        availableTasks={availableTasks}
+                        onSelect={(newValue) => {
+                            onUpdateRow(row.id, { [col.id]: newValue }, row.groupId);
+                        }}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Formula column - per-cell formula config (stored in row data)
+    if (col.type === 'formula') {
+        // Get formula config from cell value (per-cell, not per-column)
+        const cellConfig = typeof value === 'object' && value !== null ? value as { formula?: string } : null;
+        const formula = cellConfig?.formula || '';
+        let calculatedValue: string | number | null = null;
+        let hasError = false;
+
+        // Simple formula evaluation
+        if (formula) {
+            try {
+                const columnRefs = formula.match(/\{([^}]+)\}/g);
+                if (columnRefs) {
+                    let evalFormula = formula;
+                    columnRefs.forEach(ref => {
+                        const colName = ref.slice(1, -1);
+                        const targetCol = columns.find(c => c.label === colName || c.id === colName);
+                        if (targetCol) {
+                            const colValue = row[targetCol.id];
+                            const numValue = typeof colValue === 'number' ? colValue : (parseFloat(colValue as string) || 0);
+                            evalFormula = evalFormula.replace(ref, String(numValue));
+                        } else {
+                            evalFormula = evalFormula.replace(ref, '0');
+                        }
+                    });
+                    if (/^[\d\s+\-*/().]+$/.test(evalFormula)) {
+                        const result = new Function(`return ${evalFormula}`)();
+                        calculatedValue = typeof result === 'number' && !isNaN(result)
+                            ? Math.round(result * 100) / 100
+                            : result;
+                    }
+                } else if (/^[\d\s+\-*/().]+$/.test(formula)) {
+                    const result = new Function(`return ${formula}`)();
+                    calculatedValue = typeof result === 'number' && !isNaN(result)
+                        ? Math.round(result * 100) / 100
+                        : result;
+                }
+            } catch {
+                hasError = true;
+            }
+        }
+
+        const availableColumns = columns
+            .filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'button')
+            .map(c => ({ id: c.id, name: c.label || c.id, type: c.type }));
+
+        return (
+            <div className="relative w-full h-full">
+                <button
+                    onClick={(e) => onToggleCell(e, row.id, col.id)}
+                    className="w-full h-full flex items-center justify-center hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
+                >
+                    {hasError ? (
+                        <span className="text-xs text-red-500">Error</span>
+                    ) : formula ? (
+                        <span className="text-sm text-stone-600 dark:text-stone-400">
+                            {calculatedValue !== null ? String(calculatedValue) : '—'}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-stone-400">fx</span>
+                    )}
+                </button>
+                {isActiveCell && activeCell?.rect && (
+                    <FormulaPicker
+                        value={cellConfig}
+                        availableColumns={availableColumns}
+                        onSelect={(newConfig) => {
+                            // Save formula to cell (row data), not column
+                            onUpdateRow(row.id, { [col.id]: newConfig }, row.groupId);
+                        }}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Button column - per-cell button config (stored in row data)
+    if (col.type === 'button') {
+        // Get button config from cell value (per-cell, not per-column)
+        const cellConfig = typeof value === 'object' && value !== null ? value as { label?: string; color?: string; action?: { type: string; config?: Record<string, unknown> } } : null;
+        const [isExecuting, setIsExecuting] = React.useState(false);
+
+        const handleButtonClick = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!cellConfig) return;
+
+            setIsExecuting(true);
+            try {
+                const actionType = cellConfig.action?.type;
+                const actionConfig = (cellConfig.action?.config || {}) as { url?: string; targetColumn?: string; targetValue?: unknown; webhookUrl?: string };
+
+                if (actionType === 'open_url' && actionConfig.url) {
+                    window.open(actionConfig.url, '_blank');
+                } else if (actionType === 'update_status' && actionConfig.targetColumn && actionConfig.targetValue) {
+                    onUpdateRow(row.id, { [actionConfig.targetColumn]: actionConfig.targetValue }, row.groupId);
+                } else if (actionType === 'custom_webhook' && actionConfig.webhookUrl) {
+                    fetch(actionConfig.webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rowId: row.id, rowData: row, timestamp: Date.now() })
+                    }).catch(() => {});
+                }
+                await new Promise(r => setTimeout(r, 300));
+            } finally {
+                setIsExecuting(false);
+            }
+        };
+
+        return (
+            <div className="relative w-full h-full">
+                <div className="w-full h-full flex items-center justify-center">
+                    {cellConfig?.label ? (
+                        <button
+                            onClick={handleButtonClick}
+                            disabled={isExecuting}
+                            className="flex items-center gap-1 px-2 py-1 text-white text-xs font-medium rounded transition-all hover:opacity-90 disabled:opacity-50"
+                            style={{ backgroundColor: cellConfig.color || '#3b82f6' }}
+                        >
+                            {isExecuting ? (
+                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Lightning size={10} weight="fill" />
+                            )}
+                            {cellConfig.label}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={(e) => onToggleCell(e, row.id, col.id)}
+                            className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                        >
+                            + {t('configure') || 'Setup'}
+                        </button>
+                    )}
+                </div>
+                {isActiveCell && activeCell?.rect && (
+                    <ButtonPicker
+                        config={cellConfig as any}
+                        isConfigMode={!cellConfig?.label}
+                        onConfigChange={(newConfig) => {
+                            // Save button config to cell (row data), not column
+                            onUpdateRow(row.id, { [col.id]: newConfig }, row.groupId);
+                        }}
+                        onButtonClick={() => {
+                            handleButtonClick({ stopPropagation: () => {} } as React.MouseEvent);
+                        }}
+                        onClose={() => onSetActiveCell(null)}
+                        triggerRect={activeCell.rect}
+                    />
+                )}
             </div>
         );
     }

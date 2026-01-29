@@ -258,6 +258,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         // If external source exists with tasks, sync with it
         // Note: We check length > 0 to differentiate from empty array (controlled mode with no tasks yet)
         if (externalTasks && externalTasks.length > 0) {
+            // CRITICAL FIX: Create a map of saved row data by ID to preserve cell values
+            // (time_tracking, tags, dependencies, phone, etc.) that might not be in externalTasks
+            const savedRowsMap = new Map<string, Row>();
+            Object.values(savedGroupsMap).forEach((saved: any) => {
+                if (saved.rows && Array.isArray(saved.rows)) {
+                    saved.rows.forEach((r: Row) => savedRowsMap.set(r.id, r));
+                }
+            });
+
             const tasksByGroup: Record<string, Row[]> = {};
             // Keep track of order found in tasks if possible, or just unique IDs
             const uniqueGroupIds: string[] = [];
@@ -268,7 +277,20 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     tasksByGroup[gid] = [];
                     uniqueGroupIds.push(gid);
                 }
-                tasksByGroup[gid].push(t);
+                // Merge with saved row data to preserve cell values
+                const savedRow = savedRowsMap.get(t.id);
+                if (savedRow) {
+                    // Merge: savedRow has cell data, t has latest core data (name, status, etc.)
+                    // Cell data from saved takes precedence for special column types
+                    tasksByGroup[gid].push({ ...savedRow, ...t, ...Object.fromEntries(
+                        Object.entries(savedRow).filter(([key]) =>
+                            // Preserve saved cell data for complex column types
+                            typeof savedRow[key as keyof Row] === 'object' && savedRow[key as keyof Row] !== null
+                        )
+                    )});
+                } else {
+                    tasksByGroup[gid].push(t);
+                }
             });
 
             // We want to preserve the ORDER from specific savedGroups if possible?
@@ -2092,7 +2114,17 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         handleUpdateRow(rowId, { _styles: newStyles });
     };
 
+    // Handler to update column configuration (for Formula, Button, AutoNumber configs)
+    const handleUpdateColumn = useCallback((colId: string, updates: Partial<Column>) => {
+        setColumns(prevCols => prevCols.map(col =>
+            col.id === colId ? { ...col, ...updates } : col
+        ));
+    }, [setColumns]);
+
     const renderCellContent = (col: Column, row: Row) => {
+        // Calculate row index for auto-numbering (find position in full rows array)
+        const rowIndex = rows.findIndex(r => r.id === row.id);
+
         return (
             <TableCell
                 col={col}
@@ -2101,7 +2133,10 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 activeCell={activeCell}
                 customStatuses={customStatuses}
                 boardId={roomId}
+                allRows={rows}
+                rowIndex={rowIndex >= 0 ? rowIndex : 0}
                 onUpdateRow={handleUpdateRow}
+                onUpdateColumn={handleUpdateColumn}
                 onTextChange={handleTextChange}
                 onToggleCell={toggleCell}
                 onSetActiveCell={setActiveCell}

@@ -16,6 +16,29 @@ export interface Column {
         symbol: string;
     };
     maxRating?: number; // For rating columns
+    // Auto Number column config
+    autoNumberConfig?: {
+        prefix?: string;
+        suffix?: string;
+        startFrom: number;
+        increment: number;
+        padLength?: number;
+    };
+    // Formula column config
+    formula?: string;
+    formulaConfig?: {
+        formula: string;
+        resultType?: 'number' | 'text' | 'date' | 'boolean';
+    };
+    // Button column config
+    buttonConfig?: {
+        label: string;
+        color: string;
+        action: {
+            type: string;
+            config?: Record<string, unknown>;
+        };
+    };
 }
 
 export interface Row {

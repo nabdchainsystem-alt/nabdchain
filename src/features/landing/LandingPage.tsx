@@ -4,16 +4,25 @@ import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
 import { TestimonialsSection } from './components/TestimonialsSection';
-import { CTASection } from './components/CTASection';
+import { PricingSection } from './components/PricingSection';
+import { MiniCompanyShowcase } from './components/MiniCompanyShowcase';
 
-// useClerk import removed
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
-import { List, X } from 'phosphor-react';
+import { List, X, SignIn, UserPlus } from 'phosphor-react';
 
-export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSystem }) => {
+interface LandingPageProps {
+    onEnterSystem: () => void;
+    onNavigateToSignIn?: () => void;
+    onNavigateToSignUp?: () => void;
+}
+
+export const LandingPage: React.FC<LandingPageProps> = ({
+    onEnterSystem,
+    onNavigateToSignIn,
+    onNavigateToSignUp
+}) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    // openSignIn removed
     const { scrollY } = useScroll();
 
     const navBackground = useTransform(
@@ -27,22 +36,26 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
         ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.05)']
     );
 
-    const handleUserSign = () => {
-        // Clear mock mode if active, then open real sign-in
-        const isMockMode = localStorage.getItem('nabd_dev_mode') === 'true';
-
-        if (isMockMode) {
-            localStorage.removeItem('nabd_dev_mode');
-            localStorage.removeItem('mock_auth_token');
+    const handleSignIn = () => {
+        if (onNavigateToSignIn) {
+            onNavigateToSignIn();
+        } else {
+            onEnterSystem();
         }
+    };
 
-        onEnterSystem();
+    const handleSignUp = () => {
+        if (onNavigateToSignUp) {
+            onNavigateToSignUp();
+        } else {
+            onEnterSystem();
+        }
     };
 
     const navLinks = [
         { label: 'Features', href: '#features' },
+        { label: 'Mini Company', href: '#mini-company' },
         { label: 'Dashboard', href: '#dashboard' },
-        { label: 'Testimonials', href: '#testimonials' },
         { label: 'Pricing', href: '#pricing' },
     ];
 
@@ -63,7 +76,7 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-3 cursor-pointer group"
-                        onClick={handleUserSign}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
                         <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black text-lg font-bold">
                             N
@@ -91,18 +104,20 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                         {/* Desktop Buttons */}
                         <div className="hidden sm:flex items-center gap-3">
                             <button
-                                onClick={handleUserSign}
-                                className="h-10 px-5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-sm font-semibold
-                                hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all duration-200"
+                                onClick={handleSignIn}
+                                className="h-10 px-5 rounded-lg text-zinc-600 dark:text-zinc-400 text-sm font-semibold
+                                hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all duration-200 flex items-center gap-2"
                             >
-                                User Sign
+                                <SignIn size={18} />
+                                Sign In
                             </button>
                             <button
-                                onClick={() => setIsDevLoginOpen(true)}
-                                className="h-10 px-5 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white text-sm font-semibold
-                                hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all duration-200"
+                                onClick={handleSignUp}
+                                className="h-10 px-5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-sm font-semibold
+                                hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all duration-200 flex items-center gap-2"
                             >
-                                Developer Sign
+                                <UserPlus size={18} />
+                                Get Started
                             </button>
                         </div>
 
@@ -135,19 +150,24 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                         ))}
                         <div className="pt-4 space-y-3">
                             <button
-                                onClick={handleUserSign}
-                                className="w-full h-12 rounded-lg bg-black dark:bg-white text-white dark:text-black font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+                                onClick={() => {
+                                    setIsMobileMenuOpen(false);
+                                    handleSignIn();
+                                }}
+                                className="w-full h-12 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center gap-2"
                             >
-                                User Sign
+                                <SignIn size={18} />
+                                Sign In
                             </button>
                             <button
                                 onClick={() => {
                                     setIsMobileMenuOpen(false);
-                                    setIsDevLoginOpen(true);
+                                    handleSignUp();
                                 }}
-                                className="w-full h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white font-semibold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                                className="w-full h-12 rounded-lg bg-black dark:bg-white text-white dark:text-black font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
                             >
-                                Developer Sign
+                                <UserPlus size={18} />
+                                Get Started Free
                             </button>
                         </div>
                     </div>
@@ -156,10 +176,14 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
 
             {/* Main Content */}
             <main>
-                <HeroSection onEnterSystem={handleUserSign} />
+                <HeroSection onEnterSystem={handleSignUp} />
 
                 <div id="features">
                     <FeaturesShowcase />
+                </div>
+
+                <div id="mini-company">
+                    <MiniCompanyShowcase onExplore={handleSignUp} />
                 </div>
 
                 <div id="dashboard">
@@ -171,7 +195,7 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                 </div>
 
                 <div id="pricing">
-                    <CTASection onGetStarted={handleUserSign} />
+                    <PricingSection onGetStarted={handleSignUp} />
                 </div>
             </main>
 
@@ -210,9 +234,9 @@ export const LandingPage: React.FC<{ onEnterSystem: () => void }> = ({ onEnterSy
                         <div>
                             <h4 className="font-semibold mb-4">Product</h4>
                             <ul className="space-y-3 text-sm text-zinc-500">
-                                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                                <li><a href="#mini-company" className="hover:text-white transition-colors">Mini Company</a></li>
+                                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                                 <li><a href="#" className="hover:text-white transition-colors">Changelog</a></li>
                             </ul>
                         </div>

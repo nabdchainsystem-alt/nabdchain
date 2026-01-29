@@ -3020,7 +3020,6 @@ const translations: Translations = {
   column_type: { en: 'Column Type', ar: 'نوع العمود' },
   rows_per_page: { en: 'Rows per page', ar: 'صفوف في الصفحة' },
   page_x_of_y: { en: 'Page {0} of {1}', ar: 'صفحة {0} من {1}' },
-  all: { en: 'All', ar: 'الكل' },
   show_all_warning: { en: 'Loading {0} rows may be slow. Continue?', ar: 'تحميل {0} صف قد يكون بطيئاً. هل تريد المتابعة؟' },
   large_dataset_note: { en: 'Large dataset - may be slow', ar: 'بيانات كبيرة - قد تكون بطيئة' },
   sort_ascending: { en: 'Sort Ascending', ar: 'ترتيب تصاعدي' },
@@ -3086,6 +3085,12 @@ const translations: Translations = {
   col_phone: { en: 'Phone', ar: 'هاتف' },
   col_world_clock: { en: 'World Clock', ar: 'ساعة عالمية' },
   col_tags: { en: 'Tags', ar: 'وسوم' },
+  col_auto_number: { en: 'Auto Number', ar: 'ترقيم تلقائي' },
+  col_time_tracking: { en: 'Time Tracking', ar: 'تتبع الوقت' },
+  col_progress: { en: 'Progress', ar: 'التقدم' },
+  col_dependencies: { en: 'Dependencies', ar: 'التبعيات' },
+  col_formula: { en: 'Formula', ar: 'معادلة' },
+  col_button: { en: 'Button', ar: 'زر' },
 
   // Add Column Menu - Descriptions
   desc_custom: { en: 'Custom column', ar: 'عمود مخصص' },
@@ -3109,6 +3114,42 @@ const translations: Translations = {
   desc_phone: { en: 'Phone number', ar: 'رقم الهاتف' },
   desc_world_clock: { en: 'See time in other zones', ar: 'عرض الوقت في مناطق أخرى' },
   desc_tags: { en: 'Manage tags', ar: 'إدارة الوسوم' },
+  desc_auto_number: { en: 'Auto-increment IDs', ar: 'معرفات تلقائية متزايدة' },
+  desc_time_tracking: { en: 'Track time spent', ar: 'تتبع الوقت المستغرق' },
+  desc_progress: { en: 'Visual progress bar', ar: 'شريط تقدم مرئي' },
+  desc_dependencies: { en: 'Link related items', ar: 'ربط العناصر المرتبطة' },
+  desc_formula: { en: 'Calculate values', ar: 'حساب القيم' },
+  desc_button: { en: 'Trigger actions', ar: 'تنفيذ إجراءات' },
+
+  // New Column Cell Strings
+  dependencies_count: { en: 'deps', ar: 'تبعيات' },
+  add_dependency: { en: 'Add', ar: 'إضافة' },
+  click: { en: 'Click', ar: 'انقر' },
+
+  // Time Tracking - stop_timer added (start_timer exists elsewhere)
+  stop_timer: { en: 'Stop timer', ar: 'إيقاف المؤقت' },
+
+  // Dependencies
+  blocked_by: { en: 'Blocked by', ar: 'محظور بواسطة' },
+  blocking: { en: 'Blocking', ar: 'يحظر' },
+  single_dependency: { en: 'dep', ar: 'تبعية' },
+
+  // Formula
+  set_formula: { en: 'Set formula', ar: 'تعيين المعادلة' },
+
+  // Button
+  configure: { en: 'Configure', ar: 'تكوين' },
+
+  // Progress Picker
+  set_progress: { en: 'Set Progress', ar: 'تعيين التقدم' },
+  percent: { en: 'percent', ar: 'بالمئة' },
+  progress_complete: { en: 'Complete!', ar: 'مكتمل!' },
+  progress_almost: { en: 'Almost there!', ar: 'على وشك الانتهاء!' },
+  progress_halfway: { en: 'Halfway done', ar: 'منتصف الطريق' },
+  progress_good_start: { en: 'Good start', ar: 'بداية جيدة' },
+  progress_just_started: { en: 'Just started', ar: 'بدأ للتو' },
+  progress_not_started: { en: 'Not started', ar: 'لم يبدأ' },
+  apply: { en: 'Apply', ar: 'تطبيق' },
 
   // Add Column Menu - Sections
   section_essentials: { en: 'Essentials', ar: 'الأساسيات' },
@@ -3157,7 +3198,7 @@ const translations: Translations = {
   files_count: { en: 'Files', ar: 'ملفات' },
   remove_file: { en: 'Remove file', ar: 'إزالة الملف' },
   // custom_color - defined earlier
-  delete_status: { en: 'Delete status', ar: 'حذف الحالة' },
+  // delete_status - defined earlier
   no_assigned_users_found: { en: 'No assigned users found', ar: 'لم يتم العثور على مستخدمين معينين' },
 
   // NABD Brain AI

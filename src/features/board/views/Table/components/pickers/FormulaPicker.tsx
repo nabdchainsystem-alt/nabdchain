@@ -58,9 +58,9 @@ export const FormulaPicker: React.FC<FormulaPickerProps> = ({
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [showHelp, setShowHelp] = useState(false);
 
-    const MENU_WIDTH = 400;
-    const MENU_HEIGHT = 500;
-    const PADDING = 16;
+    const MENU_WIDTH = 360;
+    const MENU_HEIGHT = 450;
+    const PADDING = 12;
 
     const positionStyle = useMemo(() => {
         if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
@@ -68,30 +68,47 @@ export const FormulaPicker: React.FC<FormulaPickerProps> = ({
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const spaceBelow = windowHeight - triggerRect.bottom;
-        const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
+        const spaceAbove = triggerRect.top;
 
+        // Horizontal positioning
         let left: number | undefined;
         let right: number | undefined;
+        const spaceRight = windowWidth - triggerRect.left;
 
-        if (wouldOverflowRight) {
-            right = PADDING;
-        } else {
+        if (spaceRight >= MENU_WIDTH + PADDING) {
             left = Math.max(PADDING, triggerRect.left);
+        } else {
+            right = Math.max(PADDING, windowWidth - triggerRect.right);
         }
 
-        const openUp = spaceBelow < MENU_HEIGHT + PADDING && triggerRect.top > spaceBelow;
+        // Vertical positioning - prefer below, go above if needed
+        const openUp = spaceBelow < MENU_HEIGHT + PADDING && spaceAbove > spaceBelow;
 
         const baseStyle: React.CSSProperties = {
             position: 'fixed',
             zIndex: 9999,
-            width: MENU_WIDTH,
-            maxHeight: MENU_HEIGHT,
+            width: Math.min(MENU_WIDTH, windowWidth - PADDING * 2),
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
         };
 
         if (openUp) {
-            return { ...baseStyle, bottom: windowHeight - triggerRect.top + 4, ...(left !== undefined ? { left } : { right }) };
+            const maxH = Math.min(MENU_HEIGHT, spaceAbove - PADDING);
+            return {
+                ...baseStyle,
+                bottom: Math.max(PADDING, windowHeight - triggerRect.top + 4),
+                maxHeight: maxH,
+                ...(left !== undefined ? { left } : { right })
+            };
         }
-        return { ...baseStyle, top: triggerRect.bottom + 4, ...(left !== undefined ? { left } : { right }) };
+
+        const maxH = Math.min(MENU_HEIGHT, spaceBelow - PADDING);
+        return {
+            ...baseStyle,
+            top: triggerRect.bottom + 4,
+            maxHeight: maxH,
+            ...(left !== undefined ? { left } : { right })
+        };
     }, [triggerRect]);
 
     const categories = [...new Set(FORMULA_FUNCTIONS.map(f => f.category))];

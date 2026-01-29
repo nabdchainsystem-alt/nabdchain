@@ -34,7 +34,13 @@ import {
     BookmarkSimple,
     Trash,
     FloppyDisk,
-    Check
+    Check,
+    Timer,
+    Function,
+    ChartBar,
+    NumberSquareOne,
+    Play,
+    GitBranch
 } from 'phosphor-react';
 
 interface DropdownPreset {
@@ -109,6 +115,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'people', label: t('col_people'), icon: Users, color: 'bg-blue-400', description: t('desc_people') },
         { id: 'number', label: t('col_numbers'), icon: Hash, color: 'bg-yellow-400', description: t('desc_numbers') },
         { id: 'currency', label: t('col_currency'), icon: CurrencyDollar, color: 'bg-emerald-500', description: t('desc_currency') },
+        { id: 'auto_number', label: t('col_auto_number'), icon: NumberSquareOne, color: 'bg-slate-500', description: t('desc_auto_number') },
     ];
 
     const superUseful: ColumnType[] = [
@@ -118,6 +125,9 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'location', label: t('col_location'), icon: MapPin, color: 'bg-red-500', description: t('desc_location') },
         { id: 'rating', label: t('col_rating'), icon: Star, color: 'bg-yellow-400', description: t('desc_rating') },
         { id: 'voting', label: t('col_voting'), icon: ThumbsUp, color: 'bg-blue-400', description: t('desc_voting') },
+        { id: 'time_tracking', label: t('col_time_tracking'), icon: Timer, color: 'bg-indigo-500', description: t('desc_time_tracking') },
+        { id: 'progress', label: t('col_progress'), icon: ChartBar, color: 'bg-teal-500', description: t('desc_progress') },
+        { id: 'dependencies', label: t('col_dependencies'), icon: GitBranch, color: 'bg-amber-500', description: t('desc_dependencies') },
     ];
 
     const powerUps: ColumnType[] = [
@@ -125,6 +135,8 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onClose, onSelect, darkM
         { id: 'phone', label: t('col_phone'), icon: Phone, color: 'bg-blue-400', description: t('desc_phone') },
         { id: 'world_clock', label: t('col_world_clock'), icon: Globe, color: 'bg-sky-400', description: t('desc_world_clock') },
         { id: 'tags', label: t('col_tags'), icon: Tags, color: 'bg-purple-500', description: t('desc_tags') },
+        { id: 'formula', label: t('col_formula'), icon: Function, color: 'bg-cyan-500', description: t('desc_formula') },
+        { id: 'button', label: t('col_button'), icon: Play, color: 'bg-rose-500', description: t('desc_button') },
     ];
 
     const filteredEssentials = essentials.filter(t => t.label.toLowerCase().includes(searchTerm.toLowerCase()));

@@ -29,6 +29,13 @@ const STANDARD_COLUMN_KEYS: Record<string, string> = {
     'doc': 'col_doc',
     'voting': 'col_voting',
     'world_clock': 'col_world_clock',
+    // New column types
+    'progress': 'col_progress',
+    'time_tracking': 'col_time_tracking',
+    'auto_number': 'col_auto_number',
+    'dependencies': 'col_dependencies',
+    'formula': 'col_formula',
+    'button': 'col_button',
 };
 
 interface HeaderMenuPosition {
@@ -96,10 +103,17 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
             const defaultLabel = t(typeTranslationKey);
             const labelLower = column.label?.toLowerCase() || '';
             const typeLower = column.type?.toLowerCase() || '';
+            // Convert type with underscores to spaces for comparison (e.g., "time_tracking" -> "time tracking")
+            const typeWithSpaces = typeLower.replace(/_/g, ' ');
 
             // Use translation if: label matches current translation, or label matches type name
-            // This handles: "Status", "الحالة", "status", etc.
-            if (!column.label || column.label === defaultLabel || labelLower === typeLower || labelLower === typeTranslationKey) {
+            // This handles: "Status", "الحالة", "status", "Time Tracking", "time_tracking", etc.
+            if (!column.label ||
+                column.label === defaultLabel ||
+                labelLower === typeLower ||
+                labelLower === typeWithSpaces ||
+                labelLower === typeTranslationKey ||
+                labelLower === typeTranslationKey.replace('col_', '').replace(/_/g, ' ')) {
                 return defaultLabel;
             }
         }
