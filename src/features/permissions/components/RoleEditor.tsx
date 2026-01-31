@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, Check, Minus } from 'phosphor-react';
 import type { Role, Permission, PermissionResource, PermissionAction } from '../types';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // ROLE EDITOR - PLACEHOLDER
@@ -73,7 +74,7 @@ export const RoleEditor: React.FC<RoleEditorProps> = ({
   };
 
   const handleSave = () => {
-    console.log('[RoleEditor] Save - NOT IMPLEMENTED', { name, description, permissions });
+    featureLogger.debug('[RoleEditor] Save - NOT IMPLEMENTED', { name, description, permissions });
     onSave?.({ name, description, permissions });
     onClose();
   };

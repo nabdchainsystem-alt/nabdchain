@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Play, Pause, Clock, Plus, Trash } from 'phosphor-react';
+import { boardLogger } from '@/utils/logger';
 
 // =============================================================================
 // TIME TRACKING PICKER - PLACEHOLDER COMPONENT
@@ -52,7 +53,7 @@ export const formatDurationHuman = (seconds: number): string => {
     return `${minutes}m`;
 };
 
-export const TimeTrackingPicker: React.FC<TimeTrackingPickerProps> = ({
+export const TimeTrackingPicker: React.FC<TimeTrackingPickerProps> = memo(({
     value,
     onSelect,
     onClose,
@@ -106,13 +107,13 @@ export const TimeTrackingPicker: React.FC<TimeTrackingPickerProps> = ({
 
     const handleStartTimer = () => {
         // TODO: Implement timer start logic
-        console.log('[TimeTracking] Start timer - NOT IMPLEMENTED');
+        boardLogger.debug('[TimeTracking] Start timer - NOT IMPLEMENTED');
         onStartTimer?.();
     };
 
     const handleStopTimer = () => {
         // TODO: Implement timer stop logic
-        console.log('[TimeTracking] Stop timer - NOT IMPLEMENTED');
+        boardLogger.debug('[TimeTracking] Stop timer - NOT IMPLEMENTED');
         onStopTimer?.();
     };
 
@@ -123,7 +124,7 @@ export const TimeTrackingPicker: React.FC<TimeTrackingPickerProps> = ({
 
         if (duration > 0) {
             // TODO: Implement manual entry logic
-            console.log('[TimeTracking] Add manual entry - NOT IMPLEMENTED', { duration, description: manualDescription });
+            boardLogger.debug('[TimeTracking] Add manual entry - NOT IMPLEMENTED', { duration, description: manualDescription });
             onAddManualEntry?.({ duration, description: manualDescription });
             setShowManualEntry(false);
             setManualHours('0');
@@ -284,6 +285,6 @@ export const TimeTrackingPicker: React.FC<TimeTrackingPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 export default TimeTrackingPicker;

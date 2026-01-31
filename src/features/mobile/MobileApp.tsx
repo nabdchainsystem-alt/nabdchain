@@ -163,8 +163,9 @@ const MobileSignInPage: React.FC<{ onBack: () => void; onSignUp: () => void }> =
       } else {
         setError('Sign in incomplete. Please try again.');
       }
-    } catch (err: any) {
-      setError(err.errors?.[0]?.message || 'Invalid email or password');
+    } catch (err) {
+      const clerkError = err as { errors?: Array<{ message?: string }> };
+      setError(clerkError.errors?.[0]?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -274,8 +275,9 @@ const MobileSignUpPage: React.FC<{ onBack: () => void; onSignIn: () => void }> =
 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
-    } catch (err: any) {
-      setError(err.errors?.[0]?.message || 'Failed to create account');
+    } catch (err) {
+      const clerkError = err as { errors?: Array<{ message?: string }> };
+      setError(clerkError.errors?.[0]?.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -297,8 +299,9 @@ const MobileSignUpPage: React.FC<{ onBack: () => void; onSignIn: () => void }> =
       } else {
         setError('Verification incomplete. Please try again.');
       }
-    } catch (err: any) {
-      setError(err.errors?.[0]?.message || 'Invalid verification code');
+    } catch (err) {
+      const clerkError = err as { errors?: Array<{ message?: string }> };
+      setError(clerkError.errors?.[0]?.message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }

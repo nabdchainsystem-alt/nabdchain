@@ -1,8 +1,8 @@
 import React, { useRef, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useClickOutside } from '../../../../../hooks/useClickOutside';
-import { Palette, ArrowUp, ArrowDown } from 'phosphor-react';
-import { useAppContext } from '../../../../../contexts/AppContext';
+import { Palette, ArrowUp, ArrowDown, PushPin } from 'phosphor-react';
+import { useLanguage } from '../../../../../contexts/LanguageContext';
 
 interface HeaderContextMenuProps {
     onClose: () => void;
@@ -11,6 +11,9 @@ interface HeaderContextMenuProps {
     onRename?: () => void;
     onSortAsc?: () => void;
     onSortDesc?: () => void;
+    onFreezeToggle?: () => void;
+    isFrozen?: boolean;
+    canFreeze?: boolean;
     currentHeaderColor?: string;
     currentColumnColor?: string;
     position: { x: number; y: number };
@@ -36,8 +39,8 @@ const COLORS = [
     { label: 'Mist', value: '#e2e8f0' }, // slate-200
 ];
 
-export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, onHeaderColorSelect, onColumnColorSelect, onRename, onSortAsc, onSortDesc, currentHeaderColor, currentColumnColor, position }) => {
-    const { t } = useAppContext();
+export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, onHeaderColorSelect, onColumnColorSelect, onRename, onSortAsc, onSortDesc, onFreezeToggle, isFrozen, canFreeze, currentHeaderColor, currentColumnColor, position }) => {
+    const { t } = useLanguage();
     const menuRef = useRef<HTMLDivElement>(null);
     useClickOutside(menuRef, onClose);
 
@@ -166,6 +169,28 @@ export const HeaderContextMenu: React.FC<HeaderContextMenuProps> = ({ onClose, o
                         className="w-full text-start px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
                     >
                         <span className="font-medium">{t('rename')}</span>
+                    </button>
+                    <div className="h-px bg-stone-100 dark:bg-stone-800 my-1 mx-2" />
+                </div>
+            )}
+
+            {canFreeze && onFreezeToggle && (
+                <div className="p-1 mb-1">
+                    <button
+                        onClick={() => {
+                            onFreezeToggle();
+                            onClose();
+                        }}
+                        className="w-full text-start px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded flex items-center gap-2"
+                    >
+                        <PushPin
+                            size={16}
+                            className={`text-stone-400 ${isFrozen ? 'fill-current text-blue-500' : ''} ${isFrozen ? '-rotate-45' : ''}`}
+                            weight={isFrozen ? 'fill' : 'regular'}
+                        />
+                        <span className="font-medium">
+                            {isFrozen ? t('unfreeze_column') : t('freeze_column')}
+                        </span>
                     </button>
                     <div className="h-px bg-stone-100 dark:bg-stone-800 my-1 mx-2" />
                 </div>

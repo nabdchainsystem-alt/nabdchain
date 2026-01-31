@@ -43,7 +43,11 @@ const MOCK_MATERIALS = [
 
 import { SupplierDetails } from './SupplierDetails';
 
-const LocalMarketplacePage: React.FC = () => {
+interface LocalMarketplacePageProps {
+    initialSearchQuery?: string;
+}
+
+const LocalMarketplacePage: React.FC<LocalMarketplacePageProps> = ({ initialSearchQuery }) => {
     const { showToast } = useToast();
     const { vendors: marketplaceVendors } = useMarketplaceData(); // Use hook
     const [viewMode, setViewMode] = useState<'marketplace' | 'live_tracking'>('marketplace');
@@ -56,7 +60,7 @@ const LocalMarketplacePage: React.FC = () => {
     });
     const [categorySearchQuery, setCategorySearchQuery] = useState('');
     const [areCategoriesExpanded, setAreCategoriesExpanded] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [suppliers, setSuppliers] = useState<Vendor[]>(marketplaceVendors); // Initialize with hook data
     const [currentSlide, setCurrentSlide] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);

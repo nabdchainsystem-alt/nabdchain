@@ -3,6 +3,8 @@
  * Handles SW lifecycle, updates, and communication
  */
 
+import { swLogger } from './logger';
+
 interface ServiceWorkerConfig {
     onUpdate?: (registration: ServiceWorkerRegistration) => void;
     onSuccess?: (registration: ServiceWorkerRegistration) => void;
@@ -17,14 +19,14 @@ let swRegistration: ServiceWorkerRegistration | null = null;
  */
 export async function registerServiceWorker(config: ServiceWorkerConfig = {}): Promise<ServiceWorkerRegistration | null> {
     if (!('serviceWorker' in navigator)) {
-        console.log('[SW] Service workers not supported');
+        swLogger.info('Service workers not supported');
         return null;
     }
 
     // Only register in production or if explicitly enabled
     const isDev = import.meta.env.DEV;
     if (isDev && !import.meta.env.VITE_ENABLE_SW_DEV) {
-        console.log('[SW] Skipping SW in development');
+        swLogger.debug('Skipping SW in development');
         return null;
     }
 
@@ -34,7 +36,7 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}): P
         });
 
         swRegistration = registration;
-        console.log('[SW] Service Worker registered:', registration.scope);
+        swLogger.info('Service Worker registered', { scope: registration.scope });
 
         // Check for updates
         registration.addEventListener('updatefound', () => {
@@ -44,11 +46,11 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}): P
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     // New content is available
-                    console.log('[SW] New content available');
+                    swLogger.info('New content available');
                     config.onUpdate?.(registration);
                 } else if (newWorker.state === 'installed') {
                     // Content is cached for offline use
-                    console.log('[SW] Content cached for offline');
+                    swLogger.info('Content cached for offline');
                     config.onSuccess?.(registration);
                 }
             });
@@ -56,18 +58,18 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}): P
 
         // Handle online/offline events
         window.addEventListener('online', () => {
-            console.log('[SW] App is online');
+            swLogger.info('App is online');
             config.onOnline?.();
         });
 
         window.addEventListener('offline', () => {
-            console.log('[SW] App is offline');
+            swLogger.info('App is offline');
             config.onOffline?.();
         });
 
         return registration;
     } catch (error) {
-        console.error('[SW] Registration failed:', error);
+        swLogger.error('Registration failed', error);
         return null;
     }
 }
@@ -81,10 +83,10 @@ export async function unregisterServiceWorker(): Promise<boolean> {
     try {
         const registration = await navigator.serviceWorker.ready;
         const result = await registration.unregister();
-        console.log('[SW] Unregistered:', result);
+        swLogger.info('Unregistered', { result });
         return result;
     } catch (error) {
-        console.error('[SW] Unregister failed:', error);
+        swLogger.error('Unregister failed', error);
         return false;
     }
 }

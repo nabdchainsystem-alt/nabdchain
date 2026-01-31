@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../../../../utils/formatters';
 import { useAppContext } from '../../../../../contexts/AppContext';
 import { useUser } from '../../../../../auth-adapter';
+import { boardLogger } from '@/utils/logger';
 import {
     MapPin,
     FileText,
@@ -27,6 +29,7 @@ import { PeoplePicker } from '../../../components/cells/PeoplePicker';
 import { UrlPicker } from '../../../components/cells/UrlPicker';
 import { DocPicker } from '../../../components/cells/DocPicker';
 import { StatusPicker, SelectPicker, PriorityPicker, CurrencyPicker, TimelinePicker, RatingPicker, VotingPicker, EmailPicker, PhonePicker, WorldClockPicker, getTimezoneDisplay, TagsPicker, getTagColor, ProgressPicker, TimeTrackingPicker, DependencyPicker, AutoNumberPicker, FormulaPicker, ButtonPicker, formatAutoNumber } from './pickers';
+import { executeButtonAction } from '../utils/buttonExecution';
 import { formatPriorityLabel, DEFAULT_CHECKBOX_COLOR } from '../utils';
 
 // Constants - must match RoomTable.tsx
@@ -64,6 +67,7 @@ interface TableCellProps {
     onFileUploadRequest?: (rowId: string, colId: string) => void;
     onTextColorChange?: (rowId: string, colId: string, color: string) => void;
     onNavigate?: (view: string) => void;
+    inputRef?: React.Ref<HTMLInputElement>;
 }
 
 // Helper to get status color classes
@@ -186,11 +190,12 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     onSetActiveTextMenu,
     onFileUploadRequest,
     onNavigate,
+    inputRef,
 }) => {
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
     const { user: currentUser } = useUser();
-    const { currency: globalCurrency, t, dir, language } = useAppContext();
+    const { currency: globalCurrency, t, dir, language, globalTags, addGlobalTag } = useAppContext();
 
     // Helper to get the live avatar for a person (uses current user's live avatar if it's the current user)
     const getPersonAvatar = (person: { id?: string; avatar?: string }) => {
@@ -332,7 +337,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         value={timelineValue}
                         onSelect={(newValue) => onUpdateRow(row.id, { [col.id]: newValue }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
-                        triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
+                        triggerElement={activeCell.trigger}
                     />
                 )}
             </div>
@@ -351,14 +356,8 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
-                                // Creation row needs navigateToNextCell to trigger task creation
-                                // Existing rows just exit edit mode and blur
-                                if (row.id === CREATION_ROW_ID) {
-                                    onNavigateToNextCell(row.id, col.id, row.groupId);
-                                } else {
-                                    (e.target as HTMLInputElement).blur();
-                                    onSetActiveCell(null);
-                                }
+                                // Navigate to creation row to add new task
+                                onNavigateToNextCell(row.id, col.id, row.groupId);
                             }
                             if (e.key === 'Escape') {
                                 (e.target as HTMLInputElement).blur();
@@ -377,7 +376,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
             <div className="relative w-full h-full">
                 <button
                     onClick={(e) => onToggleCell(e, row.id, col.id)}
-                    className="w-full h-full flex items-center px-3 text-start hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
+                    className="w-full h-full flex items-center justify-center px-3 hover:bg-stone-100 dark:hover:bg-stone-800/50 transition-colors overflow-hidden"
                 >
                     {value ? (
                         <span className="text-sm font-datetime text-stone-600 dark:text-stone-300 truncate">
@@ -455,6 +454,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         onAdd={(label) => onAddColumnOption(col.id, label)}
                         onEdit={onEditColumnOption ? (optionId, newLabel, newColor) => onEditColumnOption(col.id, optionId, newLabel, newColor) : undefined}
                         onDelete={onDeleteColumnOption ? (optionId) => onDeleteColumnOption(col.id, optionId) : undefined}
+                        align="center"
                     />
                 )}
             </div>
@@ -642,6 +642,9 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                 )}
                 {isActiveCell && activeCell?.trigger && (
                     <UrlPicker
+                        title={t('edit_link')}
+                        urlLabel={t('url_address')}
+                        saveLabel={t('save_link')}
                         current={typeof urlData === 'object' ? urlData : { url: urlData || '', text: '' }}
                         onSelect={(val) => onUpdateRow(row.id, { [col.id]: val }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
@@ -685,8 +688,12 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                 </button>
                 {isActiveCell && activeCell?.trigger && (
                     <UrlPicker
+                        title={t('edit_location')}
+                        urlLabel={t('location')}
+                        urlPlaceholder={t('location_placeholder')}
+                        saveLabel={t('save_location')}
                         current={locationData}
-                        onSelect={(val) => onUpdateRow(row.id, { [col.id]: val })}
+                        onSelect={(val) => onUpdateRow(row.id, { [col.id]: val }, row.groupId)}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.trigger.getBoundingClientRect()}
                     />
@@ -882,13 +889,12 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         ) : (
                             <ThumbsUp size={14} weight="regular" className="text-stone-400" />
                         )}
-                        <span className={`text-sm font-medium ${
-                            displayValue > 0
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : displayValue < 0
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-stone-400'
-                        }`}>
+                        <span className={`text-sm font-medium ${displayValue > 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : displayValue < 0
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-stone-400'
+                            }`}>
                             {displayValue > 0 ? `+${displayValue}` : displayValue}
                         </span>
                     </div>
@@ -1053,8 +1059,9 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                 {isActiveCell && activeCell?.trigger && (
                     <TagsPicker
                         value={tagsValue}
-                        availableTags={col.options?.map(o => o.label) || []}
+                        availableTags={Array.from(new Set([...(col.options?.map(o => o.label) || []), ...globalTags]))}
                         onSelect={(tags) => onUpdateRow(row.id, { [col.id]: tags }, row.groupId)}
+                        onAddTag={(tag) => addGlobalTag(tag)}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.rect || activeCell.trigger.getBoundingClientRect()}
                     />
@@ -1160,11 +1167,10 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
             <div className="w-full h-full flex items-center justify-center gap-2">
                 <button
                     onClick={handleToggleTimer}
-                    className={`p-1 rounded transition-colors ${
-                        isRunning
-                            ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                            : 'text-stone-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                    }`}
+                    className={`p-1 rounded transition-colors ${isRunning
+                        ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                        : 'text-stone-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                        }`}
                 >
                     {isRunning ? <Pause size={14} weight="fill" /> : <Play size={14} weight="fill" />}
                 </button>
@@ -1297,17 +1303,36 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         const targetCol = columns.find(c => c.label === colName || c.id === colName);
                         if (targetCol) {
                             const colValue = row[targetCol.id];
-                            const numValue = typeof colValue === 'number' ? colValue : (parseFloat(colValue as string) || 0);
-                            evalFormula = evalFormula.replace(ref, String(numValue));
+
+                            // Determine if we should treat as number or string
+                            const isNumericCol = ['number', 'currency', 'rating', 'progress', 'auto_number', 'voting', 'time_tracking'].includes(targetCol.type);
+
+                            if (isNumericCol) {
+                                const numValue = typeof colValue === 'number' ? colValue : (parseFloat(colValue as string) || 0);
+                                evalFormula = evalFormula.replace(ref, String(numValue));
+                            } else {
+                                // Treat as string - verify it's not null/undefined, then JSON.stringify to quote it safely
+                                const strValue = colValue === null || colValue === undefined ? '' : String(colValue);
+                                evalFormula = evalFormula.replace(ref, JSON.stringify(strValue));
+                            }
                         } else {
+                            // Column not found - default to 0 for math safety, or empty string? 
+                            // 0 is safer for existing math assumptions, but '' is better for text...
+                            // Let's stick to 0 to avoid breaking "Price * Qty" if Qty is missing.
                             evalFormula = evalFormula.replace(ref, '0');
                         }
                     });
-                    if (/^[\d\s+\-*/().]+$/.test(evalFormula)) {
-                        const result = new Function(`return ${evalFormula}`)();
-                        calculatedValue = typeof result === 'number' && !isNaN(result)
-                            ? Math.round(result * 100) / 100
-                            : result;
+                    // Relaxed regex to allow quotes for strings
+                    if (/^[\d\s+\-*/().'"a-zA-Z\u0600-\u06FF]+$/.test(evalFormula) || evalFormula.includes('"')) {
+                        try {
+                            const result = new Function(`return ${evalFormula}`)();
+                            calculatedValue = typeof result === 'number' && !isNaN(result)
+                                ? Math.round(result * 100) / 100
+                                : result;
+                        } catch (err) {
+                            boardLogger.warn('Formula eval error', err);
+                            hasError = true;
+                        }
                     }
                 } else if (/^[\d\s+\-*/().]+$/.test(formula)) {
                     const result = new Function(`return ${formula}`)();
@@ -1358,9 +1383,9 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
 
     // Button column - per-cell button config (stored in row data)
     if (col.type === 'button') {
-        // Get button config from cell value (per-cell, not per-column)
         const cellConfig = typeof value === 'object' && value !== null ? value as { label?: string; color?: string; action?: { type: string; config?: Record<string, unknown> } } : null;
         const [isExecuting, setIsExecuting] = React.useState(false);
+        const navigate = useNavigate();
 
         const handleButtonClick = async (e: React.MouseEvent) => {
             e.stopPropagation();
@@ -1368,21 +1393,19 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
 
             setIsExecuting(true);
             try {
-                const actionType = cellConfig.action?.type;
-                const actionConfig = (cellConfig.action?.config || {}) as { url?: string; targetColumn?: string; targetValue?: unknown; webhookUrl?: string };
+                // Use shared execution logic
+                await executeButtonAction(cellConfig.action as any, {
+                    rowId: row.id,
+                    rowData: row as Record<string, unknown>,
+                    boardId: boardId,
+                    user: currentUser,
+                    navigate,
+                    updateRow: (id, updates) => onUpdateRow(id, updates, row.groupId)
+                });
 
-                if (actionType === 'open_url' && actionConfig.url) {
-                    window.open(actionConfig.url, '_blank');
-                } else if (actionType === 'update_status' && actionConfig.targetColumn && actionConfig.targetValue) {
-                    onUpdateRow(row.id, { [actionConfig.targetColumn]: actionConfig.targetValue }, row.groupId);
-                } else if (actionType === 'custom_webhook' && actionConfig.webhookUrl) {
-                    fetch(actionConfig.webhookUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ rowId: row.id, rowData: row, timestamp: Date.now() })
-                    }).catch(() => {});
-                }
                 await new Promise(r => setTimeout(r, 300));
+            } catch (error) {
+                boardLogger.error('Button execution failed', error);
             } finally {
                 setIsExecuting(false);
             }
@@ -1423,7 +1446,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                             onUpdateRow(row.id, { [col.id]: newConfig }, row.groupId);
                         }}
                         onButtonClick={() => {
-                            handleButtonClick({ stopPropagation: () => {} } as React.MouseEvent);
+                            handleButtonClick({ stopPropagation: () => { } } as React.MouseEvent);
                         }}
                         onClose={() => onSetActiveCell(null)}
                         triggerRect={activeCell.rect}
@@ -1446,6 +1469,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     return (
         <div className="h-full w-full">
             <input
+                ref={inputRef}
                 type="text"
                 autoFocus
                 value={value || ''}
@@ -1454,14 +1478,8 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        // Creation row needs navigateToNextCell to trigger task creation
-                        // Existing rows just exit edit mode and blur
-                        if (isCreationRow) {
-                            onNavigateToNextCell(row.id, col.id, row.groupId);
-                        } else {
-                            (e.target as HTMLInputElement).blur();
-                            onSetActiveCell(null);
-                        }
+                        // Navigate to creation row to add new task
+                        onNavigateToNextCell(row.id, col.id, row.groupId);
                     }
                     if (e.key === 'Escape') {
                         (e.target as HTMLInputElement).blur();

@@ -17,6 +17,7 @@ import {
 import { useAppContext } from '../../../contexts/AppContext';
 import { Column, Row } from '../views/Table/types';
 import { v4 as uuidv4 } from 'uuid';
+import { boardLogger } from '@/utils/logger';
 
 interface ExcelImportModalProps {
     isOpen: boolean;
@@ -149,7 +150,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
             }
         } catch (err) {
             setError(t('excel_parse_error') || 'Failed to parse Excel file. Please check the file format.');
-            console.error('Excel parse error:', err);
+            boardLogger.error('Excel parse error', err);
         } finally {
             setIsLoading(false);
         }

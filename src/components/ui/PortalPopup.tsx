@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 
 interface PortalPopupProps {
     children: React.ReactNode;
-    triggerRef: React.RefObject<HTMLElement | null>;
+    triggerRef?: React.RefObject<HTMLElement | null>;
+    triggerElement?: HTMLElement | null;
     onClose: () => void;
     align?: 'start' | 'end' | 'center';
     side?: 'bottom' | 'top' | 'left' | 'right';
@@ -12,6 +13,7 @@ interface PortalPopupProps {
 export const PortalPopup: React.FC<PortalPopupProps> = ({
     children,
     triggerRef,
+    triggerElement,
     onClose,
     align = 'start',
     side = 'bottom'
@@ -19,24 +21,16 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
     const [coords, setCoords] = useState<{ top: number, left: number } | null>(null);
     const contentRef = React.useRef<HTMLDivElement>(null);
 
-    useLayoutEffect(() => {
-        if (triggerRef.current) { // We can't strictly depend on contentRef appearing immediately for first render if we hide it?
-            // Actually, we render children always but maybe offscreen or just assume we need double render?
-            // Standard portal pattern: render, measure, position.
-            // But to avoid flash, we might want to render invisible first.
-            // For now, let's just use the logic. If contentRef is null, we can't measure children.
-            // But this hook runs after render. So contentRef.current SHOULD be populated if we attach it.
-
-            // We need to force a re-calc if contentRef changes or size changes.
-            // ResizeObserver could be used, but simple layout effect might be enough for initial show.
-        }
-    });
+    // Resolve the actual trigger element
+    // We use a getter to ensure we always get the latest one in effect, but for dependency arrays we need stable values
+    const effectiveTrigger = triggerElement || triggerRef?.current;
 
     useLayoutEffect(() => {
         const calculatePosition = () => {
-            if (!triggerRef.current || !contentRef.current) return;
+            const trigger = triggerElement || triggerRef?.current;
+            if (!trigger || !contentRef.current) return;
 
-            const triggerRect = triggerRef.current.getBoundingClientRect();
+            const triggerRect = trigger.getBoundingClientRect();
             const contentRect = contentRef.current.getBoundingClientRect();
 
             const viewportWidth = window.innerWidth;
@@ -46,75 +40,90 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
             let left = 0;
 
             const GAP = 4;
-            const VIEWPORT_PADDING = 12; // Increased from 10 for better visual spacing
+            const VIEWPORT_PADDING = 12;
 
             // Check for RTL mode
             const isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
 
             // Determine effective alignment based on RTL
-            // In RTL: 'start' means right side, 'end' means left side
             const effectiveAlign = isRTL
                 ? (align === 'start' ? 'end' : align === 'end' ? 'start' : align)
                 : align;
 
-            // Initial Position (Viewport Relative)
+            // --- Vertical Positioning Logic (Smart Flip) ---
+
+            // 1. Calculate potential positions
+            const topWhenBelow = triggerRect.bottom + GAP;
+            const topWhenAbove = triggerRect.top - contentRect.height - GAP;
+
+            // 2. Check available space
+            const spaceBelow = viewportHeight - topWhenBelow - VIEWPORT_PADDING;
+            const spaceAbove = topWhenAbove - VIEWPORT_PADDING;
+
+            // 3. Determine best side
+            let finalSide = side;
+
             if (side === 'bottom') {
-                top = triggerRect.bottom + GAP;
-                if (effectiveAlign === 'start') left = triggerRect.left;
-                else if (effectiveAlign === 'end') left = triggerRect.right - contentRect.width;
-                else left = triggerRect.left + (triggerRect.width / 2) - (contentRect.width / 2);
+                // If requested bottom but no space, and there IS space above, flip to top
+                if (spaceBelow < contentRect.height && spaceAbove > contentRect.height) {
+                    finalSide = 'top';
+                }
             } else if (side === 'top') {
-                top = triggerRect.top - contentRect.height - GAP;
-                if (effectiveAlign === 'start') left = triggerRect.left;
-                else if (effectiveAlign === 'end') left = triggerRect.right - contentRect.width;
-                else left = triggerRect.left + (triggerRect.width / 2) - (contentRect.width / 2);
-            } else if (side === 'right') {
-                left = triggerRect.right + GAP;
-                top = triggerRect.top;
-            } else if (side === 'left') {
-                left = triggerRect.left - contentRect.width - GAP;
+                // If requested top but no space, and there IS space below, flip to bottom
+                if (spaceAbove < 0 && spaceBelow > contentRect.height) {
+                    finalSide = 'bottom';
+                }
+            }
+
+            // 4. Calculate Top based on finalSide
+            if (finalSide === 'bottom') {
+                top = topWhenBelow;
+            } else if (finalSide === 'top') {
+                top = topWhenAbove;
+            } else if (finalSide === 'right' || finalSide === 'left') {
                 top = triggerRect.top;
             }
 
-            // --- Viewport Constraints (Enhanced) ---
+            // --- Horizontal Positioning Logic ---
 
-            // 1. Horizontal - ensure content never extends beyond viewport
+            if (effectiveAlign === 'start') {
+                left = triggerRect.left;
+            } else if (effectiveAlign === 'end') {
+                left = triggerRect.right - contentRect.width;
+            } else { // center
+                left = triggerRect.left + (triggerRect.width / 2) - (contentRect.width / 2);
+            }
+
+            // Adjust for side positioning (left/right) if needed
+            if (finalSide === 'right') {
+                left = triggerRect.right + GAP;
+            } else if (finalSide === 'left') {
+                left = triggerRect.left - contentRect.width - GAP;
+            }
+
+            // --- Viewport Constraints (Safety Clamps) ---
+
+            // Horizontal Clamp
             const maxLeft = viewportWidth - contentRect.width - VIEWPORT_PADDING;
             const minLeft = VIEWPORT_PADDING;
 
-            if (left > maxLeft) {
-                left = maxLeft;
-            }
-            if (left < minLeft) {
-                left = minLeft;
-            }
+            if (left > maxLeft) left = maxLeft;
+            if (left < minLeft) left = minLeft;
 
-            // 2. Vertical
-            const contentHeight = contentRect.height;
-            const fitsBelow = (top + contentHeight <= viewportHeight - VIEWPORT_PADDING);
+            // Vertical Clamp (Final safety net if both sides fail)
+            const maxTop = viewportHeight - contentRect.height - VIEWPORT_PADDING;
 
-            // Check flip needed
-            if (side === 'bottom' && !fitsBelow) {
-                // Check if it fits above
-                const fitsAbove = triggerRect.top - contentHeight - GAP > VIEWPORT_PADDING;
-                if (fitsAbove) {
-                    top = triggerRect.top - contentHeight - GAP;
+            // If it still goes off screen bottom, force it up
+            if (top > maxTop) {
+                // But wait, if we forced it up, does it go off screen top?
+                // If height > viewport, align to top of viewport
+                if (contentRect.height > viewportHeight) {
+                    top = VIEWPORT_PADDING;
                 } else {
-                    // Clamp to bottom
-                    top = viewportHeight - contentHeight - VIEWPORT_PADDING;
-                }
-            } else if (side === 'top' && top < VIEWPORT_PADDING) {
-                // Check if fits below
-                if (triggerRect.bottom + contentHeight + GAP <= viewportHeight - VIEWPORT_PADDING) {
-                    top = triggerRect.bottom + GAP;
-                } else {
-                    top = VIEWPORT_PADDING; // Clamp to top
+                    // Otherwise align to bottom of viewport
+                    top = maxTop;
                 }
             }
-
-            // Final safety clamp for fixed positioning
-            const maxTop = viewportHeight - contentHeight - VIEWPORT_PADDING;
-            if (top > maxTop) top = maxTop;
             if (top < VIEWPORT_PADDING) top = VIEWPORT_PADDING;
 
             setCoords({ top, left });
@@ -124,12 +133,9 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
         window.addEventListener('resize', calculatePosition);
         window.addEventListener('scroll', calculatePosition, true);
 
-        // Add ResizeObserver to handle content size changes (e.g. date picker switching months or loading)
         let resizeObserver: ResizeObserver | null = null;
         if (contentRef.current) {
-            resizeObserver = new ResizeObserver(() => {
-                calculatePosition();
-            });
+            resizeObserver = new ResizeObserver(() => calculatePosition());
             resizeObserver.observe(contentRef.current);
         }
 
@@ -138,7 +144,7 @@ export const PortalPopup: React.FC<PortalPopupProps> = ({
             window.removeEventListener('scroll', calculatePosition, true);
             if (resizeObserver) resizeObserver.disconnect();
         };
-    }, [triggerRef, align, side, children]); // Add children dependency to re-measure if content changes
+    }, [triggerElement, triggerRef, align, side, children]);
 
     return createPortal(
         <>

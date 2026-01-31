@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Globe, MagnifyingGlass, Clock } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 interface WorldClockPickerProps {
     value: string | null; // timezone ID like 'America/New_York'
@@ -48,12 +49,14 @@ const getTimeInTimezone = (timezone: string): string => {
     }
 };
 
-export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
+export const WorldClockPicker: React.FC<WorldClockPickerProps> = memo(({
     value,
     onSelect,
     onClose,
     triggerRect
 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [searchTerm, setSearchTerm] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -111,7 +114,7 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
             top: triggerRect.bottom + 4,
             ...(left !== undefined ? { left } : { right }),
         };
-    }, [triggerRect]);
+    }, [triggerRect, isRtl]);
 
     const filteredTimezones = useMemo(() => {
         if (!searchTerm) return TIMEZONES;
@@ -146,17 +149,17 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <div className="flex items-center gap-2 text-xs font-medium text-stone-600 dark:text-stone-400">
+                    <div className={`flex items-center gap-2 text-xs font-medium text-stone-600 dark:text-stone-400 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <Globe size={14} />
-                        <span>World Clock</span>
+                        <span>{t('world_clock')}</span>
                     </div>
                 </div>
 
                 {/* Current Selection */}
                 {selectedTimezone && (
                     <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
-                        <div className="flex items-center justify-between">
-                            <div>
+                        <div className={`flex items-center justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+                            <div className={isRtl ? 'text-right' : ''}>
                                 <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
                                     {selectedTimezone.city}
                                 </div>
@@ -174,14 +177,14 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
                 {/* Search */}
                 <div className="p-2 border-b border-stone-100 dark:border-stone-800">
                     <div className="relative">
-                        <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                        <MagnifyingGlass size={14} className={`absolute ${isRtl ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-stone-400`} />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search city or timezone..."
+                            placeholder={t('search_timezones')}
                             autoFocus
-                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className={`w-full ${isRtl ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3'} py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors`}
                         />
                     </div>
                 </div>
@@ -189,8 +192,8 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
                 {/* Timezone List */}
                 <div className="flex-1 overflow-y-auto max-h-[200px] p-1 custom-scrollbar">
                     {filteredTimezones.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-stone-400">
-                            No timezones found
+                        <div className={`py-4 text-center text-xs text-stone-400 ${isRtl ? 'text-right' : ''}`}>
+                            {t('no_timezones_found')}
                         </div>
                     ) : (
                         <div className="flex flex-col gap-0.5">
@@ -198,13 +201,13 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
                                 <button
                                     key={tz.id}
                                     onClick={() => handleSelect(tz.id)}
-                                    className={`w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 group text-left transition-colors ${
-                                        value === tz.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                    }`}
+                                    className={`w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 group transition-colors ${isRtl ? 'flex-row-reverse' : ''
+                                        } ${value === tz.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                        }`}
                                 >
-                                    <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`flex items-center gap-2 min-w-0 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                         <Clock size={14} className="text-stone-400 shrink-0" />
-                                        <div className="min-w-0">
+                                        <div className={`min-w-0 ${isRtl ? 'text-right' : ''}`}>
                                             <div className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">
                                                 {tz.city}
                                             </div>
@@ -213,7 +216,7 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className={`flex items-center gap-2 shrink-0 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                         <span className="text-[10px] text-stone-400">
                                             {tz.offset}
                                         </span>
@@ -233,7 +236,7 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
                         onClick={handleClear}
                         className="w-full py-1.5 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear timezone
+                        {t('clear_timezone')}
                     </button>
                 </div>
             </div>
@@ -241,7 +244,7 @@ export const WorldClockPicker: React.FC<WorldClockPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Helper to get display info for a timezone
 export const getTimezoneDisplay = (timezoneId: string): { city: string; time: string; offset: string } | null => {

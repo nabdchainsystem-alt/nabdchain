@@ -3,6 +3,8 @@
  * Provides tools to measure and improve app performance
  */
 
+import { appLogger } from './logger';
+
 // Performance marks for debugging
 const PERF_MARKS: Map<string, number> = new Map();
 
@@ -29,7 +31,7 @@ export function perfEnd(label: string, threshold = 16): number {
 
     // Only log if exceeds threshold (default 16ms = 1 frame at 60fps)
     if (duration > threshold && process.env.NODE_ENV === 'development') {
-        console.warn(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
+        appLogger.warn(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
     }
 
     return duration;

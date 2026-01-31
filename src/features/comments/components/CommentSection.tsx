@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChatCircle, Plus } from 'phosphor-react';
 import type { Comment } from '../types';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // COMMENT SECTION - PLACEHOLDER
@@ -32,7 +33,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const handleSubmit = () => {
     if (newComment.trim()) {
       // TODO: Parse mentions from content
-      console.log('[Comments] Add comment - NOT IMPLEMENTED', { content: newComment });
+      featureLogger.debug('[Comments] Add comment - NOT IMPLEMENTED', { content: newComment });
       onAddComment?.(newComment, []);
       setNewComment('');
     }

@@ -3,6 +3,8 @@
  * Captures, reports, and handles errors across the application
  */
 
+import { errorLogger } from './logger';
+
 // Error severity levels
 export type ErrorSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
@@ -58,7 +60,7 @@ export function initErrorTracking(userConfig: Partial<ErrorTrackerConfig> = {}):
     // Set up global error handlers
     setupGlobalHandlers();
 
-    console.log('[ErrorTracking] Initialized', {
+    errorLogger.info('Initialized', {
         environment: config.environment,
         release: config.release,
     });
@@ -244,7 +246,7 @@ async function sendToService(report: ErrorReport): Promise<void> {
         });
     } catch (e) {
         // Silently fail - don't want error tracking to cause errors
-        console.warn('[ErrorTracking] Failed to send report', e);
+        errorLogger.warn('Failed to send report', e);
     }
 }
 

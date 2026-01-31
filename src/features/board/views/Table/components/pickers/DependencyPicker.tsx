@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import {
     GitBranch, ArrowRight, ArrowsClockwise, Link as LinkIcon,
     MagnifyingGlass, Plus, X, Warning
 } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
+import { usePopupPosition } from '../../hooks/usePopupPosition';
+import { boardLogger } from '@/utils/logger';
 
 // =============================================================================
 // DEPENDENCY PICKER - PLACEHOLDER COMPONENT
@@ -44,25 +47,31 @@ interface DependencyPickerProps {
 const DEPENDENCY_TYPES = [
     {
         type: 'finish_to_start' as const,
-        label: 'Finish → Start',
-        description: 'Must finish before this can start',
+        labelKey: 'dependency_finish_to_start',
+        descriptionKey: 'dependency_finish_to_start_desc',
         icon: ArrowRight
     },
     {
         type: 'start_to_start' as const,
-        label: 'Start → Start',
-        description: 'Must start before this can start',
+        labelKey: 'dependency_start_to_start',
+        descriptionKey: 'dependency_start_to_start_desc',
         icon: ArrowsClockwise
     },
     {
         type: 'finish_to_finish' as const,
-        label: 'Finish → Finish',
-        description: 'Must finish before this can finish',
+        labelKey: 'dependency_finish_to_finish',
+        descriptionKey: 'dependency_finish_to_finish_desc',
         icon: ArrowsClockwise
+    },
+    {
+        type: 'start_to_finish' as const,
+        labelKey: 'dependency_start_to_finish',
+        descriptionKey: 'dependency_start_to_finish_desc',
+        icon: ArrowRight
     },
 ];
 
-export const DependencyPicker: React.FC<DependencyPickerProps> = ({
+export const DependencyPicker: React.FC<DependencyPickerProps> = memo(({
     value,
     currentTaskId,
     currentTaskName,
@@ -71,6 +80,10 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
     onClose,
     triggerRect,
 }) => {
+    if (!triggerRect) return null;
+
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedType, setSelectedType] = useState<DependencyType>('finish_to_start');
     const [lagDays, setLagDays] = useState(0);
@@ -78,39 +91,15 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
 
     const MENU_WIDTH = 380;
     const MENU_HEIGHT = 500;
-    const PADDING = 16;
 
-    const positionStyle = useMemo(() => {
-        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
-
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        const spaceBelow = windowHeight - triggerRect.bottom;
-        const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
-
-        let left: number | undefined;
-        let right: number | undefined;
-
-        if (wouldOverflowRight) {
-            right = PADDING;
-        } else {
-            left = Math.max(PADDING, triggerRect.left);
-        }
-
-        const openUp = spaceBelow < MENU_HEIGHT + PADDING && triggerRect.top > spaceBelow;
-
-        const baseStyle: React.CSSProperties = {
-            position: 'fixed',
-            zIndex: 9999,
-            width: MENU_WIDTH,
-            maxHeight: MENU_HEIGHT,
-        };
-
-        if (openUp) {
-            return { ...baseStyle, bottom: windowHeight - triggerRect.top + 4, ...(left !== undefined ? { left } : { right }) };
-        }
-        return { ...baseStyle, top: triggerRect.bottom + 4, ...(left !== undefined ? { left } : { right }) };
-    }, [triggerRect]);
+    const positionStyle = usePopupPosition({
+        triggerRect,
+        menuWidth: MENU_WIDTH,
+        menuHeight: MENU_HEIGHT,
+        isRtl,
+        side: 'bottom',
+        align: 'start'
+    });
 
     const blockedBy = value?.blockedBy || [];
     const blocking = value?.blocking || [];
@@ -139,7 +128,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
         };
 
         // TODO: Check for circular dependencies
-        console.log('[Dependency] Add dependency - NOT IMPLEMENTED', newDependency);
+        boardLogger.debug('[Dependency] Add dependency - NOT IMPLEMENTED', newDependency);
 
         const newValue: DependencyValue = {
             blockedBy: activeTab === 'blocked_by' ? [...blockedBy, newDependency] : blockedBy,
@@ -168,53 +157,48 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
             <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
-                style={positionStyle}
+                className="fixed z-[9999] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                style={{ ...positionStyle, width: MENU_WIDTH }}
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
+                    <div className={`flex items-center justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+                        <span className={`text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             <GitBranch size={14} />
-                            Dependencies
-                        </span>
-                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">
-                            BETA
+                            {t('dependencies')}
                         </span>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-stone-100 dark:border-stone-800">
+                <div className={`flex border-b border-stone-100 dark:border-stone-800 ${isRtl ? 'flex-row-reverse' : ''}`}>
                     <button
                         onClick={() => setActiveTab('blocked_by')}
-                        className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                            activeTab === 'blocked_by'
-                                ? 'text-blue-600 border-b-2 border-blue-600'
-                                : 'text-stone-500 hover:text-stone-700'
-                        }`}
+                        className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === 'blocked_by'
+                            ? 'text-blue-600 border-b-2 border-blue-600'
+                            : 'text-stone-500 hover:text-stone-700'
+                            }`}
                     >
-                        Blocked By ({blockedBy.length})
+                        {t('blocked_by')} ({blockedBy.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('blocking')}
-                        className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                            activeTab === 'blocking'
-                                ? 'text-blue-600 border-b-2 border-blue-600'
-                                : 'text-stone-500 hover:text-stone-700'
-                        }`}
+                        className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === 'blocking'
+                            ? 'text-blue-600 border-b-2 border-blue-600'
+                            : 'text-stone-500 hover:text-stone-700'
+                            }`}
                     >
-                        Blocking ({blocking.length})
+                        {t('blocking')} ({blocking.length})
                     </button>
                 </div>
 
                 {/* Current Dependencies */}
                 <div className="max-h-[150px] overflow-y-auto">
                     {(activeTab === 'blocked_by' ? blockedBy : blocking).length === 0 ? (
-                        <div className="p-4 text-center text-xs text-stone-400">
+                        <div className={`p-4 text-center text-xs text-stone-400 ${isRtl ? 'text-right' : ''}`}>
                             {activeTab === 'blocked_by'
-                                ? 'No dependencies. This task can start anytime.'
-                                : 'No tasks are waiting on this one.'
+                                ? t('no_dependencies')
+                                : t('no_tasks_waiting')
                             }
                         </div>
                     ) : (
@@ -222,17 +206,17 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                             {(activeTab === 'blocked_by' ? blockedBy : blocking).map((dep) => (
                                 <div
                                     key={dep.id}
-                                    className="flex items-center gap-2 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg"
+                                    className={`flex items-center gap-2 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg ${isRtl ? 'flex-row-reverse' : ''}`}
                                 >
                                     <LinkIcon size={14} className="text-stone-400 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
+                                    <div className={`flex-1 min-w-0 ${isRtl ? 'text-right' : ''}`}>
                                         <div className="text-sm text-stone-700 dark:text-stone-300 truncate">
                                             {activeTab === 'blocked_by' ? dep.predecessorName : dep.successorName}
                                         </div>
-                                        <div className="text-[10px] text-stone-400 flex items-center gap-1">
-                                            <span>{DEPENDENCY_TYPES.find(t => t.type === dep.type)?.label}</span>
+                                        <div className={`text-[10px] text-stone-400 flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                                            <span>{t(DEPENDENCY_TYPES.find(t => t.type === dep.type)?.labelKey || 'dependency_finish_to_start')}</span>
                                             {dep.lagDays > 0 && (
-                                                <span className="text-amber-500">+{dep.lagDays}d lag</span>
+                                                <span className="text-amber-500">+{dep.lagDays}{t('days')} {t('lag')}</span>
                                             )}
                                         </div>
                                     </div>
@@ -252,50 +236,49 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                 <div className="border-t border-stone-100 dark:border-stone-800">
                     {/* Dependency Type */}
                     <div className="p-2 border-b border-stone-100 dark:border-stone-800">
-                        <div className="text-[10px] font-medium text-stone-500 uppercase mb-1.5">
-                            Dependency Type
+                        <div className={`text-[10px] font-medium text-stone-500 uppercase mb-1.5 ${isRtl ? 'text-right' : ''}`}>
+                            {t('dependency_type')}
                         </div>
-                        <div className="flex gap-1">
+                        <div className={`flex gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             {DEPENDENCY_TYPES.map((type) => (
                                 <button
                                     key={type.type}
                                     onClick={() => setSelectedType(type.type)}
-                                    className={`flex-1 py-1.5 px-2 text-[10px] rounded transition-colors ${
-                                        selectedType === type.type
-                                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200 dark:border-blue-800'
-                                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 hover:bg-stone-200 dark:hover:bg-stone-700'
-                                    }`}
-                                    title={type.description}
+                                    className={`flex-1 py-1.5 px-2 text-[10px] rounded transition-colors ${selectedType === type.type
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-200 dark:border-blue-800'
+                                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 hover:bg-stone-200 dark:hover:bg-stone-700'
+                                        }`}
+                                    title={t(type.descriptionKey)}
                                 >
-                                    {type.label}
+                                    {t(type.labelKey)}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Lag Days */}
-                    <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 flex items-center gap-2">
-                        <span className="text-[10px] font-medium text-stone-500 uppercase">Lag:</span>
+                    <div className={`px-3 py-2 border-b border-stone-100 dark:border-stone-800 flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                        <span className="text-[10px] font-medium text-stone-500 uppercase">{t('lag')}:</span>
                         <input
                             type="number"
                             value={lagDays}
                             onChange={(e) => setLagDays(parseInt(e.target.value) || 0)}
                             min="0"
-                            className="w-16 px-2 py-1 text-xs border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                            className={`w-16 px-2 py-1 text-xs border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                         />
-                        <span className="text-xs text-stone-400">days</span>
+                        <span className="text-xs text-stone-400">{t('days')}</span>
                     </div>
 
                     {/* Search */}
                     <div className="p-2">
                         <div className="relative">
-                            <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                            <MagnifyingGlass size={14} className={`absolute ${isRtl ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-stone-400`} />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={`Search tasks to ${activeTab === 'blocked_by' ? 'wait on' : 'block'}...`}
-                                className="w-full pl-8 pr-3 py-2 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800"
+                                placeholder={t('search_tasks_to_link')}
+                                className={`w-full ${isRtl ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3'} py-2 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800`}
                             />
                         </div>
                     </div>
@@ -304,7 +287,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                     <div className="max-h-[150px] overflow-y-auto">
                         {filteredTasks.length === 0 ? (
                             <div className="p-4 text-center text-xs text-stone-400">
-                                {searchQuery ? 'No matching tasks found' : 'No tasks available to link'}
+                                {searchQuery ? t('no_matching_tasks') : t('no_tasks_available')}
                             </div>
                         ) : (
                             <div className="px-2 pb-2 space-y-1">
@@ -312,7 +295,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                                     <button
                                         key={task.id}
                                         onClick={() => handleAddDependency(task)}
-                                        className="w-full flex items-center gap-2 px-2 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-lg transition-colors text-left"
+                                        className={`w-full flex items-center gap-2 px-2 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-lg transition-colors ${isRtl ? 'flex-row-reverse text-right' : 'text-left'}`}
                                     >
                                         <Plus size={14} className="text-green-500 flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
@@ -321,7 +304,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                                             </div>
                                             {task.status && (
                                                 <div className="text-[10px] text-stone-400">
-                                                    Status: {task.status}
+                                                    {t('status')}: {task.status}
                                                 </div>
                                             )}
                                         </div>
@@ -338,7 +321,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
                         onClick={onClose}
                         className="w-full py-1.5 text-xs text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
                     >
-                        Done
+                        {t('done')}
                     </button>
                 </div>
             </div>
@@ -346,22 +329,24 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Inline display for table cells
 export const DependencyDisplay: React.FC<{
     value: DependencyValue | null;
     onClick?: () => void;
-}> = ({ value, onClick }) => {
+}> = memo(({ value, onClick }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const blockedBy = value?.blockedBy || [];
     const blocking = value?.blocking || [];
     const total = blockedBy.length + blocking.length;
 
     if (total === 0) {
         return (
-            <button onClick={onClick} className="text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1">
+            <button onClick={onClick} className={`text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 <Plus size={12} />
-                Add dependency
+                {t('add_dependency')}
             </button>
         );
     }
@@ -369,22 +354,22 @@ export const DependencyDisplay: React.FC<{
     return (
         <button
             onClick={onClick}
-            className="flex items-center gap-1 text-sm"
+            className={`flex items-center gap-1 text-sm ${isRtl ? 'flex-row-reverse' : ''}`}
         >
             {blockedBy.length > 0 && (
-                <span className="flex items-center gap-0.5 text-red-500" title={`Blocked by ${blockedBy.length} task(s)`}>
+                <span className={`flex items-center gap-0.5 text-red-500 ${isRtl ? 'flex-row-reverse' : ''}`} title={`${t('blocked_by')} ${blockedBy.length}`}>
                     <Warning size={12} />
                     {blockedBy.length}
                 </span>
             )}
             {blocking.length > 0 && (
-                <span className="flex items-center gap-0.5 text-amber-500" title={`Blocking ${blocking.length} task(s)`}>
+                <span className={`flex items-center gap-0.5 text-amber-500 ${isRtl ? 'flex-row-reverse' : ''}`} title={`${t('blocking')} ${blocking.length}`}>
                     <GitBranch size={12} />
                     {blocking.length}
                 </span>
             )}
         </button>
     );
-};
+});
 
 export default DependencyPicker;

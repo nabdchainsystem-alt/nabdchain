@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Sprint, SprintTask, SprintSettings, SprintMetrics } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE SPRINTS HOOK - PLACEHOLDER
@@ -36,7 +37,7 @@ export const useSprints = (): UseSprintsReturn => {
     const loadSprints = async () => {
       setIsLoading(true);
       try {
-        console.log('[useSprints] Loading sprints - NOT IMPLEMENTED');
+        hookLogger.debug('[useSprints] Loading sprints - NOT IMPLEMENTED');
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Mock sprint data
@@ -77,7 +78,7 @@ export const useSprints = (): UseSprintsReturn => {
 
   const createSprint = useCallback(
     async (sprintData: Omit<Sprint, 'id' | 'createdAt' | 'updatedAt'>): Promise<Sprint> => {
-      console.log('[useSprints] Create sprint - NOT IMPLEMENTED', sprintData);
+      hookLogger.debug('[useSprints] Create sprint - NOT IMPLEMENTED', sprintData);
       const newSprint: Sprint = {
         ...sprintData,
         id: `sprint-${Date.now()}`,
@@ -91,7 +92,7 @@ export const useSprints = (): UseSprintsReturn => {
   );
 
   const updateSprint = useCallback(async (id: string, updates: Partial<Sprint>): Promise<Sprint> => {
-    console.log('[useSprints] Update sprint - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[useSprints] Update sprint - NOT IMPLEMENTED', { id, updates });
     let updated: Sprint | undefined;
     setSprints((prev) =>
       prev.map((s) => {
@@ -107,17 +108,17 @@ export const useSprints = (): UseSprintsReturn => {
   }, []);
 
   const deleteSprint = useCallback(async (id: string): Promise<void> => {
-    console.log('[useSprints] Delete sprint - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useSprints] Delete sprint - NOT IMPLEMENTED', id);
     setSprints((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const startSprint = useCallback(async (id: string): Promise<Sprint> => {
-    console.log('[useSprints] Start sprint - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useSprints] Start sprint - NOT IMPLEMENTED', id);
     return updateSprint(id, { status: 'active', startDate: new Date() });
   }, [updateSprint]);
 
   const completeSprint = useCallback(async (id: string): Promise<Sprint> => {
-    console.log('[useSprints] Complete sprint - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useSprints] Complete sprint - NOT IMPLEMENTED', id);
     const sprint = sprints.find((s) => s.id === id);
     if (!sprint) throw new Error('Sprint not found');
 
@@ -133,7 +134,7 @@ export const useSprints = (): UseSprintsReturn => {
 
   const addTaskToSprint = useCallback(
     async (sprintId: string, task: Omit<SprintTask, 'id' | 'sprintId'>): Promise<void> => {
-      console.log('[useSprints] Add task to sprint - NOT IMPLEMENTED', { sprintId, task });
+      hookLogger.debug('[useSprints] Add task to sprint - NOT IMPLEMENTED', { sprintId, task });
       const newTask: SprintTask = {
         ...task,
         id: `task-${Date.now()}`,
@@ -152,7 +153,7 @@ export const useSprints = (): UseSprintsReturn => {
   );
 
   const removeTaskFromSprint = useCallback(async (sprintId: string, taskId: string): Promise<void> => {
-    console.log('[useSprints] Remove task from sprint - NOT IMPLEMENTED', { sprintId, taskId });
+    hookLogger.debug('[useSprints] Remove task from sprint - NOT IMPLEMENTED', { sprintId, taskId });
     setSprints((prev) =>
       prev.map((s) => {
         if (s.id === sprintId) {
@@ -169,7 +170,7 @@ export const useSprints = (): UseSprintsReturn => {
 
   const updateTaskStatus = useCallback(
     async (sprintId: string, taskId: string, status: SprintTask['status']): Promise<void> => {
-      console.log('[useSprints] Update task status - NOT IMPLEMENTED', { sprintId, taskId, status });
+      hookLogger.debug('[useSprints] Update task status - NOT IMPLEMENTED', { sprintId, taskId, status });
       setSprints((prev) =>
         prev.map((s) => {
           if (s.id === sprintId) {
@@ -216,7 +217,7 @@ export const useSprints = (): UseSprintsReturn => {
   }, [sprints]);
 
   const refresh = useCallback(async (): Promise<void> => {
-    console.log('[useSprints] Refresh - NOT IMPLEMENTED');
+    hookLogger.debug('[useSprints] Refresh - NOT IMPLEMENTED');
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
     setIsLoading(false);

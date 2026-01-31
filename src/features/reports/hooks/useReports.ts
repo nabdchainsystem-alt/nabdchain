@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Report, ReportConfig, ReportSchedule } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE REPORTS HOOK - PLACEHOLDER
@@ -27,7 +28,7 @@ export const useReports = (): UseReportsReturn => {
   const [error, setError] = useState<string | null>(null);
 
   const createReport = useCallback(async (name: string, config: ReportConfig): Promise<Report> => {
-    console.log('[useReports] Create report - NOT IMPLEMENTED', { name, config });
+    hookLogger.debug('[useReports] Create report - NOT IMPLEMENTED', { name, config });
     const newReport: Report = {
       id: `report-${Date.now()}`,
       workspaceId: 'workspace-1',
@@ -43,7 +44,7 @@ export const useReports = (): UseReportsReturn => {
   }, []);
 
   const updateReport = useCallback(async (id: string, updates: Partial<Report>): Promise<Report> => {
-    console.log('[useReports] Update report - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[useReports] Update report - NOT IMPLEMENTED', { id, updates });
     let updated: Report | undefined;
     setReports((prev) =>
       prev.map((r) => {
@@ -59,13 +60,13 @@ export const useReports = (): UseReportsReturn => {
   }, []);
 
   const deleteReport = useCallback(async (id: string): Promise<void> => {
-    console.log('[useReports] Delete report - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useReports] Delete report - NOT IMPLEMENTED', id);
     setReports((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
   const createSchedule = useCallback(
     async (reportId: string, schedule: Omit<ReportSchedule, 'id' | 'reportId'>): Promise<ReportSchedule> => {
-      console.log('[useReports] Create schedule - NOT IMPLEMENTED', { reportId, schedule });
+      hookLogger.debug('[useReports] Create schedule - NOT IMPLEMENTED', { reportId, schedule });
       const newSchedule: ReportSchedule = {
         ...schedule,
         id: `schedule-${Date.now()}`,
@@ -78,7 +79,7 @@ export const useReports = (): UseReportsReturn => {
   );
 
   const updateSchedule = useCallback(async (id: string, updates: Partial<ReportSchedule>): Promise<ReportSchedule> => {
-    console.log('[useReports] Update schedule - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[useReports] Update schedule - NOT IMPLEMENTED', { id, updates });
     let updated: ReportSchedule | undefined;
     setSchedules((prev) =>
       prev.map((s) => {
@@ -94,7 +95,7 @@ export const useReports = (): UseReportsReturn => {
   }, []);
 
   const deleteSchedule = useCallback(async (id: string): Promise<void> => {
-    console.log('[useReports] Delete schedule - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useReports] Delete schedule - NOT IMPLEMENTED', id);
     setSchedules((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
@@ -102,7 +103,7 @@ export const useReports = (): UseReportsReturn => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('[useReports] Refresh - NOT IMPLEMENTED');
+      hookLogger.debug('[useReports] Refresh - NOT IMPLEMENTED');
       await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reports');

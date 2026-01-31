@@ -2,10 +2,11 @@ import React from 'react';
 import { Trash } from 'phosphor-react';
 import { Column, Row } from '../types';
 import { DEFAULT_CHECKBOX_COLOR } from '../utils';
+import type { DragListeners } from '@/types/drag';
 
 interface TableRowContentProps {
     row: Row;
-    dragListeners?: any;
+    dragListeners?: DragListeners;
     isOverlay?: boolean;
     visibleColumns: Column[];
     checkedRows: Set<string>;
@@ -14,6 +15,8 @@ interface TableRowContentProps {
     onDeleteRow: (rowId: string) => void;
     onSelectColumnContextMenu?: (rect: DOMRect) => void;
     renderCellContent: (col: Column, row: Row) => React.ReactNode;
+    isRTL?: boolean;
+    activeColumnDragId?: string | null;
 }
 
 export const TableRowContent: React.FC<TableRowContentProps> = React.memo(({
@@ -27,6 +30,8 @@ export const TableRowContent: React.FC<TableRowContentProps> = React.memo(({
     onDeleteRow,
     onSelectColumnContextMenu,
     renderCellContent,
+    isRTL = false,
+    activeColumnDragId,
 }) => {
     return (
         <>
@@ -34,28 +39,30 @@ export const TableRowContent: React.FC<TableRowContentProps> = React.memo(({
             {visibleColumns.map((col, index) => {
                 const isSticky = !!col.pinned && !isOverlay;
 
-                // Calculate left position for sticky columns
-                let leftPos = 0;
+                // Calculate position for sticky columns
+                let offset = 0;
                 if (isSticky) {
                     for (let i = 0; i < index; i++) {
                         if (visibleColumns[i].pinned) {
-                            leftPos += visibleColumns[i].width;
+                            offset += visibleColumns[i].width;
                         }
                     }
                 }
+
+                const isDraggedColumn = activeColumnDragId === col.id;
 
                 return (
                     <div
                         key={col.id}
                         data-row-id={row.id}
                         data-col-id={col.id}
-                        className={`h-full border-e border-stone-100 dark:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? `z-10 ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}` : ''} ${isSticky && !visibleColumns[index + 1]?.pinned && !isOverlay ? 'after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]' : ''}`}
+                        className={`h-full border-e border-stone-100 dark:border-stone-800 ${col.id === 'select' ? 'flex items-center justify-center cursor-default' : ''} ${isSticky ? `z-10 ${checkedRows.has(row.id) ? 'bg-blue-50 dark:bg-blue-900/10' : 'bg-white dark:bg-stone-900'}` : ''} ${isSticky && !visibleColumns[index + 1]?.pinned && !isOverlay ? `after:absolute ${isRTL ? 'after:left-0' : 'after:right-0'} after:top-0 after:h-full after:w-[1px] after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]` : ''} ${isDraggedColumn ? 'opacity-50' : ''}`}
                         style={{
                             width: col.width,
                             ...(isSticky && {
-                                left: leftPos,
+                                [isRTL ? 'right' : 'left']: offset,
                                 position: 'sticky',
-                                willChange: 'transform, left',
+                                willChange: isRTL ? 'transform, right' : 'transform, left',
                             }),
                             backgroundColor: col.backgroundColor || undefined
                         }}

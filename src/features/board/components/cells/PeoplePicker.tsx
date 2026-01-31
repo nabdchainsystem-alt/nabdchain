@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { usePopupPosition } from '../../views/Table/hooks/usePopupPosition';
 import { createPortal } from 'react-dom';
 import { Users, Check, User, SpinnerGap } from 'phosphor-react';
 import { useAuth, useUser } from '../../../../auth-adapter';
@@ -17,7 +18,7 @@ interface Person {
 interface PeoplePickerProps {
     onSelect: (person: Person | null) => void;
     onClose: () => void;
-    current: { id: string; name: string } | null;
+    current: { id: string; name: string }[] | { id: string; name: string } | null;
     triggerRect?: DOMRect;
     // Optional props for creating assignments
     boardId?: string;
@@ -117,50 +118,12 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
         fetchTeamMembers();
     }, [getToken, user]);
 
-    const [positionStyle, setPositionStyle] = useState<React.CSSProperties>(() => {
-        if (triggerRect) {
-            const menuHeight = 250;
-            const spaceBelow = window.innerHeight - triggerRect.bottom;
-            const openUp = spaceBelow < menuHeight && triggerRect.top > menuHeight;
-
-            if (openUp) {
-                return {
-                    bottom: window.innerHeight - triggerRect.top - 4,
-                    left: triggerRect.left,
-                    position: 'fixed'
-                };
-            } else {
-                return {
-                    top: triggerRect.bottom - 4,
-                    left: triggerRect.left,
-                    position: 'fixed'
-                };
-            }
-        }
-        return { display: 'none' };
+    const positionStyle = usePopupPosition({
+        triggerRect,
+        menuWidth: 256,
+        menuHeight: 250,
+        align: 'start'
     });
-
-    useLayoutEffect(() => {
-        if (triggerRect) {
-            const menuHeight = 250;
-            const spaceBelow = window.innerHeight - triggerRect.bottom;
-            const openUp = spaceBelow < menuHeight && triggerRect.top > menuHeight;
-
-            if (openUp) {
-                setPositionStyle({
-                    bottom: window.innerHeight - triggerRect.top - 4,
-                    left: triggerRect.left,
-                    position: 'fixed'
-                });
-            } else {
-                setPositionStyle({
-                    top: triggerRect.bottom - 4,
-                    left: triggerRect.left,
-                    position: 'fixed'
-                });
-            }
-        }
-    }, [triggerRect]);
 
     const content = (
         <>
@@ -189,7 +152,8 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
                         </div>
                     ) : (
                         teamMembers.map(person => {
-                            const isSelected = current?.id === person.id;
+                            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
+                            const isSelected = currentArray.some(p => p.id === person.id);
                             return (
                                 <button
                                     key={person.id}
@@ -199,7 +163,7 @@ export const PeoplePicker: React.FC<PeoplePickerProps> = ({
                                         e.stopPropagation();
                                         handleSelectPerson(person);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-50 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-start rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-50 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                                 >
                                     {person.showUserIcon ? (
                                         <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">

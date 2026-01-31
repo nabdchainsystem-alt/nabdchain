@@ -33,6 +33,7 @@ interface GridProps {
     onClearRange?: (range: CellRange) => void;
     onColumnResize?: (col: string, width: number) => void;
     onRowResize?: (row: number, height: number) => void;
+    onColumnReorder?: (fromCol: string, toCol: string) => void;
 }
 
 interface ContextMenuState {
@@ -67,6 +68,7 @@ export const Grid: React.FC<GridProps> = ({
     onClearRange,
     onColumnResize,
     onRowResize,
+    onColumnReorder,
 }) => {
     const gridRef = useRef<HTMLDivElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +103,15 @@ export const Grid: React.FC<GridProps> = ({
     // Preview dimensions for smooth resizing (local state for immediate feedback)
     const [previewColWidth, setPreviewColWidth] = useState<number | null>(null);
     const [previewRowHeight, setPreviewRowHeight] = useState<number | null>(null);
+
+    // Column drag-and-drop state
+    const [draggingCol, setDraggingCol] = useState<string | null>(null);
+    const [dragColMouseX, setDragColMouseX] = useState(0);
+    const [dragColMouseY, setDragColMouseY] = useState(0);
+    const [dropTargetCol, setDropTargetCol] = useState<string | null>(null);
+    const [dropPosition, setDropPosition] = useState<'before' | 'after'>('before');
+    const autoScrollRef = useRef<number | null>(null);
+    const lastMouseXRef = useRef<number>(0); // Track mouse position for continuous scroll
 
     // Animation frame ref for smooth updates
     const animationFrameRef = useRef<number | null>(null);
@@ -185,6 +196,43 @@ export const Grid: React.FC<GridProps> = ({
         return classes.join(' ');
     }, []);
 
+    // Calculate cumulative column position
+    const getColumnPosition = useCallback((targetCol: string): number => {
+        let pos = 46; // Row header width
+        for (const col of COLS) {
+            if (col === targetCol) break;
+            pos += getColWidth(col);
+        }
+        return pos;
+    }, [getColWidth]);
+
+    // Find column at x position
+    const findColumnAtPosition = useCallback((clientX: number): { col: string; position: 'before' | 'after' } | null => {
+        if (!gridRef.current) return null;
+
+        const rect = gridRef.current.getBoundingClientRect();
+        const scrollLeft = gridRef.current.scrollLeft;
+        const x = clientX - rect.left + scrollLeft;
+
+        let accumulatedX = 46; // Row header width
+
+        for (const col of COLS) {
+            const colWidth = getColWidth(col);
+            const colMidpoint = accumulatedX + colWidth / 2;
+
+            if (x < accumulatedX + colWidth) {
+                return {
+                    col,
+                    position: x < colMidpoint ? 'before' : 'after'
+                };
+            }
+            accumulatedX += colWidth;
+        }
+
+        // After last column
+        return { col: COLS[COLS.length - 1], position: 'after' };
+    }, [getColWidth]);
+
     // Close context menu when clicking outside
     useEffect(() => {
         const handleClick = () => setContextMenu(prev => ({ ...prev, visible: false }));
@@ -192,7 +240,27 @@ export const Grid: React.FC<GridProps> = ({
         return () => document.removeEventListener('click', handleClick);
     }, []);
 
-    // Handle mouse move for box selection and resizing with smooth animation
+    // Update drop target during scroll (for continuous column dragging experience)
+    useEffect(() => {
+        if (!draggingCol || !gridRef.current) return;
+
+        const handleScroll = () => {
+            // Update drop target based on last known mouse position
+            const target = findColumnAtPosition(lastMouseXRef.current);
+            if (target && target.col !== draggingCol) {
+                setDropTargetCol(target.col);
+                setDropPosition(target.position);
+            } else {
+                setDropTargetCol(null);
+            }
+        };
+
+        const grid = gridRef.current;
+        grid.addEventListener('scroll', handleScroll, { passive: true });
+        return () => grid.removeEventListener('scroll', handleScroll);
+    }, [draggingCol, findColumnAtPosition]);
+
+    // Handle mouse move for box selection, resizing, and column dragging
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             // Cancel any pending animation frame
@@ -214,6 +282,72 @@ export const Grid: React.FC<GridProps> = ({
                     const newHeight = Math.max(MIN_ROW_HEIGHT, resizeStartHeight + deltaY);
                     setPreviewRowHeight(newHeight);
                 }
+
+                // Column dragging - update position and find drop target
+                if (draggingCol && gridRef.current) {
+                    setDragColMouseX(e.clientX);
+                    setDragColMouseY(e.clientY);
+                    lastMouseXRef.current = e.clientX;
+
+                    // Find the column we're hovering over
+                    const target = findColumnAtPosition(e.clientX);
+                    if (target && target.col !== draggingCol) {
+                        setDropTargetCol(target.col);
+                        setDropPosition(target.position);
+                    } else {
+                        setDropTargetCol(null);
+                    }
+
+                    // Auto-scroll when near edges
+                    const rect = gridRef.current.getBoundingClientRect();
+                    const scrollMargin = 80; // Larger margin for easier triggering
+                    const maxScrollSpeed = 15;
+
+                    // Cancel existing auto-scroll - we'll restart it
+                    if (autoScrollRef.current) {
+                        cancelAnimationFrame(autoScrollRef.current);
+                        autoScrollRef.current = null;
+                    }
+
+                    const doAutoScroll = () => {
+                        if (!gridRef.current) return;
+
+                        const currentRect = gridRef.current.getBoundingClientRect();
+                        const mouseX = lastMouseXRef.current;
+                        let scrolled = false;
+
+                        // Calculate scroll speed based on distance from edge (faster when closer to edge)
+                        if (mouseX < currentRect.left + scrollMargin) {
+                            const distanceFromEdge = currentRect.left + scrollMargin - mouseX;
+                            const speed = Math.min(maxScrollSpeed, Math.max(3, distanceFromEdge / 5));
+                            gridRef.current.scrollLeft -= speed;
+                            scrolled = true;
+                        } else if (mouseX > currentRect.right - scrollMargin) {
+                            const distanceFromEdge = mouseX - (currentRect.right - scrollMargin);
+                            const speed = Math.min(maxScrollSpeed, Math.max(3, distanceFromEdge / 5));
+                            gridRef.current.scrollLeft += speed;
+                            scrolled = true;
+                        }
+
+                        if (scrolled) {
+                            // Update drop target during scroll - important for smooth experience
+                            const newTarget = findColumnAtPosition(mouseX);
+                            if (newTarget && newTarget.col !== draggingCol) {
+                                setDropTargetCol(newTarget.col);
+                                setDropPosition(newTarget.position);
+                            } else {
+                                setDropTargetCol(null);
+                            }
+                            // Continue scrolling
+                            autoScrollRef.current = requestAnimationFrame(doAutoScroll);
+                        }
+                    };
+
+                    // Start auto-scroll if near edges
+                    if (e.clientX < rect.left + scrollMargin || e.clientX > rect.right - scrollMargin) {
+                        autoScrollRef.current = requestAnimationFrame(doAutoScroll);
+                    }
+                }
             });
         };
 
@@ -222,6 +356,10 @@ export const Grid: React.FC<GridProps> = ({
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
+            }
+            if (autoScrollRef.current) {
+                cancelAnimationFrame(autoScrollRef.current);
+                autoScrollRef.current = null;
             }
 
             // Finish box selection
@@ -250,6 +388,18 @@ export const Grid: React.FC<GridProps> = ({
                 onRowResize(resizingRow, previewRowHeight);
             }
 
+            // Commit column reorder
+            if (draggingCol && dropTargetCol && onColumnReorder) {
+                // Calculate the target position
+                const fromIndex = COLS.indexOf(draggingCol);
+                const toIndex = COLS.indexOf(dropTargetCol);
+
+                // Only reorder if the position actually changes
+                if (fromIndex !== toIndex && !(fromIndex === toIndex - 1 && dropPosition === 'after') && !(fromIndex === toIndex + 1 && dropPosition === 'before')) {
+                    onColumnReorder(draggingCol, dropTargetCol);
+                }
+            }
+
             setIsDragging(false);
             setDragStart(null);
             setDragEnd(null);
@@ -257,9 +407,11 @@ export const Grid: React.FC<GridProps> = ({
             setResizingRow(null);
             setPreviewColWidth(null);
             setPreviewRowHeight(null);
+            setDraggingCol(null);
+            setDropTargetCol(null);
         };
 
-        if (isDragging || resizingCol || resizingRow) {
+        if (isDragging || resizingCol || resizingRow || draggingCol) {
             document.addEventListener('mousemove', handleMouseMove, { passive: true });
             document.addEventListener('mouseup', handleMouseUp);
             return () => {
@@ -268,9 +420,12 @@ export const Grid: React.FC<GridProps> = ({
                 if (animationFrameRef.current) {
                     cancelAnimationFrame(animationFrameRef.current);
                 }
+                if (autoScrollRef.current) {
+                    cancelAnimationFrame(autoScrollRef.current);
+                }
             };
         }
-    }, [isDragging, dragStart, dragEnd, resizingCol, resizingRow, resizeStartX, resizeStartY, resizeStartWidth, resizeStartHeight, previewColWidth, previewRowHeight, onSelectRange, onColumnResize, onRowResize]);
+    }, [isDragging, dragStart, dragEnd, resizingCol, resizingRow, resizeStartX, resizeStartY, resizeStartWidth, resizeStartHeight, previewColWidth, previewRowHeight, onSelectRange, onColumnResize, onRowResize, draggingCol, dropTargetCol, dropPosition, findColumnAtPosition, onColumnReorder]);
 
     // Handle starting column resize
     const handleColumnResizeStart = (col: string, e: React.MouseEvent) => {
@@ -288,6 +443,16 @@ export const Grid: React.FC<GridProps> = ({
         setResizingRow(row);
         setResizeStartY(e.clientY);
         setResizeStartHeight(getRowHeight(row));
+    };
+
+    // Handle column drag start
+    const handleColumnDragStart = (col: string, e: React.MouseEvent) => {
+        if (!onColumnReorder) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDraggingCol(col);
+        setDragColMouseX(e.clientX);
+        setDragColMouseY(e.clientY);
     };
 
     // Focus edit input when editing starts
@@ -681,7 +846,7 @@ export const Grid: React.FC<GridProps> = ({
     return (
         <main
             ref={gridRef}
-            className={`flex-1 overflow-auto bg-white relative focus:outline-none ${resizingCol ? 'cursor-col-resize select-none' : ''} ${resizingRow ? 'cursor-row-resize select-none' : ''} ${isDragging ? 'select-none cursor-cell' : ''}`}
+            className={`flex-1 overflow-auto bg-white relative focus:outline-none ${resizingCol ? 'cursor-col-resize select-none' : ''} ${resizingRow ? 'cursor-row-resize select-none' : ''} ${isDragging ? 'select-none cursor-cell' : ''} ${draggingCol ? 'cursor-grabbing select-none' : ''}`}
             tabIndex={0}
             onKeyDown={handleKeyDown}
             style={{ willChange: isDragging || resizingCol || resizingRow ? 'transform' : 'auto' }}
@@ -822,22 +987,43 @@ export const Grid: React.FC<GridProps> = ({
                         {COLS.map((col) => {
                             const isSelectedCol = selectedCell.col === col;
                             const colWidth = getColWidth(col);
+                            const isBeingDragged = draggingCol === col;
+                            const isDropTarget = dropTargetCol === col;
                             return (
                                 <th
                                     key={col}
-                                    className={`border-r border-b font-medium text-center select-none transition-colors cursor-pointer h-[25px] text-[12px] relative group
+                                    className={`border-r border-b font-medium text-center select-none transition-colors h-[25px] text-[12px] relative group
+                                        ${onColumnReorder ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
                                         ${isSelectedCol
                                             ? 'bg-[#d3e3fd] text-[#1a73e8] border-[#d3e3fd] font-semibold'
                                             : 'bg-[#f8f9fa] text-[#5f6368] border-[#e1e3e6] hover:bg-[#e8eaed]'}
+                                        ${isBeingDragged ? 'opacity-50' : ''}
                                     `}
                                     style={{ width: colWidth, minWidth: colWidth }}
                                     onClick={() => onSelectCell(col, 1)}
+                                    onMouseDown={(e) => {
+                                        // Only start column drag if clicking on the header itself (not resize handle)
+                                        if (e.button === 0 && onColumnReorder) {
+                                            handleColumnDragStart(col, e);
+                                        }
+                                    }}
                                 >
                                     {col}
+                                    {/* Drop indicator - left side */}
+                                    {isDropTarget && dropPosition === 'before' && (
+                                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1a73e8] z-20" />
+                                    )}
+                                    {/* Drop indicator - right side */}
+                                    {isDropTarget && dropPosition === 'after' && (
+                                        <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-[#1a73e8] z-20" />
+                                    )}
                                     {/* Column resize handle */}
                                     <div
                                         className="absolute top-0 right-0 w-[4px] h-full cursor-col-resize opacity-0 group-hover:opacity-100 hover:bg-[#1a73e8] z-10"
-                                        onMouseDown={(e) => handleColumnResizeStart(col, e)}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            handleColumnResizeStart(col, e);
+                                        }}
                                     />
                                 </th>
                             );
@@ -879,6 +1065,8 @@ export const Grid: React.FC<GridProps> = ({
                                     const isInRange = isCellInRange(col, row, effectiveRange);
                                     const rangeEdgeClasses = getCellEdgeClasses(col, row, effectiveRange);
                                     const colWidth = getColWidth(col);
+                                    const isBeingDragged = draggingCol === col;
+                                    const isDropTargetCol = dropTargetCol === col;
 
                                     const styleClasses = getStyleClasses(cellData?.style, isInSelectedRowOrCol && !isInRange);
                                     const inlineStyles = getInlineStyles(cellData?.style);
@@ -951,6 +1139,7 @@ export const Grid: React.FC<GridProps> = ({
                                                 ${isInRange && !isSelected ? 'bg-[#e8f0fe]' : ''}
                                                 ${rangeEdgeClasses}
                                                 ${isFormulaRef && !isSelected ? 'ring-2 ring-[#34a853] ring-inset z-10 bg-[#e6f4ea]' : ''}
+                                                ${isBeingDragged ? 'opacity-50 bg-[#e8f0fe]' : ''}
                                             `}
                                             style={{ ...inlineStyles, width: colWidth, minWidth: colWidth, height: rowHeight }}
                                         >
@@ -992,6 +1181,15 @@ export const Grid: React.FC<GridProps> = ({
                                                     title="Drag to fill"
                                                 ></div>
                                             )}
+
+                                            {/* Drop indicator on cells - left side */}
+                                            {isDropTargetCol && dropPosition === 'before' && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1a73e8] z-20" />
+                                            )}
+                                            {/* Drop indicator on cells - right side */}
+                                            {isDropTargetCol && dropPosition === 'after' && (
+                                                <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-[#1a73e8] z-20" />
+                                            )}
                                         </td>
                                     );
                                 })}
@@ -1000,6 +1198,27 @@ export const Grid: React.FC<GridProps> = ({
                     })}
                 </tbody>
             </table>
+
+            {/* Ghost column header during drag - header only */}
+            {draggingCol && gridRef.current && (
+                <div
+                    className="fixed pointer-events-none z-50"
+                    style={{
+                        left: dragColMouseX - getColWidth(draggingCol) / 2,
+                        top: gridRef.current.getBoundingClientRect().top,
+                    }}
+                >
+                    <div
+                        className="bg-[#f8f9fa] border border-[#dadce0] rounded h-[25px] flex items-center justify-center font-medium text-[12px] text-[#5f6368]"
+                        style={{
+                            width: getColWidth(draggingCol),
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                        }}
+                    >
+                        {draggingCol}
+                    </div>
+                </div>
+            )}
         </main>
     );
 };

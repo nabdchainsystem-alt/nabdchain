@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Resource, Allocation, ResourceMetrics, TimeOffRequest } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE RESOURCES HOOK - PLACEHOLDER
@@ -45,7 +46,7 @@ export const useResources = (): UseResourcesReturn => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        console.log('[useResources] Loading resources - NOT IMPLEMENTED');
+        hookLogger.debug('[useResources] Loading resources - NOT IMPLEMENTED');
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Mock resources
@@ -112,7 +113,7 @@ export const useResources = (): UseResourcesReturn => {
   }, []);
 
   const addResource = useCallback(async (resourceData: Omit<Resource, 'id'>): Promise<Resource> => {
-    console.log('[useResources] Add resource - NOT IMPLEMENTED', resourceData);
+    hookLogger.debug('[useResources] Add resource - NOT IMPLEMENTED', resourceData);
     const newResource: Resource = {
       ...resourceData,
       id: `resource-${Date.now()}`,
@@ -122,7 +123,7 @@ export const useResources = (): UseResourcesReturn => {
   }, []);
 
   const updateResource = useCallback(async (id: string, updates: Partial<Resource>): Promise<Resource> => {
-    console.log('[useResources] Update resource - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[useResources] Update resource - NOT IMPLEMENTED', { id, updates });
     let updated: Resource | undefined;
     setResources((prev) =>
       prev.map((r) => {
@@ -138,12 +139,12 @@ export const useResources = (): UseResourcesReturn => {
   }, []);
 
   const removeResource = useCallback(async (id: string): Promise<void> => {
-    console.log('[useResources] Remove resource - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useResources] Remove resource - NOT IMPLEMENTED', id);
     setResources((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
   const allocate = useCallback(async (allocationData: Omit<Allocation, 'id'>): Promise<Allocation> => {
-    console.log('[useResources] Allocate - NOT IMPLEMENTED', allocationData);
+    hookLogger.debug('[useResources] Allocate - NOT IMPLEMENTED', allocationData);
     const newAllocation: Allocation = {
       ...allocationData,
       id: `allocation-${Date.now()}`,
@@ -153,7 +154,7 @@ export const useResources = (): UseResourcesReturn => {
   }, []);
 
   const updateAllocation = useCallback(async (id: string, updates: Partial<Allocation>): Promise<Allocation> => {
-    console.log('[useResources] Update allocation - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[useResources] Update allocation - NOT IMPLEMENTED', { id, updates });
     let updated: Allocation | undefined;
     setAllocations((prev) =>
       prev.map((a) => {
@@ -169,13 +170,13 @@ export const useResources = (): UseResourcesReturn => {
   }, []);
 
   const removeAllocation = useCallback(async (id: string): Promise<void> => {
-    console.log('[useResources] Remove allocation - NOT IMPLEMENTED', id);
+    hookLogger.debug('[useResources] Remove allocation - NOT IMPLEMENTED', id);
     setAllocations((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
   const requestTimeOff = useCallback(
     async (request: Omit<TimeOffRequest, 'id' | 'createdAt'>): Promise<TimeOffRequest> => {
-      console.log('[useResources] Request time off - NOT IMPLEMENTED', request);
+      hookLogger.debug('[useResources] Request time off - NOT IMPLEMENTED', request);
       const newRequest: TimeOffRequest = {
         ...request,
         id: `timeoff-${Date.now()}`,
@@ -188,7 +189,7 @@ export const useResources = (): UseResourcesReturn => {
 
   const getWorkload = useCallback(
     (resourceId: string, startDate: Date, endDate: Date): number => {
-      console.log('[useResources] Get workload - NOT IMPLEMENTED', { resourceId, startDate, endDate });
+      hookLogger.debug('[useResources] Get workload - NOT IMPLEMENTED', { resourceId, startDate, endDate });
       // Mock workload percentage
       return Math.floor(Math.random() * 40) + 60;
     },
@@ -196,7 +197,7 @@ export const useResources = (): UseResourcesReturn => {
   );
 
   const refresh = useCallback(async (): Promise<void> => {
-    console.log('[useResources] Refresh - NOT IMPLEMENTED');
+    hookLogger.debug('[useResources] Refresh - NOT IMPLEMENTED');
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
     setIsLoading(false);

@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import type { Notification, NotificationPreferences } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
-// USE NOTIFICATIONS HOOK - PLACEHOLDER
-// Status: NOT IMPLEMENTED - Placeholder for future development
+// USE NOTIFICATIONS HOOK
+// Status: IMPLEMENTED - Connected to backend API
 // =============================================================================
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface UseNotificationsOptions {
   autoRefresh?: boolean;
@@ -22,11 +26,13 @@ interface UseNotificationsReturn {
   deleteNotification: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => Promise<void>;
+  fetchPreferences: () => Promise<void>;
 }
 
 export const useNotifications = (
   options: UseNotificationsOptions = {}
 ): UseNotificationsReturn => {
+  const { getToken } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,82 +40,162 @@ export const useNotifications = (
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = useCallback(async (id: string): Promise<void> => {
-    // TODO: Implement API call
-    console.log('[useNotifications] Mark as read - NOT IMPLEMENTED', id);
+  // Helper for authenticated fetch
+  const fetchWithAuth = useCallback(async (url: string, fetchOptions?: RequestInit) => {
+    const token = await getToken();
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...fetchOptions?.headers,
+      },
+    });
 
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  }, []);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
 
-  const markAllAsRead = useCallback(async (): Promise<void> => {
-    // TODO: Implement API call
-    console.log('[useNotifications] Mark all as read - NOT IMPLEMENTED');
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return null;
+    }
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+    return response.json();
+  }, [getToken]);
 
-  const deleteNotification = useCallback(async (id: string): Promise<void> => {
-    // TODO: Implement API call
-    console.log('[useNotifications] Delete - NOT IMPLEMENTED', id);
-
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
-
+  // Fetch notifications
   const refresh = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // TODO: Implement API call
-      console.log('[useNotifications] Refresh - NOT IMPLEMENTED');
+      const data = await fetchWithAuth(`${API_BASE}/api/notifications`);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Transform dates from strings to Date objects
+      const transformed: Notification[] = data.map((n: Notification & { createdAt: string }) => ({
+        ...n,
+        createdAt: new Date(n.createdAt),
+      }));
 
-      // Mock data for demo
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          userId: 'user-1',
-          type: 'mention',
-          title: 'John mentioned you in a comment',
-          body: 'Hey, can you take a look at this?',
-          read: false,
-          emailSent: false,
-          pushSent: false,
-          createdAt: new Date(),
-        },
-        {
-          id: '2',
-          userId: 'user-1',
-          type: 'assignment',
-          title: 'New task assigned to you',
-          body: 'Review homepage design',
-          read: true,
-          emailSent: true,
-          pushSent: false,
-          createdAt: new Date(Date.now() - 3600000),
-        },
-      ];
-
-      setNotifications(mockNotifications);
+      setNotifications(transformed);
+      hookLogger.debug('[useNotifications] Fetched notifications', { count: transformed.length });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load notifications');
+      const message = err instanceof Error ? err.message : 'Failed to load notifications';
+      setError(message);
+      hookLogger.error('[useNotifications] Fetch error', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchWithAuth]);
 
+  // Mark single notification as read
+  const markAsRead = useCallback(async (id: string): Promise<void> => {
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+
+    try {
+      await fetchWithAuth(`${API_BASE}/api/notifications/${id}/read`, {
+        method: 'PATCH',
+      });
+      hookLogger.debug('[useNotifications] Marked as read', { id });
+    } catch (err) {
+      // Revert on error
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: false } : n))
+      );
+      hookLogger.error('[useNotifications] Mark as read failed', err);
+      throw err;
+    }
+  }, [fetchWithAuth]);
+
+  // Mark all notifications as read
+  const markAllAsRead = useCallback(async (): Promise<void> => {
+    // Store previous state for rollback
+    const previousNotifications = notifications;
+
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+    try {
+      const result = await fetchWithAuth(`${API_BASE}/api/notifications/read-all`, {
+        method: 'PATCH',
+      });
+      hookLogger.info('[useNotifications] Marked all as read', { count: result.updatedCount });
+    } catch (err) {
+      // Revert on error
+      setNotifications(previousNotifications);
+      hookLogger.error('[useNotifications] Mark all as read failed', err);
+      throw err;
+    }
+  }, [fetchWithAuth, notifications]);
+
+  // Delete a notification
+  const deleteNotification = useCallback(async (id: string): Promise<void> => {
+    // Store for rollback
+    const previousNotifications = notifications;
+
+    // Optimistic update
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+    try {
+      await fetchWithAuth(`${API_BASE}/api/notifications/${id}`, {
+        method: 'DELETE',
+      });
+      hookLogger.debug('[useNotifications] Deleted notification', { id });
+    } catch (err) {
+      // Revert on error
+      setNotifications(previousNotifications);
+      hookLogger.error('[useNotifications] Delete failed', err);
+      throw err;
+    }
+  }, [fetchWithAuth, notifications]);
+
+  // Fetch preferences
+  const fetchPreferences = useCallback(async (): Promise<void> => {
+    try {
+      const data = await fetchWithAuth(`${API_BASE}/api/notifications/preferences`);
+      setPreferences(data);
+      hookLogger.debug('[useNotifications] Fetched preferences');
+    } catch (err) {
+      hookLogger.error('[useNotifications] Fetch preferences failed', err);
+    }
+  }, [fetchWithAuth]);
+
+  // Update preferences
   const updatePreferences = useCallback(
     async (prefs: Partial<NotificationPreferences>): Promise<void> => {
-      // TODO: Implement API call
-      console.log('[useNotifications] Update preferences - NOT IMPLEMENTED', prefs);
+      // Store previous state for rollback
+      const previousPreferences = preferences;
 
+      // Optimistic update
       setPreferences((prev) => prev ? { ...prev, ...prefs } : null);
+
+      try {
+        const updated = await fetchWithAuth(`${API_BASE}/api/notifications/preferences`, {
+          method: 'PATCH',
+          body: JSON.stringify(prefs),
+        });
+        setPreferences(updated);
+        hookLogger.info('[useNotifications] Updated preferences');
+      } catch (err) {
+        // Revert on error
+        setPreferences(previousPreferences);
+        hookLogger.error('[useNotifications] Update preferences failed', err);
+        throw err;
+      }
     },
-    []
+    [fetchWithAuth, preferences]
   );
+
+  // Initial fetch
+  useEffect(() => {
+    refresh();
+    fetchPreferences();
+  }, [refresh, fetchPreferences]);
 
   // Auto-refresh
   useEffect(() => {
@@ -130,6 +216,7 @@ export const useNotifications = (
     deleteNotification,
     refresh,
     updatePreferences,
+    fetchPreferences,
   };
 };
 

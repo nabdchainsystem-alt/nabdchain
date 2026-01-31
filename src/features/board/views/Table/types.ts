@@ -41,6 +41,27 @@ export interface Column {
     };
 }
 
+export type ButtonActionType =
+    | 'open_url'
+    | 'run_automation'
+    | 'update_status'
+    | 'send_notification'
+    | 'create_item'
+    | 'custom_webhook'
+    | 'custom_script';
+
+export interface ButtonAction {
+    type: ButtonActionType;
+    config: Record<string, unknown>;
+}
+
+export interface ButtonConfig {
+    label: string;
+    icon?: string;
+    color: string;
+    action: ButtonAction;
+}
+
 export interface Row {
     id: string;
     groupId?: string;

@@ -568,3 +568,153 @@ model QuickNote {
   @@index([userId, pinned])
   @@unique([userId, clientId])
 }
+
+// =============================================================================
+// COMMENTS SYSTEM
+// =============================================================================
+
+model Comment {
+  id          String            @id @default(uuid())
+  authorId    String
+  entityType  String            // 'row', 'board', 'doc', 'task'
+  entityId    String
+  content     String
+  parentId    String?           // For replies/threading
+  mentions    String?           // JSON array of user IDs
+  attachments String?           // JSON array of attachment objects
+  edited      Boolean           @default(false)
+  editedAt    DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  reactions   CommentReaction[]
+  parent      Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]         @relation("CommentReplies")
+
+  @@index([authorId])
+  @@index([entityType, entityId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@index([userId])
+}
+
+// =============================================================================
+// NOTIFICATIONS SYSTEM
+// =============================================================================
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // 'mention', 'assignment', 'comment', 'status_change', etc.
+  title       String
+  body        String?
+  entityType  String?  // 'board', 'task', 'comment', 'workspace'
+  entityId    String?
+  entityName  String?
+  boardId     String?
+  boardName   String?
+  actorId     String?
+  actorName   String?
+  actorAvatar String?
+  read        Boolean  @default(false)
+  emailSent   Boolean  @default(false)
+  pushSent    Boolean  @default(false)
+  actionUrl   String?
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model NotificationPreference {
+  id                   String  @id @default(uuid())
+  userId               String  @unique
+  emailEnabled         Boolean @default(true)
+  emailMentions        Boolean @default(true)
+  emailAssignments     Boolean @default(true)
+  emailComments        Boolean @default(true)
+  emailDueDates        Boolean @default(true)
+  emailStatusChanges   Boolean @default(false)
+  emailDigest          String  @default("none") // 'none', 'daily', 'weekly'
+  pushEnabled          Boolean @default(true)
+  pushMentions         Boolean @default(true)
+  pushAssignments      Boolean @default(true)
+  pushComments         Boolean @default(true)
+  pushDueDates         Boolean @default(true)
+  quietHoursEnabled    Boolean @default(false)
+  quietHoursStart      String  @default("22:00")
+  quietHoursEnd        String  @default("08:00")
+  quietHoursTimezone   String  @default("UTC")
+  updatedAt            DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// =============================================================================
+// TIME TRACKING SYSTEM
+// =============================================================================
+
+model TimeEntry {
+  id          String    @id @default(uuid())
+  userId      String
+  boardId     String
+  taskId      String?
+  rowId       String?
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int       @default(0) // in seconds
+  billable    Boolean   @default(false)
+  hourlyRate  Float?
+  tags        String?   // JSON array
+  source      String    @default("manual") // 'manual', 'timer', 'import'
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([boardId])
+  @@index([taskId])
+  @@index([userId, boardId])
+  @@index([userId, startTime])
+}
+
+// =============================================================================
+// TEMPLATES SYSTEM
+// =============================================================================
+
+model Template {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  category    String    // 'project_management', 'marketing', 'sales', etc.
+  subcategory String?
+  thumbnail   String?
+  isPublic    Boolean   @default(false)
+  workspaceId String?
+  createdById String?
+  content     String    // JSON - board structure, columns, rooms
+  tags        String?   // JSON array
+  usageCount  Int       @default(0)
+  rating      Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([createdById])
+  @@index([category])
+  @@index([isPublic])
+  @@index([isPublic, category])
+}

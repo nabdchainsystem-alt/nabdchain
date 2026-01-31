@@ -39,8 +39,8 @@ export const ConnectMemberModal: React.FC<ConnectMemberModalProps> = ({
 
             const result = await teamService.searchUser(token, email.trim());
             setSearchResult(result);
-        } catch (err: any) {
-            setError(err.message || 'User not found');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'User not found');
         } finally {
             setIsSearching(false);
         }
@@ -66,8 +66,8 @@ export const ConnectMemberModal: React.FC<ConnectMemberModalProps> = ({
                 onSuccess();
                 onClose();
             }, 1500);
-        } catch (err: any) {
-            setError(err.message || 'Failed to send request');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to send request');
         } finally {
             setIsSending(false);
         }

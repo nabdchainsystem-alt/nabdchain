@@ -23,6 +23,10 @@ import aiRoutes from './routes/aiRoutes';
 import gtdRoutes from './routes/gtdRoutes';
 import notesRoutes from './routes/notesRoutes';
 import mobileRoutes from './routes/mobileRoutes';
+import commentsRoutes from './routes/commentsRoutes';
+import notificationsRoutes from './routes/notificationsRoutes';
+import timeTrackingRoutes from './routes/timeTrackingRoutes';
+import templatesRoutes from './routes/templatesRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
@@ -199,6 +203,10 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/gtd', gtdRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/mobile', mobileRoutes);
+app.use('/api/comments', commentsRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/time-entries', timeTrackingRoutes);
+app.use('/api/templates', templatesRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {

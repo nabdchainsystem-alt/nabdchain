@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Row } from '../types';
 import { SortableRow } from './SortableRow';
+import type { DragListeners } from '@/types/drag';
 
 // =============================================================================
 // VIRTUALIZED ROWS COMPONENT
@@ -17,7 +18,7 @@ interface VirtualizedRowsProps {
     activeDragId: string | null;
     checkedRows: Set<string>;
     isDoneStatus: (status: string | undefined) => boolean;
-    renderRowContent: (row: Row, dragListeners: any, isRowDragging: boolean) => React.ReactNode;
+    renderRowContent: (row: Row, dragListeners: DragListeners, isRowDragging: boolean) => React.ReactNode;
 }
 
 export const VirtualizedRows: React.FC<VirtualizedRowsProps> = memo(({

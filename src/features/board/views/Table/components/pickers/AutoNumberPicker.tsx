@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Hash, Info } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 // =============================================================================
 // AUTO NUMBER PICKER - PLACEHOLDER COMPONENT
@@ -36,7 +37,7 @@ export const formatAutoNumber = (num: number | null, config?: AutoNumberConfig):
     return `${cfg.prefix || ''}${padded}${cfg.suffix || ''}`;
 };
 
-export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
+export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = memo(({
     value,
     config,
     onConfigChange,
@@ -44,6 +45,8 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
     triggerRect,
     isConfigMode = false,
 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [localConfig, setLocalConfig] = React.useState<AutoNumberConfig>(
         config || { startFrom: 1, increment: 1, padLength: 4 }
     );
@@ -78,10 +81,18 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
         };
 
         if (openUp) {
-            return { ...baseStyle, bottom: windowHeight - triggerRect.top + 4, ...(left !== undefined ? { left } : { right }) };
+            return {
+                ...baseStyle,
+                bottom: windowHeight - triggerRect.top + 4,
+                ...(isRtl ? (right !== undefined ? { right: PADDING } : { left: PADDING }) : (left !== undefined ? { left } : { right }))
+            };
         }
-        return { ...baseStyle, top: triggerRect.bottom + 4, ...(left !== undefined ? { left } : { right }) };
-    }, [triggerRect, isConfigMode]);
+        return {
+            ...baseStyle,
+            top: triggerRect.bottom + 4,
+            ...(isRtl ? (right !== undefined ? { right: PADDING } : { left: PADDING }) : (left !== undefined ? { left } : { right }))
+        };
+    }, [triggerRect, isConfigMode, isRtl]);
 
     const handleSaveConfig = () => {
         onConfigChange?.(localConfig);
@@ -100,9 +111,9 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
+                    <span className={`text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <Hash size={14} />
-                        Auto Number
+                        {t('auto_number')}
                     </span>
                 </div>
 
@@ -113,9 +124,9 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
                             <div className="text-2xl font-mono font-bold text-stone-700 dark:text-stone-200">
                                 {formatAutoNumber(value, config)}
                             </div>
-                            <div className="mt-2 flex items-center justify-center gap-1 text-xs text-stone-400">
+                            <div className={`mt-2 flex items-center justify-center gap-1 text-xs text-stone-400 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                 <Info size={12} />
-                                <span>Auto-generated (read-only)</span>
+                                <span>{t('auto_generated_read_only')}</span>
                             </div>
                         </div>
                     </div>
@@ -126,65 +137,65 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
                     <div className="p-3 space-y-3">
                         {/* Prefix */}
                         <div>
-                            <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                                Prefix
+                            <label className={`block text-[10px] font-medium text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>
+                                {t('prefix')}
                             </label>
                             <input
                                 type="text"
                                 value={localConfig.prefix || ''}
                                 onChange={(e) => setLocalConfig({ ...localConfig, prefix: e.target.value })}
                                 placeholder="e.g., TASK-"
-                                className="w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                                className={`w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                             />
                         </div>
 
                         {/* Suffix */}
                         <div>
-                            <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                                Suffix
+                            <label className={`block text-[10px] font-medium text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>
+                                {t('suffix')}
                             </label>
                             <input
                                 type="text"
                                 value={localConfig.suffix || ''}
                                 onChange={(e) => setLocalConfig({ ...localConfig, suffix: e.target.value })}
                                 placeholder="e.g., -2024"
-                                className="w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                                className={`w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                             />
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
                             {/* Start From */}
                             <div>
-                                <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                                    Start
+                                <label className={`block text-[10px] font-medium text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>
+                                    {t('start')}
                                 </label>
                                 <input
                                     type="number"
                                     value={localConfig.startFrom}
                                     onChange={(e) => setLocalConfig({ ...localConfig, startFrom: parseInt(e.target.value) || 1 })}
                                     min="0"
-                                    className="w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                                    className={`w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                                 />
                             </div>
 
                             {/* Increment */}
                             <div>
-                                <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                                    Increment
+                                <label className={`block text-[10px] font-medium text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>
+                                    {t('increment')}
                                 </label>
                                 <input
                                     type="number"
                                     value={localConfig.increment}
                                     onChange={(e) => setLocalConfig({ ...localConfig, increment: parseInt(e.target.value) || 1 })}
                                     min="1"
-                                    className="w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                                    className={`w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                                 />
                             </div>
 
                             {/* Padding */}
                             <div>
-                                <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                                    Pad
+                                <label className={`block text-[10px] font-medium text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>
+                                    {t('pad')}
                                 </label>
                                 <input
                                     type="number"
@@ -192,19 +203,19 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
                                     onChange={(e) => setLocalConfig({ ...localConfig, padLength: parseInt(e.target.value) || 0 })}
                                     min="0"
                                     max="10"
-                                    className="w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800"
+                                    className={`w-full px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded bg-white dark:bg-stone-800 ${isRtl ? 'text-right' : ''}`}
                                 />
                             </div>
                         </div>
 
                         {/* Preview */}
-                        <div className="p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg">
-                            <div className="text-[10px] text-stone-500 uppercase mb-1">Preview</div>
+                        <div className={`p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg ${isRtl ? 'text-right' : ''}`}>
+                            <div className="text-[10px] text-stone-500 uppercase mb-1">{t('preview')}</div>
                             <div className="font-mono text-lg text-stone-700 dark:text-stone-200">
                                 {formatAutoNumber(previewNumber, localConfig)}
                             </div>
                             <div className="text-[10px] text-stone-400 mt-1">
-                                Next: {formatAutoNumber(previewNumber + localConfig.increment, localConfig)}
+                                {t('next')}: {formatAutoNumber(previewNumber + localConfig.increment, localConfig)}
                             </div>
                         </div>
 
@@ -213,7 +224,7 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
                             onClick={handleSaveConfig}
                             className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
                         >
-                            Save Configuration
+                            {t('save_configuration')}
                         </button>
                     </div>
                 )}
@@ -224,7 +235,7 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
                         onClick={onClose}
                         className="w-full py-1.5 text-xs text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
                     >
-                        Close
+                        {t('common_close') || 'Close'}
                     </button>
                 </div>
             </div>
@@ -232,18 +243,18 @@ export const AutoNumberPicker: React.FC<AutoNumberPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Inline display for table cells
 export const AutoNumberDisplay: React.FC<{
     value: number | null;
     config?: AutoNumberConfig;
-}> = ({ value, config }) => {
+}> = memo(({ value, config }) => {
     return (
         <span className="font-mono text-sm text-stone-600 dark:text-stone-400">
             {formatAutoNumber(value, config)}
         </span>
     );
-};
+});
 
 export default AutoNumberPicker;

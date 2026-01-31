@@ -72,7 +72,7 @@ export const WebhooksManager: React.FC<WebhooksManagerProps> = ({
                       ? 'bg-green-100 dark:bg-green-900/30'
                       : 'bg-stone-100 dark:bg-stone-800'
                   }`}>
-                    <Webhook
+                    <Globe
                       size={20}
                       className={webhook.active ? 'text-green-600' : 'text-stone-400'}
                     />

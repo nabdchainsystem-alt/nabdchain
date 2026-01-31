@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Paperclip, Upload, File, Image, FileDoc, FileXls, FilePdf,
     Trash, Download, Eye, Plus, X, CloudArrowUp
 } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
+import { boardLogger } from '@/utils/logger';
 
 // =============================================================================
 // FILES/ATTACHMENTS PICKER - PLACEHOLDER COMPONENT
@@ -58,7 +60,7 @@ const getFileColor = (type: string): string => {
     return 'text-stone-500';
 };
 
-export const FilesPicker: React.FC<FilesPickerProps> = ({
+export const FilesPicker: React.FC<FilesPickerProps> = memo(({
     value,
     onSelect,
     onClose,
@@ -67,6 +69,8 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
     acceptedTypes,
     maxFileSize = 10 * 1024 * 1024, // 10MB default
 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,10 +107,18 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
         };
 
         if (openUp) {
-            return { ...baseStyle, bottom: windowHeight - triggerRect.top + 4, ...(left !== undefined ? { left } : { right }) };
+            return {
+                ...baseStyle,
+                bottom: windowHeight - triggerRect.top + 4,
+                ...(isRtl ? (right !== undefined ? { right: PADDING } : { left: PADDING }) : (left !== undefined ? { left } : { right }))
+            };
         }
-        return { ...baseStyle, top: triggerRect.bottom + 4, ...(left !== undefined ? { left } : { right }) };
-    }, [triggerRect]);
+        return {
+            ...baseStyle,
+            top: triggerRect.bottom + 4,
+            ...(isRtl ? (right !== undefined ? { right: PADDING } : { left: PADDING }) : (left !== undefined ? { left } : { right }))
+        };
+    }, [triggerRect, isRtl]);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -121,18 +133,18 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
         e.preventDefault();
         setIsDragging(false);
 
-        const droppedFiles = Array.from(e.dataTransfer.files);
+        const droppedFiles = Array.from(e.dataTransfer.files) as File[];
         await handleFiles(droppedFiles);
     };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
+        const selectedFiles = e.target.files ? (Array.from(e.target.files) as File[]) : [];
         await handleFiles(selectedFiles);
     };
 
     const handleFiles = async (newFiles: File[]) => {
         // TODO: Implement actual file upload
-        console.log('[Files] Upload files - NOT IMPLEMENTED', newFiles);
+        boardLogger.debug('[Files] Upload files - NOT IMPLEMENTED', newFiles);
 
         setUploading(true);
 
@@ -160,7 +172,7 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
 
     const handlePreview = (file: FileAttachment) => {
         // TODO: Implement file preview
-        console.log('[Files] Preview file - NOT IMPLEMENTED', file);
+        boardLogger.debug('[Files] Preview file - NOT IMPLEMENTED', file);
         window.open(file.url, '_blank');
     };
 
@@ -182,10 +194,10 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
+                    <div className={`flex items-center justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+                        <span className={`text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             <Paperclip size={14} />
-                            Files & Attachments
+                            {t('files_and_attachments')}
                         </span>
                         <span className="text-[10px] text-stone-400">
                             {files.length}/{maxFiles}
@@ -198,11 +210,10 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`p-4 border-b border-stone-100 dark:border-stone-800 transition-colors ${
-                        isDragging
-                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
-                            : 'bg-stone-50 dark:bg-stone-800/30'
-                    }`}
+                    className={`p-4 border-b border-stone-100 dark:border-stone-800 transition-colors ${isDragging
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                        : 'bg-stone-50 dark:bg-stone-800/30'
+                        }`}
                 >
                     <input
                         ref={fileInputRef}
@@ -217,24 +228,24 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                         {uploading ? (
                             <div className="flex flex-col items-center gap-2">
                                 <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                <span className="text-sm text-stone-500">Uploading...</span>
+                                <span className="text-sm text-stone-500">{t('uploading')}</span>
                             </div>
                         ) : (
                             <>
                                 <CloudArrowUp size={32} className={`mx-auto mb-2 ${isDragging ? 'text-blue-500' : 'text-stone-400'}`} />
                                 <p className="text-sm text-stone-600 dark:text-stone-400 mb-2">
-                                    {isDragging ? 'Drop files here' : 'Drag & drop files here'}
+                                    {isDragging ? t('drop_files_here') : t('drag_drop_files_here')}
                                 </p>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={files.length >= maxFiles}
                                     className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-stone-300 text-white rounded-lg transition-colors"
                                 >
-                                    <Upload size={12} className="inline mr-1" />
-                                    Browse Files
+                                    <Upload size={12} className={`inline ${isRtl ? 'ml-1' : 'mr-1'}`} />
+                                    {t('browse_files')}
                                 </button>
                                 <p className="text-[10px] text-stone-400 mt-2">
-                                    Max {formatFileSize(maxFileSize)} per file
+                                    {t('max_file_size').replace('{size}', formatFileSize(maxFileSize))}
                                 </p>
                             </>
                         )}
@@ -245,7 +256,7 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                 <div className="flex-1 overflow-y-auto max-h-[250px]">
                     {files.length === 0 ? (
                         <div className="p-6 text-center text-sm text-stone-400">
-                            No files attached
+                            {t('no_files_attached')}
                         </div>
                     ) : (
                         <div className="p-2 space-y-1">
@@ -254,7 +265,7 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                                 return (
                                     <div
                                         key={file.id}
-                                        className="flex items-center gap-2 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg group"
+                                        className={`flex items-center gap-2 p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg group ${isRtl ? 'flex-row-reverse' : ''}`}
                                     >
                                         {/* Thumbnail or Icon */}
                                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-white dark:bg-stone-700 ${getFileColor(file.type)}`}>
@@ -270,7 +281,7 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                                         </div>
 
                                         {/* File Info */}
-                                        <div className="flex-1 min-w-0">
+                                        <div className={`flex-1 min-w-0 ${isRtl ? 'text-right' : ''}`}>
                                             <div className="text-sm text-stone-700 dark:text-stone-300 truncate">
                                                 {file.name}
                                             </div>
@@ -280,25 +291,25 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${isRtl ? 'flex-row-reverse' : ''}`}>
                                             <button
                                                 onClick={() => handlePreview(file)}
                                                 className="p-1.5 hover:bg-stone-200 dark:hover:bg-stone-600 rounded transition-colors"
-                                                title="Preview"
+                                                title={t('preview') || "Preview"}
                                             >
                                                 <Eye size={14} className="text-stone-500" />
                                             </button>
                                             <button
                                                 onClick={() => handleDownload(file)}
                                                 className="p-1.5 hover:bg-stone-200 dark:hover:bg-stone-600 rounded transition-colors"
-                                                title="Download"
+                                                title={t('download') || "Download"}
                                             >
                                                 <Download size={14} className="text-stone-500" />
                                             </button>
                                             <button
                                                 onClick={() => handleRemoveFile(file.id)}
                                                 className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                                                title="Remove"
+                                                title={t('remove') || "Remove"}
                                             >
                                                 <Trash size={14} className="text-red-500" />
                                             </button>
@@ -316,13 +327,13 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
                         onClick={() => { onSelect(null); onClose(); }}
                         className="py-1.5 px-2 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear all
+                        {t('clear_all')}
                     </button>
                     <button
                         onClick={onClose}
                         className="py-1.5 px-3 text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-md transition-colors"
                     >
-                        Done
+                        {t('common_done') || 'Done'}
                     </button>
                 </div>
             </div>
@@ -330,28 +341,30 @@ export const FilesPicker: React.FC<FilesPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Inline display for table cells
 export const FilesDisplay: React.FC<{
     value: FileAttachment[] | null;
     onClick?: () => void;
     maxDisplay?: number;
-}> = ({ value, onClick, maxDisplay = 3 }) => {
+}> = memo(({ value, onClick, maxDisplay = 3 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const files = value || [];
 
     if (files.length === 0) {
         return (
-            <button onClick={onClick} className="text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1">
+            <button onClick={onClick} className={`text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 <Plus size={12} />
-                Add files
+                {t('add_files')}
             </button>
         );
     }
 
     return (
-        <button onClick={onClick} className="flex items-center gap-1">
-            <div className="flex -space-x-1">
+        <button onClick={onClick} className={`flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex -space-x-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 {files.slice(0, maxDisplay).map((file) => {
                     const FileIcon = getFileIcon(file.type);
                     return (
@@ -367,9 +380,9 @@ export const FilesDisplay: React.FC<{
             {files.length > maxDisplay && (
                 <span className="text-xs text-stone-500">+{files.length - maxDisplay}</span>
             )}
-            <span className="text-xs text-stone-400">{files.length} file{files.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-stone-400">{files.length} {t('uploaded_files')}</span>
         </button>
     );
-};
+});
 
 export default FilesPicker;

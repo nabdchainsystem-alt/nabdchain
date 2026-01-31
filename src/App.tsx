@@ -92,6 +92,7 @@ const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/suppli
 // Marketplace
 const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
 const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
+const MarketplacePage = lazyWithRetry(() => import('./features/marketplace/MarketplacePage'));
 
 // Business Support
 const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
@@ -162,7 +163,7 @@ PageLoadingFallback.displayName = 'PageLoadingFallback';
 interface SidebarWrapperProps {
   activeView: ViewState | string;
   activeBoardId: string | null;
-  onNavigate: (view: string, boardId?: string) => void;
+  onNavigate: (view: string, boardId?: string, skipHistoryPush?: boolean, searchQuery?: string) => void;
   width: number;
   onResize: (width: number) => void;
   workspaces: Workspace[];
@@ -384,6 +385,9 @@ const AppContent: React.FC = () => {
 
   // Track visited department pages for lazy keep-alive (only mount once visited)
   const [visitedDeptPages, setVisitedDeptPages] = useState<Set<string>>(() => new Set());
+
+  // Marketplace params
+  const [marketplaceInitialSearch, setMarketplaceInitialSearch] = useState('');
 
   // Startup cleanup: Remove deleted boards AND orphaned boards from localStorage
   useEffect(() => {
@@ -1014,8 +1018,15 @@ const AppContent: React.FC = () => {
     }, 100); // Small delay to ensure workspace switch is processed
   }, []);
 
-  const handleNavigate = React.useCallback((view: ViewState | string, boardId?: string, skipHistoryPush?: boolean) => {
+  const handleNavigate = React.useCallback((view: ViewState | string, boardId?: string, skipHistoryPush?: boolean, searchQuery?: string) => {
     setActiveView(view);
+    if (searchQuery !== undefined) {
+      setMarketplaceInitialSearch(searchQuery);
+    } else if (view !== 'local_marketplace') {
+      // Clear search if navigating elsewhere (optional, but keeps it clean)
+      setMarketplaceInitialSearch('');
+    }
+
     if (boardId) {
       setActiveBoardId(boardId);
       const board = boards.find(b => b.id === boardId);
@@ -1706,9 +1717,11 @@ const AppContent: React.FC = () => {
             ) : activeView === 'marketing' ? (
               <MarketingPage />
             ) : activeView === 'local_marketplace' ? (
-              <LocalMarketplacePage />
+              <LocalMarketplacePage initialSearchQuery={marketplaceInitialSearch} />
             ) : activeView === 'foreign_marketplace' ? (
               <ForeignMarketplacePage />
+            ) : activeView === 'marketplace' ? (
+              <MarketplacePage onNavigate={handleNavigate} />
             ) : activeView === 'cornell_notes' ? (
               <CornellNotesPage />
             ) : activeView === 'quick_notes' ? (

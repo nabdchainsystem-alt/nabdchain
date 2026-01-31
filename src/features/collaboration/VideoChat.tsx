@@ -201,15 +201,16 @@ export const VideoChat: React.FC<VideoChatProps> = ({ roomId }) => {
                 setPeers(newPeers);
             });
 
-        } catch (err: any) {
+        } catch (err) {
             videoLogger.error("[VideoChat] Failed to join call:", err);
             setIsJoining(false);
-            if (err.name === 'NotAllowedError') {
+            const error = err as Error & { name?: string };
+            if (error.name === 'NotAllowedError') {
                 alert('Camera/microphone access denied. Please allow access and try again.');
-            } else if (err.name === 'NotFoundError') {
+            } else if (error.name === 'NotFoundError') {
                 alert('No camera or microphone found. Please connect a device and try again.');
             } else {
-                alert('Failed to join: ' + (err.message || 'Unknown error'));
+                alert('Failed to join: ' + (error.message || 'Unknown error'));
             }
         }
     };

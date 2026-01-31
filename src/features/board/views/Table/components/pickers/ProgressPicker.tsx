@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle, Trophy, Sparkle, X } from 'phosphor-react';
 import { useAppContext } from '../../../../../../contexts/AppContext';
@@ -18,7 +18,7 @@ interface ProgressPickerProps {
 
 const PRESET_VALUES = [0, 10, 25, 50, 75, 100];
 
-export const ProgressPicker: React.FC<ProgressPickerProps> = ({
+export const ProgressPicker: React.FC<ProgressPickerProps> = memo(({
     value,
     onSelect,
     onClose,
@@ -328,7 +328,7 @@ export const ProgressPicker: React.FC<ProgressPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Inline progress bar component for table cells
 export const ProgressBar: React.FC<{
@@ -336,7 +336,7 @@ export const ProgressBar: React.FC<{
     showLabel?: boolean;
     size?: 'sm' | 'md' | 'lg';
     onClick?: () => void;
-}> = ({ value, showLabel = true, size = 'md', onClick }) => {
+}> = memo(({ value, showLabel = true, size = 'md', onClick }) => {
     const percent = value ?? 0;
 
     const getColor = (p: number) => {
@@ -368,6 +368,6 @@ export const ProgressBar: React.FC<{
             )}
         </div>
     );
-};
+});
 
 export default ProgressPicker;

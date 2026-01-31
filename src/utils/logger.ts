@@ -91,3 +91,7 @@ export const authLogger = createLogger('Auth');
 export const serviceLogger = createLogger('Service');
 export const videoLogger = createLogger('Video');
 export const talkLogger = createLogger('Talk');
+export const swLogger = createLogger('SW');
+export const errorLogger = createLogger('Error');
+export const featureLogger = createLogger('Feature');
+export const hookLogger = createLogger('Hook');

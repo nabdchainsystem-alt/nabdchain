@@ -1,4 +1,5 @@
 import { Key, FileText, Note, Shield, Star, Trash, Folder, Image, Globe, File } from 'phosphor-react';
+import type { IconComponent } from '@/types/icons';
 
 export type VaultItemType = 'login' | 'note' | 'folder' | 'document' | 'image' | 'weblink';
 
@@ -49,7 +50,7 @@ export interface VaultItem {
     isDeleted?: boolean;
     deletedAt?: string;
     folderId?: string;
-    icon?: any; // Lucide icon component
+    icon?: IconComponent;
     color?: string;
     metadata?: FolderMetadata | LinkMetadata | FileMetadata | LoginMetadata | NoteMetadata;
     previewUrl?: string; // For images or link favicons

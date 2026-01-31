@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Trash } from 'phosphor-react';
 import { STATUS_STYLES, StatusOption } from '../../types';
 import { usePopupPosition } from '../../hooks/usePopupPosition';
-import { useAppContext } from '../../../../../../contexts/AppContext';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 // Default statuses with colors matching KanbanBoard
 const DEFAULT_STATUSES: StatusOption[] = [
@@ -65,7 +65,7 @@ interface StatusPickerProps {
     onDelete?: (status: string) => void;
 }
 
-export const StatusPicker: React.FC<StatusPickerProps> = ({
+export const StatusPicker: React.FC<StatusPickerProps> = memo(({
     onSelect,
     onClose,
     current,
@@ -74,8 +74,8 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
     onAdd,
     onDelete
 }) => {
-    const { t, dir } = useAppContext();
-    const isRTL = dir === 'rtl';
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [customStatus, setCustomStatus] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
     const positionStyle = usePopupPosition({ triggerRect, menuHeight: 250 });
@@ -112,8 +112,8 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                 style={positionStyle}
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
-                    <span className="text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400">
-                        {t('task_status')}
+                    <span className={`text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400 block ${isRtl ? 'text-right' : ''}`}>
+                        {t('status')}
                     </span>
                 </div>
                 <div className="p-2 max-h-64 overflow-y-auto flex flex-col gap-1 custom-scrollbar">
@@ -141,7 +141,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                                             e.stopPropagation();
                                             if (onDelete) onDelete(statusId);
                                         }}
-                                        className={`absolute top-0 bottom-0 px-2 flex items-center justify-center text-stone-400 hover:text-red-500 bg-white/50 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'left-0 rounded-s' : 'right-0 rounded-e'}`}
+                                        className={`absolute top-0 bottom-0 px-2 flex items-center justify-center text-stone-400 hover:text-red-500 bg-white/50 hover:bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity ${isRtl ? 'left-0 rounded-s' : 'right-0 rounded-e'}`}
                                         title={t('delete_status')}
                                     >
                                         <Trash size={12} />
@@ -157,7 +157,7 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
                         value={customStatus}
                         onChange={(e) => setCustomStatus(e.target.value)}
                         placeholder={t('add_new_status')}
-                        className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-100 dark:focus:ring-stone-800 transition-all placeholder:text-stone-400"
+                        className={`w-full px-3 py-2 text-xs bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-100 dark:focus:ring-stone-800 transition-all placeholder:text-stone-400 ${isRtl ? 'text-right' : ''}`}
                     />
                 </form>
             </div>
@@ -165,6 +165,6 @@ export const StatusPicker: React.FC<StatusPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 export { DEFAULT_STATUSES };

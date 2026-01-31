@@ -87,7 +87,7 @@ export const ShareLinkManager: React.FC<ShareLinkManagerProps> = ({
                       {link.resourceType.charAt(0).toUpperCase() + link.resourceType.slice(1)} Link
                     </p>
                     {link.password && (
-                      <Lock size={14} className="text-amber-500" title="Password protected" />
+                      <span title="Password protected"><Lock size={14} className="text-amber-500" /></span>
                     )}
                     {!link.isActive && (
                       <span className="px-2 py-0.5 text-xs bg-stone-100 dark:bg-stone-800 text-stone-500 rounded">

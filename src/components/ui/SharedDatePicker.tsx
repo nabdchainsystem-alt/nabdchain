@@ -209,14 +209,14 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
         : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
     const shortcuts = [
-        { key: 'today', label: language === 'ar' ? 'اليوم' : 'Today' },
-        { key: 'later', label: language === 'ar' ? 'لاحقاً' : 'Later' },
-        { key: 'tomorrow', label: language === 'ar' ? 'غداً' : 'Tomorrow' },
-        { key: 'nextWeek', label: language === 'ar' ? 'الأسبوع القادم' : 'Next week' },
-        { key: 'nextWeekend', label: language === 'ar' ? 'نهاية الأسبوع' : 'Next weekend' },
-        { key: '2weeks', label: language === 'ar' ? 'أسبوعين' : '2 weeks' },
-        { key: '4weeks', label: language === 'ar' ? '4 أسابيع' : '4 weeks' },
-        { key: '8weeks', label: language === 'ar' ? '8 أسابيع' : '8 weeks' },
+        { key: 'today', label: t('shortcut_today') },
+        { key: 'later', label: t('shortcut_later') },
+        { key: 'tomorrow', label: t('shortcut_tomorrow') },
+        { key: 'nextWeek', label: t('shortcut_next_week') },
+        { key: 'nextWeekend', label: t('shortcut_next_weekend') },
+        { key: '2weeks', label: t('shortcut_2_weeks') },
+        { key: '4weeks', label: t('shortcut_4_weeks') },
+        { key: '8weeks', label: t('shortcut_8_weeks') },
     ];
 
     return (
@@ -242,9 +242,9 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                 <div className="flex items-center justify-between mb-3">
                     <span className="font-semibold text-gray-800 dark:text-stone-200 text-sm font-datetime">{currentMonth.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}</span>
                     <div className="flex items-center gap-1">
-                        <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-xs text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">{language === 'ar' ? 'اليوم' : 'Today'}</button>
-                        <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretLeft size={14} /></button>
-                        <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><CaretRight size={14} /></button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); goToToday(); }} className="text-xs text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 px-2 py-1 rounded transition-colors">{t('calendar_today')}</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); prevMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors">{language === 'ar' ? <CaretRight size={14} /> : <CaretLeft size={14} />}</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); nextMonth(); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors">{language === 'ar' ? <CaretLeft size={14} /> : <CaretRight size={14} />}</button>
                     </div>
                 </div>
 
@@ -291,10 +291,10 @@ export const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
                         }}
                         className="text-[11px] font-medium text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
                     >
-                        {language === 'ar' ? 'مسح' : 'Clear'}
+                        {t('clear')}
                     </button>
                     <button type="button" onClick={onClose} className="text-[11px] font-medium px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded shadow-sm hover:shadow transition-all">
-                        {language === 'ar' ? 'تم' : 'Done'}
+                        {t('done')}
                     </button>
                 </div>
             </div>

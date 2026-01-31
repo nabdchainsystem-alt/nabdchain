@@ -47,10 +47,10 @@ export const AcceptInvitePage: React.FC = () => {
                     navigate('/');
                 }, 2000);
 
-            } catch (e: any) {
+            } catch (e) {
                 authLogger.error('Invite Error:', e);
                 setStatus('error');
-                setErrorMsg(e.message || t('failed_to_join'));
+                setErrorMsg(e instanceof Error ? e.message : t('failed_to_join'));
             }
         };
 

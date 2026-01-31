@@ -40,6 +40,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useLanguage } from '../../../../contexts/LanguageContext';
+import { boardLogger } from '@/utils/logger';
 
 // Field Types
 type FieldType =
@@ -488,7 +489,7 @@ export const FormsView: React.FC<FormsViewProps> = ({ roomId }) => {
         try {
             localStorage.setItem(storageKey, JSON.stringify(newForms));
         } catch (e) {
-            console.error('Failed to save forms:', e);
+            boardLogger.error('Failed to save forms', e);
         }
     }, [storageKey]);
 

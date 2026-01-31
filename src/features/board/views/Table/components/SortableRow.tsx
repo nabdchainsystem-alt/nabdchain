@@ -2,10 +2,11 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Row } from '../types';
+import type { DragListeners } from '@/types/drag';
 
 interface SortableRowProps {
     row: Row;
-    children: (dragListeners: any, isRowDragging: boolean) => React.ReactNode;
+    children: (dragListeners: DragListeners, isRowDragging: boolean) => React.ReactNode;
     className: string;
 }
 

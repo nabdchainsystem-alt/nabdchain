@@ -1,5 +1,6 @@
 import React from 'react';
 import { SlackLogo, Check, ArrowRight } from 'phosphor-react';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // SLACK INTEGRATION - PLACEHOLDER
@@ -21,7 +22,7 @@ export const SlackIntegration: React.FC<SlackIntegrationProps> = ({
 }) => {
   const handleConnect = () => {
     // TODO: Implement Slack OAuth flow
-    console.log('[Slack] Connect - NOT IMPLEMENTED');
+    featureLogger.debug('[Slack] Connect - NOT IMPLEMENTED');
     onConnect?.();
   };
 

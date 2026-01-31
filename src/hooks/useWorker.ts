@@ -4,6 +4,7 @@
  */
 import { useRef, useCallback, useEffect, useState } from 'react';
 import type { WorkerMessage, WorkerResponse, WorkerMessageType } from '../workers/computeWorker';
+import { appLogger } from '../utils/logger';
 
 // Create worker instance lazily
 let workerInstance: Worker | null = null;
@@ -37,10 +38,10 @@ function getWorker(): Worker | null {
             };
 
             workerInstance.onerror = (error) => {
-                console.error('[Worker] Error:', error);
+                appLogger.error('[Worker] Error', error);
             };
         } catch (e) {
-            console.warn('[Worker] Failed to create worker:', e);
+            appLogger.warn('[Worker] Failed to create worker', e);
             return null;
         }
     }

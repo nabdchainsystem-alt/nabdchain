@@ -5,6 +5,7 @@ import {
   Gear, GraduationCap, User, Rocket
 } from 'phosphor-react';
 import type { Template, TemplateCategory } from './types';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // TEMPLATES PAGE - PLACEHOLDER
@@ -95,7 +96,7 @@ export const TemplatesPage: React.FC = () => {
 
   const handleUseTemplate = (template: Partial<Template>) => {
     // TODO: Implement template creation
-    console.log('[Templates] Use template - NOT IMPLEMENTED', template);
+    featureLogger.debug('[Templates] Use template - NOT IMPLEMENTED', template);
     alert(`Creating board from "${template.name}" template - Coming soon!`);
   };
 

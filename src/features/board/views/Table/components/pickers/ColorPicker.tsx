@@ -1,6 +1,6 @@
-import React, { useRef, useState, useLayoutEffect } from 'react';
+import React, { useRef, useState, useLayoutEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { useAppContext } from '../../../../../../contexts/AppContext';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 // Color palette for checkbox/selection colors
 const COLORS = [
@@ -16,13 +16,14 @@ interface CheckboxColorPickerProps {
     triggerRect?: DOMRect;
 }
 
-export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
+export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = memo(({
     onSelect,
     onClose,
     current,
     triggerRect
 }) => {
-    const { t } = useAppContext();
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const menuRef = useRef<HTMLDivElement>(null);
     const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({ display: 'none' });
 
@@ -42,17 +43,22 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
                 style.top = triggerRect.bottom - 4;
             }
 
-            // Default: align left edge of menu with left edge of trigger
-            style.left = triggerRect.left;
-
-            // Check overflow right - force it to fit
-            if (triggerRect.left + menuWidth > window.innerWidth - 10) {
-                style.left = window.innerWidth - menuWidth - 10;
+            // Default: align left edge of menu with left edge of trigger (unless RTL)
+            if (isRtl) {
+                style.right = window.innerWidth - triggerRect.right;
+                if (window.innerWidth - triggerRect.right + menuWidth > window.innerWidth - 10) {
+                    style.right = 10;
+                }
+            } else {
+                style.left = triggerRect.left;
+                if (triggerRect.left + menuWidth > window.innerWidth - 10) {
+                    style.left = window.innerWidth - menuWidth - 10;
+                }
             }
 
             setPositionStyle(style);
         }
-    }, [triggerRect]);
+    }, [triggerRect, isRtl]);
 
     const content = (
         <>
@@ -64,8 +70,8 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
                 style={positionStyle}
             >
                 <div className="pb-2 mb-2 border-b border-stone-100 dark:border-stone-800">
-                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-stone-400 px-1">
-                        Checkbox Color
+                    <span className={`text-[10px] font-sans font-bold uppercase tracking-wider text-stone-400 px-1 block ${isRtl ? 'text-right' : ''}`}>
+                        {t('checkbox_color')}
                     </span>
                 </div>
                 <div className="grid grid-cols-6 gap-1.5">
@@ -102,6 +108,6 @@ export const CheckboxColorPicker: React.FC<CheckboxColorPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 export { COLORS as PICKER_COLORS };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { usePopupPosition } from '../../views/Table/hooks/usePopupPosition';
 import { createPortal } from 'react-dom';
 import { MagnifyingGlass as Search, FileText, CircleNotch as Loader2, Plus, Link as LinkIcon } from 'phosphor-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,7 +50,17 @@ export const DocPicker: React.FC<DocPickerProps> = ({
     const [docs, setDocs] = useState<BoardDoc[]>([]);
     const [loading, setLoading] = useState(true);
     const menuRef = useRef<HTMLDivElement>(null);
-    const [positionStyle, setPositionStyle] = useState<React.CSSProperties>({ display: 'none' });
+    const positionStyle = usePopupPosition({
+        triggerRect,
+        menuWidth: 280,
+        menuHeight: 320,
+        align: 'start'
+    });
+
+    const filteredDocs = docs.filter(doc =>
+        doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const [isCreating, setIsCreating] = useState(false);
     const [newDocName, setNewDocName] = useState('');
 
@@ -70,62 +81,6 @@ export const DocPicker: React.FC<DocPickerProps> = ({
 
         return () => clearTimeout(timer);
     }, [currentBoardId]);
-
-    // Positioning logic
-    useLayoutEffect(() => {
-        if (triggerRect) {
-            const menuWidth = 280;
-            const menuHeight = 320;
-            const padding = 16;
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            const spaceRight = windowWidth - triggerRect.left;
-            const spaceLeft = triggerRect.right;
-            const spaceBelow = windowHeight - triggerRect.bottom;
-            const spaceAbove = triggerRect.top;
-
-            let left: number | undefined;
-            let right: number | undefined;
-
-            if (spaceRight >= menuWidth + padding) {
-                left = Math.max(padding, triggerRect.left);
-            } else if (spaceLeft >= menuWidth + padding) {
-                right = Math.max(padding, windowWidth - triggerRect.right);
-            } else {
-                left = Math.max(padding, (windowWidth - menuWidth) / 2);
-            }
-
-            if (left !== undefined && left + menuWidth > windowWidth - padding) {
-                left = windowWidth - menuWidth - padding;
-            }
-
-            const openUp = spaceBelow < menuHeight + padding && spaceAbove > spaceBelow;
-            const maxHeight = openUp
-                ? Math.min(menuHeight, spaceAbove - padding)
-                : Math.min(menuHeight, spaceBelow - padding);
-
-            if (openUp) {
-                setPositionStyle({
-                    bottom: windowHeight - triggerRect.top + 4,
-                    ...(left !== undefined ? { left } : { right }),
-                    position: 'fixed',
-                    maxHeight: maxHeight > 200 ? maxHeight : undefined
-                });
-            } else {
-                setPositionStyle({
-                    top: triggerRect.bottom + 4,
-                    ...(left !== undefined ? { left } : { right }),
-                    position: 'fixed',
-                    maxHeight: maxHeight > 200 ? maxHeight : undefined
-                });
-            }
-        }
-    }, [triggerRect]);
-
-    const filteredDocs = docs.filter(doc =>
-        doc.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     const handleCreateDoc = () => {
         if (!newDocName.trim() || !currentBoardId) return;
@@ -213,9 +168,8 @@ export const DocPicker: React.FC<DocPickerProps> = ({
                                 <button
                                     key={doc.id}
                                     onClick={() => handleSelectDoc(doc)}
-                                    className={`w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-stone-100 dark:hover:bg-stone-800 group text-left transition-colors ${
-                                        current?.id === doc.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                    }`}
+                                    className={`w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-stone-100 dark:hover:bg-stone-800 group text-left transition-colors ${current?.id === doc.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                        }`}
                                 >
                                     <div className="p-1 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 shrink-0">
                                         <FileText size={12} />

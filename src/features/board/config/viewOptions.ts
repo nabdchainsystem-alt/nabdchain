@@ -16,10 +16,11 @@ import {
     UserCircle as UserCheck,
     ArrowsClockwise as RotateCw,
 } from 'phosphor-react';
+import type { IconComponent } from '@/types/icons';
 
 export interface ViewOption {
     label: string;
-    icon: any; // Using any for lucide-react component type to avoid strict type issues
+    icon: IconComponent;
     id: string;
     description: string;
 }

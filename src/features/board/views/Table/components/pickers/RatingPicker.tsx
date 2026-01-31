@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Star } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
+import { usePopupPosition } from '../../hooks/usePopupPosition';
 
 interface RatingPickerProps {
     value: number | null;
@@ -10,60 +12,25 @@ interface RatingPickerProps {
     triggerRect?: DOMRect;
 }
 
-export const RatingPicker: React.FC<RatingPickerProps> = ({
+export const RatingPicker: React.FC<RatingPickerProps> = memo(({
     value,
     maxRating = 5,
     onSelect,
     onClose,
     triggerRect
 }) => {
-    const MENU_WIDTH = 200;
-    const MENU_HEIGHT = 180;
-    const PADDING = 16;
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
+    const MENU_WIDTH = 220;
+    const MENU_HEIGHT = 200;
 
-    const positionStyle = useMemo(() => {
-        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
-
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        const spaceBelow = windowHeight - triggerRect.bottom;
-        const spaceAbove = triggerRect.top;
-
-        // Calculate if menu would overflow on the right
-        const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
-
-        let left: number | undefined;
-        let right: number | undefined;
-
-        if (wouldOverflowRight) {
-            right = PADDING;
-        } else {
-            left = Math.max(PADDING, triggerRect.left);
-        }
-
-        const openUp = spaceBelow < MENU_HEIGHT + PADDING && spaceAbove > spaceBelow;
-
-        const baseStyle: React.CSSProperties = {
-            position: 'fixed',
-            zIndex: 9999,
-            width: MENU_WIDTH,
-        };
-
-        if (openUp) {
-            return {
-                ...baseStyle,
-                bottom: windowHeight - triggerRect.top + 4,
-                ...(left !== undefined ? { left } : { right }),
-            };
-        }
-
-        return {
-            ...baseStyle,
-            top: triggerRect.bottom + 4,
-            ...(left !== undefined ? { left } : { right }),
-        };
-    }, [triggerRect]);
+    const positionStyle = usePopupPosition({
+        triggerRect,
+        menuWidth: MENU_WIDTH,
+        menuHeight: MENU_HEIGHT,
+        isRtl,
+        align: 'center'
+    });
 
     const handleSelectRating = (rating: number) => {
         onSelect(rating);
@@ -80,13 +47,13 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
             <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
-                style={positionStyle}
+                className="fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 z-[9999]"
+                style={{ ...positionStyle, width: MENU_WIDTH }}
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
-                        Select Rating
+                    <span className={`text-xs font-medium text-stone-600 dark:text-stone-400 block ${isRtl ? 'text-right' : ''}`}>
+                        {t('rating')}
                     </span>
                 </div>
 
@@ -102,11 +69,10 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
                                 <Star
                                     size={28}
                                     weight={value && rating <= value ? 'fill' : 'regular'}
-                                    className={`transition-all ${
-                                        value && rating <= value
-                                            ? 'text-yellow-400'
-                                            : 'text-stone-300 dark:text-stone-600 group-hover:text-yellow-300'
-                                    }`}
+                                    className={`transition-all ${value && rating <= value
+                                        ? 'text-yellow-400'
+                                        : 'text-stone-300 dark:text-stone-600 group-hover:text-yellow-300'
+                                        }`}
                                 />
                             </button>
                         ))}
@@ -125,16 +91,15 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
 
                 {/* Quick Select Buttons */}
                 <div className="px-3 pb-2">
-                    <div className="flex gap-1">
+                    <div className={`flex gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         {Array.from({ length: maxRating }, (_, i) => i + 1).map((rating) => (
                             <button
                                 key={rating}
                                 onClick={() => handleSelectRating(rating)}
-                                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                                    value === rating
-                                        ? 'bg-yellow-400 text-yellow-900'
-                                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                                }`}
+                                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${value === rating
+                                    ? 'bg-yellow-400 text-yellow-900'
+                                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                                    }`}
                             >
                                 {rating}
                             </button>
@@ -148,7 +113,7 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
                         onClick={handleClear}
                         className="w-full py-1.5 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear rating
+                        {t('clear_cell')}
                     </button>
                 </div>
             </div>
@@ -156,4 +121,4 @@ export const RatingPicker: React.FC<RatingPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});

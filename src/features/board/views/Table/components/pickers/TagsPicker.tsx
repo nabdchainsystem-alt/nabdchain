@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Tag, Plus, X, Check } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 interface TagsPickerProps {
     value: string[] | null;
@@ -34,7 +35,7 @@ const getTagColor = (tag: string): string => {
     return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
 };
 
-export const TagsPicker: React.FC<TagsPickerProps> = ({
+export const TagsPicker: React.FC<TagsPickerProps> = memo(({
     value,
     availableTags = [],
     onSelect,
@@ -42,6 +43,8 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
     onClose,
     triggerRect
 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>(value || []);
 
@@ -58,18 +61,6 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
         const spaceBelow = windowHeight - triggerRect.bottom;
         const spaceAbove = triggerRect.top;
 
-        // Calculate if menu would overflow on the right
-        const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
-
-        let left: number | undefined;
-        let right: number | undefined;
-
-        if (wouldOverflowRight) {
-            right = PADDING;
-        } else {
-            left = Math.max(PADDING, triggerRect.left);
-        }
-
         const openUp = spaceBelow < MENU_HEIGHT + PADDING && spaceAbove > spaceBelow;
 
         const baseStyle: React.CSSProperties = {
@@ -78,20 +69,41 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
             width: MENU_WIDTH,
         };
 
+        // Calculate horizontal position based on RTL
+        let horizontalStyle: React.CSSProperties;
+        if (isRtl) {
+            // For RTL, position from right edge of trigger
+            const rightPos = windowWidth - triggerRect.right;
+            const wouldOverflowLeft = triggerRect.right - MENU_WIDTH < PADDING;
+            if (wouldOverflowLeft) {
+                horizontalStyle = { left: PADDING };
+            } else {
+                horizontalStyle = { right: Math.max(PADDING, rightPos) };
+            }
+        } else {
+            // For LTR, position from left edge of trigger
+            const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
+            if (wouldOverflowRight) {
+                horizontalStyle = { right: PADDING };
+            } else {
+                horizontalStyle = { left: Math.max(PADDING, triggerRect.left) };
+            }
+        }
+
         if (openUp) {
             return {
                 ...baseStyle,
                 bottom: windowHeight - triggerRect.top + 4,
-                ...(left !== undefined ? { left } : { right }),
+                ...horizontalStyle
             };
         }
 
         return {
             ...baseStyle,
             top: triggerRect.bottom + 4,
-            ...(left !== undefined ? { left } : { right }),
+            ...horizontalStyle
         };
-    }, [triggerRect]);
+    }, [triggerRect, isRtl]);
 
     // Merge available tags with currently selected (in case some selected aren't in available)
     const allTags = useMemo(() => {
@@ -145,12 +157,12 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <div className="flex items-center gap-2 text-xs font-medium text-stone-600 dark:text-stone-400">
+                    <div className={`flex items-center gap-2 text-xs font-medium text-stone-600 dark:text-stone-400 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <Tag size={14} />
-                        <span>Tags</span>
+                        <span>{t('tags')}</span>
                         {selectedTags.length > 0 && (
-                            <span className="ml-auto px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
-                                {selectedTags.length} selected
+                            <span className={`${isRtl ? 'mr-auto' : 'ml-auto'} px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded`}>
+                                {selectedTags.length} {t('selected')}
                             </span>
                         )}
                     </div>
@@ -159,11 +171,11 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                 {/* Selected Tags Preview */}
                 {selectedTags.length > 0 && (
                     <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30">
-                        <div className="flex flex-wrap gap-1">
+                        <div className={`flex flex-wrap gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             {selectedTags.map(tag => (
                                 <span
                                     key={tag}
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-white rounded-full ${getTagColor(tag)}`}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-white rounded-full ${getTagColor(tag)} ${isRtl ? 'flex-row-reverse' : ''}`}
                                 >
                                     {tag}
                                     <button
@@ -181,7 +193,7 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                 {/* Search / Create */}
                 <div className="p-2 border-b border-stone-100 dark:border-stone-800">
                     <div className="relative">
-                        <Tag size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                        <Tag size={14} className={`absolute ${isRtl ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-stone-400`} />
                         <input
                             type="text"
                             value={searchTerm}
@@ -191,9 +203,9 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                                     handleCreateTag();
                                 }
                             }}
-                            placeholder="Search or create tag..."
+                            placeholder={t('search_or_create_tag')}
                             autoFocus
-                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className={`w-full ${isRtl ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3'} py-1.5 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors`}
                         />
                     </div>
                 </div>
@@ -204,18 +216,18 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                     {isNewTag && (
                         <button
                             onClick={handleCreateTag}
-                            className="w-full flex items-center gap-2 px-2 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-left transition-colors mb-1"
+                            className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-left transition-colors mb-1 ${isRtl ? 'flex-row-reverse text-right' : ''}`}
                         >
                             <Plus size={14} className="text-blue-500" />
                             <span className="text-xs text-blue-600 dark:text-blue-400">
-                                Create "<span className="font-medium">{searchTerm}</span>"
+                                {t('create') || 'Create'} "<span className="font-medium">{searchTerm}</span>"
                             </span>
                         </button>
                     )}
 
                     {filteredTags.length === 0 && !isNewTag ? (
-                        <div className="py-4 text-center text-xs text-stone-400">
-                            {searchTerm ? 'No tags found' : 'No tags yet. Type to create one.'}
+                        <div className={`py-4 text-center text-xs text-stone-400 ${isRtl ? 'text-right' : ''}`}>
+                            {searchTerm ? t('no_tags_found') : t('no_tags_yet')}
                         </div>
                     ) : (
                         <div className="flex flex-col gap-0.5">
@@ -225,13 +237,13 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                                     <button
                                         key={tag}
                                         onClick={() => toggleTag(tag)}
-                                        className={`w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-left transition-colors ${
-                                            isSelected ? 'bg-stone-100 dark:bg-stone-800' : ''
-                                        }`}
+                                        className={`w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${isRtl ? 'flex-row-reverse' : ''
+                                            } ${isSelected ? 'bg-stone-100 dark:bg-stone-800' : ''
+                                            }`}
                                     >
-                                        <div className="flex items-center gap-2">
+                                        <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                             <span className={`w-3 h-3 rounded-full ${getTagColor(tag)}`} />
-                                            <span className="text-xs text-stone-700 dark:text-stone-300">
+                                            <span className={`text-xs text-stone-700 dark:text-stone-300 ${isRtl ? 'text-right' : ''}`}>
                                                 {tag}
                                             </span>
                                         </div>
@@ -246,18 +258,18 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-3 py-2 border-t border-stone-100 dark:border-stone-800 flex gap-2">
+                <div className={`px-3 py-2 border-t border-stone-100 dark:border-stone-800 flex gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                     <button
                         onClick={handleClear}
                         className="flex-1 py-1.5 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear all
+                        {t('clear_all')}
                     </button>
                     <button
                         onClick={handleSave}
                         className="flex-1 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
-                        Done
+                        {t('done')}
                     </button>
                 </div>
             </div>
@@ -265,7 +277,7 @@ export const TagsPicker: React.FC<TagsPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
 // Export helper for getting tag color
 export { getTagColor };

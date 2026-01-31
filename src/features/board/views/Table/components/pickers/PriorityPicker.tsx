@@ -1,9 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { PRIORITY_LEVELS, PriorityLevel, normalizePriority } from '../../../../../priorities/priorityUtils';
 import { PRIORITY_STYLES } from '../../types';
 import { usePopupPosition } from '../../hooks/usePopupPosition';
-import { useAppContext } from '../../../../../../contexts/AppContext';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
 
 // Priority label translation keys
 const PRIORITY_TRANSLATION_KEYS: Record<string, string> = {
@@ -20,13 +20,14 @@ interface PriorityPickerProps {
     triggerRect?: DOMRect;
 }
 
-export const PriorityPicker: React.FC<PriorityPickerProps> = ({
+export const PriorityPicker: React.FC<PriorityPickerProps> = memo(({
     onSelect,
     onClose,
     current,
     triggerRect
 }) => {
-    const { t } = useAppContext();
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const normalizedCurrent = normalizePriority(current);
     const menuRef = useRef<HTMLDivElement>(null);
     const positionStyle = usePopupPosition({ triggerRect, menuHeight: 250 });
@@ -53,8 +54,8 @@ export const PriorityPicker: React.FC<PriorityPickerProps> = ({
                 style={positionStyle}
             >
                 <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
-                    <span className="text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400">
-                        {t('task_priority')}
+                    <span className={`text-[11px] font-bold font-sans uppercase tracking-wider text-stone-400 block ${isRtl ? 'text-right' : ''}`}>
+                        {t('priority')}
                     </span>
                 </div>
                 <div className="p-2 flex flex-col gap-1">
@@ -84,4 +85,4 @@ export const PriorityPicker: React.FC<PriorityPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});

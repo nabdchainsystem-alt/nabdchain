@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, ArrowSquareOut, Copy, Check, Globe } from 'phosphor-react';
+import { useLanguage } from '../../../../../../contexts/LanguageContext';
+import { usePopupPosition } from '../../hooks/usePopupPosition';
 
 // =============================================================================
-// URL/LINK PICKER - PLACEHOLDER COMPONENT
-// Status: NOT IMPLEMENTED - Placeholder for future development
+// URL/LINK PICKER
 // =============================================================================
 
 export interface UrlValue {
@@ -39,50 +40,28 @@ const extractDomain = (url: string): string => {
     }
 };
 
-export const UrlPicker: React.FC<UrlPickerProps> = ({
+export const UrlPicker: React.FC<UrlPickerProps> = memo(({
     value,
     onSelect,
     onClose,
     triggerRect,
 }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
     const [url, setUrl] = useState(value?.url || '');
     const [label, setLabel] = useState(value?.label || '');
     const [copied, setCopied] = useState(false);
 
     const MENU_WIDTH = 320;
     const MENU_HEIGHT = 280;
-    const PADDING = 16;
 
-    const positionStyle = useMemo(() => {
-        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
-
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        const spaceBelow = windowHeight - triggerRect.bottom;
-        const wouldOverflowRight = triggerRect.left + MENU_WIDTH > windowWidth - PADDING;
-
-        let left: number | undefined;
-        let right: number | undefined;
-
-        if (wouldOverflowRight) {
-            right = PADDING;
-        } else {
-            left = Math.max(PADDING, triggerRect.left);
-        }
-
-        const openUp = spaceBelow < MENU_HEIGHT + PADDING && triggerRect.top > spaceBelow;
-
-        const baseStyle: React.CSSProperties = {
-            position: 'fixed',
-            zIndex: 9999,
-            width: MENU_WIDTH,
-        };
-
-        if (openUp) {
-            return { ...baseStyle, bottom: windowHeight - triggerRect.top + 4, ...(left !== undefined ? { left } : { right }) };
-        }
-        return { ...baseStyle, top: triggerRect.bottom + 4, ...(left !== undefined ? { left } : { right }) };
-    }, [triggerRect]);
+    const positionStyle = usePopupPosition({
+        triggerRect,
+        menuWidth: MENU_WIDTH,
+        menuHeight: MENU_HEIGHT,
+        isRtl,
+        align: 'start'
+    });
 
     const isValid = url === '' || isValidUrl(url);
 
@@ -114,67 +93,61 @@ export const UrlPicker: React.FC<UrlPickerProps> = ({
             <div className="fixed inset-0 z-[9998]" onClick={onClose} />
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
-                style={positionStyle}
+                className="fixed bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100 z-[9999]"
+                style={{ ...positionStyle, width: MENU_WIDTH }}
             >
                 {/* Header */}
                 <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
-                        <Link size={14} />
-                        Link / URL
+                    <span className={`text-xs font-medium text-stone-600 dark:text-stone-400 flex items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                        <Globe size={14} />
+                        {t('add_link')}
                     </span>
                 </div>
 
-                {/* URL Input */}
-                <div className="p-3 space-y-3">
+                {/* Form */}
+                <div className="p-3 space-y-4">
                     <div>
-                        <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
+                        <label className={`block text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-1 ${isRtl ? 'text-right' : ''}`}>
                             URL
                         </label>
-                        <div className="relative">
-                            <Globe size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
-                            <input
-                                type="url"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                placeholder="https://example.com"
-                                className={`w-full pl-8 pr-3 py-2 text-sm border rounded-lg bg-white dark:bg-stone-800 ${
-                                    !isValid
-                                        ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
-                                        : 'border-stone-200 dark:border-stone-700 focus:ring-blue-500'
-                                } focus:ring-2 focus:border-transparent`}
-                            />
-                        </div>
+                        <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            className={`w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border ${!isValid ? 'border-red-500' : 'border-stone-200 dark:border-stone-700'} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${isRtl ? 'text-right' : ''}`}
+                            autoFocus
+                        />
                         {!isValid && (
-                            <p className="mt-1 text-[10px] text-red-500">Please enter a valid URL</p>
+                            <p className={`mt-1 text-[10px] text-red-500 ${isRtl ? 'text-right' : ''}`}>{t('please_enter_valid_url')}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-medium text-stone-500 uppercase mb-1">
-                            Display Text (Optional)
+                        <label className={`block text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-1 ${isRtl ? 'text-right' : ''}`}>
+                            {t('text')}
                         </label>
                         <input
                             type="text"
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
-                            placeholder="Click here"
-                            className="w-full px-3 py-2 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder={t('type_to_add')}
+                            className={`w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${isRtl ? 'text-right' : ''}`}
                         />
                     </div>
 
                     {/* Preview */}
                     {url && isValid && (
-                        <div className="p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg">
-                            <div className="text-[10px] text-stone-500 uppercase mb-1">Preview</div>
+                        <div className="p-2 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-100 dark:border-stone-800">
+                            <div className={`text-[10px] text-stone-500 uppercase mb-1 ${isRtl ? 'text-right' : ''}`}>{t('preview')}</div>
                             <a
                                 href={url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1"
+                                className={`text-sm text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}
                                 onClick={(e) => e.preventDefault()}
                             >
-                                {label || extractDomain(url)}
+                                <span className="truncate">{label || extractDomain(url)}</span>
                                 <ArrowSquareOut size={12} />
                             </a>
                         </div>
@@ -182,38 +155,38 @@ export const UrlPicker: React.FC<UrlPickerProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="px-3 py-2 border-t border-stone-100 dark:border-stone-800 flex items-center gap-2">
-                    {url && isValid && (
-                        <>
-                            <button
-                                onClick={handleCopy}
-                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
-                            >
-                                {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                                {copied ? 'Copied!' : 'Copy'}
-                            </button>
-                            <button
-                                onClick={handleOpenUrl}
-                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
-                            >
-                                <ArrowSquareOut size={12} />
-                                Open
-                            </button>
-                        </>
-                    )}
-                    <div className="flex-1" />
+                <div className="px-2 pb-2 grid grid-cols-2 gap-2">
+                    <button
+                        onClick={handleOpenUrl}
+                        disabled={!url || !isValidUrl(url)}
+                        className={`flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed ${isRtl ? 'flex-row-reverse' : ''}`}
+                    >
+                        <ArrowSquareOut size={16} />
+                        {t('open_link')}
+                    </button>
+                    <button
+                        onClick={handleCopy}
+                        disabled={!url}
+                        className={`flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed ${isRtl ? 'flex-row-reverse' : ''}`}
+                    >
+                        {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                        {t('copy')}
+                    </button>
+                </div>
+
+                {/* Footer */}
+                <div className="px-3 py-2 border-t border-stone-100 dark:border-stone-800 flex justify-between gap-2">
                     <button
                         onClick={() => { onSelect(null); onClose(); }}
-                        className="px-2 py-1.5 text-xs text-stone-500 hover:text-red-500 rounded transition-colors"
+                        className="px-3 py-1.5 text-xs text-stone-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                        Clear
+                        {t('clear')}
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={url !== '' && !isValid}
-                        className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-stone-300 text-white rounded transition-colors"
+                        className="px-4 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors"
                     >
-                        Save
+                        {t('save')}
                     </button>
                 </div>
             </div>
@@ -221,17 +194,20 @@ export const UrlPicker: React.FC<UrlPickerProps> = ({
     );
 
     return createPortal(content, document.body);
-};
+});
 
-// Inline display component for table cells
+// Simple inline display component for table cells
 export const UrlDisplay: React.FC<{
     value: UrlValue | null;
     onClick?: () => void;
-}> = ({ value, onClick }) => {
+}> = memo(({ value, onClick }) => {
+    const { t, dir } = useLanguage();
+    const isRtl = dir === 'rtl';
+
     if (!value?.url) {
         return (
-            <button onClick={onClick} className="text-stone-400 hover:text-stone-600 text-sm">
-                + Add link
+            <button onClick={onClick} className={`text-stone-400 hover:text-stone-600 text-sm ${isRtl ? 'text-right w-full' : ''}`}>
+                + {t('add_link')}
             </button>
         );
     }
@@ -241,13 +217,13 @@ export const UrlDisplay: React.FC<{
             href={value.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 truncate max-w-[200px]"
+            className={`text-sm text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 truncate max-w-[200px] ${isRtl ? 'flex-row-reverse' : ''}`}
             onClick={(e) => { if (onClick) { e.preventDefault(); onClick(); } }}
         >
             <Link size={12} className="flex-shrink-0" />
             <span className="truncate">{value.label || extractDomain(value.url)}</span>
         </a>
     );
-};
+});
 
 export default UrlPicker;

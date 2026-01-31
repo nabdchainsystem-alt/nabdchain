@@ -196,9 +196,10 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
 
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
             setStep('verification');
-        } catch (err: any) {
+        } catch (err) {
             authLogger.error('Sign up failed:', JSON.stringify(err, null, 2));
-            setError(err.errors?.[0]?.message || t('something_went_wrong_retry'));
+            const clerkError = err as { errors?: Array<{ message?: string }> };
+            setError(clerkError.errors?.[0]?.message || t('something_went_wrong_retry'));
         } finally {
             setLoading(false);
         }
@@ -220,9 +221,10 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigateToLogin }) => 
             } else {
                 await setActive({ session: completeSignUp.createdSessionId });
             }
-        } catch (err: any) {
+        } catch (err) {
             authLogger.error('Email verification failed:', JSON.stringify(err, null, 2));
-            setError(err.errors?.[0]?.message || t('invalid_code'));
+            const clerkError = err as { errors?: Array<{ message?: string }> };
+            setError(clerkError.errors?.[0]?.message || t('invalid_code'));
         } finally {
             setLoading(false);
         }

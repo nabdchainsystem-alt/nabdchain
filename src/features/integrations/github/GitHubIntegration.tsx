@@ -1,5 +1,6 @@
 import React from 'react';
 import { GithubLogo, Check, ArrowRight, GitBranch, GitPullRequest } from 'phosphor-react';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // GITHUB INTEGRATION - PLACEHOLDER
@@ -21,7 +22,7 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({
 }) => {
   const handleConnect = () => {
     // TODO: Implement GitHub OAuth/App installation flow
-    console.log('[GitHub] Connect - NOT IMPLEMENTED');
+    featureLogger.debug('[GitHub] Connect - NOT IMPLEMENTED');
     onConnect?.();
   };
 

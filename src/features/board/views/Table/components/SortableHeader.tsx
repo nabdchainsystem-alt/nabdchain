@@ -1,6 +1,5 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Column } from '../types';
 
 interface SortableHeaderProps {
@@ -16,6 +15,7 @@ interface SortableHeaderProps {
 }
 
 export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, children, className, style, onClick, onContextMenu, disabled, sortDirection }) => {
+    const isSelectCol = col.id.endsWith('__select') || col.id === 'select';
     const {
         attributes,
         listeners,
@@ -23,13 +23,13 @@ export const SortableHeader: React.FC<SortableHeaderProps> = ({ col, index, chil
         isDragging,
     } = useSortable({
         id: col.id,
-        disabled: disabled || col.id.endsWith('__select') || col.id === 'select'
+        disabled: disabled || isSelectCol
     });
 
     // Do NOT apply transform - let DragOverlay handle visual movement
     const dndStyle: React.CSSProperties = {
-        opacity: isDragging ? 0.3 : 1,
-        cursor: (col.id.endsWith('__select') || col.id === 'select') ? 'default' : 'grab',
+        opacity: isDragging ? 0.5 : 1,
+        cursor: isSelectCol ? 'default' : isDragging ? 'grabbing' : 'grab',
         ...style,
     };
 

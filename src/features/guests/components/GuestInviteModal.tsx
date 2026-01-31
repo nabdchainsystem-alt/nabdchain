@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, EnvelopeSimple, Eye, ChatCircle, Pencil, Calendar, Info } from 'phosphor-react';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // GUEST INVITE MODAL - PLACEHOLDER
@@ -43,7 +44,7 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
   ];
 
   const handleSubmit = () => {
-    console.log('[GuestInviteModal] Invite - NOT IMPLEMENTED', {
+    featureLogger.debug('[GuestInviteModal] Invite - NOT IMPLEMENTED', {
       email,
       accessLevel,
       message,

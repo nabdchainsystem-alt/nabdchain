@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { PaperPlaneRight, Paperclip, Smiley, At } from 'phosphor-react';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // COMMENT INPUT - PLACEHOLDER
@@ -91,7 +92,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
             className="hidden"
             onChange={(e) => {
               // TODO: Handle file attachments
-              console.log('[CommentInput] File attachment - NOT IMPLEMENTED', e.target.files);
+              featureLogger.debug('[CommentInput] File attachment - NOT IMPLEMENTED', e.target.files);
             }}
           />
 

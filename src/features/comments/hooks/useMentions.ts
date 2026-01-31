@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { MentionSuggestion, MentionNotification } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE MENTIONS HOOK - PLACEHOLDER
@@ -35,17 +36,17 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
 
       try {
         // TODO: Implement API call
-        console.log('[useMentions] Search users - NOT IMPLEMENTED', { query, ...options });
+        hookLogger.debug('[useMentions] Search users - NOT IMPLEMENTED', { query, ...options });
 
         // Simulate delay
         await new Promise((resolve) => setTimeout(resolve, 300));
 
         // Return mock suggestions
         const mockSuggestions: MentionSuggestion[] = [
-          { id: 'user-1', name: 'John Doe', email: 'john@example.com', type: 'user' },
-          { id: 'user-2', name: 'Jane Smith', email: 'jane@example.com', type: 'user' },
-          { id: 'team-1', name: 'Engineering Team', type: 'team' },
-          { id: 'team-2', name: 'Design Team', type: 'team' },
+          { id: 'user-1', name: 'John Doe', email: 'john@example.com', type: 'user' as const },
+          { id: 'user-2', name: 'Jane Smith', email: 'jane@example.com', type: 'user' as const },
+          { id: 'team-1', name: 'Engineering Team', type: 'team' as const },
+          { id: 'team-2', name: 'Design Team', type: 'team' as const },
         ].filter(
           (s) =>
             s.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -63,7 +64,7 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
 
   const markAsRead = useCallback(async (notificationId: string): Promise<void> => {
     // TODO: Implement API call
-    console.log('[useMentions] Mark as read - NOT IMPLEMENTED', notificationId);
+    hookLogger.debug('[useMentions] Mark as read - NOT IMPLEMENTED', notificationId);
 
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
@@ -72,14 +73,14 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
 
   const markAllAsRead = useCallback(async (): Promise<void> => {
     // TODO: Implement API call
-    console.log('[useMentions] Mark all as read - NOT IMPLEMENTED');
+    hookLogger.debug('[useMentions] Mark all as read - NOT IMPLEMENTED');
 
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
   const refreshNotifications = useCallback(async (): Promise<void> => {
     // TODO: Implement API call
-    console.log('[useMentions] Refresh notifications - NOT IMPLEMENTED', options);
+    hookLogger.debug('[useMentions] Refresh notifications - NOT IMPLEMENTED', options);
 
     // Simulate fetching
     await new Promise((resolve) => setTimeout(resolve, 500));

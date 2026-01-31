@@ -40,7 +40,7 @@ export type { AutoNumberConfig } from './AutoNumberPicker';
 
 // Button
 export { ButtonPicker, CellButton } from './ButtonPicker';
-export type { ButtonConfig, ButtonAction, ButtonActionType } from './ButtonPicker';
+export type { ButtonConfig, ButtonAction, ButtonActionType } from '../../types';
 
 // Location
 export { LocationPicker, LocationDisplay } from './LocationPicker';

@@ -3,6 +3,8 @@
  * Track Core Web Vitals and performance metrics
  */
 
+import { appLogger } from './logger';
+
 // Types for web vitals
 interface PerformanceMetric {
     name: string;
@@ -362,21 +364,11 @@ export function sendToAnalytics(
  * Log metrics to console (for development)
  */
 export function logMetrics(): void {
-    console.group('📊 Web Vitals');
+    const metrics: Record<string, string> = {};
     metricsStore.forEach((metric) => {
-        const color =
-            metric.rating === 'good'
-                ? 'color: green'
-                : metric.rating === 'needs-improvement'
-                    ? 'color: orange'
-                    : 'color: red';
-
-        console.log(
-            `%c${metric.name}: ${metric.value.toFixed(2)} (${metric.rating})`,
-            color
-        );
+        metrics[metric.name] = `${metric.value.toFixed(2)} (${metric.rating})`;
     });
-    console.groupEnd();
+    appLogger.info('Web Vitals', metrics);
 }
 
 export const webVitals = {

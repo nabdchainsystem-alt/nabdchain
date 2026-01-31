@@ -151,7 +151,7 @@ const getToolsData = (isRTL: boolean) => [
 ];
 
 // Tool Card with visual preview - styled to match "See everything at a glance"
-const ToolCard: React.FC<{ tool: typeof tools[0]; index: number; isActive: boolean; onClick: () => void }> = memo(({
+const ToolCard: React.FC<{ tool: ReturnType<typeof getToolsData>[0]; index: number; isActive: boolean; onClick: () => void }> = memo(({
     tool,
     index,
     isActive,
@@ -283,7 +283,7 @@ const getBoardViewsData = (isRTL: boolean) => [
 ];
 
 // View Card
-const ViewCard: React.FC<{ view: typeof boardViews[0]; index: number; isActive: boolean; onClick: () => void }> = memo(({
+const ViewCard: React.FC<{ view: ReturnType<typeof getBoardViewsData>[0]; index: number; isActive: boolean; onClick: () => void }> = memo(({
     view,
     index,
     isActive,

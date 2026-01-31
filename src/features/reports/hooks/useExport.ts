@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { ExportOptions, ExportResult } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE EXPORT HOOK - PLACEHOLDER
@@ -26,7 +27,7 @@ export const useExport = (): UseExportReturn => {
     setError(null);
 
     try {
-      console.log('[useExport] Export - NOT IMPLEMENTED', options);
+      hookLogger.debug('[useExport] Export - NOT IMPLEMENTED', options);
 
       // Simulate export progress
       for (let i = 0; i <= 100; i += 10) {
@@ -53,14 +54,14 @@ export const useExport = (): UseExportReturn => {
   }, []);
 
   const downloadFile = useCallback((result: ExportResult) => {
-    console.log('[useExport] Download - NOT IMPLEMENTED', result);
+    hookLogger.debug('[useExport] Download - NOT IMPLEMENTED', result);
     // TODO: Implement actual file download
     // window.open(result.url, '_blank');
     alert(`Download: ${result.fileName} (${(result.size / 1024).toFixed(1)} KB)`);
   }, []);
 
   const cancel = useCallback(() => {
-    console.log('[useExport] Cancel - NOT IMPLEMENTED');
+    hookLogger.debug('[useExport] Cancel - NOT IMPLEMENTED');
     setIsExporting(false);
     setProgress(0);
   }, []);

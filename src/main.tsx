@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './auth-adapter';
 import App from './App';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { appLogger } from './utils/logger';
 
 // Show error in UI for debugging
 function showError(message: string, error?: Error) {
@@ -44,6 +45,6 @@ try {
     </React.StrictMode>
   );
 } catch (error) {
-  console.error('Failed to initialize app:', error);
+  appLogger.error('Failed to initialize app', error);
   showError('Failed to initialize application', error instanceof Error ? error : undefined);
 }

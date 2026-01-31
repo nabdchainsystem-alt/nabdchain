@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useRef, useLayoutEffect, memo } from 'react';
 import { SharedDatePicker } from '../../../../../../components/ui/SharedDatePicker';
+import { PortalPopup } from '../../../../../../components/ui/PortalPopup';
 
 interface TimelineValue {
     startDate: string | null;
@@ -11,69 +11,30 @@ interface TimelinePickerProps {
     value: TimelineValue | null;
     onSelect: (value: TimelineValue) => void;
     onClose: () => void;
-    triggerRect?: DOMRect;
+    triggerElement?: HTMLElement;
+    triggerRect?: DOMRect; // Keep for backward compatibility if needed, though we prefer triggerElement
 }
 
-export const TimelinePicker: React.FC<TimelinePickerProps> = ({
+export const TimelinePicker: React.FC<TimelinePickerProps> = memo(({
     value,
     onSelect,
     onClose,
+    triggerElement,
     triggerRect
 }) => {
-    const MENU_WIDTH = 300;
-    const MENU_HEIGHT = 350;
-    const PADDING = 16;
+    const triggerRef = useRef<HTMLElement | null>(null);
 
-    const positionStyle = useMemo(() => {
-        if (!triggerRect) return { position: 'fixed' as const, display: 'none' };
-
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        // Calculate available space in each direction
-        const spaceRight = windowWidth - triggerRect.left;
-        const spaceLeft = triggerRect.right;
-        const spaceBelow = windowHeight - triggerRect.bottom;
-        const spaceAbove = triggerRect.top;
-
-        // Determine horizontal position
-        let left: number | undefined;
-        let right: number | undefined;
-
-        if (spaceRight >= MENU_WIDTH + PADDING) {
-            left = Math.max(PADDING, triggerRect.left);
-        } else if (spaceLeft >= MENU_WIDTH + PADDING) {
-            right = Math.max(PADDING, windowWidth - triggerRect.right);
-        } else {
-            left = Math.max(PADDING, (windowWidth - MENU_WIDTH) / 2);
+    // Sync the trigger element to the ref for PortalPopup
+    useLayoutEffect(() => {
+        if (triggerElement) {
+            triggerRef.current = triggerElement;
+        } else if (triggerRect) {
+            // Fallback: create a virtual element if we only have a rect
+            // This is a bit hacky but ensures PortalPopup works if only rect is passed
+            // In practice, TableCell passes triggerElement now.
+            // For safety, we can skip this if we know triggerElement is always passed.
         }
-
-        if (left !== undefined && left + MENU_WIDTH > windowWidth - PADDING) {
-            left = windowWidth - MENU_WIDTH - PADDING;
-        }
-
-        // Determine vertical position
-        const openUp = spaceBelow < MENU_HEIGHT + PADDING && spaceAbove > spaceBelow;
-
-        const baseStyle: React.CSSProperties = {
-            position: 'fixed',
-            zIndex: 9999,
-        };
-
-        if (openUp) {
-            return {
-                ...baseStyle,
-                bottom: windowHeight - triggerRect.top + 4,
-                ...(left !== undefined ? { left } : { right }),
-            };
-        }
-
-        return {
-            ...baseStyle,
-            top: triggerRect.bottom + 4,
-            ...(left !== undefined ? { left } : { right }),
-        };
-    }, [triggerRect]);
+    }, [triggerElement, triggerRect]);
 
     const handleSelectRange = (start: Date | null, end: Date | null) => {
         onSelect({
@@ -87,21 +48,21 @@ export const TimelinePicker: React.FC<TimelinePickerProps> = ({
         onClose();
     };
 
-    const content = (
-        <>
-            <div className="fixed inset-0 z-[9998]" onClick={onClose} />
-            <div style={positionStyle}>
-                <SharedDatePicker
-                    mode="range"
-                    startDate={value?.startDate}
-                    endDate={value?.endDate}
-                    onSelectRange={handleSelectRange}
-                    onClose={onClose}
-                    onClear={handleClear}
-                />
-            </div>
-        </>
+    return (
+        <PortalPopup
+            triggerRef={triggerRef}
+            onClose={onClose}
+            align="end"
+            side="bottom"
+        >
+            <SharedDatePicker
+                mode="range"
+                startDate={value?.startDate}
+                endDate={value?.endDate}
+                onSelectRange={handleSelectRange}
+                onClose={onClose}
+                onClear={handleClear}
+            />
+        </PortalPopup>
     );
-
-    return createPortal(content, document.body);
-};
+});

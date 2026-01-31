@@ -23,6 +23,7 @@ import {
     MagnifyingGlass
 } from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { featureLogger } from '../../utils/logger';
 
 // Custom mapped styles
 const styles = `
@@ -352,13 +353,13 @@ const WhiteboardView: React.FC<{ boardId: string }> = ({ boardId }) => {
                                     setCurrentTool('select');
                                 };
                                 img.onerror = () => {
-                                    console.error('Failed to load image');
+                                    featureLogger.error('Failed to load image');
                                     setCurrentTool('select');
                                 };
                                 img.src = event.target?.result as string;
                             };
                             reader.onerror = () => {
-                                console.error('Failed to read file');
+                                featureLogger.error('Failed to read file');
                                 setCurrentTool('select');
                             };
                             reader.readAsDataURL(file);

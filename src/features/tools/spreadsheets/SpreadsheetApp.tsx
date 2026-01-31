@@ -7,6 +7,7 @@ import { Footer } from './components/Footer';
 import { createInitialState, createEmptySheet, STORAGE_KEY, COLS } from './constants';
 import { GridData, CellStyle, SpreadsheetState, Sheet, HistoryEntry, CellData, CellRange } from './types';
 import { evaluateFormula } from './formulaEngine';
+import { storageLogger } from '../../../utils/logger';
 
 // Load state from localStorage
 const loadState = (): SpreadsheetState => {
@@ -20,7 +21,7 @@ const loadState = (): SpreadsheetState => {
             }
         }
     } catch (e) {
-        console.error('Failed to load spreadsheet state:', e);
+        storageLogger.error('Failed to load spreadsheet state', e);
     }
     return createInitialState();
 };
@@ -30,7 +31,7 @@ const saveState = (state: SpreadsheetState) => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
-        console.error('Failed to save spreadsheet state:', e);
+        storageLogger.error('Failed to save spreadsheet state', e);
     }
 };
 
@@ -837,6 +838,108 @@ export const SpreadsheetApp: React.FC = () => {
         });
     }, [saveToHistory]);
 
+    // Reorder column (move fromCol to position of toCol)
+    const reorderColumn = useCallback((fromCol: string, toCol: string) => {
+        if (fromCol === toCol) return;
+        saveToHistory();
+
+        const fromIndex = COLS.indexOf(fromCol);
+        const toIndex = COLS.indexOf(toCol);
+
+        setState(prev => {
+            const sheetIndex = prev.sheets.findIndex(s => s.id === prev.activeSheetId);
+            if (sheetIndex === -1) return prev;
+
+            const newSheets = [...prev.sheets];
+            const sheet = { ...newSheets[sheetIndex] };
+            const newData: GridData = {};
+
+            // We need to reorder all the columns:
+            // If moving right (fromIndex < toIndex): columns between from+1 and to shift left, from goes to to
+            // If moving left (fromIndex > toIndex): columns between to and from-1 shift right, from goes to to
+
+            for (const cellId in sheet.data) {
+                const match = cellId.match(/^([A-Z]+)(\d+)$/);
+                if (match) {
+                    const cellCol = match[1];
+                    const cellRow = parseInt(match[2]);
+                    const cellColIndex = COLS.indexOf(cellCol);
+
+                    let newColIndex = cellColIndex;
+
+                    if (cellColIndex === fromIndex) {
+                        // This is the column being moved - it goes to toIndex
+                        newColIndex = toIndex;
+                    } else if (fromIndex < toIndex) {
+                        // Moving right: shift columns between from+1 and to to the left
+                        if (cellColIndex > fromIndex && cellColIndex <= toIndex) {
+                            newColIndex = cellColIndex - 1;
+                        }
+                    } else {
+                        // Moving left: shift columns between to and from-1 to the right
+                        if (cellColIndex >= toIndex && cellColIndex < fromIndex) {
+                            newColIndex = cellColIndex + 1;
+                        }
+                    }
+
+                    newData[`${COLS[newColIndex]}${cellRow}`] = sheet.data[cellId];
+                }
+            }
+
+            // Also reorder column widths
+            const newColumnWidths: Record<string, number> = {};
+            for (const col in sheet.columnWidths) {
+                const colIndex = COLS.indexOf(col);
+                let newColIndex = colIndex;
+
+                if (colIndex === fromIndex) {
+                    newColIndex = toIndex;
+                } else if (fromIndex < toIndex) {
+                    if (colIndex > fromIndex && colIndex <= toIndex) {
+                        newColIndex = colIndex - 1;
+                    }
+                } else {
+                    if (colIndex >= toIndex && colIndex < fromIndex) {
+                        newColIndex = colIndex + 1;
+                    }
+                }
+
+                if (sheet.columnWidths?.[col]) {
+                    newColumnWidths[COLS[newColIndex]] = sheet.columnWidths[col];
+                }
+            }
+
+            sheet.data = newData;
+            sheet.columnWidths = newColumnWidths;
+            newSheets[sheetIndex] = sheet;
+
+            // Update column widths state
+            setColumnWidths(newColumnWidths);
+
+            // Adjust selection if the selected column was moved
+            const selectedColIndex = COLS.indexOf(prev.selectedCell.col);
+            let newSelectedColIndex = selectedColIndex;
+
+            if (selectedColIndex === fromIndex) {
+                newSelectedColIndex = toIndex;
+            } else if (fromIndex < toIndex) {
+                if (selectedColIndex > fromIndex && selectedColIndex <= toIndex) {
+                    newSelectedColIndex = selectedColIndex - 1;
+                }
+            } else {
+                if (selectedColIndex >= toIndex && selectedColIndex < fromIndex) {
+                    newSelectedColIndex = selectedColIndex + 1;
+                }
+            }
+
+            return {
+                ...prev,
+                sheets: newSheets,
+                selectedCell: { ...prev.selectedCell, col: COLS[newSelectedColIndex] }
+            };
+        });
+    }, [saveToHistory]);
+
     // New spreadsheet
     const newSpreadsheet = useCallback(() => {
         const initialState = createInitialState();
@@ -1081,6 +1184,7 @@ export const SpreadsheetApp: React.FC = () => {
                 onClearRange={clearRange}
                 onColumnResize={handleColumnResize}
                 onRowResize={handleRowResize}
+                onColumnReorder={reorderColumn}
             />
             <Footer
                 sheets={state.sheets}

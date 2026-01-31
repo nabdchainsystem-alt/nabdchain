@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Role, Permission, MemberRole, ColumnRestriction, PermissionAuditLog } from '../types';
+import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
 // USE PERMISSIONS HOOK - PLACEHOLDER
@@ -35,7 +36,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        console.log('[usePermissions] Loading permissions - NOT IMPLEMENTED');
+        hookLogger.debug('[usePermissions] Loading permissions - NOT IMPLEMENTED');
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Mock roles
@@ -106,7 +107,7 @@ export const usePermissions = (): UsePermissionsReturn => {
 
   const createRole = useCallback(
     async (roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'>): Promise<Role> => {
-      console.log('[usePermissions] Create role - NOT IMPLEMENTED', roleData);
+      hookLogger.debug('[usePermissions] Create role - NOT IMPLEMENTED', roleData);
       const newRole: Role = {
         ...roleData,
         id: `role-${Date.now()}`,
@@ -121,7 +122,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   );
 
   const updateRole = useCallback(async (id: string, updates: Partial<Role>): Promise<Role> => {
-    console.log('[usePermissions] Update role - NOT IMPLEMENTED', { id, updates });
+    hookLogger.debug('[usePermissions] Update role - NOT IMPLEMENTED', { id, updates });
     let updated: Role | undefined;
     setRoles((prev) =>
       prev.map((r) => {
@@ -137,12 +138,12 @@ export const usePermissions = (): UsePermissionsReturn => {
   }, []);
 
   const deleteRole = useCallback(async (id: string): Promise<void> => {
-    console.log('[usePermissions] Delete role - NOT IMPLEMENTED', id);
+    hookLogger.debug('[usePermissions] Delete role - NOT IMPLEMENTED', id);
     setRoles((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
   const assignRole = useCallback(async (userId: string, roleId: string): Promise<void> => {
-    console.log('[usePermissions] Assign role - NOT IMPLEMENTED', { userId, roleId });
+    hookLogger.debug('[usePermissions] Assign role - NOT IMPLEMENTED', { userId, roleId });
     const newAssignment: MemberRole = {
       userId,
       roleId,
@@ -154,7 +155,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   }, []);
 
   const removeRole = useCallback(async (userId: string, roleId: string): Promise<void> => {
-    console.log('[usePermissions] Remove role - NOT IMPLEMENTED', { userId, roleId });
+    hookLogger.debug('[usePermissions] Remove role - NOT IMPLEMENTED', { userId, roleId });
     setMemberRoles((prev) =>
       prev.filter((mr) => !(mr.userId === userId && mr.roleId === roleId))
     );
@@ -162,7 +163,7 @@ export const usePermissions = (): UsePermissionsReturn => {
 
   const addRestriction = useCallback(
     async (restriction: Omit<ColumnRestriction, 'id'>): Promise<ColumnRestriction> => {
-      console.log('[usePermissions] Add restriction - NOT IMPLEMENTED', restriction);
+      hookLogger.debug('[usePermissions] Add restriction - NOT IMPLEMENTED', restriction);
       const newRestriction: ColumnRestriction = {
         ...restriction,
         id: `restriction-${Date.now()}`,
@@ -174,13 +175,13 @@ export const usePermissions = (): UsePermissionsReturn => {
   );
 
   const removeRestriction = useCallback(async (id: string): Promise<void> => {
-    console.log('[usePermissions] Remove restriction - NOT IMPLEMENTED', id);
+    hookLogger.debug('[usePermissions] Remove restriction - NOT IMPLEMENTED', id);
     setRestrictions((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
   const checkPermission = useCallback(
     (userId: string, resource: string, action: string): boolean => {
-      console.log('[usePermissions] Check permission - NOT IMPLEMENTED', { userId, resource, action });
+      hookLogger.debug('[usePermissions] Check permission - NOT IMPLEMENTED', { userId, resource, action });
       // Mock: always return true for now
       return true;
     },
@@ -188,7 +189,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   );
 
   const refresh = useCallback(async (): Promise<void> => {
-    console.log('[usePermissions] Refresh - NOT IMPLEMENTED');
+    hookLogger.debug('[usePermissions] Refresh - NOT IMPLEMENTED');
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
     setIsLoading(false);

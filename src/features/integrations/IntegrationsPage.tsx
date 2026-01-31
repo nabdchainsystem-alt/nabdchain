@@ -4,6 +4,7 @@ import {
   GoogleLogo, Globe, Lightning, MagnifyingGlass
 } from 'phosphor-react';
 import type { Integration, IntegrationType } from './types';
+import { featureLogger } from '@/utils/logger';
 
 // =============================================================================
 // INTEGRATIONS PAGE - PLACEHOLDER
@@ -97,7 +98,7 @@ export const IntegrationsPage: React.FC = () => {
 
   const handleConnect = (integration: Integration) => {
     // TODO: Implement OAuth flow or connection modal
-    console.log('[Integrations] Connect - NOT IMPLEMENTED', integration);
+    featureLogger.debug('[Integrations] Connect - NOT IMPLEMENTED', integration);
     alert(`${integration.name} integration coming soon!`);
   };
 

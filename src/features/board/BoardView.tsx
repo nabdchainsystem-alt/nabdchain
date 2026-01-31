@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, memo } from 'react';
 import {
     CaretDown as ChevronDown,
     DotsThree as MoreHorizontal,
@@ -284,7 +284,22 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
     const [showInfoMenu, setShowInfoMenu] = useState(false);
     const { setIsSidebarCollapsed } = useUI();
     const { t, dir } = useAppContext();
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const fullScreenStorageKey = `board-fullscreen-mode-${board.id}`;
+
+    const [isFullScreen, setIsFullScreen] = useState(() => {
+        try {
+            return localStorage.getItem(fullScreenStorageKey) === 'true';
+        } catch {
+            return false;
+        }
+    });
+
+    // Sync sidebar state on mount if starting in fullscreen - use useLayoutEffect to prevent flash
+    useLayoutEffect(() => {
+        if (isFullScreen) {
+            setIsSidebarCollapsed(true);
+        }
+    }, []); // Run once on mount
 
     const toggleFullScreen = () => {
         setIsFullScreen(prev => {
@@ -296,6 +311,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
             } else {
                 setIsSidebarCollapsed(false);
             }
+            localStorage.setItem(fullScreenStorageKey, String(newState));
             return newState;
         });
     };
@@ -1140,7 +1156,7 @@ export const BoardView: React.FC<BoardViewProps> = memo(({ board: initialBoard, 
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-transparent">
             {/* Dashboard Sections / Top Part */}
             <div
-                className={`flex-shrink-0 bg-white dark:bg-monday-dark-surface grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isFullScreen ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                className={`flex-shrink-0 bg-white dark:bg-monday-dark-surface grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[grid-template-rows] transform-gpu ${isFullScreen ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
                     }`}
             >
                 <div className="overflow-hidden">

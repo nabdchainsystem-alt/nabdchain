@@ -282,12 +282,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 if (savedRow) {
                     // Merge: savedRow has cell data, t has latest core data (name, status, etc.)
                     // Cell data from saved takes precedence for special column types
-                    tasksByGroup[gid].push({ ...savedRow, ...t, ...Object.fromEntries(
-                        Object.entries(savedRow).filter(([key]) =>
-                            // Preserve saved cell data for complex column types
-                            typeof savedRow[key as keyof Row] === 'object' && savedRow[key as keyof Row] !== null
+                    tasksByGroup[gid].push({
+                        ...savedRow, ...t, ...Object.fromEntries(
+                            Object.entries(savedRow).filter(([key]) =>
+                                // Preserve saved cell data for complex column types
+                                typeof savedRow[key as keyof Row] === 'object' && savedRow[key as keyof Row] !== null
+                            )
                         )
-                    )});
+                    });
                 } else {
                     tasksByGroup[gid].push(t);
                 }
@@ -526,6 +528,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
     // Drag & Drop State
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [activeColumnDragId, setActiveColumnDragId] = useState<string | null>(null);
+    const [columnDragMousePos, setColumnDragMousePos] = useState<{ x: number; y: number } | null>(null);
+    const columnDragAutoScrollRef = useRef<number | null>(null);
+    const lastColumnDragMouseX = useRef<number>(0);
 
     // Column Resize State
     const resizingColId = useRef<string | null>(null);
@@ -1516,6 +1521,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         setPinnedCharts(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleToggleColumnFreeze = useCallback((colId: string) => {
+        setColumns(prev => prev.map(col => {
+            if (col.id === colId) {
+                return { ...col, pinned: !col.pinned };
+            }
+            return col;
+        }));
+    }, []);
+
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
             setCurrentPage(newPage);
@@ -1777,47 +1791,38 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             return;
         }
 
-        // Get editable columns (exclude 'select' column)
-        const editableColumns = visibleColumns.filter(col => col.id !== 'select');
-        const currentIndex = editableColumns.findIndex(col => col.id === currentColId);
-
-        if (currentIndex === -1) {
+        // For existing rows, navigate to the creation row ("Start typing to add") to add a new task
+        // Find the primary column (the "name" column or first non-select column)
+        const primaryCol = visibleColumns.find(col => col.id === 'name') || visibleColumns.find(col => col.id !== 'select');
+        if (!primaryCol) {
             setActiveCell(null);
             return;
         }
 
-        // Calculate next column index (wrap to first if at end)
-        const nextIndex = (currentIndex + 1) % editableColumns.length;
-        const nextCol = editableColumns[nextIndex];
+        // Find the first group's creation row and focus it
+        const firstGroup = tableGroups[0];
+        if (!firstGroup) {
+            setActiveCell(null);
+            return;
+        }
 
-        // Picker-based column types that should NOT auto-open when navigating via keyboard
-        const pickerColumnTypes = ['date', 'status', 'priority', 'dropdown', 'people', 'url', 'link', 'location', 'doc', 'files', 'file', 'timeline', 'dueDate', 'currency'];
-        const isPickerColumn = pickerColumnTypes.includes(nextCol.type);
-
-        // Find the cell element for the next column
+        // Focus the creation row's primary column
         setTimeout(() => {
-            const cellSelector = `[data-row-id="${currentRowId}"][data-col-id="${nextCol.id}"]`;
-            const nextCellElement = document.querySelector(cellSelector) as HTMLElement;
+            const cellSelector = `[data-row-id="${CREATION_ROW_ID}"][data-col-id="${primaryCol.id}"]`;
+            const creationCellElement = document.querySelector(cellSelector) as HTMLElement;
 
-            if (nextCellElement) {
-                const rect = nextCellElement.getBoundingClientRect();
+            if (creationCellElement) {
+                const rect = creationCellElement.getBoundingClientRect();
+                setActiveCell({ rowId: CREATION_ROW_ID, colId: primaryCol.id, trigger: creationCellElement, rect });
 
-                // For picker columns, don't set trigger to prevent auto-opening the picker
-                // User must click to open the picker
-                if (isPickerColumn) {
-                    setActiveCell({ rowId: currentRowId, colId: nextCol.id });
-                } else {
-                    setActiveCell({ rowId: currentRowId, colId: nextCol.id, trigger: nextCellElement, rect });
-                }
-
-                // For text/number inputs, focus the input after a brief delay
+                // Focus the input after a brief delay
                 setTimeout(() => {
-                    const input = nextCellElement.querySelector('input');
+                    const input = creationCellElement.querySelector('input');
                     if (input) input.focus();
                 }, 50);
             } else {
                 // If no element found, just set active cell state
-                setActiveCell({ rowId: currentRowId, colId: nextCol.id });
+                setActiveCell({ rowId: CREATION_ROW_ID, colId: primaryCol.id });
             }
         }, 10);
     };
@@ -1975,6 +1980,15 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         // ID format: "groupId__colId" or just "colId" if we change strategy
         const colId = activeId.includes('__') ? activeId.split('__')[1] : activeId;
         setActiveColumnDragId(colId);
+
+        // Track initial mouse position for ghost overlay
+        const activatorEvent = event.activatorEvent as MouseEvent | TouchEvent;
+        if (activatorEvent) {
+            const clientX = 'touches' in activatorEvent ? activatorEvent.touches[0].clientX : activatorEvent.clientX;
+            const clientY = 'touches' in activatorEvent ? activatorEvent.touches[0].clientY : activatorEvent.clientY;
+            setColumnDragMousePos({ x: clientX, y: clientY });
+            lastColumnDragMouseX.current = clientX;
+        }
     };
 
     const handleStructureDragOver = (event: DragEndEvent) => {
@@ -2024,7 +2038,72 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
     const handleStructureDragEnd = (event: DragEndEvent) => {
         setActiveColumnDragId(null);
+        setColumnDragMousePos(null);
+        // Cancel any pending auto-scroll
+        if (columnDragAutoScrollRef.current) {
+            cancelAnimationFrame(columnDragAutoScrollRef.current);
+            columnDragAutoScrollRef.current = null;
+        }
     };
+
+    // Auto-scroll during column drag
+    useEffect(() => {
+        if (!activeColumnDragId || !tableBodyRef.current) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            setColumnDragMousePos({ x: e.clientX, y: e.clientY });
+            lastColumnDragMouseX.current = e.clientX;
+
+            const rect = tableBodyRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const scrollMargin = 80;
+            const maxScrollSpeed = 15;
+
+            // Cancel existing auto-scroll
+            if (columnDragAutoScrollRef.current) {
+                cancelAnimationFrame(columnDragAutoScrollRef.current);
+                columnDragAutoScrollRef.current = null;
+            }
+
+            const doAutoScroll = () => {
+                if (!tableBodyRef.current) return;
+
+                const currentRect = tableBodyRef.current.getBoundingClientRect();
+                const mouseX = lastColumnDragMouseX.current;
+                let scrolled = false;
+
+                if (mouseX < currentRect.left + scrollMargin) {
+                    const distanceFromEdge = currentRect.left + scrollMargin - mouseX;
+                    const speed = Math.min(maxScrollSpeed, Math.max(3, distanceFromEdge / 5));
+                    tableBodyRef.current.scrollLeft -= speed;
+                    scrolled = true;
+                } else if (mouseX > currentRect.right - scrollMargin) {
+                    const distanceFromEdge = mouseX - (currentRect.right - scrollMargin);
+                    const speed = Math.min(maxScrollSpeed, Math.max(3, distanceFromEdge / 5));
+                    tableBodyRef.current.scrollLeft += speed;
+                    scrolled = true;
+                }
+
+                if (scrolled) {
+                    columnDragAutoScrollRef.current = requestAnimationFrame(doAutoScroll);
+                }
+            };
+
+            // Start auto-scroll if near edges
+            if (e.clientX < rect.left + scrollMargin || e.clientX > rect.right - scrollMargin) {
+                columnDragAutoScrollRef.current = requestAnimationFrame(doAutoScroll);
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            if (columnDragAutoScrollRef.current) {
+                cancelAnimationFrame(columnDragAutoScrollRef.current);
+            }
+        };
+    }, [activeColumnDragId]);
 
     // Column Resize
     const startResize = (e: React.MouseEvent, colId: string, currentWidth: number) => {
@@ -2121,7 +2200,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         ));
     }, [setColumns]);
 
-    const renderCellContent = (col: Column, row: Row) => {
+    const renderCellContent = (col: Column, row: Row, inputRef?: React.Ref<HTMLInputElement>) => {
         // Calculate row index for auto-numbering (find position in full rows array)
         const rowIndex = rows.findIndex(r => r.id === row.id);
 
@@ -2153,6 +2232,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     hiddenFileInputRef.current?.click();
                 }}
                 onNavigate={onNavigate}
+                inputRef={inputRef}
             />
         );
     };
@@ -2184,6 +2264,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 onDeleteRow={handleDeleteRow}
                 onSelectColumnContextMenu={(rect) => setActiveColorMenu({ rect })}
                 renderCellContent={renderCellContent}
+                isRTL={isRTL}
+                activeColumnDragId={activeColumnDragId}
             />
         );
     };
@@ -2197,7 +2279,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Secondary Toolbar */}
-                <div className="flex items-center min-h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface px-4 shrink-0 transition-colors z-20 gap-2 overflow-x-auto">
+                <div className="flex items-center min-h-[52px] border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-monday-dark-surface px-4 shrink-0 transition-colors z-20 gap-2">
                     {/* Left: New Table */}
 
 
@@ -2207,7 +2289,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
 
 
                         {/* Search - Expandable */}
-                        <div className="relative flex items-center">
+                        <div className="relative">
                             <div
                                 className={`flex items-center gap-1.5 cursor-pointer transition-all duration-300 ease-out ${isSearchOpen ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-700' : 'hover:text-blue-500'}`}
                                 onClick={() => {
@@ -2760,11 +2842,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     dir={dir}
                     style={{
                         WebkitOverflowScrolling: 'touch',
-                        paddingBottom: '20vh',
+                        paddingBottom: '40px',
                         overscrollBehavior: 'none',
                         isolation: 'isolate',
                     }}
                 >
+                    {/* Auto-scroll happens automatically - no visual indicators needed for clean look */}
+
                     {/* Pinned Charts Section */}
                     {pinnedCharts.length > 0 && (
                         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-stone-50/50 dark:bg-stone-900/30 border-b border-stone-100 dark:border-stone-800">
@@ -3053,7 +3137,9 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                                         {/* Empty */}
                                                                                     </div>
                                                                                 ) : col.id === (visibleColumns.find(c => c.id === 'name') || visibleColumns.find(c => c.id !== 'select'))?.id ? (
-                                                                                    renderCellContent(col, creationRowData)
+                                                                                    renderCellContent(col, creationRowData, (el) => {
+                                                                                        if (el) creationRowInputRefs.current[group.id] = el;
+                                                                                    })
                                                                                 ) : null}
                                                                             </div>
                                                                         );
@@ -3104,30 +3190,30 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                             })}
                         </SortableContext>
                         {createPortal(
-                            <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
-                                {activeColumnDragId ? (
-                                    <div
-                                        className="h-10 px-3 flex items-center bg-white dark:bg-stone-800 shadow-xl border border-blue-500/50 rounded cursor-grabbing"
-                                        style={{ width: columns.find(c => c.id === activeColumnDragId)?.width }}
-                                    >
-                                        <div className="flex items-center justify-between w-full px-2">
-                                            <span className="text-xs font-sans font-medium text-stone-600 dark:text-stone-300 truncate flex-1">
-                                                {columns.find(c => c.id === activeColumnDragId)?.label}
+                            <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
+                                {activeColumnDragId ? (() => {
+                                    const dragCol = columns.find(c => c.id === activeColumnDragId);
+
+                                    return (
+                                        <div
+                                            className="h-10 px-3 flex items-center justify-center bg-stone-100 dark:bg-stone-800 rounded pointer-events-none border border-stone-300 dark:border-stone-600"
+                                            style={{
+                                                width: dragCol?.width || 150,
+                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                            }}
+                                        >
+                                            <span className="text-xs font-medium text-stone-600 dark:text-stone-300 truncate">
+                                                {dragCol?.label || activeColumnDragId}
                                             </span>
-                                            <div className="flex items-center text-stone-400">
-                                                <div className="w-1 h-3/4 mx-1 rounded bg-stone-200 dark:bg-stone-700 opacity-50" />
-                                            </div>
                                         </div>
-                                    </div>
-                                ) : null}
+                                    );
+                                })() : null}
                             </DragOverlay>,
                             document.body
                         )}
                     </DndContext>
 
-                    {!showPagination && (
-                        <div className="h-32 shrink-0" />
-                    )}
+
                 </div>
 
                 {showPagination && (
@@ -3277,6 +3363,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                 }]);
                                 setActiveHeaderMenu(null);
                             }}
+                            onFreezeToggle={() => {
+                                if (activeHeaderMenu.colId) {
+                                    handleToggleColumnFreeze(activeHeaderMenu.colId);
+                                }
+                                setActiveHeaderMenu(null);
+                            }}
+                            isFrozen={!!columns.find(c => c.id === activeHeaderMenu.colId)?.pinned}
+                            canFreeze={activeHeaderMenu.colId !== 'name' && activeHeaderMenu.colId !== 'select'}
                         />
                     )
                 }
