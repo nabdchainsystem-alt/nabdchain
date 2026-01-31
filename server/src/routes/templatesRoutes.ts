@@ -179,7 +179,7 @@ router.get('/categories', requireAuth, async (_req, res: Response) => {
 router.get('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const template = await prisma.template.findUnique({
             where: { id },
@@ -257,7 +257,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.post('/:id/use', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { boardName } = req.body;
 
         if (!boardName || typeof boardName !== 'string') {
@@ -451,7 +451,7 @@ router.post('/from-board', requireAuth, async (req, res: Response) => {
 router.patch('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const validatedData = updateTemplateSchema.parse(req.body);
 
         // Verify ownership
@@ -497,7 +497,7 @@ router.patch('/:id', requireAuth, async (req, res: Response) => {
 router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         // Verify ownership
         const existing = await prisma.template.findFirst({

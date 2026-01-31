@@ -195,7 +195,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.get('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const entry = await prisma.timeEntry.findFirst({
             where: { id, userId },
@@ -219,7 +219,7 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
 router.patch('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const validatedData = updateEntrySchema.parse(req.body);
 
         // Verify ownership
@@ -296,7 +296,7 @@ router.patch('/:id', requireAuth, async (req, res: Response) => {
 router.patch('/:id/stop', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         // Verify ownership
         const existing = await prisma.timeEntry.findFirst({
@@ -334,7 +334,7 @@ router.patch('/:id/stop', requireAuth, async (req, res: Response) => {
 router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         // Verify ownership
         const existing = await prisma.timeEntry.findFirst({

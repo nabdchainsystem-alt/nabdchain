@@ -146,7 +146,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.patch('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const validatedData = updateCommentSchema.parse(req.body);
 
         // Verify ownership
@@ -203,7 +203,7 @@ router.patch('/:id', requireAuth, async (req, res: Response) => {
 router.delete('/:id', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         // Verify ownership
         const existingComment = await prisma.comment.findUnique({
@@ -234,7 +234,7 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
 router.post('/:id/reactions', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { emoji } = reactionSchema.parse(req.body);
 
         // Verify comment exists
@@ -284,7 +284,8 @@ router.post('/:id/reactions', requireAuth, async (req, res: Response) => {
 router.delete('/:id/reactions/:emoji', requireAuth, async (req, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id, emoji } = req.params;
+        const id = req.params.id as string;
+        const emoji = req.params.emoji as string;
 
         const decodedEmoji = decodeURIComponent(emoji as string);
 
