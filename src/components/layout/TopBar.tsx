@@ -556,6 +556,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                         }
                       });
                       sessionStorage.removeItem('app-last-user-id');
+                      // Set flag to prevent redirect loop on main domain
+                      sessionStorage.setItem('just_signed_out', 'true');
 
                       await signOut();
                       // Redirect to landing page after sign out

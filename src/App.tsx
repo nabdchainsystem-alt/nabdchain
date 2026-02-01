@@ -1790,6 +1790,12 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
   });
 
   useEffect(() => {
+    // Don't auto-redirect if user just signed out (prevents redirect loop)
+    const justSignedOut = sessionStorage.getItem('just_signed_out');
+    if (justSignedOut) {
+      sessionStorage.removeItem('just_signed_out');
+      return;
+    }
     if (isMainDomain) {
       window.location.href = 'https://app.nabdchain.com';
     }

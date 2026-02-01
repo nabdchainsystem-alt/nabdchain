@@ -724,6 +724,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             }
                         });
                         sessionStorage.removeItem('app-last-user-id');
+                        // Set flag to prevent redirect loop on main domain
+                        sessionStorage.setItem('just_signed_out', 'true');
 
                         await signOut();
                         // Redirect to landing page after sign out
