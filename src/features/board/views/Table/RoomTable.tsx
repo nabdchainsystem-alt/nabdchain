@@ -1645,14 +1645,26 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
         }
 
         // Check if this update marks the task as "Done"
-        // Find the status column to check what field contains status
-        const statusColumn = columns.find(col => col.type === 'status' || col.id === 'status');
-        const statusColumnId = statusColumn?.id || 'status';
-        const newStatusValue = updates[statusColumnId];
-        const isDoneStatus = newStatusValue &&
-            (newStatusValue === 'Done' || newStatusValue === 'منجز' ||
-             String(newStatusValue).toLowerCase() === 'done' ||
-             String(newStatusValue).toLowerCase() === 'completed');
+        // Find ALL status columns and check if any update key matches
+        const statusColumnIds = columns
+            .filter(col => col.type === 'status' || col.id.toLowerCase().includes('status'))
+            .map(col => col.id);
+
+        // Check if any of the update keys is a status column with a "Done" value
+        let isDoneStatus = false;
+        for (const key of Object.keys(updates)) {
+            if (statusColumnIds.includes(key) || key.toLowerCase().includes('status')) {
+                const value = updates[key];
+                if (value && (
+                    value === 'Done' || value === 'منجز' ||
+                    String(value).toLowerCase() === 'done' ||
+                    String(value).toLowerCase() === 'completed'
+                )) {
+                    isDoneStatus = true;
+                    break;
+                }
+            }
+        }
 
         // Find and update the row in the correct group
         setTableGroups(prevGroups => {
