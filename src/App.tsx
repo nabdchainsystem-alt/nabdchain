@@ -1789,20 +1789,22 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
     return stored === 'buyer' || stored === 'seller' ? stored : null;
   });
 
+  // Check if user just signed out (URL param from sign-out redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const justSignedOut = urlParams.get('signedout') === 'true';
+
   useEffect(() => {
-    // Don't auto-redirect if user just signed out (prevents redirect loop)
-    // Use URL parameter since sessionStorage doesn't work across domains
-    const urlParams = new URLSearchParams(window.location.search);
-    const justSignedOut = urlParams.get('signedout') === 'true';
     if (justSignedOut) {
-      // Clean up the URL parameter
+      // Clean up URL and reload to sync Clerk session state
+      // This ensures the landing page shows properly after sign-out
       window.history.replaceState({}, '', window.location.pathname);
+      window.location.reload();
       return;
     }
     if (isMainDomain) {
       window.location.href = 'https://app.nabdchain.com';
     }
-  }, [isMainDomain]);
+  }, [isMainDomain, justSignedOut]);
 
   const handlePortalLogout = () => {
     localStorage.removeItem('portal_type');
@@ -1812,10 +1814,20 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
     window.location.reload();
   };
 
+  // If just signed out on main domain, show nothing while Clerk session clears
+  // This allows the <SignedOut> wrapper to take over once session is cleared
+  if (isMainDomain && justSignedOut) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <MorphingLoader fullScreen />
+      </div>
+    );
+  }
+
   if (isMainDomain) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <MorphingLoader fullScreen />
       </div>
     );
   }
