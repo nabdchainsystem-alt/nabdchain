@@ -1666,8 +1666,8 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             }
         }
 
-        // Find and update the row in the correct group
-        setTableGroups(prevGroups => {
+        // Compute new groups state (we need this for both local state AND onUpdateTasks)
+        const computeNewGroups = (prevGroups: typeof tableGroups) => {
             return prevGroups.map(group => {
                 const rowIndex = group.rows.findIndex(r => r.id === id);
                 if (rowIndex === -1) return group;
@@ -1692,10 +1692,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     rows: group.rows.map(r => r.id === id ? updatedRow : r)
                 };
             });
-        });
+        };
 
-        // Also call onUpdateTasks with all rows for backward compatibility
-        const updatedRows = rows.map(r => r.id === id ? { ...r, ...updates } : r);
+        // Compute new state from current tableGroups
+        const newGroups = computeNewGroups(tableGroups);
+
+        // Update local state
+        setTableGroups(newGroups);
+
+        // Also call onUpdateTasks with the REORDERED rows
+        const updatedRows = newGroups.flatMap(g => g.rows);
         if (onUpdateTasks) onUpdateTasks(updatedRows);
     };
 
