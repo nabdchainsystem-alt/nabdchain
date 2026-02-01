@@ -1644,6 +1644,16 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
             clearTimeout(updateTimeoutRef.current);
         }
 
+        // Check if this update marks the task as "Done"
+        // Find the status column to check what field contains status
+        const statusColumn = columns.find(col => col.type === 'status' || col.id === 'status');
+        const statusColumnId = statusColumn?.id || 'status';
+        const newStatusValue = updates[statusColumnId];
+        const isDoneStatus = newStatusValue &&
+            (newStatusValue === 'Done' || newStatusValue === 'منجز' ||
+             String(newStatusValue).toLowerCase() === 'done' ||
+             String(newStatusValue).toLowerCase() === 'completed');
+
         // Find and update the row in the correct group
         setTableGroups(prevGroups => {
             return prevGroups.map(group => {
@@ -1653,8 +1663,18 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 const currentRow = group.rows[rowIndex];
                 const updatedRow = { ...currentRow, ...updates };
 
+                // If marked as Done, move to the end of the group
+                if (isDoneStatus && rowIndex < group.rows.length - 1) {
+                    const newRows = [...group.rows];
+                    newRows.splice(rowIndex, 1); // Remove from current position
+                    newRows.push(updatedRow); // Add to end
+                    return {
+                        ...group,
+                        rows: newRows
+                    };
+                }
+
                 // Normal update without reordering
-                // Users can use sort feature if they want Done items at bottom
                 return {
                     ...group,
                     rows: group.rows.map(r => r.id === id ? updatedRow : r)
