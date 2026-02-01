@@ -543,6 +543,20 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                   </button>
                   <button
                     onClick={async () => {
+                      // Clear all user data before sign out
+                      const keysToRemove = [
+                        'app-active-workspace', 'app-active-board', 'app-active-view',
+                        'app-workspaces', 'app-boards', 'app-recently-visited',
+                        'app-page-visibility', 'app-deleted-boards', 'app-unsynced-boards',
+                      ];
+                      keysToRemove.forEach(key => localStorage.removeItem(key));
+                      Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('room-') || key.startsWith('board-')) {
+                          localStorage.removeItem(key);
+                        }
+                      });
+                      sessionStorage.removeItem('app-last-user-id');
+
                       await signOut();
                       // Redirect to landing page after sign out
                       const hostname = window.location.hostname;

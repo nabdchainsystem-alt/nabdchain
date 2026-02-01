@@ -175,34 +175,43 @@ const AppContent: React.FC = () => {
   // Track previous sign-in state to detect sign-out
   const wasSignedInRef = React.useRef(isSignedIn);
 
-  // CRITICAL FIX: Clear stale navigation state on fresh sign-in
-  // This prevents users from seeing cached pages from previous sessions
+  // CRITICAL FIX: Clear ALL cached data on fresh sign-in or user switch
+  // This ensures data is always fetched fresh from server, preventing cross-device sync issues
   useEffect(() => {
     if (isSignedIn && user?.id) {
       const lastUserId = sessionStorage.getItem('app-last-user-id');
       const currentUserId = user.id;
 
-      // If this is a different user OR a fresh session (no lastUserId), clear stale state
+      // If this is a different user OR a fresh session (no lastUserId), clear ALL cached data
       if (!lastUserId || lastUserId !== currentUserId) {
-        appLogger.info('[App] Fresh sign-in detected, clearing stale navigation state', {
+        appLogger.info('[App] Fresh sign-in detected, clearing ALL cached data', {
           lastUserId,
           currentUserId,
           isFreshSession: !lastUserId
         });
 
-        // Clear navigation state but keep user preferences like sidebar width
+        // Clear ALL user-specific data to force fresh fetch from server
         const keysToReset = [
           'app-active-view',
           'app-active-board',
-          'app-recently-visited'
+          'app-recently-visited',
+          'app-workspaces',      // Clear cached workspaces
+          'app-boards',          // Clear cached boards
+          'app-deleted-boards',
+          'app-unsynced-boards',
         ];
 
-        // Only clear if we're on root path (not deep-linked to a specific page)
-        const path = window.location.pathname;
-        if (path === '/' || path === '') {
-          keysToReset.forEach(key => localStorage.removeItem(key));
-          appLogger.info('[App] Cleared stale navigation keys for fresh session');
-        }
+        keysToReset.forEach(key => localStorage.removeItem(key));
+
+        // Clear board-specific data
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach(key => {
+          if (key.startsWith('room-') || key.startsWith('board-')) {
+            localStorage.removeItem(key);
+          }
+        });
+
+        appLogger.info('[App] Cleared all cached data for fresh session - will fetch from server');
 
         // Mark this session with the current user
         sessionStorage.setItem('app-last-user-id', currentUserId);
