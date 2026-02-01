@@ -698,7 +698,9 @@ const AppContent: React.FC = () => {
   // Logic: Server can DISABLE pages (admin control), but user can also hide pages they don't want
   const effectivePageVisibility = React.useMemo(() => {
     // Wait for permissions to load before showing any pages (prevents flash)
-    if (!isPermissionsLoaded && !isAdmin) {
+    // Note: We check ONLY isPermissionsLoaded, not isAdmin, because setIsAdmin()
+    // can trigger a re-render BEFORE setIsPermissionsLoaded() runs
+    if (!isPermissionsLoaded) {
       // Return ALL known pages hidden until permissions load
       const hidden: Record<string, boolean> = {};
       for (const key of ALL_PAGE_KEYS) {
@@ -728,7 +730,7 @@ const AppContent: React.FC = () => {
     }
 
     return combined;
-  }, [pageVisibility, normalizedServerFlags, isAdmin, isPermissionsLoaded]);
+  }, [pageVisibility, normalizedServerFlags, isPermissionsLoaded]);
 
   const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() =>
     getStorageItem<RecentlyVisitedItem[]>('app-recently-visited', [])
