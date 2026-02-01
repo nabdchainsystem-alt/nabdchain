@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     return (
-        <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+        <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="https://nabdchain.com">
             {children}
         </ClerkProvider>
     );
