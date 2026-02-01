@@ -119,6 +119,21 @@ const LoadingSpinner = memo(() => (
 ));
 LoadingSpinner.displayName = 'LoadingSpinner';
 
+// Redirect signed-out users from app subdomain to main domain
+const RedirectToMainDomain: React.FC = () => {
+  useEffect(() => {
+    // Redirect to main domain immediately
+    window.location.href = 'https://nabdchain.com';
+  }, []);
+
+  // Show loading while redirect happens
+  return (
+    <div className="h-screen w-full flex items-center justify-center bg-white">
+      <MorphingLoader fullScreen />
+    </div>
+  );
+};
+
 // Full page loading state - delayed to prevent flash
 const PageLoadingFallback = memo(() => (
   <div className="h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -1974,8 +1989,12 @@ const AppRoutes: React.FC = () => {
   return (
     <>
       <SignedOut>
+        {/* If signed out on app subdomain, redirect to main domain */}
+        {isAppSubdomain && (
+          <RedirectToMainDomain />
+        )}
         {/* Show landing page */}
-        {authView === 'home' && (
+        {!isAppSubdomain && authView === 'home' && (
           <LandingPage
             onEnterSystem={() => {
               // If on main domain, redirect to app subdomain for sign-in
@@ -1990,7 +2009,7 @@ const AppRoutes: React.FC = () => {
           />
         )}
 
-        {authView === 'signin' && (
+        {!isAppSubdomain && authView === 'signin' && (
           <div className="flex h-screen w-full items-center justify-center bg-white flex-col gap-6 relative">
             {/* Back to Home - Fixed at top */}
             <button
@@ -2040,7 +2059,7 @@ const AppRoutes: React.FC = () => {
           </div>
         )}
 
-        {authView === 'signup' && (
+        {!isAppSubdomain && authView === 'signup' && (
           <SignUpPage onNavigateToLogin={() => setAuthView('signin')} />
         )}
       </SignedOut>
