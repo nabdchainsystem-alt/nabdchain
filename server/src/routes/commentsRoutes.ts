@@ -70,7 +70,8 @@ router.get('/', requireAuth, async (req, res: Response) => {
             select: { id: true, name: true, avatarUrl: true, email: true },
         });
 
-        const userMap = new Map(users.map(u => [u.id, u]));
+        type UserInfo = { id: string; name: string | null; avatarUrl: string | null; email: string };
+        const userMap = new Map<string, UserInfo>(users.map(u => [u.id, u]));
 
         // Transform comments to include author info
         const transformedComments = comments.map(comment => ({

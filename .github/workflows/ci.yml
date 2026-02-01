@@ -44,6 +44,9 @@ jobs:
       - name: Install server dependencies
         run: cd server && pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: cd server && npx prisma generate
+
       - name: Type Check
         run: pnpm tsc --noEmit
 
