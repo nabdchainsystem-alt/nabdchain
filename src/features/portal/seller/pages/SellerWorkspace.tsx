@@ -6,8 +6,13 @@ import {
   Receipt,
   ChartLineUp,
 } from 'phosphor-react';
-import { Container, PageHeader, StatCard } from '../../components';
+import { Container, PageHeader } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { SellerDashboard } from '../components/SellerDashboard';
+import { SellerSales } from '../components/SellerSales';
+import { SellerCustomers } from '../components/SellerCustomers';
+import { SellerInventory } from '../components/SellerInventory';
+import { SellerExpenses } from '../components/SellerExpenses';
 
 interface SellerWorkspaceProps {
   onNavigate: (page: string) => void;
@@ -29,7 +34,7 @@ export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ onNavigate }) 
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="full">
@@ -64,85 +69,19 @@ export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ onNavigate }) 
         </div>
 
         {/* Dashboard View */}
-        {activeTab === 'dashboard' && (
-          <div>
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard
-                label={t('seller.workspace.totalRevenue')}
-                value="$248,500"
-                change={{ value: '+22% from last month', positive: true }}
-              />
-              <StatCard
-                label={t('seller.workspace.totalCustomers')}
-                value="156"
-              />
-              <StatCard
-                label={t('seller.workspace.inventoryItems')}
-                value="1,247"
-              />
-              <StatCard
-                label={t('seller.workspace.monthlyExpenses')}
-                value="$34,200"
-              />
-            </div>
+        {activeTab === 'dashboard' && <SellerDashboard />}
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div
-                className="rounded-lg border p-6 transition-colors"
-                style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-              >
-                <h3
-                  className="text-sm font-semibold mb-4"
-                  style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-                >
-                  {t('seller.workspace.salesOverview')}
-                </h3>
-                <div
-                  className="h-64 rounded-md flex items-center justify-center"
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
-                  <span className="text-sm" style={{ color: styles.textMuted }}>
-                    Sales Chart
-                  </span>
-                </div>
-              </div>
+        {/* Sales View */}
+        {activeTab === 'sales' && <SellerSales />}
 
-              <div
-                className="rounded-lg border p-6 transition-colors"
-                style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-              >
-                <h3
-                  className="text-sm font-semibold mb-4"
-                  style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-                >
-                  {t('seller.workspace.expenseBreakdown')}
-                </h3>
-                <div
-                  className="h-64 rounded-md flex items-center justify-center"
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
-                  <span className="text-sm" style={{ color: styles.textMuted }}>
-                    Expense Chart
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Customers View */}
+        {activeTab === 'customers' && <SellerCustomers />}
 
-        {/* Other tabs - Placeholder */}
-        {activeTab !== 'dashboard' && (
-          <div
-            className="rounded-lg border p-12 text-center transition-colors"
-            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-          >
-            <p className="text-sm" style={{ color: styles.textSecondary }}>
-              {tabs.find((t) => t.id === activeTab)?.label} content
-            </p>
-          </div>
-        )}
+        {/* Inventory View */}
+        {activeTab === 'inventory' && <SellerInventory />}
+
+        {/* Expenses View */}
+        {activeTab === 'expenses' && <SellerExpenses />}
       </Container>
     </div>
   );

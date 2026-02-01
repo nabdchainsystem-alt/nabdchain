@@ -1,5 +1,6 @@
 export { BuyerHome } from './BuyerHome';
 export { Marketplace } from './Marketplace';
+export { ItemDetails } from './ItemDetails';
 export { RequestQuote } from './RequestQuote';
 export { MyRFQs } from './MyRFQs';
 export { MyOrders } from './MyOrders';

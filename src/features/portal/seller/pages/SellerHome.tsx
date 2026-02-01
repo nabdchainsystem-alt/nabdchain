@@ -1,22 +1,67 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Package, TrendUp, ArrowRight } from 'phosphor-react';
 import { Container, StatCard } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { useAuth } from '../../../../auth-adapter';
+import { itemService } from '../../services/itemService';
+import { orderService } from '../../services/orderService';
 
 interface SellerHomeProps {
   onNavigate: (page: string) => void;
 }
 
+interface SellerStats {
+  totalItems: number;
+  activeItems: number;
+  totalQuotes: number;
+  pendingOrders: number;
+  totalRevenue: number;
+}
+
 export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
   const { t, styles } = usePortal();
+  const { getToken } = useAuth();
+  const [stats, setStats] = useState<SellerStats>({
+    totalItems: 127,
+    activeItems: 127,
+    totalQuotes: 24,
+    pendingOrders: 12,
+    totalRevenue: 48250,
+  });
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const [itemStats, orderStats] = await Promise.all([
+        itemService.getSellerStats(token),
+        orderService.getSellerOrderStats(token),
+      ]);
+
+      setStats({
+        totalItems: itemStats.totalItems,
+        activeItems: itemStats.activeItems,
+        totalQuotes: itemStats.totalQuotes,
+        pendingOrders: orderStats.pendingConfirmation + orderStats.confirmed + orderStats.inProgress,
+        totalRevenue: orderStats.totalRevenue,
+      });
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] flex items-center justify-center transition-colors"
+      className="min-h-screen flex items-start justify-center transition-colors pt-[15vh]"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="content">
-        <div className="py-16">
+        <div>
           {/* Hero */}
           <div className="text-center mb-16">
             <h1
@@ -40,20 +85,18 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
             <StatCard
               label={t('seller.home.rfqsThisMonth')}
-              value="24"
+              value={stats.totalQuotes.toString()}
               icon={FileText}
-              change={{ value: `8+ ${t('seller.home.fromLastMonth')}`, positive: true }}
             />
             <StatCard
               label={t('seller.home.activeOrders')}
-              value="12"
+              value={stats.pendingOrders.toString()}
               icon={Package}
             />
             <StatCard
               label={t('seller.home.revenue')}
-              value="$48,250"
+              value={`SAR ${stats.totalRevenue.toLocaleString()}`}
               icon={TrendUp}
-              change={{ value: '+15%', positive: true }}
             />
           </div>
 
@@ -61,13 +104,13 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <QuickActionCard
               title={t('seller.home.rfqInbox')}
-              description={`5 ${t('seller.home.newRequests')}`}
+              description={`${stats.totalQuotes} ${t('seller.home.newRequests')}`}
               action={t('seller.home.viewRfqs')}
               onClick={() => onNavigate('rfqs')}
             />
             <QuickActionCard
               title={t('seller.home.manageListings')}
-              description={`127 ${t('seller.home.activeProducts')}`}
+              description={`${stats.activeItems} ${t('seller.home.activeProducts')}`}
               action={t('seller.home.viewListings')}
               onClick={() => onNavigate('listings')}
             />

@@ -36,6 +36,16 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
             (req as AuthRequest).auth = { userId: 'user_google_simulated', sessionId: 'mock-session-google' };
             return next();
         }
+        if (authHeader.includes('buyer-portal-token')) {
+            authLogger.warn('WARNING: Development buyer-portal-token used');
+            (req as AuthRequest).auth = { userId: 'user_buyer_portal', sessionId: 'mock-session-buyer' };
+            return next();
+        }
+        if (authHeader.includes('seller-portal-token')) {
+            authLogger.warn('WARNING: Development seller-portal-token used');
+            (req as AuthRequest).auth = { userId: 'user_seller_portal', sessionId: 'mock-session-seller' };
+            return next();
+        }
     }
 
     // Default to Clerk for everything else

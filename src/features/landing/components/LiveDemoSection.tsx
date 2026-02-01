@@ -275,7 +275,7 @@ const CollaborationPreview = memo(({ isRTL }: { isRTL: boolean }) => {
                         <path d="M3 1L12 7L7 8L5 13L3 1Z" fill="#18181b" className="dark:fill-white" />
                     </svg>
                     <div className={`${isRTL ? 'mr-3' : 'ml-3'} -mt-1 px-1.5 py-0.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[8px] rounded whitespace-nowrap font-medium`}>
-                        {isRTL ? 'سارة ك.' : 'Sarah K.'}
+                        {isRTL ? 'آية ك.' : 'Aya K.'}
                     </div>
                 </div>
 

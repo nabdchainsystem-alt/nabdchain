@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TopNav } from '../components';
+import { Sidebar, ContentTopBar } from '../components';
 import { PortalProvider, usePortal } from '../context/PortalContext';
 
 // Existing pages
@@ -24,7 +24,10 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
   onLogout,
   onRoleSwitch,
 }) => {
-  const [currentPage, setCurrentPage] = useState<SellerPage>('home');
+  const [currentPage, setCurrentPage] = useState<SellerPage>(() => {
+    const saved = localStorage.getItem('seller-portal-page');
+    return (saved as SellerPage) || 'home';
+  });
   const { t, direction, styles } = usePortal();
 
   const navItems = [
@@ -33,12 +36,13 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
     { id: 'rfqs', label: t('seller.nav.rfqs') },
     { id: 'orders', label: t('seller.nav.orders') },
     { id: 'analytics', label: t('seller.nav.analytics') },
-    { id: 'tests', label: t('seller.nav.tests') },
     { id: 'workspace', label: t('seller.nav.workspace') },
+    { id: 'tests', label: t('seller.nav.tests') },
   ];
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as SellerPage);
+    localStorage.setItem('seller-portal-page', page);
   };
 
   const renderPage = () => {
@@ -68,7 +72,7 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
       style={{ fontFamily: styles.fontBody, backgroundColor: styles.bgPrimary }}
       dir={direction}
     >
-      <TopNav
+      <Sidebar
         role="seller"
         currentPage={currentPage}
         navItems={navItems}
@@ -76,9 +80,12 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
         onLogout={onLogout}
         onRoleSwitch={onRoleSwitch}
       />
-      <main>
-        {renderPage()}
-      </main>
+      <div className="portal-content-area flex flex-col h-screen overflow-hidden">
+        <ContentTopBar />
+        <main className="flex-1 overflow-y-auto pb-8">
+          {renderPage()}
+        </main>
+      </div>
     </div>
   );
 };

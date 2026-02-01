@@ -1,33 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeSlash, Spinner, ShoppingCart, Storefront } from 'phosphor-react';
+
+type PortalType = 'buyer' | 'seller';
 
 interface PortalLoginModalProps {
     isOpen: boolean;
     onClose: () => void;
+    defaultTab?: PortalType;
 }
 
-type PortalType = 'buyer' | 'seller';
-
-export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState<PortalType>('buyer');
+export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onClose, defaultTab = 'buyer' }) => {
+    const [activeTab, setActiveTab] = useState<PortalType>(defaultTab);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Reset to defaultTab when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab(defaultTab);
+            setEmail('');
+            setPassword('');
+            setError('');
+        }
+    }, [isOpen, defaultTab]);
+
     // Portal credentials
     const portalCredentials = {
         buyer: { email: 'buy@nabdchain.com', password: '2450', token: 'buyer-portal-token' },
         seller: { email: 'sell@nabdchain.com', password: '2450', token: 'seller-portal-token' },
-    };
-
-    const handleTabChange = (tab: PortalType) => {
-        setActiveTab(tab);
-        setEmail('');
-        setPassword('');
-        setError('');
     };
 
     const handleFormSubmit = async (e: React.FormEvent) => {
@@ -89,41 +93,12 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onCl
                                 {/* Header */}
                                 <div className="text-center mb-6">
                                     <div className="w-10 h-10 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black text-lg font-bold mx-auto mb-4">
-                                        N
+                                        {activeTab === 'buyer' ? <ShoppingCart size={20} weight="fill" /> : <Storefront size={20} weight="fill" />}
                                     </div>
-                                    <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">Portal Login</h2>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Access your business portal</p>
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 mb-6">
-                                    <button
-                                        onClick={() => handleTabChange('buyer')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
-                                            activeTab === 'buyer'
-                                                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                                                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-                                        }`}
-                                    >
-                                        <ShoppingCart size={18} weight={activeTab === 'buyer' ? 'fill' : 'regular'} />
-                                        Buyer
-                                    </button>
-                                    <button
-                                        onClick={() => handleTabChange('seller')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
-                                            activeTab === 'seller'
-                                                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                                                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-                                        }`}
-                                    >
-                                        <Storefront size={18} weight={activeTab === 'seller' ? 'fill' : 'regular'} />
-                                        Seller
-                                    </button>
-                                </div>
-
-                                {/* Tab Description */}
-                                <div className="text-center mb-5">
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                    <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">
+                                        {activeTab === 'buyer' ? 'Buyer Login' : 'Seller Login'}
+                                    </h2>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
                                         {activeTab === 'buyer'
                                             ? 'Sign in to browse products and manage your orders'
                                             : 'Sign in to manage your store and track sales'}

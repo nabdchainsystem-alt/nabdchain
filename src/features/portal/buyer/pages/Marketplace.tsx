@@ -23,7 +23,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="full">
@@ -96,11 +96,10 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
               : 'grid-cols-1'
           }`}
         >
-          {/* Empty state for structure */}
-          <ProductCard viewMode={viewMode} />
-          <ProductCard viewMode={viewMode} />
-          <ProductCard viewMode={viewMode} />
-          <ProductCard viewMode={viewMode} />
+          <ProductCard viewMode={viewMode} onClick={() => onNavigate('item-details')} />
+          <ProductCard viewMode={viewMode} onClick={() => onNavigate('item-details')} />
+          <ProductCard viewMode={viewMode} onClick={() => onNavigate('item-details')} />
+          <ProductCard viewMode={viewMode} onClick={() => onNavigate('item-details')} />
         </div>
       </Container>
     </div>
@@ -145,14 +144,17 @@ const CategoryChip: React.FC<{ label: string; active?: boolean }> = ({ label, ac
   );
 };
 
-const ProductCard: React.FC<{ viewMode: 'grid' | 'list' }> = ({ viewMode }) => {
+const ProductCard: React.FC<{ viewMode: 'grid' | 'list'; onClick?: () => void }> = ({ viewMode, onClick }) => {
   const { styles } = usePortal();
 
   if (viewMode === 'list') {
     return (
       <div
-        className="flex items-center gap-4 p-4 rounded-lg border transition-colors"
+        onClick={onClick}
+        className="flex items-center gap-4 p-4 rounded-lg border transition-colors cursor-pointer"
         style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = styles.textMuted)}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = styles.border)}
       >
         <div
           className="w-20 h-20 rounded-md flex-shrink-0"
@@ -171,8 +173,11 @@ const ProductCard: React.FC<{ viewMode: 'grid' | 'list' }> = ({ viewMode }) => {
 
   return (
     <div
-      className="rounded-lg border overflow-hidden transition-colors"
+      onClick={onClick}
+      className="rounded-lg border overflow-hidden transition-colors cursor-pointer"
       style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = styles.textMuted)}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = styles.border)}
     >
       <div className="aspect-square" style={{ backgroundColor: styles.bgSecondary }} />
       <div className="p-4">

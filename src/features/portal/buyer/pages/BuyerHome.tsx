@@ -12,7 +12,7 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] flex items-center justify-center transition-colors"
+      className="min-h-screen flex items-center justify-center transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="content">

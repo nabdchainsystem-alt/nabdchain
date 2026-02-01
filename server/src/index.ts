@@ -28,6 +28,12 @@ import notificationsRoutes from './routes/notificationsRoutes';
 import timeTrackingRoutes from './routes/timeTrackingRoutes';
 import templatesRoutes from './routes/templatesRoutes';
 import portalRoutes from './routes/portalRoutes';
+import itemRoutes from './routes/itemRoutes';
+import orderRoutes from './routes/orderRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import customerRoutes from './routes/customerRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
+import expenseRoutes from './routes/expenseRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
@@ -209,6 +215,12 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/time-entries', timeTrackingRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/portal', portalRoutes);
+app.use('/api/items', itemRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {

@@ -6,11 +6,12 @@ import { ToolsShowcase } from './components/ToolsShowcase';
 import { PricingSection } from './components/PricingSection';
 import { MiniCompanyShowcase } from './components/MiniCompanyShowcase';
 import { LiveDemoSection } from './components/LiveDemoSection';
+import { MarketplaceShowcase } from './components/MarketplaceShowcase';
 import { LandingLanguage, getTranslation } from './translations';
 
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
 import { PortalLoginModal } from '../auth/PortalLoginModal';
-import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate, Buildings } from 'phosphor-react';
+import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate } from 'phosphor-react';
 
 // Section background types for navbar color switching
 type SectionTheme = 'light' | 'dark';
@@ -43,6 +44,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
+    const [portalTab, setPortalTab] = useState<'buyer' | 'seller'>('buyer');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [navTheme, setNavTheme] = useState<SectionTheme>('light');
     const [lang, setLang] = useState<LandingLanguage>('en');
@@ -65,6 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const miniCompanyRef = useRef<HTMLDivElement>(null);
     const dashboardRef = useRef<HTMLDivElement>(null);
     const demoRef = useRef<HTMLDivElement>(null);
+    const marketplaceRef = useRef<HTMLDivElement>(null);
     const toolsRef = useRef<HTMLDivElement>(null);
     const pricingRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +79,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             { ref: miniCompanyRef, theme: 'light' },
             { ref: dashboardRef, theme: 'dark' },
             { ref: demoRef, theme: 'light' },
+            { ref: marketplaceRef, theme: 'dark' },
             { ref: toolsRef, theme: 'dark' },
             { ref: pricingRef, theme: 'dark' },
         ];
@@ -206,15 +210,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             {/* Desktop Buttons */}
                             <div className="hidden sm:flex items-center gap-2 sm:gap-3">
                                 <button
-                                    onClick={() => setIsPortalLoginOpen(true)}
-                                    className={`flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-full border transition-colors ${navTheme === 'light'
-                                        ? 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 hover:border-zinc-300'
-                                        : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600'}`}
-                                >
-                                    <Buildings size={14} weight="bold" />
-                                    {isRTL ? 'بوابة الدخول' : 'Portal Login'}
-                                </button>
-                                <button
                                     onClick={handleSignIn}
                                     className={`text-xs sm:text-sm transition-colors ${navTheme === 'light'
                                         ? 'text-zinc-600 hover:text-zinc-900'
@@ -292,19 +287,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                     <button
                                         onClick={() => {
                                             setIsMobileMenuOpen(false);
-                                            setIsPortalLoginOpen(true);
-                                        }}
-                                        className={`w-full h-11 rounded-xl border font-medium text-sm transition-colors flex items-center justify-center gap-2
-                                            ${navTheme === 'light'
-                                                ? 'border-zinc-300 text-zinc-900 hover:bg-zinc-100 bg-zinc-50'
-                                                : 'border-zinc-600 text-white hover:bg-zinc-700 bg-zinc-800'}`}
-                                    >
-                                        <Buildings size={16} weight="bold" />
-                                        {isRTL ? 'بوابة الدخول' : 'Portal Login'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setIsMobileMenuOpen(false);
                                             handleSignIn();
                                         }}
                                         className={`w-full h-11 rounded-xl border font-medium text-sm transition-colors flex items-center justify-center gap-2
@@ -354,6 +336,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <div id="demo" ref={demoRef}>
                         <LiveDemoSection onTryDemo={handleSignUp} />
+                    </div>
+
+                    <div id="marketplace" ref={marketplaceRef}>
+                        <MarketplaceShowcase onExplore={handleSignUp} />
                     </div>
 
                     <div id="testimonials" ref={toolsRef}>
@@ -430,6 +416,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             {t('developerAccess')}
                                         </button>
                                     </li>
+                                    <li>
+                                        <button
+                                            onClick={() => {
+                                                setPortalTab('buyer');
+                                                setIsPortalLoginOpen(true);
+                                            }}
+                                            className="hover:text-white transition-colors text-start"
+                                        >
+                                            {isRTL ? 'دخول المشتري' : 'Buyer Log In'}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() => {
+                                                setPortalTab('seller');
+                                                setIsPortalLoginOpen(true);
+                                            }}
+                                            className="hover:text-white transition-colors text-start"
+                                        >
+                                            {isRTL ? 'دخول البائع' : 'Seller Log In'}
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -449,7 +457,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </footer>
 
                 <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
-                <PortalLoginModal isOpen={isPortalLoginOpen} onClose={() => setIsPortalLoginOpen(false)} />
+                <PortalLoginModal isOpen={isPortalLoginOpen} onClose={() => setIsPortalLoginOpen(false)} defaultTab={portalTab} />
             </div>
         </LandingContext.Provider>
     );

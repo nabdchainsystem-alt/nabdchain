@@ -12,10 +12,10 @@ export const Tracking: React.FC<TrackingProps> = ({ onNavigate }) => {
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
-      <Container variant="content">
+      <Container variant="full">
         <PageHeader
           title={t('buyer.tracking.title')}
           subtitle={t('buyer.tracking.subtitle')}

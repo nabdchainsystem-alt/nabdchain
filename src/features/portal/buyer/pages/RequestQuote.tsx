@@ -22,10 +22,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
-      <Container variant="content">
+      <Container variant="full">
         <PageHeader
           title={t('buyer.rfq.title')}
           subtitle={t('buyer.rfq.subtitle')}

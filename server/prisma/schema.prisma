@@ -40,6 +40,7 @@ model User {
   createdConversations     Conversation[]            @relation("ConversationCreator")
   gtdItems                 GTDItem[]
   quickNotes               QuickNote[]
+  items                    Item[]
 
   @@index([workspaceId])
   @@index([lastActiveAt])
@@ -720,9 +721,205 @@ model Template {
 }
 
 // =============================================================================
-// PORTAL SELLER PRODUCTS
+// PORTAL MARKETPLACE ITEMS (Universal Item System)
 // =============================================================================
 
+model Item {
+  id           String   @id @default(uuid())
+  userId       String   // Seller/Owner ID
+
+  // Basic Info
+  name         String
+  nameAr       String?  // Arabic name for RTL support
+  sku          String
+  partNumber   String?
+  description  String?
+  descriptionAr String? // Arabic description
+
+  // Item Classification
+  itemType     String   @default("part") // part, consumable, service
+  category     String
+  subcategory  String?
+
+  // Visibility & Status (Core Logic)
+  visibility   String   @default("public") // public, rfq_only, hidden
+  status       String   @default("draft")  // draft, active, out_of_stock, archived
+
+  // Pricing
+  price        Float
+  currency     String   @default("SAR")
+  priceUnit    String?  // per_unit, per_kg, per_meter, etc.
+
+  // Inventory
+  stock        Int      @default(0)
+  minOrderQty  Int      @default(1)
+  maxOrderQty  Int?
+  leadTimeDays Int?     // Delivery lead time
+
+  // Product Details
+  manufacturer String?
+  brand        String?
+  origin       String?  // Country of origin
+
+  // Specifications (JSON for flexibility)
+  specifications String? // JSON: { weight, dimensions, material, etc. }
+
+  // Compatibility (JSON array)
+  compatibility String? // JSON: [{ make, model, years }]
+
+  // Packaging Info
+  packaging    String?  // JSON: { unitWeight, boxQty, palletQty, etc. }
+
+  // Documents & Media
+  images       String?  // JSON array of image URLs
+  documents    String?  // JSON array of { name, type, url }
+
+  // Supplier/RFQ Intelligence
+  avgResponseTime Int?   // Average response time in hours
+  totalQuotes     Int    @default(0)
+  successfulOrders Int   @default(0)
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  publishedAt  DateTime? // When item went active & public
+  archivedAt   DateTime?
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rfqItems     ItemRFQ[]
+  marketplaceRfqs MarketplaceRFQ[]
+
+  @@unique([userId, sku]) // SKU unique per seller
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, visibility])
+  @@index([status, visibility]) // For marketplace queries
+  @@index([category])
+  @@index([sku])
+  @@index([itemType])
+}
+
+// =============================================================================
+// MARKETPLACE RFQ INBOX SYSTEM
+// =============================================================================
+
+model MarketplaceRFQ {
+  id           String   @id @default(uuid())
+  rfqNumber    String   @unique // Human-readable: RFQ-2024-0001
+  itemId       String
+  buyerId      String
+  sellerId     String
+
+  // Request Details
+  quantity     Int
+  specifications String? // JSON: custom specs requested
+
+  // Pricing
+  requestedPrice Float?  // Buyer's target price (optional)
+  quotedPrice    Float?  // Seller's quoted price
+  finalPrice     Float?  // Agreed price after negotiation
+  currency       String  @default("SAR")
+
+  // Delivery
+  requestedLeadTime Int? // Buyer's requested days
+  quotedLeadTime    Int? // Seller's quoted days
+  finalLeadTime     Int? // Agreed lead time
+
+  // State Machine
+  status       String   @default("new") // new, viewed, responded, negotiation, accepted, rejected, expired
+
+  // Negotiation
+  negotiationRound Int   @default(0)
+  maxNegotiationRounds Int @default(3)
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  viewedAt     DateTime?
+  respondedAt  DateTime?
+  lastActionAt DateTime  @default(now())
+  expiresAt    DateTime?
+  completedAt  DateTime?
+
+  // Flags
+  isTestItem   Boolean  @default(false)
+  triggeredMarketplacePublish Boolean @default(false)
+
+  // Relations
+  item         Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  messages     MarketplaceRFQMessage[]
+  events       MarketplaceRFQEvent[]
+
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  @@index([lastActionAt])
+}
+
+model MarketplaceRFQMessage {
+  id        String   @id @default(uuid())
+  rfqId     String
+  senderId  String
+  senderType String  // "buyer" or "seller"
+  content   String
+  contentAr String?
+  attachments String?
+  offeredPrice    Float?
+  offeredLeadTime Int?
+  createdAt DateTime @default(now())
+
+  rfq       MarketplaceRFQ @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+  @@index([rfqId, createdAt])
+}
+
+model MarketplaceRFQEvent {
+  id        String   @id @default(uuid())
+  rfqId     String
+  actorId   String
+  actorType String
+  eventType String
+  fromStatus String?
+  toStatus   String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  rfq       MarketplaceRFQ @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+  @@index([eventType])
+}
+
+// Legacy ItemRFQ
+model ItemRFQ {
+  id           String   @id @default(uuid())
+  itemId       String
+  buyerId      String
+  sellerId     String
+  quantity     Int
+  message      String?
+  quotedPrice  Float?
+  quotedLeadTime Int?
+  responseMessage String?
+  respondedAt  DateTime?
+  status       String   @default("pending")
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+// Legacy model - keeping for backward compatibility during migration
 model PortalProduct {
   id           String   @id @default(uuid())
   userId       String
@@ -749,4 +946,89 @@ model PortalProduct {
   @@index([userId])
   @@index([userId, status])
   @@index([sku])
+}
+
+// =============================================================================
+// MARKETPLACE ORDERS SYSTEM
+// =============================================================================
+
+model MarketplaceOrder {
+  id           String   @id @default(uuid())
+  orderNumber  String   @unique // Human-readable: ORD-2024-0001
+
+  // Parties
+  buyerId      String
+  sellerId     String
+
+  // Item Reference
+  itemId       String
+  itemName     String   // Denormalized for display
+  itemSku      String   // Denormalized for display
+  itemImage    String?  // Denormalized for display
+
+  // RFQ Reference (if created from RFQ)
+  rfqId        String?
+  rfqNumber    String?  // Denormalized for display
+
+  // Order Details
+  quantity     Int
+  unitPrice    Float
+  totalPrice   Float
+  currency     String   @default("SAR")
+
+  // Status State Machine
+  status       String   @default("pending_confirmation") // pending_confirmation, confirmed, in_progress, shipped, delivered, cancelled, failed, refunded
+  paymentStatus String  @default("unpaid") // unpaid, authorized, paid, refunded
+  fulfillmentStatus String @default("not_started") // not_started, packing, out_for_delivery, delivered
+
+  // Source
+  source       String   @default("direct_buy") // rfq, direct_buy
+
+  // Shipping Information
+  shippingAddress String? // JSON: { name, company, street1, street2, city, state, postalCode, country, phone }
+  trackingNumber  String?
+  carrier         String?
+  estimatedDelivery String?
+
+  // Notes
+  buyerNotes   String?
+  sellerNotes  String?
+  internalNotes String?
+
+  // Buyer Info (denormalized)
+  buyerName    String?
+  buyerEmail   String?
+  buyerCompany String?
+
+  // Timestamps
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  confirmedAt  DateTime?
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
+  cancelledAt  DateTime?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([itemId])
+  @@index([rfqId])
+}
+
+model MarketplaceOrderAudit {
+  id           String   @id @default(uuid())
+  orderId      String
+  action       String   // created, confirmed, status_changed, payment_updated, shipped, delivered, cancelled, refunded, note_added, tracking_added
+  actor        String   // buyer, seller, system
+  actorId      String?
+  previousValue String?
+  newValue     String?
+  metadata     String?  // JSON
+  createdAt    DateTime @default(now())
+
+  @@index([orderId])
+  @@index([orderId, createdAt])
 }

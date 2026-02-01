@@ -95,7 +95,7 @@ const AnimatedCursor: React.FC = memo(() => (
         </svg>
         <div className="ml-4 mt-1 px-2 py-1 bg-violet-600 text-white text-xs rounded-md whitespace-nowrap shadow-lg"
              style={{ animation: 'cursorLabel 8s ease-in-out infinite' }}>
-            Sarah K.
+            Aya K.
         </div>
         <style>{`
             @keyframes cursorMove {

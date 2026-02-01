@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { TopNav } from '../components';
+import { Sidebar, ContentTopBar } from '../components';
 import {
   BuyerHome,
   Marketplace,
+  ItemDetails,
   RequestQuote,
   MyRFQs,
   MyOrders,
@@ -17,13 +18,16 @@ interface BuyerPortalPageProps {
   onRoleSwitch?: () => void;
 }
 
-type BuyerPage = 'home' | 'marketplace' | 'rfq' | 'my-rfqs' | 'orders' | 'tracking' | 'workspace' | 'tests';
+type BuyerPage = 'home' | 'marketplace' | 'item-details' | 'rfq' | 'my-rfqs' | 'orders' | 'tracking' | 'workspace' | 'tests';
 
 const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
   onLogout,
   onRoleSwitch,
 }) => {
-  const [currentPage, setCurrentPage] = useState<BuyerPage>('home');
+  const [currentPage, setCurrentPage] = useState<BuyerPage>(() => {
+    const saved = localStorage.getItem('buyer-portal-page');
+    return (saved as BuyerPage) || 'home';
+  });
   const { t, direction, styles } = usePortal();
 
   const navItems = [
@@ -38,6 +42,7 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as BuyerPage);
+    localStorage.setItem('buyer-portal-page', page);
   };
 
   const renderPage = () => {
@@ -46,6 +51,8 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
         return <BuyerHome onNavigate={handleNavigate} />;
       case 'marketplace':
         return <Marketplace onNavigate={handleNavigate} />;
+      case 'item-details':
+        return <ItemDetails onNavigate={handleNavigate} />;
       case 'rfq':
         return <RequestQuote onNavigate={handleNavigate} />;
       case 'my-rfqs':
@@ -69,7 +76,7 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
       style={{ fontFamily: styles.fontBody, backgroundColor: styles.bgPrimary }}
       dir={direction}
     >
-      <TopNav
+      <Sidebar
         role="buyer"
         currentPage={currentPage}
         navItems={navItems}
@@ -77,7 +84,12 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
         onLogout={onLogout}
         onRoleSwitch={onRoleSwitch}
       />
-      <main>{renderPage()}</main>
+      <div className="portal-content-area flex flex-col h-screen overflow-hidden">
+        <ContentTopBar />
+        <main className="flex-1 overflow-y-auto pb-8">
+          {renderPage()}
+        </main>
+      </div>
     </div>
   );
 };

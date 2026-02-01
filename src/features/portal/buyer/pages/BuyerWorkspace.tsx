@@ -29,7 +29,7 @@ export const BuyerWorkspace: React.FC<BuyerWorkspaceProps> = ({ onNavigate }) =>
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="full">

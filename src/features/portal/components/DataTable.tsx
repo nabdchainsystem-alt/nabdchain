@@ -85,8 +85,8 @@ export function DataTable<T extends { id: string | number }>({
                 {columns.map((col) => (
                   <td
                     key={`${item.id}-${String(col.key)}`}
-                    className="px-4 py-3.5 text-sm"
-                    style={{ color: styles.textPrimary }}
+                    className="px-4 py-3.5"
+                    style={{ color: styles.textPrimary, fontSize: '0.79rem' }}
                   >
                     {col.render
                       ? col.render(item)
