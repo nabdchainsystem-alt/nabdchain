@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, memo, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { SignedIn, SignedOut, SignIn, useUser, useAuth } from './auth-adapter';
+import { SignedIn, SignedOut, SignIn, useUser, useAuth, useClerk } from './auth-adapter';
 import { Board, Workspace, ViewState, BoardViewType, BoardColumn, RecentlyVisitedItem, Task } from './types';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -122,8 +122,8 @@ LoadingSpinner.displayName = 'LoadingSpinner';
 // Redirect signed-out users from app subdomain to main domain
 const RedirectToMainDomain: React.FC = () => {
   useEffect(() => {
-    // Redirect to main domain immediately
-    window.location.href = 'https://nabdchain.com';
+    // Redirect to main domain with signedout flag to prevent redirect loop
+    window.location.href = 'https://nabdchain.com?signedout=true';
   }, []);
 
   // Show loading while redirect happens
@@ -1799,6 +1799,7 @@ class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 
 // Component to handle signed-in users - redirects to app subdomain if on main domain
 const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) => {
+  const { signOut } = useClerk();
   const [portalType, setPortalType] = useState<'buyer' | 'seller' | null>(() => {
     const stored = localStorage.getItem('portal_type');
     return stored === 'buyer' || stored === 'seller' ? stored : null;
@@ -1809,17 +1810,20 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
   const justSignedOut = urlParams.get('signedout') === 'true';
 
   useEffect(() => {
-    if (justSignedOut) {
-      // Clean up URL and reload to sync Clerk session state
-      // This ensures the landing page shows properly after sign-out
+    if (justSignedOut && isMainDomain) {
+      // User just signed out on app subdomain and was redirected here
+      // Sign out on this domain too to clear any session cookies
+      // Clean up URL first
       window.history.replaceState({}, '', window.location.pathname);
-      window.location.reload();
+      // Sign out on this domain - this will trigger SignedOut to render
+      signOut();
       return;
     }
-    if (isMainDomain) {
+    if (isMainDomain && !justSignedOut) {
+      // Normal case: signed in user on main domain, redirect to app
       window.location.href = 'https://app.nabdchain.com';
     }
-  }, [isMainDomain, justSignedOut]);
+  }, [isMainDomain, justSignedOut, signOut]);
 
   const handlePortalLogout = () => {
     localStorage.removeItem('portal_type');
@@ -1829,8 +1833,7 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
     window.location.reload();
   };
 
-  // If just signed out on main domain, show nothing while Clerk session clears
-  // This allows the <SignedOut> wrapper to take over once session is cleared
+  // If just signed out on main domain, show loading while signOut completes
   if (isMainDomain && justSignedOut) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-white">
