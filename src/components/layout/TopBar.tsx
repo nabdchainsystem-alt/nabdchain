@@ -557,12 +557,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                       });
                       sessionStorage.removeItem('app-last-user-id');
 
-                      await signOut();
-                      // Redirect to landing page after sign out with flag to prevent redirect loop
+                      // Use Clerk's built-in redirect option
                       const hostname = window.location.hostname;
-                      if (hostname.startsWith('app.') && hostname.includes('nabdchain.com')) {
-                        window.location.href = 'https://nabdchain.com?signedout=true';
-                      }
+                      const redirectUrl = hostname.startsWith('app.') && hostname.includes('nabdchain.com')
+                        ? 'https://nabdchain.com?signedout=true'
+                        : '/';
+
+                      await signOut({ redirectUrl });
                       setIsProfileOpen(false);
                     }}
                     className="w-full text-start px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
