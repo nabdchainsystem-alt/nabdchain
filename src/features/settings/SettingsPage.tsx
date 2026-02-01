@@ -725,13 +725,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                         });
                         sessionStorage.removeItem('app-last-user-id');
 
-                        // Use Clerk's built-in redirect option
                         const hostname = window.location.hostname;
-                        const redirectUrl = hostname.startsWith('app.') && hostname.includes('nabdchain.com')
-                            ? 'https://nabdchain.com?signedout=true'
-                            : '/';
+                        const isAppDomain = hostname.startsWith('app.') && hostname.includes('nabdchain.com');
 
-                        await signOut({ redirectUrl });
+                        // Sign out without redirect, then redirect manually
+                        await signOut();
+
+                        // Force redirect to main domain
+                        if (isAppDomain) {
+                            window.location.replace('https://nabdchain.com');
+                        }
                     }}
                     className="flex items-center gap-2 px-6 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors font-medium border border-transparent hover:border-red-100"
                 >
