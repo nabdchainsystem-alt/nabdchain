@@ -556,14 +556,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                         }
                       });
                       sessionStorage.removeItem('app-last-user-id');
-                      // Set flag to prevent redirect loop on main domain
-                      sessionStorage.setItem('just_signed_out', 'true');
 
                       await signOut();
-                      // Redirect to landing page after sign out
+                      // Redirect to landing page after sign out with flag to prevent redirect loop
                       const hostname = window.location.hostname;
                       if (hostname.startsWith('app.') && hostname.includes('nabdchain.com')) {
-                        window.location.href = 'https://nabdchain.com';
+                        window.location.href = 'https://nabdchain.com?signedout=true';
                       }
                       setIsProfileOpen(false);
                     }}

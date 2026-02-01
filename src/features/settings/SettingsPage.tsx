@@ -724,14 +724,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ visibility, onVisibi
                             }
                         });
                         sessionStorage.removeItem('app-last-user-id');
-                        // Set flag to prevent redirect loop on main domain
-                        sessionStorage.setItem('just_signed_out', 'true');
 
                         await signOut();
-                        // Redirect to landing page after sign out
+                        // Redirect to landing page after sign out with flag to prevent redirect loop
                         const hostname = window.location.hostname;
                         if (hostname.startsWith('app.') && hostname.includes('nabdchain.com')) {
-                            window.location.href = 'https://nabdchain.com';
+                            window.location.href = 'https://nabdchain.com?signedout=true';
                         }
                     }}
                     className="flex items-center gap-2 px-6 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors font-medium border border-transparent hover:border-red-100"

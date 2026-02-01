@@ -1791,9 +1791,12 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
 
   useEffect(() => {
     // Don't auto-redirect if user just signed out (prevents redirect loop)
-    const justSignedOut = sessionStorage.getItem('just_signed_out');
+    // Use URL parameter since sessionStorage doesn't work across domains
+    const urlParams = new URLSearchParams(window.location.search);
+    const justSignedOut = urlParams.get('signedout') === 'true';
     if (justSignedOut) {
-      sessionStorage.removeItem('just_signed_out');
+      // Clean up the URL parameter
+      window.history.replaceState({}, '', window.location.pathname);
       return;
     }
     if (isMainDomain) {
