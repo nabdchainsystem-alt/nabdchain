@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install server dependencies
+        run: cd server && pnpm install --frozen-lockfile
+
       - name: Type Check
         run: pnpm tsc --noEmit
 
