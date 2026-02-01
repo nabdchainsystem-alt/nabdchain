@@ -55,6 +55,10 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             loginAsGoogle();
         } else if (token === 'sam-token') {
             loginAsSam();
+        } else if (token === 'buyer-portal-token') {
+            loginAsBuyer();
+        } else if (token === 'seller-portal-token') {
+            loginAsSeller();
         }
     }, []);
 
@@ -115,6 +119,32 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Sam&background=6366F1&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'sam-token');
+    };
+
+    const loginAsBuyer = () => {
+        setIsSignedIn(true);
+        setUserData({
+            id: 'user_portal_buyer',
+            fullName: 'Portal Buyer',
+            firstName: 'Portal',
+            lastName: 'Buyer',
+            primaryEmailAddress: { emailAddress: 'buy@nabdchain.com' },
+            imageUrl: 'https://ui-avatars.com/api/?name=Portal+Buyer&background=3B82F6&color=fff'
+        });
+        localStorage.setItem('mock_auth_token', 'buyer-portal-token');
+    };
+
+    const loginAsSeller = () => {
+        setIsSignedIn(true);
+        setUserData({
+            id: 'user_portal_seller',
+            fullName: 'Portal Seller',
+            firstName: 'Portal',
+            lastName: 'Seller',
+            primaryEmailAddress: { emailAddress: 'sell@nabdchain.com' },
+            imageUrl: 'https://ui-avatars.com/api/?name=Portal+Seller&background=10B981&color=fff'
+        });
+        localStorage.setItem('mock_auth_token', 'seller-portal-token');
     };
 
     const signOut = async () => {

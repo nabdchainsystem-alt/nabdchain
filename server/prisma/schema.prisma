@@ -718,3 +718,35 @@ model Template {
   @@index([isPublic])
   @@index([isPublic, category])
 }
+
+// =============================================================================
+// PORTAL SELLER PRODUCTS
+// =============================================================================
+
+model PortalProduct {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  sku          String
+  partNumber   String?
+  description  String?
+  price        Float
+  currency     String   @default("SAR")
+  stock        Int      @default(0)
+  minOrderQty  Int      @default(1)
+  category     String
+  manufacturer String?
+  brand        String?
+  weight       String?
+  weightUnit   String   @default("kg")
+  dimensions   String?
+  material     String?
+  status       String   @default("draft") // active, draft, out_of_stock
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([sku])
+}

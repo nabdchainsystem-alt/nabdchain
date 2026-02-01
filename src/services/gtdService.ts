@@ -33,14 +33,36 @@ export interface GTDItem {
     updatedAt: number;
 }
 
+export interface SyncConflict {
+    clientItem: Partial<GTDItem>;
+    serverItem: GTDItem;
+    resolution: string;
+}
+
+/** Local storage item format (before migration to API) */
+export interface LocalGTDItem {
+    id: string;
+    title: string;
+    scheduledAt?: number;
+    createdAt?: number;
+}
+
+/** Local storage data structure for migration */
+export interface LocalGTDData {
+    inboxItems: LocalGTDItem[];
+    projects: LocalGTDItem[];
+    nextActions: LocalGTDItem[];
+    waitingFor: LocalGTDItem[];
+    scheduled: LocalGTDItem[];
+    someday: LocalGTDItem[];
+    reference: LocalGTDItem[];
+    completed: LocalGTDItem[];
+}
+
 export interface SyncResult {
     created: GTDItem[];
     updated: GTDItem[];
-    conflicts: Array<{
-        clientItem: any;
-        serverItem: GTDItem;
-        resolution: string;
-    }>;
+    conflicts: SyncConflict[];
     deleted: string[];
     serverChanges: GTDItem[];
     serverTime: number;
@@ -256,7 +278,7 @@ export const gtdService = {
      */
     sync: async (
         token: string,
-        items: any[],
+        items: Partial<GTDItem>[],
         lastSyncedAt: number,
         boardId?: string
     ): Promise<SyncResult> => {
@@ -287,7 +309,7 @@ export const gtdService = {
      */
     bulkCreate: async (
         token: string,
-        items: any[],
+        items: Partial<GTDItem>[],
         boardId?: string
     ): Promise<{ success: boolean; count: number }> => {
         try {
@@ -319,21 +341,12 @@ export const gtdService = {
     migrateFromLocalStorage: async (
         token: string,
         boardId: string,
-        localData: {
-            inboxItems: any[];
-            projects: any[];
-            nextActions: any[];
-            waitingFor: any[];
-            scheduled: any[];
-            someday: any[];
-            reference: any[];
-            completed: any[];
-        }
+        localData: LocalGTDData
     ): Promise<{ success: boolean; count: number }> => {
         // Transform localStorage format to API format
-        const items: any[] = [];
+        const items: Partial<GTDItem>[] = [];
 
-        const addItems = (list: any[], category: GTDCategory) => {
+        const addItems = (list: LocalGTDItem[], category: GTDCategory) => {
             list.forEach(item => items.push({
                 id: item.id,
                 title: item.title,
@@ -356,12 +369,19 @@ export const gtdService = {
     }
 };
 
+/** Conflict data returned from server on version mismatch */
+export interface ConflictData {
+    serverVersion: number;
+    clientVersion: number;
+    serverItem: GTDItem;
+}
+
 /**
  * Custom error class for version conflicts
  */
 export class ConflictError extends Error {
-    conflict: any;
-    constructor(message: string, conflict: any) {
+    conflict: ConflictData;
+    constructor(message: string, conflict: ConflictData) {
         super(message);
         this.name = 'ConflictError';
         this.conflict = conflict;

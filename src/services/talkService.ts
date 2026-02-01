@@ -29,6 +29,62 @@ export interface Conversation {
     creatorId?: string;
 }
 
+export interface TalkTask {
+    id: string;
+    conversationId: string;
+    name: string;
+    completed: boolean;
+    createdAt: string;
+    completedAt?: string | null;
+}
+
+export interface TalkTaskUpdate {
+    name?: string;
+    completed?: boolean;
+    status?: 'pending' | 'completed';
+    boardId?: string;
+    boardName?: string;
+}
+
+export interface TalkReminder {
+    id: string;
+    conversationId: string;
+    text: string;
+    dueDate: string;
+    completed: boolean;
+    createdAt: string;
+}
+
+export interface TalkReminderUpdate {
+    text?: string;
+    dueDate?: string;
+    completed?: boolean;
+}
+
+export interface TalkFile {
+    id: string;
+    conversationId: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+    createdAt: string;
+}
+
+export interface TalkFileCreate {
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+    taskId?: string;
+}
+
+export interface ConversationData {
+    tasks: TalkTask[];
+    reminders: TalkReminder[];
+    files: TalkFile[];
+}
+
 export const talkService = {
     // Get all conversations for current user
     async getConversations(token: string): Promise<Conversation[]> {
@@ -142,7 +198,7 @@ export const talkService = {
     },
 
     // --- Sidebar Data ---
-    async getConversationData(token: string, conversationId: string): Promise<any> {
+    async getConversationData(token: string, conversationId: string): Promise<ConversationData> {
         const response = await fetch(`${API_URL}/talk/conversations/${conversationId}/data`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -150,7 +206,7 @@ export const talkService = {
         return response.json();
     },
 
-    async createTask(token: string, conversationId: string, name: string): Promise<any> {
+    async createTask(token: string, conversationId: string, name: string): Promise<TalkTask> {
         const response = await fetch(`${API_URL}/talk/conversations/${conversationId}/tasks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -160,7 +216,7 @@ export const talkService = {
         return response.json();
     },
 
-    async updateTask(token: string, taskId: string, data: any): Promise<any> {
+    async updateTask(token: string, taskId: string, data: TalkTaskUpdate): Promise<TalkTask> {
         const response = await fetch(`${API_URL}/talk/tasks/${taskId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -178,7 +234,7 @@ export const talkService = {
         if (!response.ok) throw new Error('Failed to delete task');
     },
 
-    async createReminder(token: string, conversationId: string, text: string, dueDate: string): Promise<any> {
+    async createReminder(token: string, conversationId: string, text: string, dueDate: string): Promise<TalkReminder> {
         const response = await fetch(`${API_URL}/talk/conversations/${conversationId}/reminders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -188,7 +244,7 @@ export const talkService = {
         return response.json();
     },
 
-    async updateReminder(token: string, reminderId: string, data: any): Promise<any> {
+    async updateReminder(token: string, reminderId: string, data: TalkReminderUpdate): Promise<TalkReminder> {
         const response = await fetch(`${API_URL}/talk/reminders/${reminderId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -206,7 +262,7 @@ export const talkService = {
         if (!response.ok) throw new Error('Failed to delete reminder');
     },
 
-    async createFile(token: string, conversationId: string, fileData: any): Promise<any> {
+    async createFile(token: string, conversationId: string, fileData: TalkFileCreate): Promise<TalkFile> {
         const response = await fetch(`${API_URL}/talk/conversations/${conversationId}/files`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -216,7 +272,7 @@ export const talkService = {
         return response.json();
     },
 
-    async updateConversationStatus(token: string, conversationId: string, status: string): Promise<any> {
+    async updateConversationStatus(token: string, conversationId: string, status: Conversation['status']): Promise<Conversation> {
         const response = await fetch(`${API_URL}/talk/conversations/${conversationId}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

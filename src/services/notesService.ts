@@ -240,12 +240,19 @@ export const notesService = {
     }
 };
 
+/** Conflict data returned from server on version mismatch */
+export interface NoteConflictData {
+    serverVersion: number;
+    clientVersion: number;
+    serverNote: QuickNote;
+}
+
 /**
  * Custom error class for version conflicts
  */
 export class ConflictError extends Error {
-    conflict: any;
-    constructor(message: string, conflict: any) {
+    conflict: NoteConflictData;
+    constructor(message: string, conflict: NoteConflictData) {
         super(message);
         this.name = 'ConflictError';
         this.conflict = conflict;

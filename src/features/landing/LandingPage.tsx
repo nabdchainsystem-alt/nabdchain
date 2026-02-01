@@ -9,7 +9,8 @@ import { LiveDemoSection } from './components/LiveDemoSection';
 import { LandingLanguage, getTranslation } from './translations';
 
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
-import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate } from 'phosphor-react';
+import { PortalLoginModal } from '../auth/PortalLoginModal';
+import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate, Buildings } from 'phosphor-react';
 
 // Section background types for navbar color switching
 type SectionTheme = 'light' | 'dark';
@@ -41,6 +42,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     onNavigateToSignUp
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
+    const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [navTheme, setNavTheme] = useState<SectionTheme>('light');
     const [lang, setLang] = useState<LandingLanguage>('en');
@@ -204,6 +206,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             {/* Desktop Buttons */}
                             <div className="hidden sm:flex items-center gap-2 sm:gap-3">
                                 <button
+                                    onClick={() => setIsPortalLoginOpen(true)}
+                                    className={`flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-full border transition-colors ${navTheme === 'light'
+                                        ? 'border-zinc-200 text-zinc-700 hover:bg-zinc-100 hover:border-zinc-300'
+                                        : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-600'}`}
+                                >
+                                    <Buildings size={14} weight="bold" />
+                                    {isRTL ? 'بوابة الدخول' : 'Portal Login'}
+                                </button>
+                                <button
                                     onClick={handleSignIn}
                                     className={`text-xs sm:text-sm transition-colors ${navTheme === 'light'
                                         ? 'text-zinc-600 hover:text-zinc-900'
@@ -278,6 +289,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                 </button>
 
                                 <div className={`pt-3 mt-2 border-t space-y-2 ${navTheme === 'light' ? 'border-zinc-200' : 'border-zinc-800'}`}>
+                                    <button
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            setIsPortalLoginOpen(true);
+                                        }}
+                                        className={`w-full h-11 rounded-xl border font-medium text-sm transition-colors flex items-center justify-center gap-2
+                                            ${navTheme === 'light'
+                                                ? 'border-zinc-300 text-zinc-900 hover:bg-zinc-100 bg-zinc-50'
+                                                : 'border-zinc-600 text-white hover:bg-zinc-700 bg-zinc-800'}`}
+                                    >
+                                        <Buildings size={16} weight="bold" />
+                                        {isRTL ? 'بوابة الدخول' : 'Portal Login'}
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setIsMobileMenuOpen(false);
@@ -425,6 +449,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </footer>
 
                 <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
+                <PortalLoginModal isOpen={isPortalLoginOpen} onClose={() => setIsPortalLoginOpen(false)} />
             </div>
         </LandingContext.Provider>
     );

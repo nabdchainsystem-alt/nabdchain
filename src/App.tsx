@@ -7,7 +7,6 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { FocusProvider } from './contexts/FocusContext';
-import { lazyWithRetry } from './utils/lazyWithRetry';
 import { AIProvider, useAI } from './contexts/AIContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { RedirectToSignIn } from './auth-adapter';
@@ -20,110 +19,79 @@ import { adminService } from './services/adminService';
 import { useUserPreferences } from './hooks/useUserPreferences';
 import { MorphingLoader } from './components/common/MorphingLoader';
 
-// ============================================================================
-// LAZY LOADED COMPONENTS - All heavy components loaded on demand
-// ============================================================================
-
-// Core Layout (lazy but preloaded)
-const Sidebar = lazyWithRetry(() => import('./components/layout/Sidebar').then(m => ({ default: m.Sidebar })));
-const TopBar = lazyWithRetry(() => import('./components/layout/TopBar').then(m => ({ default: m.TopBar })));
-
-// Auth & Landing Pages
-const LandingPage = lazyWithRetry(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
-const AcceptInvitePage = lazyWithRetry(() => import('./features/auth/AcceptInvitePage').then(m => ({ default: m.AcceptInvitePage })));
-const SignUpPage = lazyWithRetry(() => import('./features/auth/SignUpPage').then(m => ({ default: m.SignUpPage })));
-const SignInPage = lazyWithRetry(() => import('./features/auth/SignInPage').then(m => ({ default: m.SignInPage })));
-
-// Mobile
-const MobileApp = lazyWithRetry(() => import('./features/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
-
 // Toast Provider (must be regular import - it's a wrapper)
 import { ToastProvider } from './features/marketplace/components/Toast';
 
 // Board Templates - Type import (not a component)
 import type { BoardTemplate } from './features/board/data/templates';
 
-// Speed Insights (lazy - non-critical)
-const SpeedInsights = lazyWithRetry(() => import('@vercel/speed-insights/react').then(m => ({ default: m.SpeedInsights })));
-
-// Core Feature Pages
-const Dashboard = lazyWithRetry(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
-const BoardView = lazyWithRetry(() => import('./features/board/BoardView').then(m => ({ default: m.BoardView })));
-const InboxView = lazyWithRetry(() => import('./features/inbox/InboxView').then(m => ({ default: m.InboxView })));
-const VaultView = lazyWithRetry(() => import('./features/vault/VaultView').then(m => ({ default: m.VaultView })));
-const MyWorkPage = lazyWithRetry(() => import('./features/myWork/MyWorkPage').then(m => ({ default: m.MyWorkPage })));
-const TeamsPage = lazyWithRetry(() => import('./features/teams/TeamsPage'));
-const TalkPage = lazyWithRetry(() => import('./features/talk/TalkPage'));
-const TestPage = lazyWithRetry(() => import('./features/tools/TestPage').then(m => ({ default: m.TestPage })));
-const ArcadePage = lazyWithRetry(() => import('./features/arcade/ArcadePage'));
-const LiveSessionPage = lazyWithRetry(() => import('./features/collaboration/LiveSessionPage').then(m => ({ default: m.LiveSessionPage })));
-
-// Department Pages - Supply Chain
-const ProcurementPage = lazyWithRetry(() => import('./features/supply_chain/procurement/ProcurementPage'));
-const WarehousePage = lazyWithRetry(() => import('./features/supply_chain/warehouse/WarehousePage'));
-const ShippingPage = lazyWithRetry(() => import('./features/supply_chain/shipping/ShippingPage'));
-const FleetPage = lazyWithRetry(() => import('./features/supply_chain/fleet/FleetPage'));
-const VendorsPage = lazyWithRetry(() => import('./features/supply_chain/vendors/VendorsPage'));
-const PlanningPage = lazyWithRetry(() => import('./features/supply_chain/planning/PlanningPage'));
-
-// Department Pages - Operations
-const MaintenancePage = lazyWithRetry(() => import('./features/operations/maintenance/MaintenancePage'));
-const ProductionPage = lazyWithRetry(() => import('./features/operations/production/ProductionPage'));
-const QualityPage = lazyWithRetry(() => import('./features/operations/quality/QualityPage'));
-
-// Department Pages - Business
-const BusinessSalesPage = lazyWithRetry(() => import('./features/business/sales/SalesPage'));
-const FinancePage = lazyWithRetry(() => import('./features/business/finance/FinancePage'));
-
-// Mini Company - Overview
-const DashboardsPage = lazyWithRetry(() => import('./features/mini_company/overview/DashboardsPage'));
-const ReportsPage = lazyWithRetry(() => import('./features/mini_company/overview/ReportsPage'));
-
-// Mini Company - Operations
-const SalesPage = lazyWithRetry(() => import('./features/mini_company/operations/SalesPage'));
-const PurchasesPage = lazyWithRetry(() => import('./features/mini_company/operations/PurchasesPage'));
-const InventoryPage = lazyWithRetry(() => import('./features/mini_company/operations/InventoryPage'));
-
-// Mini Company - Finance & People
-const ExpensesPage = lazyWithRetry(() => import('./features/mini_company/finance/ExpensesPage'));
-const CustomersPage = lazyWithRetry(() => import('./features/mini_company/customers/CustomersPage').then(module => ({ default: module.CustomersPage })));
-const SuppliersPage = lazyWithRetry(() => import('./features/mini_company/suppliers/SuppliersPage').then(module => ({ default: module.SuppliersPage })));
-
-// Marketplace
-const LocalMarketplacePage = lazyWithRetry(() => import('./features/marketplace/LocalMarketplacePage'));
-const ForeignMarketplacePage = lazyWithRetry(() => import('./features/marketplace/ForeignMarketplacePage'));
-const MarketplacePage = lazyWithRetry(() => import('./features/marketplace/MarketplacePage'));
-
-// Business Support
-const ITPage = lazyWithRetry(() => import('./features/business_support/it/ITPage'));
-const HRPage = lazyWithRetry(() => import('./features/business_support/hr/HRPage'));
-const MarketingPage = lazyWithRetry(() => import('./features/business_support/marketing/MarketingPage'));
-
-// Tools & Settings
-const CornellNotesPage = lazyWithRetry(() => import('./features/tools/cornell/CornellNotesPage'));
-const QuickNotesPage = lazyWithRetry(() => import('./features/quick_notes/QuickNotesPage'));
-const SettingsPage = lazyWithRetry(() => import('./features/settings/SettingsPage'));
-
 // ============================================================================
-// PRELOAD CRITICAL ROUTES - Load in background after initial render
+// LAZY LOADED COMPONENTS - Imported from centralized route config
 // ============================================================================
-const preloadCriticalRoutes = () => {
-  // Preload dashboard and sidebar after initial paint
-  // Use requestIdleCallback if available, otherwise fallback to setTimeout (for Safari)
-  const schedulePreload = (callback: () => void) => {
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(callback, { timeout: 2000 });
-    } else {
-      setTimeout(callback, 100);
-    }
-  };
-
-  schedulePreload(() => {
-    import('./features/dashboard/Dashboard');
-    import('./components/layout/Sidebar');
-    import('./components/layout/TopBar');
-  });
-};
+import {
+  // Core Layout
+  Sidebar,
+  TopBar,
+  // Auth & Landing
+  LandingPage,
+  AcceptInvitePage,
+  SignUpPage,
+  SignInPage,
+  // Portal
+  PortalMarketplacePage,
+  // Mobile
+  MobileApp,
+  // Speed Insights
+  SpeedInsights,
+  // Core Features
+  Dashboard,
+  BoardView,
+  InboxView,
+  VaultView,
+  MyWorkPage,
+  TeamsPage,
+  TalkPage,
+  TestPage,
+  ArcadePage,
+  LiveSessionPage,
+  // Supply Chain
+  ProcurementPage,
+  WarehousePage,
+  ShippingPage,
+  FleetPage,
+  VendorsPage,
+  PlanningPage,
+  // Operations
+  MaintenancePage,
+  ProductionPage,
+  QualityPage,
+  // Business
+  BusinessSalesPage,
+  FinancePage,
+  // Mini Company
+  DashboardsPage,
+  ReportsPage,
+  SalesPage,
+  PurchasesPage,
+  InventoryPage,
+  ExpensesPage,
+  CustomersPage,
+  SuppliersPage,
+  // Marketplace
+  LocalMarketplacePage,
+  ForeignMarketplacePage,
+  MarketplacePage,
+  // Business Support
+  ITPage,
+  HRPage,
+  MarketingPage,
+  // Tools & Settings
+  CornellNotesPage,
+  QuickNotesPage,
+  SettingsPage,
+  // Preload function
+  preloadCriticalRoutes,
+} from './config/routes';
 
 // Delayed loading spinner - only shows after 150ms to prevent flash on fast loads
 const DelayedSpinner = memo(({ delay = 150, size = 6 }: { delay?: number; size?: number }) => {
@@ -691,14 +659,25 @@ const AppContent: React.FC = () => {
     return normalized;
   }, [serverFeatureFlags]);
 
+  // All known page keys that can be toggled in the sidebar
+  const ALL_PAGE_KEYS = [
+    'inbox', 'teams', 'test_tools', 'mini_company',
+    'sales', 'purchases', 'inventory', 'expenses', 'customers', 'suppliers',
+    'supply_chain', 'procurement', 'warehouse', 'fleet', 'vendors', 'planning',
+    'operations', 'maintenance', 'production', 'quality',
+    'business', 'sales_listing', 'sales_factory',
+    'business_support', 'it_support', 'hr', 'marketing',
+    'local_marketplace', 'foreign_marketplace'
+  ];
+
   // Combine server feature flags with local visibility
   // Logic: Server can DISABLE pages (admin control), but user can also hide pages they don't want
   const effectivePageVisibility = React.useMemo(() => {
     // Wait for permissions to load before showing any pages (prevents flash)
     if (!isPermissionsLoaded && !isAdmin) {
-      // Return all pages hidden until permissions load
+      // Return ALL known pages hidden until permissions load
       const hidden: Record<string, boolean> = {};
-      for (const key of Object.keys(pageVisibility)) {
+      for (const key of ALL_PAGE_KEYS) {
         hidden[key] = false;
       }
       return hidden;
@@ -1796,17 +1775,39 @@ class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 
 // Component to handle signed-in users - redirects to app subdomain if on main domain
 const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) => {
+  const [portalType, setPortalType] = useState<'buyer' | 'seller' | null>(() => {
+    const stored = localStorage.getItem('portal_type');
+    return stored === 'buyer' || stored === 'seller' ? stored : null;
+  });
+
   useEffect(() => {
     if (isMainDomain) {
       window.location.href = 'https://app.nabdchain.com';
     }
   }, [isMainDomain]);
 
+  const handlePortalLogout = () => {
+    localStorage.removeItem('portal_type');
+    localStorage.removeItem('mock_auth_token');
+    localStorage.removeItem('nabd_dev_mode');
+    // Don't set state before reload - it causes a brief sidebar flash
+    window.location.reload();
+  };
+
   if (isMainDomain) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-white">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
+    );
+  }
+
+  // Portal users see the marketplace
+  if (portalType) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <PortalMarketplacePage portalType={portalType} onLogout={handlePortalLogout} />
+      </Suspense>
     );
   }
 

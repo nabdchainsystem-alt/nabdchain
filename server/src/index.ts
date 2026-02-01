@@ -27,6 +27,7 @@ import commentsRoutes from './routes/commentsRoutes';
 import notificationsRoutes from './routes/notificationsRoutes';
 import timeTrackingRoutes from './routes/timeTrackingRoutes';
 import templatesRoutes from './routes/templatesRoutes';
+import portalRoutes from './routes/portalRoutes';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
@@ -207,6 +208,7 @@ app.use('/api/comments', commentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/time-entries', timeTrackingRoutes);
 app.use('/api/templates', templatesRoutes);
+app.use('/api/portal', portalRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {
