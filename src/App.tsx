@@ -1857,6 +1857,14 @@ const AppRoutes: React.FC = () => {
   const isAppSubdomain = hostname === 'app.nabdchain.com';
   const isMainDomain = hostname === 'nabdchain.com' || hostname === 'www.nabdchain.com';
 
+  // Handle sign-out redirect: Clerk redirects to /signed-out, we redirect to main domain
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/signed-out' && isAppSubdomain) {
+      window.location.href = 'https://nabdchain.com';
+    }
+  }, [isAppSubdomain]);
+
   // Track if auth loading is taking too long
   const [authTimeout, setAuthTimeout] = useState(false);
 
