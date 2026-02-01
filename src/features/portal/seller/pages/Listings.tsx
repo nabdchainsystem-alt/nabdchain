@@ -1,94 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, MagnifyingGlass, Cube, DotsThree, PencilSimple, Trash, Copy, Package, CheckCircle, Warning, XCircle, ArrowUp, ArrowDown, Minus } from 'phosphor-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, MagnifyingGlass, Cube, DotsThree, PencilSimple, Trash, Copy, CaretDown, CalendarBlank } from 'phosphor-react';
 import { Container, PageHeader, Button, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { AddProductPanel, ProductFormData } from '../components/AddProductPanel';
-
-// Portal KPI Card Component - Clean branded design with left accent
-interface PortalKPICardProps {
-  label: string;
-  value: string | number;
-  change: string;
-  trend: 'up' | 'down' | 'neutral';
-  icon: React.ReactNode;
-  accent: 'primary' | 'success' | 'danger' | 'warning';
-}
-
-const PortalKPICard: React.FC<PortalKPICardProps> = ({ label, value, change, trend, icon, accent }) => {
-  const { styles } = usePortal();
-  const isPositive = trend === 'up';
-  const isNeutral = trend === 'neutral';
-
-  // Portal brand accent colors
-  const accentColors = {
-    primary: '#1E3A5F',
-    success: '#2D7D46',
-    danger: '#C53030',
-    warning: '#9A6700',
-  };
-
-  const trendColor = isNeutral
-    ? styles.textMuted
-    : isPositive
-      ? accentColors.success
-      : accentColors.danger;
-
-  const TrendIcon = isNeutral ? Minus : (isPositive ? ArrowUp : ArrowDown);
-
-  return (
-    <div
-      className="relative flex items-center gap-4 p-4 rounded-lg overflow-hidden transition-all duration-200 hover:translate-y-[-1px]"
-      style={{
-        backgroundColor: styles.bgCard,
-        boxShadow: styles.isDark
-          ? '0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)'
-          : '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
-      }}
-    >
-      {/* Left accent bar */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1"
-        style={{ backgroundColor: accentColors[accent] }}
-      />
-
-      {/* Icon */}
-      <div
-        className="flex items-center justify-center w-10 h-10 rounded-lg"
-        style={{
-          backgroundColor: styles.isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-          color: accentColors[accent],
-        }}
-      >
-        {icon}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-xs font-medium mb-0.5"
-          style={{ color: styles.textMuted }}
-        >
-          {label}
-        </p>
-        <div className="flex items-baseline gap-2">
-          <span
-            className="text-2xl font-bold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
-            {value}
-          </span>
-          <span
-            className="flex items-center gap-0.5 text-xs font-medium"
-            style={{ color: trendColor }}
-          >
-            <TrendIcon size={12} weight="bold" />
-            {change}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const PRODUCTS_STORAGE_KEY = 'portal-seller-products';
 
@@ -182,22 +96,12 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       p.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Calculate KPI stats
-  const kpiStats = useMemo(() => {
-    const totalItems = products.length;
-    const activeItems = products.filter((p) => p.status === 'active').length;
-    const outOfStock = products.filter((p) => p.status === 'out_of_stock' || p.stock === 0).length;
-    const lowStock = products.filter((p) => p.stock > 0 && p.stock <= 10).length;
-
-    return { totalItems, activeItems, outOfStock, lowStock };
-  }, [products]);
-
   return (
     <div
       className="min-h-[calc(100vh-64px)] transition-colors"
       style={{ backgroundColor: styles.bgPrimary }}
     >
-      <Container variant="full">
+      <Container variant="content">
         <PageHeader
           title={t('seller.listings.title')}
           subtitle={t('seller.listings.subtitle')}
@@ -209,19 +113,23 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
           }
         />
 
-        {/* Search & Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          <div
-            className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-md border max-w-md transition-colors"
-            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-          >
-            <MagnifyingGlass size={18} style={{ color: styles.textMuted }} />
+        {/* Filter Bar */}
+        <div
+          className="flex items-center mb-6 rounded-lg border overflow-hidden"
+          style={{
+            borderColor: styles.border,
+            backgroundColor: styles.bgCard,
+          }}
+        >
+          {/* Search */}
+          <div className="flex items-center gap-2 px-4 h-10 border-r" style={{ borderColor: styles.border }}>
+            <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
             <input
               type="text"
               placeholder={t('seller.listings.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 outline-none text-sm bg-transparent"
+              className="outline-none text-sm bg-transparent w-36"
               style={{
                 color: styles.textPrimary,
                 fontFamily: styles.fontBody,
@@ -229,69 +137,67 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
             />
           </div>
 
-          <select
-            className="px-4 py-2.5 rounded-md border text-sm outline-none appearance-none cursor-pointer transition-colors"
-            style={{
-              borderColor: styles.border,
-              backgroundColor: styles.bgCard,
-              color: styles.textSecondary,
-            }}
-          >
-            <option>{t('seller.listings.allCategories')}</option>
-            <option>{t('buyer.marketplace.machinery')}</option>
-            <option>{t('buyer.marketplace.spareParts')}</option>
-            <option>{t('buyer.marketplace.electronics')}</option>
-          </select>
+          {/* Category Filter */}
+          <FilterDropdown styles={styles}>
+            <option value="">{t('seller.listings.allCategories')}</option>
+            <option value="machinery">{t('buyer.marketplace.machinery')}</option>
+            <option value="spare_parts">{t('buyer.marketplace.spareParts')}</option>
+            <option value="electronics">{t('buyer.marketplace.electronics')}</option>
+          </FilterDropdown>
 
-          <select
-            className="px-4 py-2.5 rounded-md border text-sm outline-none appearance-none cursor-pointer transition-colors"
-            style={{
-              borderColor: styles.border,
-              backgroundColor: styles.bgCard,
-              color: styles.textSecondary,
-            }}
-          >
-            <option>{t('seller.listings.allStatus')}</option>
-            <option>{t('seller.listings.active')}</option>
-            <option>{t('seller.listings.draft')}</option>
-            <option>{t('seller.listings.outOfStock')}</option>
-          </select>
-        </div>
+          {/* Manufacturer Filter */}
+          <FilterDropdown styles={styles}>
+            <option value="">All Manufacturers...</option>
+          </FilterDropdown>
 
-        {/* Portal KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <PortalKPICard
-            label="Total Items"
-            value={kpiStats.totalItems}
-            change={kpiStats.totalItems > 0 ? `+${kpiStats.totalItems}` : '0'}
-            trend={kpiStats.totalItems > 0 ? 'up' : 'neutral'}
-            icon={<Package size={20} />}
-            accent="primary"
-          />
-          <PortalKPICard
-            label="Active Items"
-            value={kpiStats.activeItems}
-            change={kpiStats.totalItems > 0 ? `${Math.round((kpiStats.activeItems / kpiStats.totalItems) * 100)}%` : '0%'}
-            trend={kpiStats.activeItems > 0 ? 'up' : 'neutral'}
-            icon={<CheckCircle size={20} />}
-            accent="success"
-          />
-          <PortalKPICard
-            label="Out of Stock"
-            value={kpiStats.outOfStock}
-            change={kpiStats.outOfStock > 0 ? `${kpiStats.outOfStock} items` : 'None'}
-            trend={kpiStats.outOfStock > 0 ? 'down' : 'up'}
-            icon={<XCircle size={20} />}
-            accent="danger"
-          />
-          <PortalKPICard
-            label="Low Stock"
-            value={kpiStats.lowStock}
-            change={kpiStats.lowStock > 0 ? 'Alert' : 'OK'}
-            trend={kpiStats.lowStock > 0 ? 'down' : 'up'}
-            icon={<Warning size={20} />}
-            accent="warning"
-          />
+          {/* Status Filter */}
+          <FilterDropdown styles={styles}>
+            <option value="">{t('seller.listings.allStatus')}</option>
+            <option value="active">{t('seller.listings.active')}</option>
+            <option value="draft">{t('seller.listings.draft')}</option>
+            <option value="out_of_stock">{t('seller.listings.outOfStock')}</option>
+          </FilterDropdown>
+
+          {/* Date Range */}
+          <button
+            className="flex items-center gap-2 px-4 h-10 text-sm transition-colors border-r"
+            style={{ color: styles.textMuted, borderColor: styles.border }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <CalendarBlank size={16} />
+            <span>Select Date Range</span>
+            <CaretDown size={12} />
+          </button>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Status Quick Filter */}
+          <div
+            className="flex items-center gap-2 px-4 h-10 rounded-md mx-1"
+            style={{ backgroundColor: styles.bgSecondary }}
+          >
+            <div className="flex items-center gap-0.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22C55E' }} />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22C55E' }} />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22C55E' }} />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: styles.border }} />
+            </div>
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              Status
+            </span>
+            <span
+              className="text-xs font-medium px-1.5 py-0.5 rounded"
+              style={{
+                backgroundColor: styles.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                color: styles.textMuted
+              }}
+            >
+              {products.filter(p => p.status === 'active').length}/{products.length}
+            </span>
+            <CaretDown size={12} style={{ color: styles.textMuted }} />
+          </div>
         </div>
 
         {products.length === 0 ? (
@@ -320,8 +226,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
   );
 };
 
-// Grid template for consistent alignment between header and rows
-const TABLE_GRID = '280px 140px 150px 130px 110px 80px 100px 50px';
+// Grid template for consistent alignment between header and rows - fully flexible
+const TABLE_GRID = '2fr 1fr 1fr 1fr 100px 80px 90px 50px';
 
 // Clean Products Table Component
 const ProductsTable: React.FC<{ products: Product[] }> = ({ products }) => {
@@ -334,19 +240,19 @@ const ProductsTable: React.FC<{ products: Product[] }> = ({ products }) => {
     >
       {/* Table Header */}
       <div
-        className="grid items-center px-5 py-3.5 text-xs font-semibold uppercase tracking-wider gap-2"
+        className="grid items-center px-5 py-3 text-xs font-semibold uppercase tracking-wider"
         style={{
           gridTemplateColumns: TABLE_GRID,
           backgroundColor: styles.tableHeader,
           color: styles.textMuted,
-          borderBottom: `2px solid ${styles.tableBorder}`,
+          borderBottom: `1px solid ${styles.tableBorder}`,
         }}
       >
-        <div className="pl-1">{t('seller.listings.productName')}</div>
+        <div>{t('seller.listings.productName')}</div>
         <div>{t('seller.listings.category')}</div>
         <div>Brand / Mfr</div>
         <div>Specs</div>
-        <div className="text-right">{t('seller.listings.price')}</div>
+        <div className="text-right pr-2">{t('seller.listings.price')}</div>
         <div className="text-center">{t('seller.listings.stock')}</div>
         <div className="text-center">{t('seller.listings.status')}</div>
         <div></div>
@@ -385,7 +291,7 @@ const ProductRow: React.FC<{ product: Product; isLast: boolean }> = ({ product, 
 
   return (
     <div
-      className="grid items-center px-5 py-3.5 group transition-all duration-150 gap-2"
+      className="grid items-center px-5 py-3 group transition-all duration-150"
       style={{
         gridTemplateColumns: TABLE_GRID,
         borderBottom: isLast ? 'none' : `1px solid ${styles.tableBorder}`,
@@ -394,9 +300,9 @@ const ProductRow: React.FC<{ product: Product; isLast: boolean }> = ({ product, 
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
       {/* Product Info with Image */}
-      <div className="flex items-center gap-3 pl-1">
+      <div className="flex items-center gap-3">
         <div
-          className="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 border"
+          className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border"
           style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
         >
           {product.image ? (
@@ -407,7 +313,7 @@ const ProductRow: React.FC<{ product: Product; isLast: boolean }> = ({ product, 
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Cube size={18} style={{ color: styles.textMuted }} />
+              <Cube size={16} style={{ color: styles.textMuted }} />
             </div>
           )}
         </div>
@@ -463,7 +369,7 @@ const ProductRow: React.FC<{ product: Product; isLast: boolean }> = ({ product, 
       </div>
 
       {/* Price */}
-      <div className="text-right">
+      <div className="text-right pr-2">
         <p className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
           {formattedPrice}
         </p>
@@ -477,10 +383,9 @@ const ProductRow: React.FC<{ product: Product; isLast: boolean }> = ({ product, 
       {/* Stock */}
       <div className="text-center">
         <span
-          className="text-sm font-medium inline-block min-w-[40px] py-0.5 px-2 rounded"
+          className="text-sm font-medium"
           style={{
             color: product.stock === 0 ? styles.error : styles.textPrimary,
-            backgroundColor: product.stock === 0 ? (styles.isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.08)') : 'transparent'
           }}
         >
           {product.stock.toLocaleString()}
@@ -547,6 +452,30 @@ const MenuButton: React.FC<{
     <Icon size={16} weight={danger ? 'regular' : 'regular'} />
     {label}
   </button>
+);
+
+// Filter Dropdown Component
+const FilterDropdown: React.FC<{
+  styles: ReturnType<typeof usePortal>['styles'];
+  children: React.ReactNode;
+}> = ({ styles, children }) => (
+  <div className="relative flex items-center h-10 border-r" style={{ borderColor: styles.border }}>
+    <select
+      className="appearance-none h-full px-4 pr-8 text-sm outline-none cursor-pointer transition-colors bg-transparent"
+      style={{
+        color: styles.textMuted,
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+    >
+      {children}
+    </select>
+    <CaretDown
+      size={12}
+      className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      style={{ color: styles.textMuted }}
+    />
+  </div>
 );
 
 // Status Badge Component

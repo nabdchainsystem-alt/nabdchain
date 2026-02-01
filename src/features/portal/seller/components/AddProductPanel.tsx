@@ -119,11 +119,9 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
     <>
       {/* Backdrop - click to close */}
       <div
-        className="fixed inset-0 z-30 transition-opacity duration-300 backdrop-blur-sm"
+        className="fixed inset-0 z-30"
         style={{
           top: '64px',
-          backgroundColor: styles.isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.4)',
-          opacity: isAnimating ? 1 : 0,
         }}
         onClick={onClose}
       />
