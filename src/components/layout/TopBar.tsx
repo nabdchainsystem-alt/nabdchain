@@ -542,7 +542,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                     {t('settings')}
                   </button>
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       // Clear all user data before sign out
                       const keysToRemove = [
                         'app-active-workspace', 'app-active-board', 'app-active-view',
@@ -560,13 +560,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                       const hostname = window.location.hostname;
                       const isAppDomain = hostname.startsWith('app.') && hostname.includes('nabdchain.com');
 
-                      // Sign out without redirect, then redirect manually
-                      await signOut();
-
-                      // Force redirect to main domain
+                      // Redirect immediately BEFORE signOut to prevent Clerk from interfering
                       if (isAppDomain) {
-                        window.location.replace('https://nabdchain.com');
+                        window.location.href = 'https://nabdchain.com';
+                        return; // Stop execution - redirect will happen
                       }
+
+                      // Only call signOut if not redirecting (localhost/dev)
+                      signOut();
                       setIsProfileOpen(false);
                     }}
                     className="w-full text-start px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
