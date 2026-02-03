@@ -3157,9 +3157,13 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                             }
                                                                         }
 
+                                                                        const isPrimaryCol = col.id === (visibleColumns.find(c => c.id === 'name') || visibleColumns.find(c => c.id !== 'select'))?.id;
+
                                                                         return (
                                                                             <div
                                                                                 key={col.id}
+                                                                                data-row-id={CREATION_ROW_ID}
+                                                                                data-col-id={col.id}
                                                                                 style={{
                                                                                     width: col.width,
                                                                                     ...(isSticky && {
@@ -3174,7 +3178,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                                                                                     <div className="w-full h-full flex items-center justify-center px-2">
                                                                                         {/* Empty */}
                                                                                     </div>
-                                                                                ) : col.id === (visibleColumns.find(c => c.id === 'name') || visibleColumns.find(c => c.id !== 'select'))?.id ? (
+                                                                                ) : isPrimaryCol ? (
                                                                                     renderCellContent(col, creationRowData, (el) => {
                                                                                         if (el) creationRowInputRefs.current[group.id] = el;
                                                                                     })
