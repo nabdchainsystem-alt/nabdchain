@@ -1943,13 +1943,17 @@ const AppRoutes: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Check for dev_auth URL parameter (passed from landing page dev login)
+  // Check for dev_auth URL parameter (passed from landing page dev login or portal login)
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const devAuthToken = urlParams.get('dev_auth');
+    const portalType = urlParams.get('portal');
     if (devAuthToken) {
       localStorage.setItem('nabd_dev_mode', 'true');
       localStorage.setItem('mock_auth_token', devAuthToken);
+      if (portalType === 'buyer' || portalType === 'seller') {
+        localStorage.setItem('portal_type', portalType);
+      }
       window.history.replaceState({}, '', window.location.pathname);
       window.location.reload();
     }

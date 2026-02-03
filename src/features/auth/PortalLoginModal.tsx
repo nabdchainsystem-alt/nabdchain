@@ -49,10 +49,10 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onCl
             localStorage.setItem('mock_auth_token', expectedCreds.token);
             localStorage.setItem('portal_type', activeTab);
 
-            // Redirect to app subdomain if on main domain
+            // Redirect to marketplace subdomain if on main domain
             const hostname = window.location.hostname;
-            if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
-                window.location.href = `https://app.nabdchain.com?dev_auth=${expectedCreds.token}&portal=${activeTab}`;
+            if (hostname.includes('nabdchain.com') && !hostname.startsWith('marketplace.')) {
+                window.location.href = `https://marketplace.nabdchain.com?dev_auth=${expectedCreds.token}&portal=${activeTab}`;
             } else {
                 window.location.reload();
             }
