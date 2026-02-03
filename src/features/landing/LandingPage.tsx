@@ -440,9 +440,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         </button>
                                     </li>
                                     <li>
-                                        <a href="#" className="hover:text-white transition-colors">
+                                        <button
+                                            onClick={() => {
+                                                setPortalTab('buyer');
+                                                setIsPortalLoginOpen(true);
+                                            }}
+                                            className="hover:text-white transition-colors text-start"
+                                        >
                                             {isRTL ? 'إنشاء حساب مشتري' : 'Buyer Sign Up'}
-                                        </a>
+                                        </button>
                                     </li>
                                     <li>
                                         <button
@@ -456,9 +462,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         </button>
                                     </li>
                                     <li>
-                                        <a href="#" className="hover:text-white transition-colors">
+                                        <button
+                                            onClick={() => {
+                                                setPortalTab('seller');
+                                                setIsPortalLoginOpen(true);
+                                            }}
+                                            className="hover:text-white transition-colors text-start"
+                                        >
                                             {isRTL ? 'إنشاء حساب بائع' : 'Seller Sign Up'}
-                                        </a>
+                                        </button>
                                     </li>
                                 </ul>
                             </div>
