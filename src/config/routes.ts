@@ -23,6 +23,7 @@ export const SignInPage = lazyWithRetry(() => import('../features/auth/SignInPag
 
 // Portal Pages
 export const PortalMarketplacePage = lazyWithRetry(() => import('../features/portal/PortalMarketplacePage'));
+export const SellerProfilePage = lazyWithRetry(() => import('../features/portal/SellerProfilePage'));
 
 // Mobile
 export const MobileApp = lazyWithRetry(() => import('../features/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
