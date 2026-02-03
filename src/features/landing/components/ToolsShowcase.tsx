@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, memo } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { useInView } from 'framer-motion';
 import {
     Chalkboard, Note, ChartBar, UsersFour, ArrowsClockwise,
@@ -327,10 +327,10 @@ const ViewCard: React.FC<{ view: ReturnType<typeof getBoardViewsData>[0]; index:
 });
 
 interface ToolsShowcaseProps {
-    boardViewsRef?: React.RefObject<HTMLDivElement>;
+    onBoardViewsMount?: (element: HTMLDivElement | null) => void;
 }
 
-export const ToolsShowcase: React.FC<ToolsShowcaseProps> = ({ boardViewsRef }) => {
+export const ToolsShowcase: React.FC<ToolsShowcaseProps> = ({ onBoardViewsMount }) => {
     const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const toolsScrollRef = useRef<HTMLDivElement>(null);
@@ -342,6 +342,13 @@ export const ToolsShowcase: React.FC<ToolsShowcaseProps> = ({ boardViewsRef }) =
     const [canScrollToolsRight, setCanScrollToolsRight] = useState(true);
     const [canScrollViewsLeft, setCanScrollViewsLeft] = useState(false);
     const [canScrollViewsRight, setCanScrollViewsRight] = useState(true);
+
+    // Callback ref for board views section
+    const boardViewsCallbackRef = useCallback((el: HTMLDivElement | null) => {
+        if (onBoardViewsMount) {
+            onBoardViewsMount(el);
+        }
+    }, [onBoardViewsMount]);
 
     const tools = getToolsData(isRTL);
     const boardViews = getBoardViewsData(isRTL);
@@ -510,7 +517,7 @@ export const ToolsShowcase: React.FC<ToolsShowcaseProps> = ({ boardViewsRef }) =
             </div>
 
             {/* Board Views Section */}
-            <div ref={boardViewsRef} className="py-20 sm:py-28 md:py-32 bg-white dark:bg-zinc-900 relative overflow-hidden">
+            <div ref={boardViewsCallbackRef} className="py-20 sm:py-28 md:py-32 bg-white dark:bg-zinc-900 relative overflow-hidden">
                 <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12">
                     {/* Header */}
                     {isInView && (

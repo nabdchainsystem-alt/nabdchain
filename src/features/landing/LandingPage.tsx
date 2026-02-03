@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
@@ -69,8 +69,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const demoRef = useRef<HTMLDivElement>(null);
     const marketplaceRef = useRef<HTMLDivElement>(null);
     const toolsRef = useRef<HTMLDivElement>(null);
-    const boardViewsRef = useRef<HTMLDivElement>(null);
+    const boardViewsRef = useRef<HTMLDivElement | null>(null);
     const pricingRef = useRef<HTMLDivElement>(null);
+
+    // Callback to receive boardViews element from ToolsShowcase
+    const handleBoardViewsMount = useCallback((el: HTMLDivElement | null) => {
+        boardViewsRef.current = el;
+    }, []);
 
     // Track which section is in view and update navbar theme
     useEffect(() => {
@@ -344,7 +349,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     <div id="testimonials" ref={toolsRef}>
-                        <ToolsShowcase boardViewsRef={boardViewsRef} />
+                        <ToolsShowcase onBoardViewsMount={handleBoardViewsMount} />
                     </div>
 
                     <div id="pricing" ref={pricingRef}>
