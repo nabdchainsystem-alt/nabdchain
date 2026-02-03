@@ -199,12 +199,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             {/* Language Toggle - Desktop */}
                             <button
                                 onClick={toggleLanguage}
-                                className={`hidden sm:flex items-center gap-1.5 text-xs sm:text-sm px-2 py-1 rounded-full transition-colors ${navTheme === 'light'
+                                className={`hidden sm:flex items-center gap-1.5 text-xs sm:text-sm px-2.5 py-1.5 rounded-full transition-colors ${navTheme === 'light'
                                     ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
                                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                             >
                                 <Translate size={14} />
-                                {lang === 'en' ? 'عربي' : 'EN'}
+                                {lang === 'en' ? 'AR' : 'EN'}
                             </button>
 
                             {/* Desktop Buttons */}
@@ -225,7 +225,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         ? 'bg-zinc-900 text-white hover:bg-zinc-700'
                                         : 'bg-white text-zinc-900 hover:bg-zinc-200'}`}
                                 >
-                                    {t('dashboard')}
+                                    {t('signUp')}
                                     <ArrowIcon size={12} weight="bold" />
                                 </button>
                             </div>
@@ -354,7 +354,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Footer */}
                 <footer className="bg-black text-white py-20 border-t border-zinc-900">
                     <div className="max-w-7xl mx-auto px-6">
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-16">
                             {/* Brand Column */}
                             <div className="col-span-2">
                                 <div className="flex items-center gap-3 mb-6">
@@ -416,6 +416,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             {t('developerAccess')}
                                         </button>
                                     </li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-4">{isRTL ? 'البوابة' : 'Portal'}</h4>
+                                <ul className="space-y-3 text-sm text-zinc-500">
                                     <li>
                                         <button
                                             onClick={() => {
@@ -424,8 +430,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             }}
                                             className="hover:text-white transition-colors text-start"
                                         >
-                                            {isRTL ? 'دخول المشتري' : 'Buyer Log In'}
+                                            {isRTL ? 'تسجيل دخول المشتري' : 'Buyer Sign In'}
                                         </button>
+                                    </li>
+                                    <li>
+                                        <a href="#" className="hover:text-white transition-colors">
+                                            {isRTL ? 'إنشاء حساب مشتري' : 'Buyer Sign Up'}
+                                        </a>
                                     </li>
                                     <li>
                                         <button
@@ -435,8 +446,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             }}
                                             className="hover:text-white transition-colors text-start"
                                         >
-                                            {isRTL ? 'دخول البائع' : 'Seller Log In'}
+                                            {isRTL ? 'تسجيل دخول البائع' : 'Seller Sign In'}
                                         </button>
+                                    </li>
+                                    <li>
+                                        <a href="#" className="hover:text-white transition-colors">
+                                            {isRTL ? 'إنشاء حساب بائع' : 'Seller Sign Up'}
+                                        </a>
                                     </li>
                                 </ul>
                             </div>
