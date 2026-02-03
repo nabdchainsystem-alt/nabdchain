@@ -7,7 +7,8 @@ export const landingTranslations = {
     demo: { en: 'Demo', ar: 'عرض تجريبي' },
     dashboard: { en: 'Dashboard', ar: 'لوحة التحكم' },
     pricing: { en: 'Pricing', ar: 'الأسعار' },
-    signIn: { en: 'Sign in', ar: 'تسجيل الدخول' },
+    signIn: { en: 'Sign In', ar: 'تسجيل الدخول' },
+    signUp: { en: 'Sign Up', ar: 'إنشاء حساب' },
     getStarted: { en: 'Get Started Free', ar: 'ابدأ مجاناً' },
 
     // Hero Section
