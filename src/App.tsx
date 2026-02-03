@@ -39,6 +39,7 @@ import {
   SignInPage,
   // Portal
   PortalMarketplacePage,
+  SellerProfilePage,
   // Mobile
   MobileApp,
   // Speed Insights
@@ -1800,7 +1801,7 @@ class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 }
 
 // Component to handle signed-in users - redirects to app subdomain if on main domain
-const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) => {
+const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain: boolean }> = ({ isMainDomain, isMarketplaceSubdomain }) => {
   const { signOut } = useClerk();
   const [portalType, setPortalType] = useState<'buyer' | 'seller' | null>(() => {
     const stored = localStorage.getItem('portal_type');
@@ -1852,7 +1853,16 @@ const SignedInContent: React.FC<{ isMainDomain: boolean }> = ({ isMainDomain }) 
     );
   }
 
-  // Portal users see the marketplace
+  // Marketplace subdomain: always show portal marketplace (buyer/seller)
+  if (isMarketplaceSubdomain) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <PortalMarketplacePage portalType={portalType} onLogout={handlePortalLogout} />
+      </Suspense>
+    );
+  }
+
+  // Portal users on app subdomain see the marketplace
   if (portalType) {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -1875,15 +1885,16 @@ const AppRoutes: React.FC = () => {
   const hostname = window.location.hostname;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
   const isAppSubdomain = hostname === 'app.nabdchain.com';
+  const isMarketplaceSubdomain = hostname === 'marketplace.nabdchain.com';
   const isMainDomain = hostname === 'nabdchain.com' || hostname === 'www.nabdchain.com';
 
   // Handle sign-out redirect: Clerk redirects to /signed-out, we redirect to main domain
   useEffect(() => {
     const path = window.location.pathname;
-    if (path === '/signed-out' && isAppSubdomain) {
+    if (path === '/signed-out' && (isAppSubdomain || isMarketplaceSubdomain)) {
       window.location.href = 'https://nabdchain.com';
     }
-  }, [isAppSubdomain]);
+  }, [isAppSubdomain, isMarketplaceSubdomain]);
 
   // Track if auth loading is taking too long
   const [authTimeout, setAuthTimeout] = useState(false);
@@ -1979,7 +1990,7 @@ const AppRoutes: React.FC = () => {
 
   // Handler for "Back to Home" - redirect to main domain or show landing
   const handleBackToHome = () => {
-    if (isAppSubdomain) {
+    if (isAppSubdomain || isMarketplaceSubdomain) {
       window.location.href = 'https://nabdchain.com';
     } else {
       setAuthView('home');
@@ -1994,12 +2005,12 @@ const AppRoutes: React.FC = () => {
   return (
     <>
       <SignedOut>
-        {/* If signed out on app subdomain, redirect to main domain */}
-        {isAppSubdomain && (
+        {/* If signed out on app or marketplace subdomain, redirect to main domain */}
+        {(isAppSubdomain || isMarketplaceSubdomain) && (
           <RedirectToMainDomain />
         )}
         {/* Show landing page */}
-        {!isAppSubdomain && authView === 'home' && (
+        {!isAppSubdomain && !isMarketplaceSubdomain && authView === 'home' && (
           <LandingPage
             onEnterSystem={() => {
               // If on main domain, redirect to app subdomain for sign-in
@@ -2069,7 +2080,7 @@ const AppRoutes: React.FC = () => {
         )}
       </SignedOut>
       <SignedIn>
-        <SignedInContent isMainDomain={isMainDomain} />
+        <SignedInContent isMainDomain={isMainDomain} isMarketplaceSubdomain={isMarketplaceSubdomain} />
       </SignedIn>
     </>
   );
@@ -2134,6 +2145,15 @@ const App: React.FC = () => {
                                 <RedirectToSignIn />
                               </SignedOut>
                             </>
+                          }
+                        />
+                        {/* Public Seller Profile Route - No auth required */}
+                        <Route
+                          path="/seller/:slug"
+                          element={
+                            <React.Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                              <SellerProfilePage />
+                            </React.Suspense>
                           }
                         />
                         {/* Dashboard & Main App Routes */}
