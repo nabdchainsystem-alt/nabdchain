@@ -2005,13 +2005,31 @@ const AppRoutes: React.FC = () => {
   // This avoids cross-domain cookie issues
   const signInRedirectUrl = '/dashboard';
 
+  // Check for mock auth (portal login without Clerk)
+  const hasMockAuth = localStorage.getItem('mock_auth_token') && localStorage.getItem('nabd_dev_mode') === 'true';
+
   // App subdomain (app.nabdchain.com or localhost) - Show app or auth
   return (
     <>
       <SignedOut>
         {/* If signed out on app or marketplace subdomain, redirect to main domain */}
-        {(isAppSubdomain || isMarketplaceSubdomain) && (
+        {/* But NOT if user has mock auth (portal login) */}
+        {(isAppSubdomain || isMarketplaceSubdomain) && !hasMockAuth && (
           <RedirectToMainDomain />
+        )}
+        {/* Mock auth users on marketplace see the portal */}
+        {isMarketplaceSubdomain && hasMockAuth && (
+          <Suspense fallback={<PageLoadingFallback />}>
+            <PortalMarketplacePage
+              portalType={localStorage.getItem('portal_type') as 'buyer' | 'seller' | null}
+              onLogout={() => {
+                localStorage.removeItem('portal_type');
+                localStorage.removeItem('mock_auth_token');
+                localStorage.removeItem('nabd_dev_mode');
+                window.location.href = 'https://nabdchain.com';
+              }}
+            />
+          </Suspense>
         )}
         {/* Show landing page */}
         {!isAppSubdomain && !isMarketplaceSubdomain && authView === 'home' && (
