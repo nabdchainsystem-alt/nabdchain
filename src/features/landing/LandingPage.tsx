@@ -87,7 +87,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             { ref: demoRef, theme: 'light' },
             { ref: marketplaceRef, theme: 'dark' },
             { ref: toolsRef, theme: 'dark' },
-            { ref: boardViewsRef, theme: 'dark' },
+            { ref: boardViewsRef, theme: 'light' },
             { ref: pricingRef, theme: 'dark' },
         ];
 
