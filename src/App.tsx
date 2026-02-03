@@ -1832,8 +1832,8 @@ const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain:
     localStorage.removeItem('portal_type');
     localStorage.removeItem('mock_auth_token');
     localStorage.removeItem('nabd_dev_mode');
-    // Don't set state before reload - it causes a brief sidebar flash
-    window.location.reload();
+    // Redirect to main domain instead of reloading to avoid Clerk loading delay
+    window.location.href = 'https://nabdchain.com';
   };
 
   // If just signed out on main domain, show loading while signOut completes
