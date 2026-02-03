@@ -11,6 +11,7 @@ import { LandingLanguage, getTranslation } from './translations';
 
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
 import { PortalLoginModal } from '../auth/PortalLoginModal';
+import { PortalSignupModal } from '../auth/PortalSignupModal';
 import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate } from 'phosphor-react';
 
 // Section background types for navbar color switching
@@ -44,6 +45,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [isDevLoginOpen, setIsDevLoginOpen] = useState(false);
     const [isPortalLoginOpen, setIsPortalLoginOpen] = useState(false);
+    const [isPortalSignupOpen, setIsPortalSignupOpen] = useState(false);
     const [portalTab, setPortalTab] = useState<'buyer' | 'seller'>('buyer');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [navTheme, setNavTheme] = useState<SectionTheme>('light');
@@ -443,7 +445,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         <button
                                             onClick={() => {
                                                 setPortalTab('buyer');
-                                                setIsPortalLoginOpen(true);
+                                                setIsPortalSignupOpen(true);
                                             }}
                                             className="hover:text-white transition-colors text-start"
                                         >
@@ -465,7 +467,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                         <button
                                             onClick={() => {
                                                 setPortalTab('seller');
-                                                setIsPortalLoginOpen(true);
+                                                setIsPortalSignupOpen(true);
                                             }}
                                             className="hover:text-white transition-colors text-start"
                                         >
@@ -492,6 +494,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
                 <PortalLoginModal isOpen={isPortalLoginOpen} onClose={() => setIsPortalLoginOpen(false)} defaultTab={portalTab} />
+                <PortalSignupModal
+                    isOpen={isPortalSignupOpen}
+                    onClose={() => setIsPortalSignupOpen(false)}
+                    defaultTab={portalTab}
+                    onSwitchToLogin={() => {
+                        setIsPortalSignupOpen(false);
+                        setIsPortalLoginOpen(true);
+                    }}
+                />
             </div>
         </LandingContext.Provider>
     );
