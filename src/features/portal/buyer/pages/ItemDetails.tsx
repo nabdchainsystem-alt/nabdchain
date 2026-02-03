@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Package,
@@ -26,13 +26,33 @@ import {
   CalendarBlank,
   Image as ImageIcon,
   CaretLeft,
+  Spinner,
+  ArrowSquareOut,
+  TrendUp,
+  TrendDown,
+  Percent,
+  Trophy,
+  ClockCounterClockwise,
+  Eye,
+  EyeSlash,
+  Star,
+  Medal,
+  Handshake,
+  Timer,
+  CheckSquare,
+  ArrowClockwise,
+  Sparkle,
 } from 'phosphor-react';
-import { Container } from '../../components';
+import { Container, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { useAuth } from '../../../../auth-adapter';
+import { itemService } from '../../services/itemService';
+import { Item } from '../../types/item.types';
+import { RFQFormPanel } from '../components/RFQFormPanel';
 
 interface ItemDetailsProps {
   onNavigate: (page: string) => void;
-  productId?: string;
+  itemId?: string;
 }
 
 // Mock product data for demonstration
@@ -107,9 +127,31 @@ const mockProduct = {
     avgResponseTime: '3.2 hours',
     lastActivity: '2 days ago',
     quotesThisMonth: 18,
+    // Enhanced RFQ Intelligence
+    rfqTrend: '+15%' as const,
+    winRate: 68.5,
+    avgQuoteValue: 2450,
+    repeatBuyerRate: 42,
+  },
+  // Version History for Seller View
+  versionHistory: [
+    { date: '2024-01-15', changes: ['Price updated from SAR 265 to SAR 245', 'Stock increased to 48'], user: 'System' },
+    { date: '2024-01-10', changes: ['Added new product images', 'Updated description'], user: 'Admin' },
+    { date: '2024-01-05', changes: ['Initial listing created'], user: 'Admin' },
+  ],
+  // Trust Signals
+  trustSignals: {
+    fulfillmentRate: 98.2,
+    responseConsistency: 94.5,
+    orderCompletionRate: 99.1,
+    avgDeliveryAccuracy: 96.8,
+    disputeRate: 0.3,
+    totalReviews: 156,
+    avgRating: 4.8,
   },
   supplier: {
     name: 'Industrial Parts MENA',
+    slug: 'industrial-parts-mena',
     location: 'Riyadh, Saudi Arabia',
     verified: true,
     responseSLA: '< 4 hours',
@@ -120,13 +162,179 @@ const mockProduct = {
 
 type TabId = 'overview' | 'specs' | 'compatibility' | 'packaging' | 'documents';
 
-export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
-  const { styles, t, direction } = usePortal();
+// =============================================================================
+// Buyer Intelligence Types & Helpers
+// =============================================================================
+
+interface RFQReadiness {
+  typicalResponseTime: string;
+  responseTimeRating: 'fast' | 'moderate' | 'slow';
+  quoteCompetitiveness: 'high' | 'moderate' | 'low';
+  fulfillmentRate: number;
+  lastQuoteDate: string;
+}
+
+interface PriceExpectation {
+  minPrice: number;
+  maxPrice: number;
+  avgPrice: number;
+  currency: string;
+  basedOnQuotes: number;
+  lastUpdated: string;
+}
+
+interface SupplierSnapshot {
+  verificationStatus: 'verified' | 'pending' | 'unverified';
+  orderSuccessRate: number;
+  communicationRating: number;
+  onTimeDeliveryRate: number;
+  totalCompletedOrders: number;
+  avgResponseTime: string;
+  memberSince: string;
+}
+
+// Generate mock intelligence data (in production, fetched from backend)
+const generateRFQReadiness = (item: Item | null): RFQReadiness => {
+  const seed = item?.id?.charCodeAt(0) || 65;
+  const responseHours = 2 + (seed % 6);
+  return {
+    typicalResponseTime: `${responseHours} hours`,
+    responseTimeRating: responseHours <= 3 ? 'fast' : responseHours <= 6 ? 'moderate' : 'slow',
+    quoteCompetitiveness: seed % 3 === 0 ? 'high' : seed % 3 === 1 ? 'moderate' : 'low',
+    fulfillmentRate: 85 + (seed % 15),
+    lastQuoteDate: '2 days ago',
+  };
+};
+
+const generatePriceExpectation = (item: Item | null): PriceExpectation | null => {
+  if (!item || item.visibility === 'rfq_only') return null;
+  const basePrice = item.price;
+  const variance = basePrice * 0.15;
+  return {
+    minPrice: Math.round(basePrice - variance),
+    maxPrice: Math.round(basePrice + variance),
+    avgPrice: basePrice,
+    currency: item.currency,
+    basedOnQuotes: 12 + (item.totalQuotes % 20),
+    lastUpdated: 'Last 30 days',
+  };
+};
+
+const generateSupplierSnapshot = (item: Item | null): SupplierSnapshot => {
+  const seed = item?.id?.charCodeAt(0) || 65;
+  return {
+    verificationStatus: seed % 4 === 0 ? 'pending' : 'verified',
+    orderSuccessRate: 90 + (seed % 10),
+    communicationRating: 4.2 + (seed % 8) * 0.1,
+    onTimeDeliveryRate: 88 + (seed % 12),
+    totalCompletedOrders: 50 + (seed * 3),
+    avgResponseTime: `${2 + (seed % 4)} hours`,
+    memberSince: '2019',
+  };
+};
+
+export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate, itemId }) => {
+  const { styles, t, direction, language } = usePortal();
+  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [item, setItem] = useState<Item | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showRFQModal, setShowRFQModal] = useState(false);
   const isRtl = direction === 'rtl';
 
-  const product = mockProduct;
+  // Generate intelligence data
+  const rfqReadiness = useMemo(() => generateRFQReadiness(item), [item]);
+  const priceExpectation = useMemo(() => generatePriceExpectation(item), [item]);
+  const supplierSnapshot = useMemo(() => generateSupplierSnapshot(item), [item]);
+
+  // Fetch item data
+  useEffect(() => {
+    const fetchItem = async () => {
+      if (!itemId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const fetchedItem = await itemService.getMarketplaceItem(token, itemId);
+        setItem(fetchedItem);
+      } catch (err) {
+        console.error('Error fetching item:', err);
+        setError('Failed to load item details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItem();
+  }, [itemId, getToken]);
+
+  // Convert Item to display format
+  const product = item ? {
+    id: item.id,
+    name: language === 'ar' && item.nameAr ? item.nameAr : item.name,
+    sku: item.sku,
+    partNumber: item.partNumber || '',
+    category: item.category,
+    subcategory: item.subcategory || '',
+    compatibleBrands: [] as string[],
+    status: item.stock > 0 ? 'in_stock' : 'out_of_stock' as const,
+    visibility: item.visibility,
+    price: item.price.toString(),
+    currency: item.currency,
+    moq: item.minOrderQty,
+    stock: item.stock,
+    leadTime: item.leadTimeDays ? `${item.leadTimeDays} days` : 'Contact for lead time',
+    shippingNotes: `Ships from ${item.origin || 'warehouse'}`,
+    responseTime: '< 4 hours',
+    images: typeof item.images === 'string' ? JSON.parse(item.images) : (item.images || []),
+    description: language === 'ar' && item.descriptionAr ? item.descriptionAr : (item.description || ''),
+    useCases: [] as string[],
+    benefits: [] as string[],
+    specs: typeof item.specifications === 'string' ? JSON.parse(item.specifications) : (item.specifications || {}),
+    compatibility: {
+      machines: [] as string[],
+      models: [] as string[],
+      productionLines: [] as string[],
+    },
+    packaging: {
+      type: 'Standard packaging',
+      hsCode: '',
+      shippingWeight: '',
+      dimensions: '',
+      origin: item.origin || '',
+      unitsPerCarton: 1,
+    },
+    documents: typeof item.documents === 'string' ? JSON.parse(item.documents) : (item.documents || []),
+    rfqStats: {
+      totalRfqs: item.totalQuotes,
+      avgResponseTime: '3.2 hours',
+      lastActivity: 'Recently',
+      quotesThisMonth: Math.ceil(item.totalQuotes / 12),
+      rfqTrend: '+15%' as const,
+      winRate: 68.5,
+      avgQuoteValue: item.price,
+      repeatBuyerRate: 42,
+    },
+    versionHistory: mockProduct.versionHistory,
+    trustSignals: mockProduct.trustSignals,
+    supplier: {
+      name: (item as any).user?.name || 'Seller',
+      slug: (item as any).user?.sellerProfile?.slug || (item as any).sellerSlug || 'industrial-parts-mena',
+      location: item.origin || 'Saudi Arabia',
+      verified: true,
+      responseSLA: '< 4 hours',
+      yearsActive: 5,
+      totalProducts: 100,
+    },
+  } : mockProduct;
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: t('itemDetails.overview'), icon: Info },
@@ -142,7 +350,71 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
     out_of_stock: { label: t('itemDetails.outOfStock'), color: styles.error, bg: 'rgba(239, 68, 68, 0.1)' },
   };
 
-  const status = statusConfig[product.status];
+  const status = statusConfig[product.status] || statusConfig.in_stock;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: styles.bgPrimary }}>
+        <div className="flex flex-col items-center gap-4">
+          <Spinner size={32} className="animate-spin" style={{ color: styles.info }} />
+          <span style={{ color: styles.textMuted }}>{t('common.loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
+        <Container>
+          <div className="py-20">
+            <EmptyState
+              icon={Package}
+              title={t('common.error')}
+              description={error}
+              action={
+                <button
+                  onClick={() => onNavigate('marketplace')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{ backgroundColor: styles.info, color: '#fff' }}
+                >
+                  {t('buyer.marketplace.backToMarketplace')}
+                </button>
+              }
+            />
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  // No item found state
+  if (!itemId && !item) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
+        <Container>
+          <div className="py-20">
+            <EmptyState
+              icon={Package}
+              title={t('itemDetails.notFound')}
+              description={t('itemDetails.notFoundDesc')}
+              action={
+                <button
+                  onClick={() => onNavigate('marketplace')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{ backgroundColor: styles.info, color: '#fff' }}
+                >
+                  {t('buyer.marketplace.backToMarketplace')}
+                </button>
+              }
+            />
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen transition-colors pb-12" style={{ backgroundColor: styles.bgPrimary }}>
@@ -394,6 +666,9 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
                   />
                 </div>
               </div>
+
+              {/* RFQ Readiness Panel - Buyer Intelligence */}
+              <RFQReadinessPanel readiness={rfqReadiness} styles={styles} t={t} />
             </div>
 
             {/* Right Column - Sticky Decision Box */}
@@ -405,7 +680,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
                   style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
                 >
                   {/* Price */}
-                  <div className="mb-6">
+                  <div className="mb-4">
                     <p className="text-sm mb-1" style={{ color: styles.textMuted }}>
                       {t('itemDetails.unitPrice')}
                     </p>
@@ -418,6 +693,11 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Price Expectation Band */}
+                  {priceExpectation && (
+                    <PriceExpectationBand expectation={priceExpectation} styles={styles} />
+                  )}
 
                   {/* Details */}
                   <div className="space-y-3 mb-6">
@@ -452,8 +732,9 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
                     {product.shippingNotes}
                   </p>
 
-                  {/* Main CTA */}
+                  {/* Main CTA - Enhanced */}
                   <button
+                    onClick={() => setShowRFQModal(true)}
                     className="w-full py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                     style={{
                       backgroundColor: styles.success,
@@ -463,70 +744,41 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate }) => {
                     <FileText size={18} />
                     {t('itemDetails.requestQuotation')}
                   </button>
+
+                  {/* Quick RFQ Tips */}
+                  <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: styles.textMuted }}>
+                    <Sparkle size={12} style={{ color: '#f59e0b' }} />
+                    <span>Smart suggestions available</span>
+                  </div>
                 </div>
 
-                {/* Supplier Card */}
-                <div
-                  className="rounded-xl border p-5"
-                  style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-                >
-                  <div className="flex items-start gap-3 mb-4">
-                    <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: styles.bgSecondary }}
-                    >
-                      <Buildings size={24} style={{ color: styles.textSecondary }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="font-semibold text-sm truncate" style={{ color: styles.textPrimary }}>
-                          {product.supplier.name}
-                        </h4>
-                        {product.supplier.verified && (
-                          <ShieldCheck
-                            size={16}
-                            weight="fill"
-                            style={{ color: styles.success }}
-                          />
-                        )}
-                      </div>
-                      <p className="text-xs flex items-center gap-1" style={{ color: styles.textMuted }}>
-                        <MapPin size={12} />
-                        {product.supplier.location}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-xs">
-                      <span style={{ color: styles.textMuted }}>{t('itemDetails.responseSLA')}</span>
-                      <span className="font-medium" style={{ color: styles.success }}>
-                        {product.supplier.responseSLA}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span style={{ color: styles.textMuted }}>{t('itemDetails.yearsActive')}</span>
-                      <span style={{ color: styles.textSecondary }}>
-                        {product.supplier.yearsActive} {t('itemDetails.years')}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span style={{ color: styles.textMuted }}>{t('itemDetails.catalogSize')}</span>
-                      <span style={{ color: styles.textSecondary }}>
-                        {product.supplier.totalProducts.toLocaleString()} {t('itemDetails.products')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs" style={{ color: styles.textMuted }}>
-                    {t('itemDetails.contactViaPlaftorm')}
-                  </p>
-                </div>
+                {/* Enhanced Supplier Snapshot Card */}
+                <SupplierSnapshotCard
+                  supplier={product.supplier}
+                  snapshot={supplierSnapshot}
+                  styles={styles}
+                  t={t}
+                />
               </div>
             </div>
           </div>
         </div>
       </Container>
+
+      {/* RFQ Form Panel */}
+      <RFQFormPanel
+        isOpen={showRFQModal}
+        onClose={() => setShowRFQModal(false)}
+        item={item}
+        sellerId={item?.userId || mockProduct.supplier.id}
+        sellerName={mockProduct.supplier.name}
+        source="item"
+        defaultQuantity={item?.minOrderQty || mockProduct.moq}
+        onSuccess={(rfq) => {
+          console.log('RFQ created:', rfq);
+          // Could navigate to My RFQs or show success message
+        }}
+      />
     </div>
   );
 };
@@ -781,18 +1033,362 @@ const StatCard: React.FC<{
   label: string;
   value: string;
   styles: ReturnType<typeof usePortal>['styles'];
-}> = ({ label, value, styles }) => (
+  icon?: React.ElementType;
+  highlight?: boolean;
+}> = ({ label, value, styles, icon: Icon, highlight }) => (
   <div
     className="p-4 rounded-lg"
-    style={{ backgroundColor: styles.bgSecondary }}
+    style={{
+      backgroundColor: highlight
+        ? styles.isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.08)'
+        : styles.bgSecondary,
+    }}
   >
-    <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
-      {label}
-    </p>
-    <p className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+    <div className="flex items-center gap-1.5 mb-1">
+      {Icon && <Icon size={12} style={{ color: styles.textMuted }} />}
+      <p className="text-xs" style={{ color: styles.textMuted }}>
+        {label}
+      </p>
+    </div>
+    <p
+      className="text-lg font-semibold"
+      style={{ color: highlight ? styles.success : styles.textPrimary }}
+    >
       {value}
     </p>
   </div>
 );
+
+// RFQ Readiness Panel Component - Buyer Intelligence
+const RFQReadinessPanel: React.FC<{
+  readiness: RFQReadiness;
+  styles: ReturnType<typeof usePortal>['styles'];
+  t: (key: string) => string;
+}> = ({ readiness, styles, t }) => {
+  const ratingConfig = {
+    fast: { color: styles.success, label: 'Fast Response', icon: Lightning },
+    moderate: { color: '#EAB308', label: 'Moderate', icon: Clock },
+    slow: { color: styles.error, label: 'Slow', icon: ClockCounterClockwise },
+  };
+  const rating = ratingConfig[readiness.responseTimeRating];
+  const RatingIcon = rating.icon;
+
+  const competitivenessConfig = {
+    high: { color: styles.success, label: 'Highly Competitive' },
+    moderate: { color: '#EAB308', label: 'Moderate' },
+    low: { color: styles.textMuted, label: 'Limited Data' },
+  };
+  const competitiveness = competitivenessConfig[readiness.quoteCompetitiveness];
+
+  return (
+    <div
+      className="rounded-xl border p-6"
+      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Lightning size={20} style={{ color: styles.success }} />
+          <h3 className="text-base font-semibold" style={{ color: styles.textPrimary }}>
+            {t('itemDetails.rfqReadiness') || 'RFQ Readiness'}
+          </h3>
+        </div>
+        <span
+          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+          style={{ backgroundColor: `${rating.color}15`, color: rating.color }}
+        >
+          <RatingIcon size={12} weight="bold" />
+          {rating.label}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-2">
+            <Clock size={16} style={{ color: styles.textMuted }} />
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              {t('itemDetails.typicalResponseTime') || 'Typical Response Time'}
+            </span>
+          </div>
+          <span className="text-sm font-medium" style={{ color: rating.color }}>
+            {readiness.typicalResponseTime}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-2">
+            <Trophy size={16} style={{ color: styles.textMuted }} />
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              {t('itemDetails.fulfillmentRate') || 'Fulfillment Rate'}
+            </span>
+          </div>
+          <span className="text-sm font-medium" style={{ color: readiness.fulfillmentRate >= 95 ? styles.success : styles.textPrimary }}>
+            {readiness.fulfillmentRate}%
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-2">
+            <TrendUp size={16} style={{ color: styles.textMuted }} />
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              {t('itemDetails.quoteCompetitiveness') || 'Quote Competitiveness'}
+            </span>
+          </div>
+          <span className="text-sm font-medium" style={{ color: competitiveness.color }}>
+            {competitiveness.label}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-2">
+            <CalendarBlank size={16} style={{ color: styles.textMuted }} />
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              {t('itemDetails.lastQuote') || 'Last Quote'}
+            </span>
+          </div>
+          <span className="text-sm font-medium" style={{ color: styles.textSecondary }}>
+            {readiness.lastQuoteDate}
+          </span>
+        </div>
+      </div>
+
+      {/* Guidance */}
+      <div
+        className="mt-4 p-3 rounded-lg flex items-start gap-2"
+        style={{ backgroundColor: styles.isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)' }}
+      >
+        <Info size={16} style={{ color: styles.info, flexShrink: 0, marginTop: 2 }} />
+        <p className="text-xs" style={{ color: styles.textSecondary }}>
+          {t('itemDetails.rfqReadinessHint') || 'Based on seller activity patterns. Request a quotation to get exact pricing and availability for your quantity.'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Trust Metric Component
+const TrustMetric: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  styles: ReturnType<typeof usePortal>['styles'];
+}> = ({ icon: Icon, label, value, styles }) => (
+  <div className="flex items-center justify-between p-2.5 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+    <div className="flex items-center gap-2">
+      <Icon size={14} style={{ color: styles.success }} />
+      <span className="text-xs" style={{ color: styles.textMuted }}>{label}</span>
+    </div>
+    <span className="text-sm font-semibold" style={{ color: styles.success }}>{value}</span>
+  </div>
+);
+
+// =============================================================================
+// Price Expectation Band - Indicative Price Range
+// =============================================================================
+const PriceExpectationBand: React.FC<{
+  expectation: PriceExpectation;
+  styles: ReturnType<typeof usePortal>['styles'];
+}> = ({ expectation, styles }) => {
+  const range = expectation.maxPrice - expectation.minPrice;
+  const avgPosition = range > 0 ? ((expectation.avgPrice - expectation.minPrice) / range) * 100 : 50;
+
+  return (
+    <div
+      className="mb-4 p-3 rounded-lg"
+      style={{ backgroundColor: styles.bgSecondary }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <TrendUp size={12} style={{ color: styles.info }} />
+          <span className="text-[10px] font-medium" style={{ color: styles.textSecondary }}>
+            Price Range (Indicative)
+          </span>
+        </div>
+        <span className="text-[10px]" style={{ color: styles.textMuted }}>
+          Based on {expectation.basedOnQuotes} quotes
+        </span>
+      </div>
+
+      {/* Price Range Visual */}
+      <div className="relative h-2 rounded-full mb-2" style={{ backgroundColor: styles.bgHover }}>
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `linear-gradient(to right, ${styles.success}30, ${styles.info}30, ${styles.success}30)`,
+          }}
+        />
+        {/* Average marker */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2"
+          style={{
+            left: `calc(${avgPosition}% - 5px)`,
+            backgroundColor: styles.bgCard,
+            borderColor: styles.info,
+          }}
+        />
+      </div>
+
+      {/* Price Labels */}
+      <div className="flex items-center justify-between text-[10px]">
+        <span style={{ color: styles.textMuted }}>
+          {expectation.currency} {expectation.minPrice.toLocaleString()}
+        </span>
+        <span className="font-medium" style={{ color: styles.info }}>
+          Avg: {expectation.currency} {expectation.avgPrice.toLocaleString()}
+        </span>
+        <span style={{ color: styles.textMuted }}>
+          {expectation.currency} {expectation.maxPrice.toLocaleString()}
+        </span>
+      </div>
+
+      {/* Disclaimer */}
+      <p className="text-[9px] mt-2 text-center" style={{ color: styles.textMuted }}>
+        *{expectation.lastUpdated} • Actual prices may vary
+      </p>
+    </div>
+  );
+};
+
+// =============================================================================
+// Enhanced Supplier Snapshot Card
+// =============================================================================
+const SupplierSnapshotCard: React.FC<{
+  supplier: typeof mockProduct.supplier;
+  snapshot: SupplierSnapshot;
+  styles: ReturnType<typeof usePortal>['styles'];
+  t: (key: string) => string;
+}> = ({ supplier, snapshot, styles, t }) => {
+  const verificationConfig = {
+    verified: { color: styles.success, label: 'Verified', icon: ShieldCheck },
+    pending: { color: '#f59e0b', label: 'Pending', icon: Clock },
+    unverified: { color: styles.textMuted, label: 'Unverified', icon: ShieldCheck },
+  };
+
+  const verification = verificationConfig[snapshot.verificationStatus];
+  const VerificationIcon = verification.icon;
+
+  return (
+    <div
+      className="rounded-xl border p-5"
+      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+    >
+      {/* Header with Supplier Name */}
+      <div className="flex items-start gap-3 mb-4">
+        <div
+          className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: styles.bgSecondary }}
+        >
+          <Buildings size={24} style={{ color: styles.textSecondary }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <button
+              onClick={() => window.location.href = `/seller/${supplier.slug}`}
+              className="font-semibold text-sm truncate hover:underline transition-colors text-left"
+              style={{ color: styles.info }}
+            >
+              {supplier.name}
+            </button>
+            <VerificationIcon
+              size={16}
+              weight="fill"
+              style={{ color: verification.color }}
+            />
+          </div>
+          <p className="text-xs flex items-center gap-1" style={{ color: styles.textMuted }}>
+            <MapPin size={12} />
+            {supplier.location}
+          </p>
+        </div>
+      </div>
+
+      {/* Performance Grid */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="p-2.5 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-1 mb-1">
+            <CheckCircle size={10} weight="fill" style={{ color: styles.success }} />
+            <span className="text-[10px]" style={{ color: styles.textMuted }}>Success Rate</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: styles.success }}>
+            {snapshot.orderSuccessRate}%
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-1 mb-1">
+            <Star size={10} weight="fill" style={{ color: '#f59e0b' }} />
+            <span className="text-[10px]" style={{ color: styles.textMuted }}>Rating</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: styles.textPrimary }}>
+            {snapshot.communicationRating.toFixed(1)}/5
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-1 mb-1">
+            <Truck size={10} style={{ color: styles.info }} />
+            <span className="text-[10px]" style={{ color: styles.textMuted }}>On-Time</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: styles.textPrimary }}>
+            {snapshot.onTimeDeliveryRate}%
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+          <div className="flex items-center gap-1 mb-1">
+            <Handshake size={10} style={{ color: styles.textMuted }} />
+            <span className="text-[10px]" style={{ color: styles.textMuted }}>Orders</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: styles.textPrimary }}>
+            {snapshot.totalCompletedOrders}+
+          </span>
+        </div>
+      </div>
+
+      {/* Additional Details */}
+      <div className="space-y-2 pt-3 border-t mb-4" style={{ borderColor: styles.border }}>
+        <div className="flex items-center justify-between text-xs">
+          <span style={{ color: styles.textMuted }}>Response Time</span>
+          <span className="font-medium" style={{ color: styles.success }}>
+            {snapshot.avgResponseTime}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span style={{ color: styles.textMuted }}>Member Since</span>
+          <span style={{ color: styles.textSecondary }}>
+            {snapshot.memberSince}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span style={{ color: styles.textMuted }}>Catalog Size</span>
+          <span style={{ color: styles.textSecondary }}>
+            {supplier.totalProducts.toLocaleString()} products
+          </span>
+        </div>
+      </div>
+
+      {/* View Profile Button */}
+      <button
+        onClick={() => window.location.href = `/seller/${supplier.slug}`}
+        className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 border"
+        style={{
+          borderColor: styles.border,
+          color: styles.textSecondary,
+          backgroundColor: 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = styles.bgHover;
+          e.currentTarget.style.color = styles.textPrimary;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = styles.textSecondary;
+        }}
+      >
+        <ArrowSquareOut size={16} />
+        {t('itemDetails.viewSellerProfile') || 'View Seller Profile'}
+      </button>
+    </div>
+  );
+};
 
 export default ItemDetails;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../../auth-adapter';
-import { orderService } from '../../services/orderService';
+import { marketplaceOrderService } from '../../services/marketplaceOrderService';
 import {
   useReactTable,
   getCoreRowModel,
@@ -27,20 +27,33 @@ import {
   CheckSquare,
   CurrencyDollar,
   Cube,
+  Warning,
+  Heartbeat,
+  Clock,
+  ShieldCheck,
+  WarningCircle,
+  Lightning,
+  Spinner,
+  Gear,
+  ProhibitInset,
+  LockSimple,
 } from 'phosphor-react';
 import { Button, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import {
-  Order,
-  OrderStatus,
+  MarketplaceOrder as Order,
+  MarketplaceOrderStatus as OrderStatus,
   PaymentStatus,
   FulfillmentStatus,
   getOrderStatusConfig,
+  canSellerPerformAction,
+} from '../../types/item.types';
+import {
+  OrderHealthStatus,
+  ExceptionType,
   getPaymentStatusConfig,
-  canConfirmOrder,
-  canShipOrder,
-  canCancelOrder,
-  canMarkDelivered,
+  getHealthStatusConfig,
+  getExceptionTypeLabel,
 } from '../../types/order.types';
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel';
 
@@ -71,11 +84,47 @@ const formatCurrency = (amount: number, currency: string): string => {
   return `${currency} ${amount.toLocaleString()}`;
 };
 
+// Health statuses and exception types for demo
+const healthStatuses: OrderHealthStatus[] = ['on_track', 'at_risk', 'delayed', 'critical'];
+const exceptionTypes: ExceptionType[] = ['late_confirmation', 'shipping_delay', 'payment_overdue'];
+
+// =============================================================================
+// Stage 5: Helper functions for action availability
+// =============================================================================
+
+const canConfirmOrder = (order: Order): boolean => {
+  return order.status === 'pending_confirmation';
+};
+
+const canRejectOrder = (order: Order): boolean => {
+  return order.status === 'pending_confirmation';
+};
+
+const canStartProcessing = (order: Order): boolean => {
+  return order.status === 'confirmed';
+};
+
+const canShipOrder = (order: Order): boolean => {
+  return order.status === 'confirmed' || order.status === 'processing';
+};
+
+const canMarkDelivered = (order: Order): boolean => {
+  return order.status === 'shipped';
+};
+
+const canCloseOrder = (order: Order): boolean => {
+  return order.status === 'delivered';
+};
+
+const canCancelOrder = (order: Order): boolean => {
+  return ['pending_confirmation', 'confirmed', 'processing'].includes(order.status);
+};
+
 // Generate sample orders for demonstration
 const generateSampleOrders = (): Order[] => {
-  const statuses: OrderStatus[] = ['pending_confirmation', 'confirmed', 'in_progress', 'shipped', 'delivered', 'cancelled'];
+  const statuses: OrderStatus[] = ['pending_confirmation', 'confirmed', 'processing', 'shipped', 'delivered', 'closed', 'cancelled'];
   const paymentStatuses: PaymentStatus[] = ['unpaid', 'authorized', 'paid'];
-  const fulfillmentStatuses: FulfillmentStatus[] = ['not_started', 'packing', 'out_for_delivery', 'delivered'];
+  const fulfillmentStatuses: FulfillmentStatus[] = ['not_started', 'picking', 'packing', 'ready_to_ship', 'shipped', 'delivered'];
   const buyers = [
     { name: 'Ahmed Industrial Co.', email: 'procurement@ahmedindustrial.com', company: 'Ahmed Industrial Co.' },
     { name: 'Gulf Manufacturing LLC', email: 'orders@gulfmfg.com', company: 'Gulf Manufacturing LLC' },
@@ -99,41 +148,82 @@ const generateSampleOrders = (): Order[] => {
     const daysAgo = Math.floor(Math.random() * 30);
     const createdAt = new Date(Date.now() - daysAgo * 86400000).toISOString();
 
+    // Determine health status based on order status
+    let healthStatus: OrderHealthStatus = 'on_track';
+    let healthScore = 100;
+    let hasException = false;
+    let exceptionType: ExceptionType | undefined;
+    let exceptionMessage: string | undefined;
+
+    if (status === 'pending_confirmation' && daysAgo > 2) {
+      healthStatus = 'at_risk';
+      healthScore = 70;
+      hasException = true;
+      exceptionType = 'late_confirmation';
+      exceptionMessage = 'Order awaiting confirmation for over 48 hours';
+    } else if (status === 'confirmed' && daysAgo > 5) {
+      healthStatus = 'delayed';
+      healthScore = 40;
+      hasException = true;
+      exceptionType = 'shipping_delay';
+      exceptionMessage = 'Order not shipped within expected timeframe';
+    } else if (i % 7 === 0 && !['delivered', 'closed', 'cancelled'].includes(status)) {
+      healthStatus = 'critical';
+      healthScore = 20;
+      hasException = true;
+      exceptionType = exceptionTypes[i % exceptionTypes.length];
+      exceptionMessage = 'Urgent attention required';
+    } else if (i % 4 === 0 && !['delivered', 'closed', 'cancelled'].includes(status)) {
+      healthStatus = 'at_risk';
+      healthScore = 60;
+    }
+
+    // Completed orders are always on_track
+    if (['delivered', 'closed', 'cancelled'].includes(status)) {
+      healthStatus = 'on_track';
+      healthScore = 100;
+      hasException = false;
+      exceptionType = undefined;
+      exceptionMessage = undefined;
+    }
+
     return {
       id: `order-${1000 + i}`,
       orderNumber: `ORD-${2024}-${String(1000 + i).padStart(4, '0')}`,
       buyerId: `buyer-${i}`,
-      buyerName: buyer.name,
-      buyerEmail: buyer.email,
-      buyerCompany: buyer.company,
       sellerId: 'current-seller',
-      itemId: `item-${i}`,
-      itemName: item.name,
-      itemSku: item.sku,
+      quoteId: `quote-${i}`,
       rfqId: i % 3 === 0 ? `rfq-${i}` : undefined,
-      rfqNumber: i % 3 === 0 ? `RFQ-${2024}-${String(100 + i).padStart(4, '0')}` : undefined,
+      itemId: `item-${i}`,
       quantity,
       unitPrice: item.price,
       totalPrice: item.price * quantity,
       currency: 'SAR',
       status,
-      paymentStatus: status === 'delivered' ? 'paid' : paymentStatuses[i % paymentStatuses.length],
-      fulfillmentStatus: status === 'delivered' ? 'delivered' : fulfillmentStatuses[Math.min(statuses.indexOf(status), fulfillmentStatuses.length - 1)],
-      source: i % 3 === 0 ? 'rfq' : 'direct_buy',
+      paymentStatus: status === 'delivered' || status === 'closed' ? 'paid' : paymentStatuses[i % paymentStatuses.length],
+      fulfillmentStatus: ['delivered', 'closed'].includes(status) ? 'delivered' : fulfillmentStatuses[Math.min(statuses.indexOf(status), fulfillmentStatuses.length - 1)],
+      source: i % 3 === 0 ? 'rfq' : 'direct',
       createdAt,
-      confirmedAt: ['confirmed', 'in_progress', 'shipped', 'delivered'].includes(status) ? createdAt : undefined,
-      shippedAt: ['shipped', 'delivered'].includes(status) ? createdAt : undefined,
-      deliveredAt: status === 'delivered' ? createdAt : undefined,
+      confirmedAt: ['confirmed', 'processing', 'shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
+      processingAt: ['processing', 'shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
+      shippedAt: ['shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
+      deliveredAt: ['delivered', 'closed'].includes(status) ? createdAt : undefined,
+      closedAt: status === 'closed' ? createdAt : undefined,
       updatedAt: createdAt,
-      auditLog: [
-        {
-          id: `audit-${i}-1`,
-          timestamp: createdAt,
-          action: 'created' as const,
-          actor: 'buyer' as const,
-        },
-      ],
-    };
+      // Seller/Buyer metadata for display
+      buyerName: buyer.name,
+      buyerEmail: buyer.email,
+      buyerCompany: buyer.company,
+      itemName: item.name,
+      itemSku: item.sku,
+      rfqNumber: i % 3 === 0 ? `RFQ-${2024}-${String(100 + i).padStart(4, '0')}` : undefined,
+      // Health fields (for UI display)
+      healthStatus,
+      healthScore,
+      hasException,
+      exceptionType,
+      exceptionMessage,
+    } as Order & { buyerName: string; buyerEmail?: string; buyerCompany?: string; itemName: string; itemSku: string; rfqNumber?: string; healthStatus: OrderHealthStatus; healthScore: number; hasException: boolean; exceptionType?: ExceptionType; exceptionMessage?: string };
   });
 };
 
@@ -147,13 +237,29 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('');
+  const [healthFilter, setHealthFilter] = useState<OrderHealthStatus | ''>('');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showExceptionsBanner, setShowExceptionsBanner] = useState(true);
 
   // Panel states
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
+
+  // Stage 5: Dialog states
+  const [rejectDialogOrder, setRejectDialogOrder] = useState<Order | null>(null);
+  const [shipDialogOrder, setShipDialogOrder] = useState<Order | null>(null);
+  const [cancelDialogOrder, setCancelDialogOrder] = useState<Order | null>(null);
+  const [confirmDialogOrder, setConfirmDialogOrder] = useState<Order | null>(null);
+  const [processingDialogOrder, setProcessingDialogOrder] = useState<Order | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [shipTrackingNumber, setShipTrackingNumber] = useState('');
+  const [shipCarrier, setShipCarrier] = useState('');
+  const [shipEstimatedDelivery, setShipEstimatedDelivery] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
@@ -170,14 +276,28 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
 
-      const data = await orderService.getSellerOrders(token);
-      setOrders(data);
+      const response = await marketplaceOrderService.getSellerOrders(token);
+      // Map the response to include display fields
+      const ordersWithDisplay = response.orders.map((order: Order) => ({
+        ...order,
+        buyerName: (order as any).buyer?.name || 'Unknown Buyer',
+        buyerEmail: (order as any).buyer?.email,
+        buyerCompany: (order as any).buyer?.company,
+        itemName: (order as any).item?.name || (order as any).quote?.rfq?.item?.name || 'Item',
+        itemSku: (order as any).item?.sku || (order as any).quote?.rfq?.item?.sku || '',
+        rfqNumber: (order as any).rfq?.rfqNumber,
+        // Default health fields if not present
+        healthStatus: 'on_track' as OrderHealthStatus,
+        healthScore: 100,
+        hasException: false,
+      }));
+      setOrders(ordersWithDisplay);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
       setError('Failed to load orders');
       // Fall back to sample data for demo
-      setOrders(generateSampleOrders());
+      setOrders(generateSampleOrders() as any);
     } finally {
       setIsLoading(false);
     }
@@ -210,17 +330,17 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
 
     // Status filter
     if (statusFilter) {
-      if (statusFilter === 'confirmed') {
-        // "Confirmed" tab shows both confirmed and in_progress
-        result = result.filter((o) => o.status === 'confirmed' || o.status === 'in_progress');
-      } else {
-        result = result.filter((o) => o.status === statusFilter);
-      }
+      result = result.filter((o) => o.status === statusFilter);
     }
 
     // Payment filter
     if (paymentFilter) {
       result = result.filter((o) => o.paymentStatus === paymentFilter);
+    }
+
+    // Health filter
+    if (healthFilter) {
+      result = result.filter((o) => o.healthStatus === healthFilter);
     }
 
     // Sort
@@ -240,89 +360,180 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
     });
 
     return result;
-  }, [orders, searchQuery, statusFilter, paymentFilter, sortOption]);
+  }, [orders, searchQuery, statusFilter, paymentFilter, healthFilter, sortOption]);
 
   // Stats for quick filters
   const stats = useMemo(() => {
     const pendingConfirmation = orders.filter((o) => o.status === 'pending_confirmation').length;
-    const confirmed = orders.filter((o) => o.status === 'confirmed' || o.status === 'in_progress').length;
+    const confirmed = orders.filter((o) => o.status === 'confirmed').length;
+    const processing = orders.filter((o) => o.status === 'processing').length;
     const shipped = orders.filter((o) => o.status === 'shipped').length;
-    const completed = orders.filter((o) => o.status === 'delivered').length;
+    const delivered = orders.filter((o) => o.status === 'delivered').length;
+    const closed = orders.filter((o) => o.status === 'closed').length;
     const cancelled = orders.filter((o) => o.status === 'cancelled').length;
     const totalRevenue = orders
-      .filter((o) => o.status === 'delivered' && o.paymentStatus === 'paid')
+      .filter((o) => ['delivered', 'closed'].includes(o.status) && o.paymentStatus === 'paid')
       .reduce((sum, o) => sum + o.totalPrice, 0);
+
+    // Health stats
+    const onTrack = orders.filter((o) => (o as any).healthStatus === 'on_track').length;
+    const atRisk = orders.filter((o) => (o as any).healthStatus === 'at_risk').length;
+    const delayed = orders.filter((o) => (o as any).healthStatus === 'delayed').length;
+    const critical = orders.filter((o) => (o as any).healthStatus === 'critical').length;
+    const withExceptions = orders.filter((o) => (o as any).hasException).length;
 
     return {
       total: orders.length,
       pendingConfirmation,
       confirmed,
+      processing,
       shipped,
-      completed,
+      delivered,
+      closed,
       cancelled,
       totalRevenue,
+      // Health
+      onTrack,
+      atRisk,
+      delayed,
+      critical,
+      withExceptions,
     };
   }, [orders]);
 
+  // Get orders with active exceptions for the banner
+  const ordersWithExceptions = useMemo(() =>
+    orders.filter((o) => o.hasException && o.exceptionMessage),
+  [orders]);
+
   // Check if any filters are active
-  const hasActiveFilters = searchQuery || statusFilter || paymentFilter;
+  const hasActiveFilters = searchQuery || statusFilter || paymentFilter || healthFilter;
 
   const clearAllFilters = () => {
     setSearchQuery('');
     setStatusFilter('');
     setPaymentFilter('');
+    setHealthFilter('');
   };
 
-  // Order actions
+  // ==========================================================================
+  // Stage 5: Order Fulfillment Actions
+  // ==========================================================================
+
+  // Confirm order (pending_confirmation -> confirmed)
   const handleConfirmOrder = async (order: Order) => {
+    setIsActionLoading(true);
+    setActionError(null);
     try {
       const token = await getToken();
       if (!token) return;
-      const updated = await orderService.confirmOrder(token, order.id);
-      updateOrderInState(updated);
+      const updated = await marketplaceOrderService.confirmOrder(token, order.id);
+      if (updated) {
+        updateOrderInState({ ...order, ...updated, status: 'confirmed', confirmedAt: new Date().toISOString() } as any);
+      }
     } catch (err) {
       console.error('Failed to confirm order:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to confirm order');
       // Optimistic update fallback
       updateOrderInState({
         ...order,
         status: 'confirmed',
         confirmedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      } as any);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
-  const handleShipOrder = async (order: Order) => {
+  // Reject order (pending_confirmation -> cancelled with reason)
+  const handleRejectOrder = async () => {
+    if (!rejectDialogOrder || !rejectReason.trim()) return;
+
+    setIsActionLoading(true);
+    setActionError(null);
     try {
       const token = await getToken();
       if (!token) return;
-      // Simple ship with default tracking for demo
-      const updated = await orderService.shipOrder(token, order.id, {
-        trackingNumber: `TRK-${Date.now()}`,
-        carrier: 'Default Carrier',
+      const updated = await marketplaceOrderService.rejectOrder(token, rejectDialogOrder.id, {
+        reason: rejectReason.trim(),
       });
-      updateOrderInState(updated);
+      updateOrderInState({ ...rejectDialogOrder, ...updated, status: 'cancelled', rejectionReason: rejectReason } as any);
+      setRejectDialogOrder(null);
+      setRejectReason('');
     } catch (err) {
-      console.error('Failed to ship order:', err);
+      console.error('Failed to reject order:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to reject order');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Start processing (confirmed -> processing)
+  const handleStartProcessing = async (order: Order) => {
+    setIsActionLoading(true);
+    setActionError(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const updated = await marketplaceOrderService.startProcessing(token, order.id, {
+        sellerNotes: 'Order processing started',
+      });
+      updateOrderInState({ ...order, ...updated, status: 'processing', processingAt: new Date().toISOString() } as any);
+    } catch (err) {
+      console.error('Failed to start processing:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to start processing');
       // Optimistic update fallback
       updateOrderInState({
         ...order,
-        status: 'shipped',
-        fulfillmentStatus: 'out_for_delivery',
-        shippedAt: new Date().toISOString(),
+        status: 'processing',
+        processingAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      } as any);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
-  const handleMarkDelivered = async (order: Order) => {
+  // Ship order (processing -> shipped)
+  const handleShipOrder = async () => {
+    if (!shipDialogOrder || !shipTrackingNumber.trim()) return;
+
+    setIsActionLoading(true);
+    setActionError(null);
     try {
       const token = await getToken();
       if (!token) return;
-      const updated = await orderService.markDelivered(token, order.id);
-      updateOrderInState(updated);
+      const updated = await marketplaceOrderService.shipOrder(token, shipDialogOrder.id, {
+        trackingNumber: shipTrackingNumber.trim(),
+        carrier: shipCarrier.trim() || undefined,
+        estimatedDelivery: shipEstimatedDelivery || undefined,
+      });
+      updateOrderInState({ ...shipDialogOrder, ...updated, status: 'shipped', shippedAt: new Date().toISOString() } as any);
+      setShipDialogOrder(null);
+      setShipTrackingNumber('');
+      setShipCarrier('');
+      setShipEstimatedDelivery('');
+    } catch (err) {
+      console.error('Failed to ship order:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to ship order');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Mark delivered (shipped -> delivered) - Usually buyer action, but seller can also trigger
+  const handleMarkDelivered = async (order: Order) => {
+    setIsActionLoading(true);
+    setActionError(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const updated = await marketplaceOrderService.markDelivered(token, order.id, {});
+      updateOrderInState({ ...order, ...updated, status: 'delivered', deliveredAt: new Date().toISOString() } as any);
     } catch (err) {
       console.error('Failed to mark order delivered:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to mark delivered');
       // Optimistic update fallback
       updateOrderInState({
         ...order,
@@ -331,25 +542,56 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
         paymentStatus: 'paid',
         deliveredAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      } as any);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
-  const handleCancelOrder = async (order: Order) => {
+  // Close order (delivered -> closed)
+  const handleCloseOrder = async (order: Order) => {
+    setIsActionLoading(true);
+    setActionError(null);
     try {
       const token = await getToken();
       if (!token) return;
-      const updated = await orderService.cancelOrder(token, order.id);
-      updateOrderInState(updated);
+      const updated = await marketplaceOrderService.closeOrder(token, order.id);
+      updateOrderInState({ ...order, ...updated, status: 'closed', closedAt: new Date().toISOString() } as any);
     } catch (err) {
-      console.error('Failed to cancel order:', err);
+      console.error('Failed to close order:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to close order');
       // Optimistic update fallback
       updateOrderInState({
         ...order,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
+        status: 'closed',
+        closedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+      } as any);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Cancel order (before shipping)
+  const handleCancelOrder = async () => {
+    if (!cancelDialogOrder || !cancelReason.trim()) return;
+
+    setIsActionLoading(true);
+    setActionError(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const updated = await marketplaceOrderService.cancelOrder(token, cancelDialogOrder.id, {
+        reason: cancelReason.trim(),
       });
+      updateOrderInState({ ...cancelDialogOrder, ...updated, status: 'cancelled', cancelledAt: new Date().toISOString() } as any);
+      setCancelDialogOrder(null);
+      setCancelReason('');
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to cancel order');
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -512,6 +754,46 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
         },
         size: 110,
       }),
+      columnHelper.accessor('healthStatus', {
+        meta: { align: 'center' as const },
+        header: t('seller.orders.health'),
+        cell: ({ row }) => {
+          const order = row.original;
+          const healthStatus = order.healthStatus || 'on_track';
+          const config = getHealthStatusConfig(healthStatus);
+
+          const IconComponent = healthStatus === 'on_track' ? ShieldCheck :
+                               healthStatus === 'at_risk' ? Clock :
+                               healthStatus === 'delayed' ? Warning :
+                               WarningCircle;
+
+          return (
+            <div className="flex flex-col items-center gap-0.5">
+              <div
+                className="flex items-center gap-1 px-2 py-0.5 rounded"
+                style={{
+                  backgroundColor: config.bgColor,
+                  color: config.color,
+                }}
+              >
+                <IconComponent size={12} weight="bold" />
+                <span className="text-[10px] font-semibold uppercase">
+                  {t(config.labelKey)}
+                </span>
+              </div>
+              {order.hasException && (
+                <span
+                  className="text-[9px] font-medium px-1 rounded"
+                  style={{ backgroundColor: `${styles.error}20`, color: styles.error }}
+                >
+                  {t('seller.orders.exception')}
+                </span>
+              )}
+            </div>
+          );
+        },
+        size: 100,
+      }),
       columnHelper.accessor('paymentStatus', {
         meta: { align: 'center' as const },
         header: t('seller.orders.paymentStatus'),
@@ -553,9 +835,10 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
 
           return (
             <div className="flex items-center gap-1">
+              {/* Confirm Order - pending_confirmation -> confirmed */}
               {canConfirmOrder(order) && (
                 <button
-                  onClick={() => handleConfirmOrder(order)}
+                  onClick={() => setConfirmDialogOrder(order)}
                   className="p-1.5 rounded transition-colors"
                   style={{ color: styles.success }}
                   onMouseEnter={(e) => {
@@ -569,9 +852,44 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   <CheckCircle size={16} />
                 </button>
               )}
+              {/* Reject Order - pending_confirmation -> cancelled (with reason) */}
+              {canRejectOrder(order) && (
+                <button
+                  onClick={() => setRejectDialogOrder(order)}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: styles.error }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title={t('seller.orders.rejectOrder')}
+                >
+                  <ProhibitInset size={16} />
+                </button>
+              )}
+              {/* Start Processing - confirmed -> processing */}
+              {canStartProcessing(order) && (
+                <button
+                  onClick={() => setProcessingDialogOrder(order)}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: '#8B5CF6' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title={t('seller.orders.startProcessing')}
+                >
+                  <Gear size={16} />
+                </button>
+              )}
+              {/* Ship Order - processing/confirmed -> shipped */}
               {canShipOrder(order) && (
                 <button
-                  onClick={() => handleShipOrder(order)}
+                  onClick={() => setShipDialogOrder(order)}
                   className="p-1.5 rounded transition-colors"
                   style={{ color: styles.info }}
                   onMouseEnter={(e) => {
@@ -585,6 +903,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   <Truck size={16} />
                 </button>
               )}
+              {/* Mark Delivered - shipped -> delivered */}
               {canMarkDelivered(order) && (
                 <button
                   onClick={() => handleMarkDelivered(order)}
@@ -601,9 +920,27 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   <CheckCircle size={16} weight="fill" />
                 </button>
               )}
+              {/* Close Order - delivered -> closed */}
+              {canCloseOrder(order) && (
+                <button
+                  onClick={() => handleCloseOrder(order)}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: styles.textMuted }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title={t('seller.orders.closeOrder')}
+                >
+                  <LockSimple size={16} />
+                </button>
+              )}
+              {/* Cancel Order - before shipping */}
               {canCancelOrder(order) && (
                 <button
-                  onClick={() => handleCancelOrder(order)}
+                  onClick={() => setCancelDialogOrder(order)}
                   className="p-1.5 rounded transition-colors"
                   style={{ color: styles.error }}
                   onMouseEnter={(e) => {
@@ -617,6 +954,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   <XCircle size={16} />
                 </button>
               )}
+              {/* View Details */}
               <button
                 onClick={() => handleViewDetails(order)}
                 className="p-1.5 rounded transition-colors"
@@ -636,7 +974,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
             </div>
           );
         },
-        size: 140,
+        size: 180,
       }),
     ],
     [styles, t, isRtl]
@@ -676,7 +1014,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
         </div>
 
         {/* Quick Filter Tabs */}
-        <div className={`flex items-center gap-6 mb-6 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
+        <div className={`flex items-center gap-4 mb-6 overflow-x-auto pb-2 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
           <QuickFilterTab
             label={t('seller.orders.allOrders')}
             value={stats.total}
@@ -696,8 +1034,17 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           <QuickFilterTab
             label={t('seller.orders.confirmed')}
             value={stats.confirmed}
+            color={styles.info}
             isActive={statusFilter === 'confirmed'}
             onClick={() => setStatusFilter('confirmed')}
+            styles={styles}
+          />
+          <QuickFilterTab
+            label={t('seller.orders.processing')}
+            value={stats.processing}
+            color="#8B5CF6"
+            isActive={statusFilter === 'processing'}
+            onClick={() => setStatusFilter('processing')}
             styles={styles}
           />
           <QuickFilterTab
@@ -710,10 +1057,18 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           />
           <QuickFilterTab
             label={t('seller.orders.delivered')}
-            value={stats.completed}
+            value={stats.delivered}
             color={styles.success}
             isActive={statusFilter === 'delivered'}
             onClick={() => setStatusFilter('delivered')}
+            styles={styles}
+          />
+          <QuickFilterTab
+            label={t('seller.orders.closed')}
+            value={stats.closed}
+            color={styles.textMuted}
+            isActive={statusFilter === 'closed'}
+            onClick={() => setStatusFilter('closed')}
             styles={styles}
           />
           <QuickFilterTab
@@ -725,6 +1080,129 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
             styles={styles}
           />
         </div>
+
+        {/* Health Summary */}
+        <div
+          className="rounded-xl border p-4 mb-4"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Heartbeat size={18} weight="duotone" style={{ color: styles.textPrimary }} />
+              <span className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+                {t('seller.orders.healthSummary')}
+              </span>
+            </div>
+            {stats.withExceptions > 0 && (
+              <span
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium"
+                style={{ backgroundColor: `${styles.error}15`, color: styles.error }}
+              >
+                <Lightning size={12} weight="fill" />
+                {stats.withExceptions} {t('seller.orders.activeExceptions')}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            <HealthStatCard
+              label={t('seller.orders.onTrack')}
+              value={stats.onTrack}
+              color={styles.success}
+              icon={ShieldCheck}
+              isActive={healthFilter === 'on_track'}
+              onClick={() => setHealthFilter(healthFilter === 'on_track' ? '' : 'on_track')}
+              styles={styles}
+            />
+            <HealthStatCard
+              label={t('seller.orders.atRisk')}
+              value={stats.atRisk}
+              color={styles.warning}
+              icon={Clock}
+              isActive={healthFilter === 'at_risk'}
+              onClick={() => setHealthFilter(healthFilter === 'at_risk' ? '' : 'at_risk')}
+              styles={styles}
+            />
+            <HealthStatCard
+              label={t('seller.orders.delayed')}
+              value={stats.delayed}
+              color="#F59E0B"
+              icon={Warning}
+              isActive={healthFilter === 'delayed'}
+              onClick={() => setHealthFilter(healthFilter === 'delayed' ? '' : 'delayed')}
+              styles={styles}
+            />
+            <HealthStatCard
+              label={t('seller.orders.critical')}
+              value={stats.critical}
+              color={styles.error}
+              icon={WarningCircle}
+              isActive={healthFilter === 'critical'}
+              onClick={() => setHealthFilter(healthFilter === 'critical' ? '' : 'critical')}
+              styles={styles}
+            />
+          </div>
+        </div>
+
+        {/* Exception Alert Banner */}
+        {showExceptionsBanner && ordersWithExceptions.length > 0 && (
+          <div
+            className="rounded-xl border p-4 mb-4"
+            style={{
+              backgroundColor: `${styles.error}08`,
+              borderColor: `${styles.error}30`,
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <Warning size={20} weight="fill" style={{ color: styles.error }} />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm mb-1" style={{ color: styles.error }}>
+                    {t('seller.orders.exceptionsAlert')}
+                  </p>
+                  <div className="space-y-1">
+                    {ordersWithExceptions.slice(0, 3).map((order) => (
+                      <div
+                        key={order.id}
+                        className="flex items-center gap-2 text-xs"
+                        style={{ color: styles.textSecondary }}
+                      >
+                        <span className="font-medium" style={{ color: styles.textPrimary }}>
+                          {order.orderNumber}
+                        </span>
+                        <span>-</span>
+                        <span>{order.exceptionMessage}</span>
+                        <button
+                          onClick={() => handleViewDetails(order)}
+                          className="font-medium underline"
+                          style={{ color: styles.info }}
+                        >
+                          {t('common.view')}
+                        </button>
+                      </div>
+                    ))}
+                    {ordersWithExceptions.length > 3 && (
+                      <p className="text-xs" style={{ color: styles.textMuted }}>
+                        +{ordersWithExceptions.length - 3} {t('seller.orders.moreExceptions')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExceptionsBanner(false)}
+                className="p-1 rounded"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filter Bar */}
         <div
@@ -808,40 +1286,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                             setShowBulkActions(false);
                           }}
                         />
-                        <MenuButton
-                          icon={Truck}
-                          label={t('seller.orders.shipOrder')}
-                          styles={styles}
-                          onClick={() => {
-                            const selectedIds = Object.keys(rowSelection);
-                            selectedIds.forEach((id) => {
-                              const order = orders.find((o) => o.id === id);
-                              if (order && canShipOrder(order)) {
-                                handleShipOrder(order);
-                              }
-                            });
-                            setRowSelection({});
-                            setShowBulkActions(false);
-                          }}
-                        />
-                        <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
-                        <MenuButton
-                          icon={XCircle}
-                          label={t('seller.orders.cancelOrder')}
-                          styles={styles}
-                          onClick={() => {
-                            const selectedIds = Object.keys(rowSelection);
-                            selectedIds.forEach((id) => {
-                              const order = orders.find((o) => o.id === id);
-                              if (order && canCancelOrder(order)) {
-                                handleCancelOrder(order);
-                              }
-                            });
-                            setRowSelection({});
-                            setShowBulkActions(false);
-                          }}
-                          danger
-                        />
+                        {/* Ship and Cancel disabled for bulk actions - require individual tracking/reason */}
                       </div>
                     </>
                   )}
@@ -883,9 +1328,10 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   { value: '', label: t('seller.orders.allStatus') },
                   { value: 'pending_confirmation', label: t('seller.orders.pendingConfirmation') },
                   { value: 'confirmed', label: t('seller.orders.confirmed') },
-                  { value: 'in_progress', label: t('seller.orders.inProgress') },
+                  { value: 'processing', label: t('seller.orders.processing') },
                   { value: 'shipped', label: t('seller.orders.shipped') },
                   { value: 'delivered', label: t('seller.orders.delivered') },
+                  { value: 'closed', label: t('seller.orders.closed') },
                   { value: 'cancelled', label: t('seller.orders.cancelled') },
                 ]}
                 styles={styles}
@@ -1079,10 +1525,609 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           setSelectedOrder(null);
         }}
         onConfirm={handleConfirmOrder}
-        onShip={handleShipOrder}
+        onShip={(order) => setShipDialogOrder(order)}
         onMarkDelivered={handleMarkDelivered}
-        onCancel={handleCancelOrder}
+        onCancel={(order) => setCancelDialogOrder(order)}
       />
+
+      {/* ========================================================================== */}
+      {/* Stage 5: Reject Order Dialog */}
+      {/* ========================================================================== */}
+      {rejectDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setRejectDialogOrder(null);
+              setRejectReason('');
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.error}15` }}>
+                  <ProhibitInset size={20} weight="fill" style={{ color: styles.error }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    {t('seller.orders.rejectOrder')}
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(rejectDialogOrder as any).orderNumber || rejectDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setRejectDialogOrder(null);
+                  setRejectReason('');
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm" style={{ color: styles.textSecondary }}>
+                {t('seller.orders.rejectReasonPrompt')}
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-lg border transition-colors resize-none"
+                style={{
+                  backgroundColor: styles.bgSecondary,
+                  borderColor: styles.borderLight,
+                  color: styles.textPrimary,
+                }}
+                placeholder={t('seller.orders.rejectReasonPlaceholder')}
+              />
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setRejectDialogOrder(null);
+                  setRejectReason('');
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={handleRejectOrder}
+                disabled={isActionLoading || !rejectReason.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.error, color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <ProhibitInset size={20} weight="fill" />
+                )}
+                {isActionLoading ? t('common.processing') : t('seller.orders.rejectOrder')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================== */}
+      {/* Stage 5: Ship Order Dialog */}
+      {/* ========================================================================== */}
+      {shipDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setShipDialogOrder(null);
+              setShipTrackingNumber('');
+              setShipCarrier('');
+              setShipEstimatedDelivery('');
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.info}15` }}>
+                  <Truck size={20} weight="fill" style={{ color: styles.info }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    {t('seller.orders.shipOrder')}
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(shipDialogOrder as any).orderNumber || shipDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShipDialogOrder(null);
+                  setShipTrackingNumber('');
+                  setShipCarrier('');
+                  setShipEstimatedDelivery('');
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                  {t('seller.orders.trackingNumber')} *
+                </label>
+                <input
+                  type="text"
+                  value={shipTrackingNumber}
+                  onChange={(e) => setShipTrackingNumber(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder={t('seller.orders.trackingNumberPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                  {t('seller.orders.carrier')}
+                </label>
+                <input
+                  type="text"
+                  value={shipCarrier}
+                  onChange={(e) => setShipCarrier(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder={t('seller.orders.carrierPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                  {t('seller.orders.estimatedDelivery')}
+                </label>
+                <input
+                  type="date"
+                  value={shipEstimatedDelivery}
+                  onChange={(e) => setShipEstimatedDelivery(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                />
+              </div>
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setShipDialogOrder(null);
+                  setShipTrackingNumber('');
+                  setShipCarrier('');
+                  setShipEstimatedDelivery('');
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={handleShipOrder}
+                disabled={isActionLoading || !shipTrackingNumber.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.info, color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <Truck size={20} weight="fill" />
+                )}
+                {isActionLoading ? t('common.processing') : t('seller.orders.shipOrder')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================== */}
+      {/* Stage 5: Cancel Order Dialog */}
+      {/* ========================================================================== */}
+      {cancelDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setCancelDialogOrder(null);
+              setCancelReason('');
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.error}15` }}>
+                  <XCircle size={20} weight="fill" style={{ color: styles.error }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    {t('seller.orders.cancelOrder')}
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(cancelDialogOrder as any).orderNumber || cancelDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setCancelDialogOrder(null);
+                  setCancelReason('');
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm" style={{ color: styles.textSecondary }}>
+                {t('seller.orders.cancelReasonPrompt')}
+              </p>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-lg border transition-colors resize-none"
+                style={{
+                  backgroundColor: styles.bgSecondary,
+                  borderColor: styles.borderLight,
+                  color: styles.textPrimary,
+                }}
+                placeholder={t('seller.orders.cancelReasonPlaceholder')}
+              />
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setCancelDialogOrder(null);
+                  setCancelReason('');
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                {t('common.back')}
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                disabled={isActionLoading || !cancelReason.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.error, color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <XCircle size={20} weight="fill" />
+                )}
+                {isActionLoading ? t('common.processing') : t('seller.orders.cancelOrder')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================== */}
+      {/* Confirm Order Dialog - Stage 8 Hardening */}
+      {/* ========================================================================== */}
+      {confirmDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setConfirmDialogOrder(null);
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.success}15` }}>
+                  <CheckCircle size={20} weight="fill" style={{ color: styles.success }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    Confirm this order?
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(confirmDialogOrder as any).orderNumber || confirmDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setConfirmDialogOrder(null);
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm" style={{ color: styles.textSecondary }}>
+                By confirming, you commit to preparing and shipping this order within the agreed timeframe.
+              </p>
+              <div
+                className="p-4 rounded-lg border"
+                style={{ borderColor: styles.borderLight, backgroundColor: styles.bgSecondary }}
+              >
+                <div className="flex justify-between text-sm mb-2">
+                  <span style={{ color: styles.textMuted }}>Item</span>
+                  <span style={{ color: styles.textPrimary }}>{(confirmDialogOrder as any).itemName || 'Order Item'}</span>
+                </div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span style={{ color: styles.textMuted }}>Quantity</span>
+                  <span style={{ color: styles.textPrimary }}>{confirmDialogOrder.quantity}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>Total</span>
+                  <span style={{ color: styles.textPrimary, fontWeight: 600 }}>
+                    {confirmDialogOrder.totalPrice?.toLocaleString()} {confirmDialogOrder.currency || 'SAR'}
+                  </span>
+                </div>
+              </div>
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setConfirmDialogOrder(null);
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleConfirmOrder(confirmDialogOrder);
+                  setConfirmDialogOrder(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.success, color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <CheckCircle size={20} weight="fill" />
+                )}
+                {isActionLoading ? 'Confirming...' : 'Confirm Order'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================== */}
+      {/* Start Processing Dialog - Stage 8 Hardening */}
+      {/* ========================================================================== */}
+      {processingDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setProcessingDialogOrder(null);
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#8B5CF615' }}>
+                  <Gear size={20} weight="fill" style={{ color: '#8B5CF6' }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    Start preparing this order?
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(processingDialogOrder as any).orderNumber || processingDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setProcessingDialogOrder(null);
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm" style={{ color: styles.textSecondary }}>
+                This marks the order as "Preparing" so the buyer knows you're working on it. You should begin picking and packing the items.
+              </p>
+              <div
+                className="p-4 rounded-lg border"
+                style={{ borderColor: styles.borderLight, backgroundColor: styles.bgSecondary }}
+              >
+                <div className="flex justify-between text-sm mb-2">
+                  <span style={{ color: styles.textMuted }}>Item</span>
+                  <span style={{ color: styles.textPrimary }}>{(processingDialogOrder as any).itemName || 'Order Item'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>Quantity</span>
+                  <span style={{ color: styles.textPrimary }}>{processingDialogOrder.quantity}</span>
+                </div>
+              </div>
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setProcessingDialogOrder(null);
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleStartProcessing(processingDialogOrder);
+                  setProcessingDialogOrder(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#8B5CF6', color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <Gear size={20} weight="fill" />
+                )}
+                {isActionLoading ? 'Starting...' : 'Start Preparing'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -1189,6 +2234,41 @@ const MenuButton: React.FC<{
   >
     <Icon size={14} />
     {label}
+  </button>
+);
+
+// Health Stat Card Component
+const HealthStatCard: React.FC<{
+  label: string;
+  value: number;
+  color: string;
+  icon: React.ElementType;
+  isActive: boolean;
+  onClick: () => void;
+  styles: ReturnType<typeof usePortal>['styles'];
+}> = ({ label, value, color, icon: Icon, isActive, onClick, styles }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-3 p-3 rounded-lg transition-all"
+    style={{
+      backgroundColor: isActive ? `${color}15` : styles.bgSecondary,
+      border: isActive ? `2px solid ${color}` : '2px solid transparent',
+    }}
+  >
+    <div
+      className="p-2 rounded-lg"
+      style={{ backgroundColor: `${color}15` }}
+    >
+      <Icon size={18} weight={isActive ? 'fill' : 'duotone'} style={{ color }} />
+    </div>
+    <div className="text-left">
+      <p className="text-xl font-bold tabular-nums" style={{ color: styles.textPrimary }}>
+        {value}
+      </p>
+      <p className="text-xs" style={{ color: styles.textMuted }}>
+        {label}
+      </p>
+    </div>
   </button>
 );
 

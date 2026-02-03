@@ -32,6 +32,19 @@ import {
   CaretRight,
   CheckSquare,
   Warning,
+  Copy,
+  Pause,
+  Play,
+  ClockCounterClockwise,
+  Fire,
+  TrendUp,
+  Bed,
+  WarningCircle,
+  ChartLine,
+  Clock,
+  Percent,
+  Info,
+  DotsThreeVertical,
 } from 'phosphor-react';
 import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
 import { usePortal } from '../../context/PortalContext';
@@ -68,7 +81,93 @@ interface Product {
   orders: number;
   rfqs: number;
   updatedAt: string;
+  // Enhanced Intelligence Fields
+  rfqsLast30Days?: number;
+  avgResponseTimeHours?: number;
+  conversionRate?: number;
+  isPaused?: boolean;
 }
+
+// Performance Signal Types
+type PerformanceSignal = 'dormant' | 'active' | 'hot';
+
+// Calculate performance signal based on activity
+const getPerformanceSignal = (product: Product): PerformanceSignal => {
+  const rfqs30d = product.rfqsLast30Days ?? product.rfqs;
+  const orders = product.orders;
+  const views = product.views;
+
+  // Hot: High RFQ activity (>5 RFQs in 30 days) or recent orders
+  if (rfqs30d > 5 || (orders > 0 && rfqs30d > 2)) return 'hot';
+
+  // Active: Some activity (any RFQs in 30 days or good views with RFQs)
+  if (rfqs30d > 0 || (views > 100 && product.rfqs > 0)) return 'active';
+
+  // Dormant: No activity
+  return 'dormant';
+};
+
+// Demand gap detection - products that need attention
+interface DemandGap {
+  type: 'rfq_no_order' | 'high_views_low_rfq' | 'low_stock_active' | 'slow_response';
+  severity: 'warning' | 'critical';
+  message: string;
+}
+
+const detectDemandGaps = (product: Product): DemandGap[] => {
+  const gaps: DemandGap[] = [];
+
+  // RFQs received but zero orders (conversion issue)
+  if (product.rfqs > 3 && product.orders === 0) {
+    gaps.push({
+      type: 'rfq_no_order',
+      severity: 'warning',
+      message: `${product.rfqs} RFQs but no orders - review pricing or response`
+    });
+  }
+
+  // High views but low RFQ ratio (listing quality issue)
+  if (product.views > 100 && product.rfqs < 2) {
+    gaps.push({
+      type: 'high_views_low_rfq',
+      severity: 'warning',
+      message: `${product.views} views but only ${product.rfqs} RFQs - improve listing details`
+    });
+  }
+
+  // Low stock with active RFQs
+  const rfqs30d = product.rfqsLast30Days ?? product.rfqs;
+  if (product.stock <= STOCK_LEVELS.LOW && product.stock > 0 && rfqs30d > 0) {
+    gaps.push({
+      type: 'low_stock_active',
+      severity: 'critical',
+      message: `Only ${product.stock} units left with active interest`
+    });
+  }
+
+  // Slow response time
+  const avgResponse = product.avgResponseTimeHours ?? 24;
+  if (avgResponse > 12 && rfqs30d > 2) {
+    gaps.push({
+      type: 'slow_response',
+      severity: 'warning',
+      message: `Avg response time ${avgResponse}h - faster responses win more orders`
+    });
+  }
+
+  return gaps;
+};
+
+// Check if row should be highlighted for urgency
+const getRowUrgency = (product: Product): 'high' | 'medium' | null => {
+  const gaps = detectDemandGaps(product);
+  const hasCritical = gaps.some(g => g.severity === 'critical');
+  const hasMultipleWarnings = gaps.filter(g => g.severity === 'warning').length >= 2;
+
+  if (hasCritical) return 'high';
+  if (hasMultipleWarnings) return 'medium';
+  return null;
+};
 
 interface ListingsProps {
   onNavigate: (page: string) => void;
@@ -212,6 +311,9 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       orders: 18,
       rfqs: 7,
       updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 6,
+      avgResponseTimeHours: 3.2,
+      conversionRate: 42.8,
     },
     {
       id: 'prod-002',
@@ -237,6 +339,9 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       orders: 156,
       rfqs: 23,
       updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 12,
+      avgResponseTimeHours: 2.1,
+      conversionRate: 67.8,
     },
     {
       id: 'prod-003',
@@ -262,6 +367,9 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       orders: 8,
       rfqs: 12,
       updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 4,
+      avgResponseTimeHours: 4.5,
+      conversionRate: 33.3,
     },
     {
       id: 'prod-004',
@@ -284,9 +392,12 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       visibility: 'rfq_only',
       image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=200&h=200&fit=crop',
       views: 234,
-      orders: 3,
+      orders: 0, // RFQs but no orders - demand gap!
       rfqs: 15,
       updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 8,
+      avgResponseTimeHours: 14.5, // Slow response - another demand gap
+      conversionRate: 0,
     },
     {
       id: 'prod-005',
@@ -346,7 +457,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       description: 'Double acting hydraulic cylinder, 500mm stroke',
       price: '1650.00',
       currency: 'SAR',
-      stock: 6,
+      stock: 6, // Low stock with active RFQs - demand gap!
       minOrderQty: 1,
       category: 'category.hydraulics',
       manufacturer: 'Parker',
@@ -362,6 +473,9 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       orders: 5,
       rfqs: 9,
       updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 5,
+      avgResponseTimeHours: 2.8,
+      conversionRate: 55.5,
     },
     {
       id: 'prod-008',
@@ -435,8 +549,11 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&h=200&fit=crop',
       views: 412,
       orders: 28,
-      rfqs: 11,
+      rfqs: 1, // High views but low RFQ - demand gap!
       updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      rfqsLast30Days: 0,
+      avgResponseTimeHours: 5.2,
+      conversionRate: 100,
     },
   ];
 
@@ -682,10 +799,14 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
         const categoryLabel = product.category.startsWith('category.')
           ? t(product.category)
           : product.category;
+        const demandGaps = detectDemandGaps(product);
+        const [showGapTooltip, setShowGapTooltip] = React.useState(false);
+        const hasCritical = demandGaps.some(g => g.severity === 'critical');
+
         return (
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden border"
+              className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden border relative"
               style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
             >
               {product.image ? (
@@ -695,11 +816,80 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                   <Cube size={18} style={{ color: styles.textMuted }} />
                 </div>
               )}
+              {product.isPaused && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                >
+                  <Pause size={14} weight="fill" style={{ color: '#fff' }} />
+                </div>
+              )}
             </div>
-            <div className="min-w-0">
-              <p className="font-medium truncate leading-tight" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-                {product.name}
-              </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium truncate leading-tight" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+                  {product.name}
+                </p>
+                {/* Demand Gap Badge */}
+                {demandGaps.length > 0 && (
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowGapTooltip(true)}
+                    onMouseLeave={() => setShowGapTooltip(false)}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
+                      style={{
+                        backgroundColor: hasCritical ? 'rgba(239,68,68,0.15)' : 'rgba(234,179,8,0.15)',
+                      }}
+                    >
+                      <WarningCircle
+                        size={12}
+                        weight="fill"
+                        style={{ color: hasCritical ? styles.error : '#EAB308' }}
+                      />
+                    </div>
+                    {/* Gap Tooltip */}
+                    {showGapTooltip && (
+                      <div
+                        className="absolute z-50 top-full mt-1 w-64 p-3 rounded-lg shadow-lg text-xs"
+                        style={{
+                          backgroundColor: styles.bgCard,
+                          border: `1px solid ${styles.border}`,
+                          left: 0,
+                        }}
+                      >
+                        <div className="font-semibold mb-2 flex items-center gap-1.5" style={{ color: styles.textPrimary }}>
+                          <ChartLine size={12} /> Demand Insights
+                        </div>
+                        <div className="space-y-2">
+                          {demandGaps.map((gap, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2 p-2 rounded"
+                              style={{
+                                backgroundColor: gap.severity === 'critical'
+                                  ? 'rgba(239,68,68,0.1)'
+                                  : 'rgba(234,179,8,0.1)',
+                              }}
+                            >
+                              <Info
+                                size={12}
+                                style={{
+                                  color: gap.severity === 'critical' ? styles.error : '#EAB308',
+                                  marginTop: 1,
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span style={{ color: styles.textSecondary }}>{gap.message}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
                 {product.sku}
               </p>
@@ -707,7 +897,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
           </div>
         );
       },
-      size: 260,
+      size: 280,
     }),
     columnHelper.accessor('category', {
       meta: { align: 'start' as const },
@@ -846,18 +1036,98 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       header: t('seller.listings.performance'),
       cell: ({ row }) => {
         const product = row.original;
+        const signal = getPerformanceSignal(product);
+        const [showTooltip, setShowTooltip] = React.useState(false);
+
+        const signalConfig = {
+          hot: { icon: Fire, color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: 'Hot' },
+          active: { icon: TrendUp, color: styles.success, bg: 'rgba(34,197,94,0.1)', label: 'Active' },
+          dormant: { icon: Bed, color: styles.textMuted, bg: styles.bgSecondary, label: 'Dormant' },
+        };
+
+        const config = signalConfig[signal];
+        const Icon = config.icon;
+        const rfqs30d = product.rfqsLast30Days ?? product.rfqs;
+        const avgResponse = product.avgResponseTimeHours ?? 24;
+        const conversion = product.conversionRate ?? (product.rfqs > 0 ? (product.orders / product.rfqs * 100) : 0);
+
         return (
-          <div className="flex items-center justify-center gap-3" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-            <span className="flex items-center gap-1">
-              <ShoppingCart size={11} /> {product.orders}
-            </span>
-            <span className="flex items-center gap-1">
-              <FileText size={11} /> {product.rfqs}
-            </span>
+          <div className="relative flex items-center justify-center">
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              {/* Signal Badge */}
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+                style={{ backgroundColor: config.bg, color: config.color }}
+              >
+                <Icon size={10} weight="fill" />
+                {config.label}
+              </span>
+
+              {/* Quick Stats */}
+              <div className="flex items-center gap-2" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
+                <span className="flex items-center gap-0.5">
+                  <ShoppingCart size={10} /> {product.orders}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <FileText size={10} /> {product.rfqs}
+                </span>
+              </div>
+            </div>
+
+            {/* Tooltip */}
+            {showTooltip && (
+              <div
+                className="absolute z-50 top-full mt-2 w-56 p-3 rounded-lg shadow-lg text-xs"
+                style={{
+                  backgroundColor: styles.bgCard,
+                  border: `1px solid ${styles.border}`,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                <div className="font-semibold mb-2 pb-2 border-b" style={{ color: styles.textPrimary, borderColor: styles.border }}>
+                  Performance Insights
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
+                      <FileText size={12} /> RFQs (30 days)
+                    </span>
+                    <span className="font-medium" style={{ color: styles.textPrimary }}>{rfqs30d}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
+                      <ShoppingCart size={12} /> Orders Converted
+                    </span>
+                    <span className="font-medium" style={{ color: styles.textPrimary }}>{product.orders}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
+                      <Percent size={12} /> Conversion Rate
+                    </span>
+                    <span className="font-medium" style={{ color: conversion > 30 ? styles.success : styles.textPrimary }}>
+                      {conversion.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
+                      <Clock size={12} /> Avg Response
+                    </span>
+                    <span className="font-medium" style={{ color: avgResponse < 6 ? styles.success : avgResponse > 12 ? styles.error : styles.textPrimary }}>
+                      {avgResponse.toFixed(1)}h
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       },
-      size: 100,
+      size: 150,
     }),
     columnHelper.accessor('updatedAt', {
       meta: { align: 'center' as const },
@@ -875,9 +1145,46 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       header: t('common.actions'),
       cell: ({ row }) => {
         const product = row.original;
+        const [showMenu, setShowMenu] = React.useState(false);
+
+        const handleDuplicate = () => {
+          const duplicatedProduct: Product = {
+            ...product,
+            id: `prod-${Date.now()}`,
+            name: `${product.name} (Copy)`,
+            sku: `${product.sku}-COPY`,
+            status: 'draft',
+            visibility: 'hidden',
+            views: 0,
+            orders: 0,
+            rfqs: 0,
+            rfqsLast30Days: 0,
+            updatedAt: new Date().toISOString(),
+          };
+          setProducts((prev) => [duplicatedProduct, ...prev]);
+          setShowMenu(false);
+        };
+
+        const handleToggleVisibility = () => {
+          const newVisibility: Visibility = product.visibility === 'public' ? 'hidden' : 'public';
+          handleUpdateProduct(product.id, { visibility: newVisibility });
+          setShowMenu(false);
+        };
+
+        const handleTogglePause = () => {
+          handleUpdateProduct(product.id, { isPaused: !product.isPaused } as any);
+          setShowMenu(false);
+        };
+
+        const handleViewRFQHistory = () => {
+          // Navigate to RFQs page filtered by this item
+          onNavigate(`rfqs?itemId=${product.id}`);
+          setShowMenu(false);
+        };
 
         return (
-          <div className="flex items-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-1 relative">
+            {/* Quick Edit */}
             <button
               onClick={() => handleEditProduct(product)}
               className="p-1.5 rounded transition-colors"
@@ -894,26 +1201,92 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
             >
               <PencilSimple size={16} />
             </button>
-            <button
-              onClick={() => setDeleteConfirm({ id: product.id, name: product.name })}
-              className="p-1.5 rounded transition-colors"
-              style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = styles.bgHover;
-                e.currentTarget.style.color = styles.error;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = styles.textMuted;
-              }}
-              title={t('common.delete')}
-            >
-              <Trash size={16} />
-            </button>
+
+            {/* More Actions Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1.5 rounded transition-colors"
+                style={{ color: styles.textMuted }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = styles.bgHover;
+                  e.currentTarget.style.color = styles.textPrimary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = styles.textMuted;
+                }}
+                title="More actions"
+              >
+                <DotsThreeVertical size={16} weight="bold" />
+              </button>
+
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <div
+                    className={`absolute top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[180px] ${isRtl ? 'left-0' : 'right-0'}`}
+                    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+                  >
+                    {/* Duplicate with Price Adjustment */}
+                    <MenuButton
+                      icon={Copy}
+                      label={t('seller.listings.duplicate') || 'Duplicate'}
+                      styles={styles}
+                      onClick={handleDuplicate}
+                    />
+
+                    {/* Toggle Visibility */}
+                    <MenuButton
+                      icon={product.visibility === 'public' ? EyeSlash : Eye}
+                      label={product.visibility === 'public'
+                        ? (t('seller.listings.makeHidden') || 'Hide from Marketplace')
+                        : (t('seller.listings.makePublic') || 'Show on Marketplace')
+                      }
+                      styles={styles}
+                      onClick={handleToggleVisibility}
+                    />
+
+                    {/* Pause/Resume Availability */}
+                    <MenuButton
+                      icon={product.isPaused ? Play : Pause}
+                      label={product.isPaused
+                        ? (t('seller.listings.resume') || 'Resume Availability')
+                        : (t('seller.listings.pause') || 'Pause Availability')
+                      }
+                      styles={styles}
+                      onClick={handleTogglePause}
+                    />
+
+                    {/* View RFQ History */}
+                    <MenuButton
+                      icon={ClockCounterClockwise}
+                      label={t('seller.listings.viewRFQHistory') || 'View RFQ History'}
+                      styles={styles}
+                      onClick={handleViewRFQHistory}
+                    />
+
+                    <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
+
+                    {/* Delete */}
+                    <MenuButton
+                      icon={Trash}
+                      label={t('common.delete')}
+                      styles={styles}
+                      onClick={() => {
+                        setDeleteConfirm({ id: product.id, name: product.name });
+                        setShowMenu(false);
+                      }}
+                      danger
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         );
       },
-      size: 80,
+      size: 100,
     }),
   ], [styles, t, editingCell, editValue, isRtl]);
 
@@ -1253,15 +1626,27 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                   ))}
                 </thead>
                 <tbody>
-                  {table.getRowModel().rows.map((row, index) => (
+                  {table.getRowModel().rows.map((row, index) => {
+                    const urgency = getRowUrgency(row.original);
+                    const urgencyBg = urgency === 'high'
+                      ? (styles.isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)')
+                      : urgency === 'medium'
+                        ? (styles.isDark ? 'rgba(234,179,8,0.08)' : 'rgba(234,179,8,0.05)')
+                        : 'transparent';
+                    const selectedBg = styles.isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)';
+
+                    return (
                     <tr
                       key={row.id}
                       className="group transition-colors"
                       style={{
                         borderBottom: index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
-                        backgroundColor: row.getIsSelected()
-                          ? (styles.isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)')
-                          : 'transparent',
+                        backgroundColor: row.getIsSelected() ? selectedBg : urgencyBg,
+                        borderLeft: urgency === 'high'
+                          ? `3px solid ${styles.error}`
+                          : urgency === 'medium'
+                            ? `3px solid #EAB308`
+                            : 'none',
                       }}
                       onMouseEnter={(e) => {
                         if (!row.getIsSelected()) {
@@ -1270,7 +1655,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                       }}
                       onMouseLeave={(e) => {
                         if (!row.getIsSelected()) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.backgroundColor = urgencyBg;
                         }
                       }}
                     >
@@ -1287,7 +1672,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

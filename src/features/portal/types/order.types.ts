@@ -338,3 +338,229 @@ export interface OrderStats {
   totalRevenue: number;
   currency: string;
 }
+
+export interface BuyerDashboardSummary {
+  totalPurchaseSpend: number;
+  totalPurchaseOrders: number;
+  activeSuppliers: number;
+  avgPurchaseValue: number;
+  currency: string;
+  trends: {
+    spend: number;
+    orders: number;
+    suppliers: number;
+    avgValue: number;
+  };
+}
+
+// =============================================================================
+// Order Health Intelligence Types
+// =============================================================================
+
+/**
+ * Order health status
+ */
+export type OrderHealthStatus = 'on_track' | 'at_risk' | 'delayed' | 'critical';
+
+/**
+ * Exception severity levels
+ */
+export type ExceptionSeverity = 'warning' | 'error' | 'critical';
+
+/**
+ * Exception types
+ */
+export type ExceptionType =
+  | 'late_confirmation'
+  | 'shipping_delay'
+  | 'payment_overdue'
+  | 'partial_fulfillment'
+  | 'delivery_failed'
+  | 'customer_complaint';
+
+/**
+ * Active exception on an order
+ */
+export interface OrderException {
+  type: ExceptionType;
+  severity: ExceptionSeverity;
+  message: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+/**
+ * SLA deadlines for an order
+ */
+export interface OrderSLA {
+  confirmationDeadline?: string;
+  shippingDeadline?: string;
+  deliveryDeadline?: string;
+}
+
+/**
+ * Timeline metrics for an order
+ */
+export interface OrderTimeline {
+  daysToConfirm?: number;
+  daysToShip?: number;
+  daysToDeliver?: number;
+}
+
+/**
+ * Order with health data
+ */
+export interface OrderWithHealth extends Order {
+  // Health indicators
+  healthStatus: OrderHealthStatus;
+  healthScore: number;  // 0-100, higher is healthier
+  healthLastChecked?: string;
+
+  // Exception data
+  hasException: boolean;
+  exceptionType?: ExceptionType;
+  exceptionSeverity?: ExceptionSeverity;
+  exceptionMessage?: string;
+  exceptionCreatedAt?: string;
+  exceptionResolvedAt?: string;
+
+  // SLA tracking
+  sla: OrderSLA;
+  timeline: OrderTimeline;
+}
+
+/**
+ * Health summary for dashboard
+ */
+export interface OrderHealthSummary {
+  onTrack: number;
+  atRisk: number;
+  delayed: number;
+  critical: number;
+  activeExceptions: number;
+}
+
+/**
+ * Exception item for list display
+ */
+export interface OrderExceptionItem {
+  id: string;
+  orderNumber: string;
+  itemName: string;
+  buyerName?: string;
+  status: OrderStatus;
+  exceptionType: ExceptionType;
+  exceptionSeverity: ExceptionSeverity;
+  exceptionMessage: string;
+  exceptionCreatedAt: string;
+  createdAt: string;
+}
+
+/**
+ * Health rules configuration
+ */
+export interface OrderHealthRules {
+  confirmationSlaHours: number;
+  shippingSlaDays: number;
+  deliverySlaDays: number;
+  atRiskThreshold: number;   // percentage
+  delayedThreshold: number;  // percentage
+}
+
+/**
+ * Get health status display configuration
+ */
+export function getHealthStatusConfig(status: OrderHealthStatus): {
+  label: string;
+  labelKey: string;
+  color: 'success' | 'warning' | 'error';
+  bgColor: string;
+  textColor: string;
+  icon: string;
+} {
+  const configs: Record<OrderHealthStatus, ReturnType<typeof getHealthStatusConfig>> = {
+    on_track: {
+      label: 'On Track',
+      labelKey: 'seller.orders.onTrack',
+      color: 'success',
+      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      textColor: 'text-green-700 dark:text-green-400',
+      icon: 'CheckCircle',
+    },
+    at_risk: {
+      label: 'At Risk',
+      labelKey: 'seller.orders.atRisk',
+      color: 'warning',
+      bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+      textColor: 'text-yellow-700 dark:text-yellow-400',
+      icon: 'AlertTriangle',
+    },
+    delayed: {
+      label: 'Delayed',
+      labelKey: 'seller.orders.delayed',
+      color: 'error',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+      textColor: 'text-orange-700 dark:text-orange-400',
+      icon: 'Clock',
+    },
+    critical: {
+      label: 'Critical',
+      labelKey: 'seller.orders.critical',
+      color: 'error',
+      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      textColor: 'text-red-700 dark:text-red-400',
+      icon: 'AlertCircle',
+    },
+  };
+  return configs[status];
+}
+
+/**
+ * Get exception severity display configuration
+ */
+export function getExceptionSeverityConfig(severity: ExceptionSeverity): {
+  label: string;
+  labelKey: string;
+  color: 'warning' | 'error';
+  bgColor: string;
+} {
+  const configs: Record<ExceptionSeverity, ReturnType<typeof getExceptionSeverityConfig>> = {
+    warning: {
+      label: 'Warning',
+      labelKey: 'seller.orders.exceptionWarning',
+      color: 'warning',
+      bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    },
+    error: {
+      label: 'Error',
+      labelKey: 'seller.orders.exceptionError',
+      color: 'error',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+    },
+    critical: {
+      label: 'Critical',
+      labelKey: 'seller.orders.exceptionCritical',
+      color: 'error',
+      bgColor: 'bg-red-100 dark:bg-red-900/30',
+    },
+  };
+  return configs[severity];
+}
+
+/**
+ * Get exception type display label
+ */
+export function getExceptionTypeLabel(type: ExceptionType): {
+  label: string;
+  labelKey: string;
+} {
+  const labels: Record<ExceptionType, ReturnType<typeof getExceptionTypeLabel>> = {
+    late_confirmation: { label: 'Late Confirmation', labelKey: 'seller.orders.lateConfirmation' },
+    shipping_delay: { label: 'Shipping Delay', labelKey: 'seller.orders.shippingDelay' },
+    payment_overdue: { label: 'Payment Overdue', labelKey: 'seller.orders.paymentOverdue' },
+    partial_fulfillment: { label: 'Partial Fulfillment', labelKey: 'seller.orders.partialFulfillment' },
+    delivery_failed: { label: 'Delivery Failed', labelKey: 'seller.orders.deliveryFailed' },
+    customer_complaint: { label: 'Customer Complaint', labelKey: 'seller.orders.customerComplaint' },
+  };
+  return labels[type];
+}

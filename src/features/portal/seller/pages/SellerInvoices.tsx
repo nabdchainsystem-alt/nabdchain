@@ -1,0 +1,973 @@
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useAuth } from '../../../../auth-adapter';
+import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
+import { marketplacePaymentService } from '../../services/marketplacePaymentService';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  createColumnHelper,
+  SortingState,
+} from '@tanstack/react-table';
+import {
+  MagnifyingGlass,
+  CaretDown,
+  CaretUp,
+  Eye,
+  CheckCircle,
+  XCircle,
+  X,
+  Funnel,
+  CurrencyDollar,
+  Warning,
+  Clock,
+  PaperPlaneTilt,
+  Receipt,
+  Spinner,
+  CaretRight,
+  DotsThreeVertical,
+} from 'phosphor-react';
+import { Button, EmptyState } from '../../components';
+import {
+  Select,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../../components/ui';
+import { usePortal } from '../../context/PortalContext';
+import {
+  MarketplaceInvoice,
+  MarketplacePayment,
+  InvoiceStatus,
+  InvoiceStats,
+  getInvoiceStatusConfig,
+  getPaymentStatusConfig,
+  formatInvoiceAmount,
+  getDaysUntilDue,
+} from '../../types/invoice.types';
+
+interface SellerInvoicesProps {
+  onNavigate: (page: string) => void;
+}
+
+const formatRelativeTime = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+};
+
+const formatDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+// Quick Stat Component
+const QuickStat: React.FC<{
+  label: string;
+  value: string | number;
+  color?: string;
+  styles: ReturnType<typeof usePortal>['styles'];
+  warning?: boolean;
+}> = ({ label, value, color, styles, warning }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-sm" style={{ color: styles.textMuted }}>{label}:</span>
+    <span
+      className={`text-sm font-semibold ${warning ? 'flex items-center gap-1' : ''}`}
+      style={{ color: color || styles.textPrimary }}
+    >
+      {warning && <Warning size={12} />}
+      {value}
+    </span>
+  </div>
+);
+
+// Status badge component
+const StatusBadge: React.FC<{ status: InvoiceStatus; styles: ReturnType<typeof usePortal>['styles'] }> = ({ status, styles }) => {
+  const config = getInvoiceStatusConfig(status);
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+      style={{
+        backgroundColor: status === 'paid' ? 'rgba(34,197,94,0.1)' :
+          status === 'overdue' ? 'rgba(239,68,68,0.1)' :
+          status === 'issued' ? 'rgba(59,130,246,0.1)' :
+          status === 'cancelled' ? 'rgba(107,114,128,0.1)' :
+          styles.bgSecondary,
+        color: status === 'paid' ? styles.success :
+          status === 'overdue' ? styles.error :
+          status === 'issued' ? styles.info :
+          status === 'cancelled' ? styles.textMuted :
+          styles.textSecondary,
+      }}
+    >
+      {config.label}
+    </span>
+  );
+};
+
+const columnHelper = createColumnHelper<MarketplaceInvoice>();
+
+export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) => {
+  const { getToken } = useAuth();
+  const { styles, t, direction } = usePortal();
+  const isRtl = direction === 'rtl';
+
+  // State
+  const [invoices, setInvoices] = useState<MarketplaceInvoice[]>([]);
+  const [stats, setStats] = useState<InvoiceStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+
+  // Detail panel
+  const [selectedInvoice, setSelectedInvoice] = useState<MarketplaceInvoice | null>(null);
+  const [selectedPayments, setSelectedPayments] = useState<MarketplacePayment[]>([]);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+
+  // Action states
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || statusFilter !== 'all';
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+  };
+
+  // Load data
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = await getToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const [invoicesRes, statsRes] = await Promise.all([
+        marketplaceInvoiceService.getSellerInvoices(token, {
+          status: statusFilter === 'all' ? undefined : statusFilter as InvoiceStatus,
+          search: searchQuery || undefined,
+        }),
+        marketplaceInvoiceService.getSellerInvoiceStats(token),
+      ]);
+
+      setInvoices(invoicesRes.invoices);
+      setStats(statsRes);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invoices');
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Load payments when invoice selected
+  const loadInvoicePayments = useCallback(async (invoiceId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const payments = await marketplacePaymentService.getInvoicePayments(token, invoiceId);
+      setSelectedPayments(payments);
+    } catch (err) {
+      console.error('Failed to load payments:', err);
+    }
+  }, [getToken]);
+
+  // Handle view invoice
+  const handleViewInvoice = async (invoice: MarketplaceInvoice) => {
+    setSelectedInvoice(invoice);
+    setShowDetailPanel(true);
+    await loadInvoicePayments(invoice.id);
+  };
+
+  // Handle issue invoice
+  const handleIssueInvoice = async (invoiceId: string) => {
+    try {
+      setActionLoading(invoiceId);
+      const token = await getToken();
+      if (!token) return;
+      await marketplaceInvoiceService.issueInvoice(token, invoiceId);
+      await loadData();
+      if (selectedInvoice?.id === invoiceId) {
+        const updated = await marketplaceInvoiceService.getSellerInvoice(token, invoiceId);
+        if (updated) setSelectedInvoice(updated);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to issue invoice');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle cancel invoice
+  const handleCancelInvoice = async () => {
+    if (!selectedInvoice || !cancelReason.trim()) return;
+    try {
+      setActionLoading(selectedInvoice.id);
+      const token = await getToken();
+      if (!token) return;
+      await marketplaceInvoiceService.cancelInvoice(token, selectedInvoice.id, cancelReason);
+      setShowCancelDialog(false);
+      setCancelReason('');
+      await loadData();
+      setShowDetailPanel(false);
+      setSelectedInvoice(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel invoice');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle confirm payment
+  const handleConfirmPayment = async (paymentId: string) => {
+    try {
+      setActionLoading(paymentId);
+      const token = await getToken();
+      if (!token) return;
+      await marketplacePaymentService.confirmPayment(token, paymentId);
+      await loadData();
+      if (selectedInvoice) {
+        await loadInvoicePayments(selectedInvoice.id);
+        const updated = await marketplaceInvoiceService.getSellerInvoice(token, selectedInvoice.id);
+        if (updated) setSelectedInvoice(updated);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm payment');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Table columns
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('invoiceNumber', {
+        meta: { align: 'start' as const },
+        header: 'Invoice',
+        cell: (info) => (
+          <div>
+            <div className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+              {info.getValue()}
+            </div>
+            <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.orderNumber}</div>
+          </div>
+        ),
+        size: 140,
+      }),
+      columnHelper.accessor('buyerName', {
+        meta: { align: 'start' as const },
+        header: 'Customer',
+        cell: (info) => (
+          <div>
+            <div style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>{info.getValue()}</div>
+            {info.row.original.buyerCompany && (
+              <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.buyerCompany}</div>
+            )}
+          </div>
+        ),
+        size: 160,
+      }),
+      columnHelper.accessor('totalAmount', {
+        meta: { align: 'end' as const },
+        header: 'Amount',
+        cell: (info) => (
+          <div className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+            {formatInvoiceAmount(info.getValue(), info.row.original.currency)}
+          </div>
+        ),
+        size: 100,
+      }),
+      columnHelper.accessor('status', {
+        meta: { align: 'center' as const },
+        header: 'Status',
+        cell: (info) => <StatusBadge status={info.getValue()} styles={styles} />,
+        size: 100,
+      }),
+      columnHelper.accessor('dueDate', {
+        meta: { align: 'center' as const },
+        header: 'Due Date',
+        cell: (info) => {
+          const dueDate = info.getValue();
+          if (!dueDate) return <span style={{ color: styles.textMuted }}>-</span>;
+          const daysUntil = getDaysUntilDue(dueDate);
+          const isOverdue = daysUntil < 0;
+          const isUrgent = daysUntil >= 0 && daysUntil <= 7;
+          return (
+            <div>
+              <div style={{
+                color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textPrimary,
+                fontSize: '0.79rem',
+              }}>
+                {formatDate(dueDate)}
+              </div>
+              {info.row.original.status === 'issued' && (
+                <div className="text-xs" style={{
+                  color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textMuted,
+                }}>
+                  {isOverdue ? `${Math.abs(daysUntil)} days overdue` : `${daysUntil} days left`}
+                </div>
+              )}
+            </div>
+          );
+        },
+        size: 110,
+      }),
+      columnHelper.accessor('createdAt', {
+        meta: { align: 'center' as const },
+        header: 'Created',
+        cell: (info) => (
+          <span style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
+            {formatRelativeTime(info.getValue())}
+          </span>
+        ),
+        size: 80,
+      }),
+      columnHelper.display({
+        id: 'actions',
+        meta: { align: 'center' as const },
+        header: '',
+        cell: (info) => {
+          const invoice = info.row.original;
+          return (
+            <div className="flex items-center justify-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewInvoice(invoice);
+                }}
+                className="p-1.5 rounded transition-colors"
+                style={{ color: styles.textMuted }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = styles.bgHover;
+                  e.currentTarget.style.color = styles.info;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = styles.textMuted;
+                }}
+                title="View details"
+              >
+                <Eye size={16} />
+              </button>
+
+              {invoice.status === 'draft' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 rounded transition-colors"
+                      style={{ color: styles.textMuted }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = styles.bgHover;
+                        e.currentTarget.style.color = styles.textPrimary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = styles.textMuted;
+                      }}
+                    >
+                      <DotsThreeVertical size={16} weight="bold" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={isRtl ? 'start' : 'end'}>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIssueInvoice(invoice.id);
+                      }}
+                      disabled={actionLoading === invoice.id}
+                    >
+                      <PaperPlaneTilt size={14} />
+                      Issue Invoice
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      destructive
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedInvoice(invoice);
+                        setShowCancelDialog(true);
+                      }}
+                    >
+                      <XCircle size={14} />
+                      Cancel Invoice
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          );
+        },
+        size: 80,
+      }),
+    ],
+    [styles, actionLoading, isRtl]
+  );
+
+  // Filter invoices
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((inv) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          inv.invoiceNumber.toLowerCase().includes(query) ||
+          inv.orderNumber.toLowerCase().includes(query) ||
+          inv.buyerName.toLowerCase().includes(query) ||
+          (inv.buyerCompany?.toLowerCase().includes(query) ?? false);
+        if (!matchesSearch) return false;
+      }
+      return true;
+    });
+  }, [invoices, searchQuery]);
+
+  // Table instance
+  const table = useReactTable<MarketplaceInvoice>({
+    data: filteredInvoices,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  // Render
+  return (
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
+      <div className="px-6 py-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold" style={{ color: styles.textPrimary }}>
+              Invoices
+            </h1>
+            <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
+              Manage your marketplace invoices
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        {stats && (
+          <div className={`flex items-center gap-6 mb-6 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
+            <QuickStat label="Total" value={stats.total} styles={styles} />
+            <QuickStat label="Pending" value={stats.issued} color="#F59E0B" styles={styles} />
+            {stats.overdue > 0 && (
+              <QuickStat label="Overdue" value={stats.overdue} color={styles.error} styles={styles} warning />
+            )}
+            <QuickStat label="Paid" value={stats.paid} color={styles.success} styles={styles} />
+            <QuickStat
+              label="Outstanding"
+              value={formatInvoiceAmount(stats.totalOutstanding, stats.currency)}
+              color={styles.info}
+              styles={styles}
+            />
+          </div>
+        )}
+
+        {/* Filter Bar */}
+        <div
+          className="rounded-xl border mb-4"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          {/* Filter Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
+            <button
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="flex items-center gap-2 text-sm font-medium"
+              style={{ color: styles.textPrimary }}
+            >
+              <Funnel size={16} />
+              Filters
+              <CaretRight
+                size={14}
+                className={`transition-transform ${filtersExpanded ? 'rotate-90' : ''}`}
+                style={{ color: styles.textMuted }}
+              />
+              {hasActiveFilters && (
+                <span
+                  className="px-1.5 py-0.5 rounded text-xs"
+                  style={{ backgroundColor: styles.info, color: '#fff' }}
+                >
+                  Active
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Filter Controls */}
+          {filtersExpanded && (
+            <div className="px-4 py-3 flex flex-wrap items-center gap-3">
+              {/* Search */}
+              <div
+                className="flex items-center gap-2 px-3 h-9 rounded-lg border flex-1 min-w-[200px] max-w-[300px]"
+                style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary }}
+              >
+                <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
+                <input
+                  type="text"
+                  placeholder="Search invoices..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="outline-none text-sm bg-transparent flex-1"
+                  style={{ color: styles.textPrimary }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} style={{ color: styles.textMuted }}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Status */}
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="Status"
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'issued', label: 'Issued' },
+                  { value: 'paid', label: 'Paid' },
+                  { value: 'overdue', label: 'Overdue' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ]}
+              />
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded"
+                  style={{ color: styles.error }}
+                >
+                  <X size={12} /> Clear all
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div
+            className="mb-4 p-4 rounded-lg border flex items-center justify-between"
+            style={{
+              backgroundColor: 'rgba(239,68,68,0.1)',
+              borderColor: styles.error,
+              color: styles.error,
+            }}
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Table */}
+        {loading ? (
+          <div
+            className="rounded-xl border py-16 flex items-center justify-center"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <Spinner size={32} className="animate-spin" style={{ color: styles.info }} />
+          </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div
+            className="rounded-xl border py-16"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <EmptyState
+              icon={Receipt}
+              title="No invoices yet"
+              description="Invoices are automatically generated when orders are delivered."
+            />
+          </div>
+        ) : (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 z-10">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr
+                      key={headerGroup.id}
+                      style={{
+                        backgroundColor: styles.tableHeader,
+                        borderBottom: `1px solid ${styles.tableBorder}`,
+                      }}
+                    >
+                      {headerGroup.headers.map((header) => {
+                        const align = (header.column.columnDef.meta as { align?: string })?.align || 'start';
+                        return (
+                          <th
+                            key={header.id}
+                            className="px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
+                            style={{
+                              color: styles.textMuted,
+                              width: header.getSize(),
+                              textAlign: align as 'start' | 'center' | 'end',
+                            }}
+                          >
+                            {header.isPlaceholder ? null : (
+                              <div
+                                className={`flex items-center gap-1 ${
+                                  align === 'center' ? 'justify-center' : align === 'end' ? 'justify-end' : ''
+                                } ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {header.column.getCanSort() && (
+                                  <span className="flex flex-col -space-y-1 ml-0.5">
+                                    {header.column.getIsSorted() === 'asc' ? (
+                                      <CaretUp size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    ) : header.column.getIsSorted() === 'desc' ? (
+                                      <CaretDown size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    ) : (
+                                      <>
+                                        <CaretUp size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                        <CaretDown size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                      </>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row, index) => (
+                    <tr
+                      key={row.id}
+                      className="group transition-colors cursor-pointer"
+                      style={{
+                        borderBottom: index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
+                      }}
+                      onClick={() => handleViewInvoice(row.original)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = styles.tableRowHover;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const align = (cell.column.columnDef.meta as { align?: string })?.align || 'start';
+                        return (
+                          <td
+                            key={cell.id}
+                            className="px-4 py-3"
+                            style={{
+                              width: cell.column.getSize(),
+                              verticalAlign: 'middle',
+                              textAlign: align as 'start' | 'center' | 'end',
+                            }}
+                            onClick={(e) => cell.column.id === 'actions' && e.stopPropagation()}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-4 py-3 flex items-center justify-between text-sm"
+              style={{
+                borderTop: `1px solid ${styles.tableBorder}`,
+                backgroundColor: styles.tableHeader,
+                color: styles.textMuted,
+              }}
+            >
+              <span>
+                Showing {filteredInvoices.length} of {invoices.length} invoices
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Detail panel */}
+      {showDetailPanel && selectedInvoice && (
+        <div
+          className="fixed right-0 top-0 h-full w-96 border-l shadow-xl z-50 overflow-auto"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <div
+            className="p-4 border-b flex items-center justify-between"
+            style={{ borderColor: styles.border }}
+          >
+            <h2 className="font-semibold" style={{ color: styles.textPrimary }}>Invoice Details</h2>
+            <button
+              onClick={() => {
+                setShowDetailPanel(false);
+                setSelectedInvoice(null);
+              }}
+              className="p-1 rounded transition-colors"
+              style={{ color: styles.textMuted }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-6">
+            {/* Invoice header */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
+                  {selectedInvoice.invoiceNumber}
+                </span>
+                <StatusBadge status={selectedInvoice.status} styles={styles} />
+              </div>
+              <p className="text-sm" style={{ color: styles.textMuted }}>Order: {selectedInvoice.orderNumber}</p>
+            </div>
+
+            {/* Amount */}
+            <div className="rounded-lg p-4" style={{ backgroundColor: styles.bgSecondary }}>
+              <div className="flex justify-between text-sm mb-2">
+                <span style={{ color: styles.textMuted }}>Subtotal</span>
+                <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(selectedInvoice.subtotal, selectedInvoice.currency)}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-2">
+                <span style={{ color: styles.textMuted }}>VAT ({selectedInvoice.vatRate}%)</span>
+                <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(selectedInvoice.vatAmount, selectedInvoice.currency)}</span>
+              </div>
+              <div
+                className="flex justify-between font-semibold text-lg border-t pt-2 mt-2"
+                style={{ borderColor: styles.border, color: styles.textPrimary }}
+              >
+                <span>Total</span>
+                <span>{formatInvoiceAmount(selectedInvoice.totalAmount, selectedInvoice.currency)}</span>
+              </div>
+              {selectedInvoice.paidAmount !== undefined && selectedInvoice.paidAmount > 0 && (
+                <div className="flex justify-between text-sm mt-2" style={{ color: styles.success }}>
+                  <span>Paid</span>
+                  <span>-{formatInvoiceAmount(selectedInvoice.paidAmount, selectedInvoice.currency)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Customer */}
+            <div>
+              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Customer</h3>
+              <p style={{ color: styles.textPrimary }}>{selectedInvoice.buyerName}</p>
+              {selectedInvoice.buyerCompany && (
+                <p className="text-sm" style={{ color: styles.textMuted }}>{selectedInvoice.buyerCompany}</p>
+              )}
+            </div>
+
+            {/* Due date */}
+            {selectedInvoice.dueDate && (
+              <div>
+                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Due Date</h3>
+                <p style={{ color: styles.textPrimary }}>{formatDate(selectedInvoice.dueDate)}</p>
+              </div>
+            )}
+
+            {/* Payments */}
+            {selectedPayments.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Payments</h3>
+                <div className="space-y-2">
+                  {selectedPayments.map((payment) => {
+                    const statusConfig = getPaymentStatusConfig(payment.status);
+                    return (
+                      <div key={payment.id} className="rounded-lg p-3" style={{ backgroundColor: styles.bgSecondary }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium" style={{ color: styles.textPrimary }}>{payment.paymentNumber}</span>
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full"
+                            style={{
+                              backgroundColor: payment.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
+                              color: payment.status === 'confirmed' ? styles.success : '#F59E0B',
+                            }}
+                          >
+                            {statusConfig.label}
+                          </span>
+                        </div>
+                        <div className="text-sm" style={{ color: styles.textMuted }}>
+                          {formatInvoiceAmount(payment.amount, payment.currency)}
+                        </div>
+                        {payment.bankReference && (
+                          <div className="text-xs mt-1" style={{ color: styles.textMuted }}>
+                            Ref: {payment.bankReference}
+                          </div>
+                        )}
+                        {payment.status === 'pending' && (
+                          <Button
+                            onClick={() => handleConfirmPayment(payment.id)}
+                            disabled={actionLoading === payment.id}
+                            className="mt-2 w-full"
+                          >
+                            {actionLoading === payment.id ? (
+                              <Spinner size={16} className="animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle size={16} className="mr-2" />
+                                Confirm Payment
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="space-y-2">
+              {selectedInvoice.status === 'draft' && (
+                <>
+                  <Button
+                    onClick={() => handleIssueInvoice(selectedInvoice.id)}
+                    disabled={actionLoading === selectedInvoice.id}
+                    className="w-full"
+                  >
+                    {actionLoading === selectedInvoice.id ? (
+                      <Spinner size={18} className="animate-spin" />
+                    ) : (
+                      <>
+                        <PaperPlaneTilt size={18} className="mr-2" />
+                        Issue Invoice
+                      </>
+                    )}
+                  </Button>
+                  <button
+                    onClick={() => setShowCancelDialog(true)}
+                    className="w-full py-2 px-4 rounded-lg border flex items-center justify-center gap-2 transition-colors"
+                    style={{
+                      borderColor: styles.error,
+                      color: styles.error,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <XCircle size={18} />
+                    Cancel Invoice
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Line items */}
+            <div>
+              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Items</h3>
+              <div className="space-y-2">
+                {selectedInvoice.lineItems.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <div>
+                      <span style={{ color: styles.textPrimary }}>{item.name}</span>
+                      <span className="ml-2" style={{ color: styles.textMuted }}>x{item.quantity}</span>
+                    </div>
+                    <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(item.total, selectedInvoice.currency)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timestamps */}
+            <div className="text-xs space-y-1" style={{ color: styles.textMuted }}>
+              <p>Created: {formatDate(selectedInvoice.createdAt)}</p>
+              {selectedInvoice.issuedAt && <p>Issued: {formatDate(selectedInvoice.issuedAt)}</p>}
+              {selectedInvoice.paidAt && <p>Paid: {formatDate(selectedInvoice.paidAt)}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel dialog */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setShowCancelDialog(false)} />
+          <div
+            className="relative z-10 w-full max-w-md rounded-xl shadow-xl p-6"
+            style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: styles.textPrimary }}>Cancel Invoice</h3>
+            <p className="mb-4" style={{ color: styles.textMuted }}>Please provide a reason for cancelling this invoice:</p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason for cancellation..."
+              className="w-full p-3 rounded-lg border mb-4 outline-none"
+              style={{
+                borderColor: styles.border,
+                backgroundColor: styles.bgPrimary,
+                color: styles.textPrimary,
+              }}
+              rows={3}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setCancelReason('');
+                }}
+                className="flex-1 py-2 px-4 rounded-lg border transition-colors"
+                style={{ borderColor: styles.border, color: styles.textPrimary }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCancelInvoice}
+                disabled={!cancelReason.trim() || actionLoading === selectedInvoice?.id}
+                className="flex-1 py-2 px-4 rounded-lg text-white transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.error }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SellerInvoices;

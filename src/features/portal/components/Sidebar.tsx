@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   SignOut,
   CaretLeft,
   CaretRight,
+  CaretDown,
   House,
   Storefront,
   ShoppingCart,
@@ -14,6 +15,14 @@ import {
   ClipboardText,
   Gear,
   Flask,
+  User,
+  ArrowsLeftRight,
+  GearSix,
+  UsersThree,
+  Receipt,
+  ShieldWarning,
+  CurrencyDollar,
+  Lightning,
 } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 
@@ -42,12 +51,17 @@ const iconMap: Record<string, React.ElementType> = {
   'my-rfqs': FileText,
   rfq: FileText,
   orders: Package,
+  invoices: Receipt,
+  disputes: ShieldWarning,
+  suppliers: UsersThree,
   analytics: ChartLine,
   workspace: Cube,
   marketplace: Storefront,
   tracking: ClipboardText,
   tests: Flask,
   settings: Gear,
+  payouts: CurrencyDollar,
+  automation: Lightning,
 };
 
 /**
@@ -241,9 +255,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Bottom Controls */}
         <div
-          className="px-2 py-3 border-t"
+          className="px-2 py-3 border-t space-y-1"
           style={{ borderColor: styles.border }}
         >
+          {/* Account Dropdown */}
+          <AccountDropdown
+            role={role}
+            sidebarCollapsed={sidebarCollapsed}
+            onNavigate={onNavigate}
+            onRoleSwitch={onRoleSwitch}
+            styles={styles}
+            t={t}
+            isRtl={isRtl}
+          />
+
           {/* Sign Out */}
           <button
             onClick={onLogout}
@@ -287,6 +312,216 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
       `}</style>
     </>
+  );
+};
+
+// Account Dropdown Component
+interface AccountDropdownProps {
+  role: PortalRole;
+  sidebarCollapsed: boolean;
+  onNavigate: (page: string) => void;
+  onRoleSwitch?: () => void;
+  styles: any;
+  t: (key: string) => string;
+  isRtl: boolean;
+}
+
+const AccountDropdown: React.FC<AccountDropdownProps> = ({
+  role,
+  sidebarCollapsed,
+  onNavigate,
+  onRoleSwitch,
+  styles,
+  t,
+  isRtl,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const menuItems = [
+    {
+      id: 'profile',
+      icon: User,
+      label: t('common.profile') || 'Profile',
+      onClick: () => {
+        onNavigate('profile');
+        setIsOpen(false);
+      },
+    },
+    {
+      id: 'switch',
+      icon: ArrowsLeftRight,
+      label: t('common.switchAccount') || 'Switch Account',
+      sublabel: role === 'seller' ? t('common.buyer') : t('common.seller'),
+      onClick: () => {
+        onRoleSwitch?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: 'settings',
+      icon: GearSix,
+      label: role === 'seller'
+        ? (t('seller.settings.title') || 'Seller Settings')
+        : (t('buyer.settings.title') || 'Buyer Settings'),
+      onClick: () => {
+        onNavigate('settings');
+        setIsOpen(false);
+      },
+    },
+  ];
+
+  if (sidebarCollapsed) {
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-center px-2 py-2 rounded-md transition-colors"
+          style={{ color: styles.textMuted }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = styles.bgHover;
+            e.currentTarget.style.color = styles.textPrimary;
+          }}
+          onMouseLeave={(e) => {
+            if (!isOpen) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = styles.textMuted;
+            }
+          }}
+          title={t('common.account') || 'Account'}
+        >
+          <User size={16} />
+        </button>
+
+        {isOpen && (
+          <div
+            className="absolute bottom-full mb-2 w-48 py-1 rounded-lg border shadow-lg z-50"
+            style={{
+              backgroundColor: styles.bgCard,
+              borderColor: styles.border,
+              [isRtl ? 'right' : 'left']: 0,
+            }}
+          >
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={item.onClick}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                  style={{ color: styles.textSecondary }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgHover;
+                    e.currentTarget.style.color = styles.textPrimary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textSecondary;
+                  }}
+                >
+                  <Icon size={16} />
+                  <div className="flex flex-col items-start">
+                    <span>{item.label}</span>
+                    {item.sublabel && (
+                      <span className="text-xs" style={{ color: styles.textMuted }}>
+                        → {item.sublabel}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md transition-colors"
+        style={{
+          color: isOpen ? styles.textPrimary : styles.textMuted,
+          backgroundColor: isOpen ? styles.bgHover : 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = styles.bgHover;
+          e.currentTarget.style.color = styles.textPrimary;
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = styles.textMuted;
+          }
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <User size={16} />
+          <span className="text-sm">{t('common.account') || 'Account'}</span>
+        </div>
+        <CaretDown
+          size={12}
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+          }}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute bottom-full mb-2 w-full py-1 rounded-lg border shadow-lg z-50"
+          style={{
+            backgroundColor: styles.bgCard,
+            borderColor: styles.border,
+          }}
+        >
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={item.onClick}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                style={{ color: styles.textSecondary, textAlign: isRtl ? 'right' : 'left' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = styles.bgHover;
+                  e.currentTarget.style.color = styles.textPrimary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = styles.textSecondary;
+                }}
+              >
+                <Icon size={16} />
+                <div className="flex flex-col items-start">
+                  <span>{item.label}</span>
+                  {item.sublabel && (
+                    <span className="text-xs" style={{ color: styles.textMuted }}>
+                      → {item.sublabel}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 

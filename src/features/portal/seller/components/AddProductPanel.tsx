@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   X,
   Package,
@@ -18,6 +18,12 @@ import {
   Minus,
   Sparkle,
   WarningCircle,
+  CaretRight,
+  MagnifyingGlass,
+  ShoppingCart,
+  Gauge,
+  FloppyDisk,
+  Timer,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Select } from '../../components';
@@ -170,6 +176,90 @@ const suggestCategory = (name: string): string | null => {
   return null;
 };
 
+// Draft storage key
+const DRAFT_STORAGE_KEY = 'portal-product-draft-v1';
+
+// Readiness Score Calculator
+interface ReadinessScore {
+  total: number;
+  visibility: number;
+  rfqAttractiveness: number;
+  searchCompleteness: number;
+  breakdown: {
+    label: string;
+    score: number;
+    maxScore: number;
+    tips: string[];
+  }[];
+}
+
+const calculateReadinessScore = (formData: ProductFormData): ReadinessScore => {
+  // Visibility Score (30 points max)
+  let visibilityScore = 0;
+  const visibilityTips: string[] = [];
+
+  if (formData.name.length > 10) visibilityScore += 10;
+  else visibilityTips.push('Use a descriptive product name (10+ characters)');
+
+  if (formData.image) visibilityScore += 10;
+  else visibilityTips.push('Add a product image');
+
+  if (formData.category) visibilityScore += 5;
+  else visibilityTips.push('Select a category');
+
+  if (formData.description.length > 50) visibilityScore += 5;
+  else visibilityTips.push('Add a detailed description (50+ characters)');
+
+  // RFQ Attractiveness Score (40 points max)
+  let rfqScore = 0;
+  const rfqTips: string[] = [];
+
+  if (formData.price && parseFloat(formData.price) > 0) rfqScore += 15;
+  else rfqTips.push('Set a competitive price');
+
+  if (formData.stock && parseInt(formData.stock) > 0) rfqScore += 10;
+  else rfqTips.push('Add stock quantity');
+
+  if (formData.minOrderQty) rfqScore += 5;
+
+  if (formData.manufacturer) rfqScore += 5;
+  else rfqTips.push('Specify the manufacturer');
+
+  if (formData.partNumber) rfqScore += 5;
+  else rfqTips.push('Add a part number for easier identification');
+
+  // Search Completeness Score (30 points max)
+  let searchScore = 0;
+  const searchTips: string[] = [];
+
+  if (formData.sku) searchScore += 10;
+  else searchTips.push('Add SKU for better search results');
+
+  if (formData.brand) searchScore += 5;
+  else searchTips.push('Specify the brand');
+
+  if (formData.weight || formData.dimensions) searchScore += 5;
+
+  if (formData.material) searchScore += 5;
+  else searchTips.push('Add material specification');
+
+  if (formData.category && formData.manufacturer) searchScore += 5;
+
+  const total = visibilityScore + rfqScore + searchScore;
+
+  return {
+    total,
+    visibility: visibilityScore,
+    rfqAttractiveness: rfqScore,
+    searchCompleteness: searchScore,
+    breakdown: [
+      { label: 'Visibility', score: visibilityScore, maxScore: 30, tips: visibilityTips },
+      { label: 'RFQ Attractiveness', score: rfqScore, maxScore: 40, tips: rfqTips },
+      { label: 'Search Completeness', score: searchScore, maxScore: 30, tips: searchTips },
+    ],
+  };
+};
+
 export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClose, onSave, editProduct, onUpdate }) => {
   const { styles, t, direction } = usePortal();
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
@@ -178,6 +268,90 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   const [showPreview, setShowPreview] = useState(false);
   const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
   const isEditing = !!editProduct;
+
+  // Progressive Disclosure State
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    basicInfo: true,
+    pricing: true,
+    details: false,
+    variants: false,
+    specs: false,
+    images: false,
+    visibility: false,
+  });
+
+  // Draft Auto-Save State
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [showReadinessPanel, setShowReadinessPanel] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate readiness score
+  const readinessScore = useMemo(() => calculateReadinessScore(formData), [formData]);
+
+  // Auto-save draft
+  const saveDraftToStorage = useCallback(() => {
+    if (!isEditing && formData.name) {
+      setIsDraftSaving(true);
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+        data: formData,
+        timestamp: new Date().toISOString(),
+      }));
+      setLastSaved(new Date());
+      setTimeout(() => setIsDraftSaving(false), 500);
+    }
+  }, [formData, isEditing]);
+
+  // Auto-save on form changes (debounced)
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      if (formData.name && !isEditing) {
+        saveDraftToStorage();
+      }
+    }, 2000); // Auto-save after 2 seconds of no changes
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, saveDraftToStorage, isEditing]);
+
+  // Load draft on mount
+  useEffect(() => {
+    if (!isEditing && isOpen) {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const { data, timestamp } = JSON.parse(savedDraft);
+          const savedDate = new Date(timestamp);
+          const now = new Date();
+          // Only restore if draft is less than 24 hours old
+          if (now.getTime() - savedDate.getTime() < 24 * 60 * 60 * 1000) {
+            setFormData(data);
+            setLastSaved(savedDate);
+          }
+        } catch (e) {
+          console.error('Failed to load draft:', e);
+        }
+      }
+    }
+  }, [isEditing, isOpen]);
+
+  // Clear draft on successful save
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setLastSaved(null);
+  }, []);
+
+  // Toggle section expansion
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Populate form when editing
   useEffect(() => {
@@ -338,6 +512,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
     } else {
       onSave({ ...formData, status: finalStatus });
     }
+    clearDraft(); // Clear auto-saved draft on successful submit
     setFormData(initialFormData);
     onClose();
   };
@@ -367,6 +542,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
     } else {
       onSave({ ...formData, status: 'draft', visibility: 'draft' });
     }
+    clearDraft(); // Clear auto-saved draft
     setFormData(initialFormData);
     onClose();
   };
@@ -408,67 +584,259 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
         }}
         dir={direction}
       >
-        {/* Header with Completeness */}
+        {/* Header with Completeness & Readiness */}
         <div
-          className="flex items-center justify-between px-6 py-4 border-b shrink-0"
+          className="flex flex-col border-b shrink-0"
           style={{ borderColor: styles.border }}
         >
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h2
-                className="text-lg font-semibold"
-                style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-              >
-                {isEditing ? t('seller.listings.editProduct') : t('seller.listings.addProduct')}
-              </h2>
-              {/* Completeness Badge */}
-              <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: completeness.isComplete
-                    ? styles.isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
-                    : styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
-                  color: completeness.isComplete ? styles.success : '#EAB308',
-                }}
-              >
-                {completeness.isComplete ? (
-                  <CheckCircle size={12} weight="fill" />
-                ) : (
-                  <WarningCircle size={12} weight="fill" />
-                )}
-                {completeness.percentage}% {t('addProduct.complete')}
-              </div>
+          {/* Animated Progress Bar - Top Strip */}
+          <div className="relative h-1.5 w-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
+            {/* Background segments for visual guide */}
+            <div className="absolute inset-0 flex">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1"
+                  style={{
+                    borderRight: i < 4 ? `1px solid ${styles.bgPrimary}` : 'none',
+                  }}
+                />
+              ))}
             </div>
-            <p className="text-sm mt-0.5" style={{ color: styles.textMuted }}>
-              {completeness.isComplete
-                ? t('addProduct.readyToPublish')
-                : `${t('addProduct.missing')}: ${completeness.missingRequired.join(', ')}`}
-            </p>
+            {/* Animated fill bar */}
+            <div
+              className="absolute inset-y-0 left-0 rounded-r-full"
+              style={{
+                width: `${completeness.percentage}%`,
+                background: completeness.isComplete
+                  ? `linear-gradient(90deg, #22C55E 0%, #16A34A 100%)`
+                  : completeness.percentage >= 60
+                    ? `linear-gradient(90deg, #3B82F6 0%, #2563EB 100%)`
+                    : `linear-gradient(90deg, #F59E0B 0%, #D97706 100%)`,
+                transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease',
+                boxShadow: completeness.isComplete
+                  ? '0 0 12px rgba(34, 197, 94, 0.5)'
+                  : completeness.percentage >= 60
+                    ? '0 0 12px rgba(59, 130, 246, 0.4)'
+                    : '0 0 8px rgba(245, 158, 11, 0.3)',
+              }}
+            />
+            {/* Shimmer effect on the progress bar */}
+            <div
+              className="absolute inset-y-0 left-0 overflow-hidden rounded-r-full"
+              style={{
+                width: `${completeness.percentage}%`,
+                transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                  animation: 'shimmer 2s infinite',
+                  animationTimingFunction: 'ease-in-out',
+                }}
+              />
+            </div>
+            <style>{`
+              @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(200%); }
+              }
+            `}</style>
           </div>
 
-          {/* Preview Toggle */}
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isRtl ? 'ml-2' : 'mr-2'}`}
-            style={{
-              backgroundColor: showPreview ? styles.bgActive : styles.bgSecondary,
-              color: showPreview ? styles.textPrimary : styles.textSecondary,
-            }}
-          >
-            {showPreview ? <EyeSlash size={14} /> : <Eye size={14} />}
-            {t('addProduct.preview')}
-          </button>
+          {/* Header Content */}
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h2
+                  className="text-lg font-semibold"
+                  style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+                >
+                  {isEditing ? t('seller.listings.editProduct') : t('seller.listings.addProduct')}
+                </h2>
+                {/* Completeness Badge with animated counter */}
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: completeness.isComplete
+                      ? styles.isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
+                      : completeness.percentage >= 60
+                        ? styles.isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)'
+                        : styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
+                    color: completeness.isComplete ? styles.success : completeness.percentage >= 60 ? styles.info : '#EAB308',
+                    transition: 'background-color 0.3s ease, color 0.3s ease',
+                  }}
+                >
+                  {completeness.isComplete ? (
+                    <CheckCircle size={12} weight="fill" />
+                  ) : (
+                    <WarningCircle size={12} weight="fill" />
+                  )}
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {completeness.percentage}%
+                  </span>
+                  {t('addProduct.complete')}
+                </div>
+                {/* Readiness Score Badge */}
+                <button
+                  onClick={() => setShowReadinessPanel(!showReadinessPanel)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: readinessScore.total >= 80
+                      ? styles.isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
+                      : readinessScore.total >= 50
+                        ? styles.isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)'
+                        : styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
+                    color: readinessScore.total >= 80 ? styles.success : readinessScore.total >= 50 ? styles.info : '#EAB308',
+                  }}
+                >
+                  <Gauge size={12} weight="fill" />
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {readinessScore.total}/100
+                  </span>
+                </button>
+              </div>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-sm" style={{ color: styles.textMuted }}>
+                  {completeness.isComplete
+                    ? t('addProduct.readyToPublish')
+                    : `${t('addProduct.missing')}: ${completeness.missingRequired.join(', ')}`}
+                </p>
+                {/* Draft Auto-Save Indicator */}
+                {lastSaved && !isEditing && (
+                  <span className="flex items-center gap-1 text-xs" style={{ color: styles.textMuted }}>
+                    {isDraftSaving ? (
+                      <>
+                        <FloppyDisk size={10} className="animate-pulse" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={10} weight="fill" style={{ color: styles.success }} />
+                        Draft saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-md transition-colors"
-            style={{ color: styles.textSecondary }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Readiness Panel Toggle */}
+            <button
+              onClick={() => setShowReadinessPanel(!showReadinessPanel)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+              style={{
+                backgroundColor: showReadinessPanel ? styles.bgActive : styles.bgSecondary,
+                color: showReadinessPanel ? styles.textPrimary : styles.textSecondary,
+              }}
+            >
+              <Gauge size={14} />
+              {t('addProduct.readinessScore') || 'Readiness'}
+            </button>
+
+            {/* Preview Toggle */}
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+              style={{
+                backgroundColor: showPreview ? styles.bgActive : styles.bgSecondary,
+                color: showPreview ? styles.textPrimary : styles.textSecondary,
+              }}
+            >
+              {showPreview ? <EyeSlash size={14} /> : <Eye size={14} />}
+              {t('addProduct.preview')}
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-md transition-colors"
+              style={{ color: styles.textSecondary }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
+        </div>
+
+        {/* Readiness Score Panel */}
+        {showReadinessPanel && (
+          <div
+            className="px-6 py-4 border-b"
+            style={{ borderColor: styles.border, backgroundColor: styles.bgSecondary }}
+          >
+            <div className="flex items-start gap-6">
+              {/* Overall Score */}
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold"
+                  style={{
+                    backgroundColor: readinessScore.total >= 80
+                      ? styles.isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)'
+                      : readinessScore.total >= 50
+                        ? styles.isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)'
+                        : styles.isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.15)',
+                    color: readinessScore.total >= 80 ? styles.success : readinessScore.total >= 50 ? styles.info : '#EAB308',
+                  }}
+                >
+                  {readinessScore.total}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+                    {readinessScore.total >= 80 ? 'Excellent' : readinessScore.total >= 50 ? 'Good' : 'Needs Work'}
+                  </p>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {readinessScore.total >= 80
+                      ? 'Ready to attract buyers'
+                      : 'Add more details to improve'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Score Breakdown */}
+              <div className="flex-1 grid grid-cols-3 gap-4">
+                {readinessScore.breakdown.map((item) => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium" style={{ color: styles.textSecondary }}>
+                        {item.label}
+                      </span>
+                      <span className="text-xs" style={{ color: styles.textMuted }}>
+                        {item.score}/{item.maxScore}
+                      </span>
+                    </div>
+                    <div
+                      className="h-1.5 rounded-full overflow-hidden"
+                      style={{ backgroundColor: styles.bgPrimary }}
+                    >
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${(item.score / item.maxScore) * 100}%`,
+                          backgroundColor: item.score >= item.maxScore * 0.8
+                            ? styles.success
+                            : item.score >= item.maxScore * 0.5
+                              ? styles.info
+                              : '#EAB308',
+                        }}
+                      />
+                    </div>
+                    {item.tips.length > 0 && (
+                      <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+                        {item.tips[0]}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden flex">
@@ -716,8 +1084,15 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                 </div>
               </Section>
 
-              {/* Product Variants */}
-              <Section icon={Tag} title={t('addProduct.productVariants')} styles={styles}>
+              {/* Product Variants - Collapsible Advanced Section */}
+              <Section
+                icon={Tag}
+                title={t('addProduct.productVariants')}
+                styles={styles}
+                collapsible
+                defaultExpanded={formData.hasVariants}
+                badge={t('addProduct.advanced') || 'Advanced'}
+              >
                 <div className="space-y-4">
                   {/* Toggle */}
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -822,8 +1197,15 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                 </div>
               </Section>
 
-              {/* Specifications */}
-              <Section icon={Info} title={t('addProduct.specifications')} styles={styles}>
+              {/* Specifications - Collapsible Advanced Section */}
+              <Section
+                icon={Info}
+                title={t('addProduct.specifications')}
+                styles={styles}
+                collapsible
+                defaultExpanded={!!(formData.weight || formData.dimensions || formData.material)}
+                badge={t('addProduct.advanced') || 'Advanced'}
+              >
                 <div className="grid grid-cols-2 gap-4">
                   <FormField label={t('addProduct.weight')} styles={styles}>
                     <div className="flex w-full" dir="ltr">
@@ -1172,28 +1554,65 @@ const VisibilityOption: React.FC<{
   </button>
 );
 
-// Section Component
+// Section Component with Collapsible Support
 interface SectionProps {
   icon: React.ElementType;
   title: string;
   styles: ReturnType<typeof usePortal>['styles'];
   children: React.ReactNode;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
+  badge?: string;
+  badgeColor?: string;
 }
 
-const Section: React.FC<SectionProps> = ({ icon: Icon, title, styles, children }) => (
-  <div>
-    <div className="flex items-center gap-2 mb-4">
-      <Icon size={18} style={{ color: styles.textSecondary }} />
-      <h3
-        className="text-sm font-semibold uppercase tracking-wide"
-        style={{ color: styles.textSecondary }}
+const Section: React.FC<SectionProps> = ({
+  icon: Icon,
+  title,
+  styles,
+  children,
+  collapsible = false,
+  defaultExpanded = true,
+  badge,
+  badgeColor,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => collapsible && setIsExpanded(!isExpanded)}
+        className={`flex items-center gap-2 mb-4 w-full text-left ${collapsible ? 'cursor-pointer' : ''}`}
+        disabled={!collapsible}
       >
-        {title}
-      </h3>
+        <Icon size={18} style={{ color: styles.textSecondary }} />
+        <h3
+          className="text-sm font-semibold uppercase tracking-wide flex-1"
+          style={{ color: styles.textSecondary }}
+        >
+          {title}
+        </h3>
+        {badge && (
+          <span
+            className="px-2 py-0.5 rounded text-xs font-medium"
+            style={{ backgroundColor: badgeColor || styles.bgSecondary, color: styles.textMuted }}
+          >
+            {badge}
+          </span>
+        )}
+        {collapsible && (
+          <CaretRight
+            size={14}
+            className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            style={{ color: styles.textMuted }}
+          />
+        )}
+      </button>
+      {(!collapsible || isExpanded) && children}
     </div>
-    {children}
-  </div>
-);
+  );
+};
 
 // FormField Component
 interface FormFieldProps {

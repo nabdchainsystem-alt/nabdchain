@@ -12,11 +12,11 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center transition-colors"
+      className="min-h-screen flex items-start justify-center transition-colors pt-[15vh]"
       style={{ backgroundColor: styles.bgPrimary }}
     >
       <Container variant="content">
-        <div className="py-20 text-center">
+        <div className="text-center">
           {/* Hero */}
           <h1
             className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight"

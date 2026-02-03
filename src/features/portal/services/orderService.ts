@@ -13,6 +13,7 @@ import {
   ShipOrderData,
   OrderStatus,
   FulfillmentStatus,
+  BuyerDashboardSummary,
 } from '../types/order.types';
 
 // =============================================================================
@@ -346,6 +347,21 @@ export const orderService = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to confirm delivery');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get buyer dashboard summary with KPIs and trends
+   */
+  async getBuyerDashboardSummary(token: string): Promise<BuyerDashboardSummary> {
+    const response = await fetch(`${API_URL}/orders/buyer/dashboard`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch dashboard summary');
     }
 
     return response.json();

@@ -11,9 +11,14 @@ import {
   Analytics,
   SellerWorkspace,
   Tests,
+  DisputeInbox,
+  SellerPayouts,
+  SellerAutomation,
 } from './pages';
+import { SellerSettings } from './pages/SellerSettings';
+import { SellerInvoices } from './pages/SellerInvoices';
 
-type SellerPage = 'home' | 'listings' | 'rfqs' | 'orders' | 'analytics' | 'workspace' | 'tests';
+type SellerPage = 'home' | 'listings' | 'rfqs' | 'orders' | 'invoices' | 'disputes' | 'payouts' | 'automation' | 'analytics' | 'workspace' | 'tests' | 'settings' | 'profile';
 
 interface SellerPortalPageProps {
   onLogout: () => void;
@@ -35,6 +40,10 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
     { id: 'listings', label: t('seller.nav.listings') },
     { id: 'rfqs', label: t('seller.nav.rfqs') },
     { id: 'orders', label: t('seller.nav.orders') },
+    { id: 'invoices', label: t('seller.nav.invoices') },
+    { id: 'disputes', label: t('seller.nav.disputes') },
+    { id: 'payouts', label: 'Payouts' },
+    { id: 'automation', label: 'Automation' },
     { id: 'analytics', label: t('seller.nav.analytics') },
     { id: 'workspace', label: t('seller.nav.workspace') },
     { id: 'tests', label: t('seller.nav.tests') },
@@ -55,12 +64,23 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
         return <RFQsInbox onNavigate={handleNavigate} />;
       case 'orders':
         return <SellerOrders onNavigate={handleNavigate} />;
+      case 'invoices':
+        return <SellerInvoices onNavigate={handleNavigate} />;
+      case 'disputes':
+        return <DisputeInbox onNavigate={handleNavigate} />;
+      case 'payouts':
+        return <SellerPayouts onNavigate={handleNavigate} />;
+      case 'automation':
+        return <SellerAutomation onNavigate={handleNavigate} />;
       case 'analytics':
         return <Analytics onNavigate={handleNavigate} />;
       case 'tests':
         return <Tests onNavigate={handleNavigate} />;
       case 'workspace':
         return <SellerWorkspace onNavigate={handleNavigate} />;
+      case 'settings':
+      case 'profile':
+        return <SellerSettings />;
       default:
         return <SellerHome onNavigate={handleNavigate} />;
     }

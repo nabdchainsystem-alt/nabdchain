@@ -5,6 +5,7 @@ import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { orderService } from '../../services/orderService';
+import { sellerRfqInboxService } from '../../services/sellerRfqInboxService';
 
 interface SellerHomeProps {
   onNavigate: (page: string) => void;
@@ -13,20 +14,24 @@ interface SellerHomeProps {
 interface SellerStats {
   totalItems: number;
   activeItems: number;
-  totalQuotes: number;
+  totalRfqs: number;
+  newRfqs: number;
   pendingOrders: number;
   totalRevenue: number;
+  isLoading: boolean;
 }
 
 export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
   const { t, styles } = usePortal();
   const { getToken } = useAuth();
   const [stats, setStats] = useState<SellerStats>({
-    totalItems: 127,
-    activeItems: 127,
-    totalQuotes: 24,
-    pendingOrders: 12,
-    totalRevenue: 48250,
+    totalItems: 0,
+    activeItems: 0,
+    totalRfqs: 0,
+    newRfqs: 0,
+    pendingOrders: 0,
+    totalRevenue: 0,
+    isLoading: true,
   });
 
   const fetchStats = useCallback(async () => {
@@ -34,20 +39,24 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
 
-      const [itemStats, orderStats] = await Promise.all([
+      const [itemStats, orderStats, rfqData] = await Promise.all([
         itemService.getSellerStats(token),
         orderService.getSellerOrderStats(token),
+        sellerRfqInboxService.getInbox(token, { limit: 1 }), // Just need stats
       ]);
 
       setStats({
         totalItems: itemStats.totalItems,
         activeItems: itemStats.activeItems,
-        totalQuotes: itemStats.totalQuotes,
+        totalRfqs: rfqData.stats.total,
+        newRfqs: rfqData.stats.new,
         pendingOrders: orderStats.pendingConfirmation + orderStats.confirmed + orderStats.inProgress,
         totalRevenue: orderStats.totalRevenue,
+        isLoading: false,
       });
     } catch (err) {
       console.error('Failed to fetch stats:', err);
+      setStats(prev => ({ ...prev, isLoading: false }));
     }
   }, [getToken]);
 
@@ -85,17 +94,17 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
             <StatCard
               label={t('seller.home.rfqsThisMonth')}
-              value={stats.totalQuotes.toString()}
+              value={stats.isLoading ? '...' : stats.totalRfqs.toString()}
               icon={FileText}
             />
             <StatCard
               label={t('seller.home.activeOrders')}
-              value={stats.pendingOrders.toString()}
+              value={stats.isLoading ? '...' : stats.pendingOrders.toString()}
               icon={Package}
             />
             <StatCard
               label={t('seller.home.revenue')}
-              value={`SAR ${stats.totalRevenue.toLocaleString()}`}
+              value={stats.isLoading ? '...' : `SAR ${stats.totalRevenue.toLocaleString()}`}
               icon={TrendUp}
             />
           </div>
@@ -104,13 +113,13 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <QuickActionCard
               title={t('seller.home.rfqInbox')}
-              description={`${stats.totalQuotes} ${t('seller.home.newRequests')}`}
+              description={stats.isLoading ? '...' : `${stats.newRfqs} ${t('seller.home.newRequests')}`}
               action={t('seller.home.viewRfqs')}
               onClick={() => onNavigate('rfqs')}
             />
             <QuickActionCard
               title={t('seller.home.manageListings')}
-              description={`${stats.activeItems} ${t('seller.home.activeProducts')}`}
+              description={stats.isLoading ? '...' : `${stats.activeItems} ${t('seller.home.activeProducts')}`}
               action={t('seller.home.viewListings')}
               onClick={() => onNavigate('listings')}
             />

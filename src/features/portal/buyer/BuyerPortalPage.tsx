@@ -7,10 +7,16 @@ import {
   RequestQuote,
   MyRFQs,
   MyOrders,
+  Purchases,
   Tracking,
   BuyerWorkspace,
+  BuyerAnalytics,
+  BuyerExpenses,
+  BuyerSuppliers,
   Tests,
+  DisputeCenter,
 } from './pages';
+import { BuyerInvoices } from './pages/BuyerInvoices';
 import { PortalProvider, usePortal } from '../context/PortalContext';
 
 interface BuyerPortalPageProps {
@@ -18,7 +24,7 @@ interface BuyerPortalPageProps {
   onRoleSwitch?: () => void;
 }
 
-type BuyerPage = 'home' | 'marketplace' | 'item-details' | 'rfq' | 'my-rfqs' | 'orders' | 'tracking' | 'workspace' | 'tests';
+type BuyerPage = 'home' | 'marketplace' | 'item-details' | 'rfq' | 'my-rfqs' | 'orders' | 'invoices' | 'disputes' | 'purchases' | 'tracking' | 'workspace' | 'analytics' | 'expenses' | 'suppliers' | 'tests';
 
 const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
   onLogout,
@@ -28,6 +34,7 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
     const saved = localStorage.getItem('buyer-portal-page');
     return (saved as BuyerPage) || 'home';
   });
+  const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
   const { t, direction, styles } = usePortal();
 
   const navItems = [
@@ -36,13 +43,24 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
     { id: 'rfq', label: t('buyer.nav.requestQuote') },
     { id: 'my-rfqs', label: t('buyer.nav.myRfqs') },
     { id: 'orders', label: t('buyer.nav.orders') },
-    { id: 'tests', label: t('buyer.nav.tests') },
+    { id: 'invoices', label: t('buyer.nav.invoices') },
+    { id: 'disputes', label: t('buyer.nav.disputes') },
+    { id: 'purchases', label: t('buyer.nav.purchases') },
+    { id: 'suppliers', label: t('buyer.nav.suppliers') },
+    { id: 'analytics', label: t('buyer.nav.analytics') },
+    { id: 'expenses', label: t('buyer.nav.expenses') },
     { id: 'workspace', label: t('buyer.nav.workspace') },
+    { id: 'tests', label: t('buyer.nav.tests') },
   ];
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, data?: Record<string, unknown>) => {
     setCurrentPage(page as BuyerPage);
     localStorage.setItem('buyer-portal-page', page);
+
+    // Handle item details navigation
+    if (page === 'item-details' && data?.itemId) {
+      setSelectedItemId(data.itemId as string);
+    }
   };
 
   const renderPage = () => {
@@ -52,15 +70,27 @@ const BuyerPortalContent: React.FC<BuyerPortalPageProps> = ({
       case 'marketplace':
         return <Marketplace onNavigate={handleNavigate} />;
       case 'item-details':
-        return <ItemDetails onNavigate={handleNavigate} />;
+        return <ItemDetails onNavigate={handleNavigate} itemId={selectedItemId} />;
       case 'rfq':
         return <RequestQuote onNavigate={handleNavigate} />;
       case 'my-rfqs':
         return <MyRFQs onNavigate={handleNavigate} />;
       case 'orders':
         return <MyOrders onNavigate={handleNavigate} />;
+      case 'invoices':
+        return <BuyerInvoices onNavigate={handleNavigate} />;
+      case 'disputes':
+        return <DisputeCenter onNavigate={handleNavigate} />;
+      case 'purchases':
+        return <Purchases onNavigate={handleNavigate} />;
+      case 'suppliers':
+        return <BuyerSuppliers onNavigate={handleNavigate} />;
       case 'tracking':
         return <Tracking onNavigate={handleNavigate} />;
+      case 'analytics':
+        return <BuyerAnalytics onNavigate={handleNavigate} />;
+      case 'expenses':
+        return <BuyerExpenses onNavigate={handleNavigate} />;
       case 'tests':
         return <Tests onNavigate={handleNavigate} />;
       case 'workspace':

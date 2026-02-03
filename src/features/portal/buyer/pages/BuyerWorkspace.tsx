@@ -6,8 +6,9 @@ import {
   Receipt,
   ChartLineUp,
 } from 'phosphor-react';
-import { Container, PageHeader, StatCard } from '../../components';
+import { Container, PageHeader } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { DashboardTab, PurchasesTab, SuppliersTab, InventoryTab, ExpensesTab } from './workspace';
 
 interface BuyerWorkspaceProps {
   onNavigate: (page: string) => void;
@@ -63,64 +64,30 @@ export const BuyerWorkspace: React.FC<BuyerWorkspaceProps> = ({ onNavigate }) =>
           })}
         </div>
 
-        {/* Dashboard View */}
+        {/* Dashboard View - Advanced Intelligence */}
         {activeTab === 'dashboard' && (
-          <div>
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard
-                label={t('buyer.workspace.totalSpend')}
-                value="$124,500"
-                change={{ value: '+12% from last month', positive: true }}
-              />
-              <StatCard
-                label={t('buyer.workspace.activeOrders')}
-                value="23"
-              />
-              <StatCard
-                label={t('buyer.workspace.pendingRfqs')}
-                value="8"
-              />
-              <StatCard
-                label={t('buyer.workspace.suppliersCount')}
-                value="45"
-              />
-            </div>
-
-            {/* Chart Placeholder */}
-            <div
-              className="rounded-lg border p-6 transition-colors"
-              style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-            >
-              <h3
-                className="text-sm font-semibold mb-4"
-                style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-              >
-                {t('buyer.workspace.spendingOverview')}
-              </h3>
-              <div
-                className="h-64 rounded-md flex items-center justify-center"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
-                <span className="text-sm" style={{ color: styles.textMuted }}>
-                  Chart Area
-                </span>
-              </div>
-            </div>
-          </div>
+          <DashboardTab
+            onNavigate={onNavigate}
+            onSwitchTab={setActiveTab}
+          />
         )}
 
-        {/* Other tabs - Placeholder */}
-        {activeTab !== 'dashboard' && (
-          <div
-            className="rounded-lg border p-12 text-center transition-colors"
-            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-          >
-            <p className="text-sm" style={{ color: styles.textSecondary }}>
-              {tabs.find((t) => t.id === activeTab)?.label} content
-            </p>
-          </div>
+        {/* Purchases Tab */}
+        {activeTab === 'purchases' && <PurchasesTab onNavigate={onNavigate} />}
+
+        {/* Suppliers Tab */}
+        {activeTab === 'suppliers' && (
+          <SuppliersTab
+            onNavigate={onNavigate}
+            onCreatePO={() => setActiveTab('purchases')}
+          />
         )}
+
+        {/* Inventory Tab */}
+        {activeTab === 'inventory' && <InventoryTab onNavigate={onNavigate} />}
+
+        {/* Expenses Tab */}
+        {activeTab === 'expenses' && <ExpensesTab onNavigate={onNavigate} />}
       </Container>
     </div>
   );
