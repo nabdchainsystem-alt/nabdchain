@@ -69,6 +69,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const demoRef = useRef<HTMLDivElement>(null);
     const marketplaceRef = useRef<HTMLDivElement>(null);
     const toolsRef = useRef<HTMLDivElement>(null);
+    const boardViewsRef = useRef<HTMLDivElement>(null);
     const pricingRef = useRef<HTMLDivElement>(null);
 
     // Track which section is in view and update navbar theme
@@ -81,6 +82,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             { ref: demoRef, theme: 'light' },
             { ref: marketplaceRef, theme: 'dark' },
             { ref: toolsRef, theme: 'dark' },
+            { ref: boardViewsRef, theme: 'dark' },
             { ref: pricingRef, theme: 'dark' },
         ];
 
@@ -342,7 +344,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     <div id="testimonials" ref={toolsRef}>
-                        <ToolsShowcase />
+                        <ToolsShowcase boardViewsRef={boardViewsRef} />
                     </div>
 
                     <div id="pricing" ref={pricingRef}>

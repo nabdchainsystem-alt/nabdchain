@@ -326,7 +326,11 @@ const ViewCard: React.FC<{ view: ReturnType<typeof getBoardViewsData>[0]; index:
     );
 });
 
-export const ToolsShowcase: React.FC = () => {
+interface ToolsShowcaseProps {
+    boardViewsRef?: React.RefObject<HTMLDivElement>;
+}
+
+export const ToolsShowcase: React.FC<ToolsShowcaseProps> = ({ boardViewsRef }) => {
     const { isRTL } = useLandingContext();
     const sectionRef = useRef(null);
     const toolsScrollRef = useRef<HTMLDivElement>(null);
@@ -506,7 +510,7 @@ export const ToolsShowcase: React.FC = () => {
             </div>
 
             {/* Board Views Section */}
-            <div className="py-20 sm:py-28 md:py-32 bg-white dark:bg-zinc-900 relative overflow-hidden">
+            <div ref={boardViewsRef} className="py-20 sm:py-28 md:py-32 bg-white dark:bg-zinc-900 relative overflow-hidden">
                 <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12">
                     {/* Header */}
                     {isInView && (
