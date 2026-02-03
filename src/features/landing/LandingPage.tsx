@@ -133,7 +133,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const navLinks = [
         { key: 'features', href: '#features' },
         { key: 'demo', href: '#demo' },
-        { key: 'dashboard', href: '#dashboard' },
         { key: 'pricing', href: '#pricing' },
     ];
 
