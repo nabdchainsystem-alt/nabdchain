@@ -1306,7 +1306,7 @@ model MarketplaceOrder {
   rfqNumber    String?  // Denormalized for display
 
   // Quote Reference (Stage 4 - if created from accepted quote)
-  quoteId      String?  @unique  // One order per quote
+  quoteId      String?  // One order per quote (unique constraint removed for data flexibility)
   quoteNumber  String?  // Denormalized for display
   quoteVersion Int?     // Version of quote that was accepted
 
