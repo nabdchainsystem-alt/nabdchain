@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && prisma db push && tsc",
+    "build": "prisma generate && prisma db push --accept-data-loss && tsc",
     "start": "node dist/index.js",
     "prisma:generate": "./node_modules/.bin/prisma generate",
     "prisma:migrate": "./node_modules/.bin/prisma migrate dev",
