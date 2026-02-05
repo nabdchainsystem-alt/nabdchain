@@ -312,8 +312,15 @@ export interface RFQEvent {
 
 /**
  * Seller Inbox RFQ - extends ItemRFQ with Stage 2 fields
+ * Overrides status to use Stage2RFQStatus for seller inbox workflow
  */
-export interface SellerInboxRFQ extends ItemRFQ {
+export interface SellerInboxRFQ extends Omit<ItemRFQ, 'status'> {
+  // Stage 2 status (overrides ItemRFQ.status)
+  status: Stage2RFQStatus;
+
+  // Original RFQ status from Stage 1 (preserved for reference)
+  originalStatus?: RFQStatus;
+
   // Human-readable RFQ number
   rfqNumber?: string;
 
@@ -330,7 +337,7 @@ export interface SellerInboxRFQ extends ItemRFQ {
   ignoredBy?: string;
   ignoredReason?: string;
 
-  // Stage 2: Internal notes (seller-only)
+  // Stage 2: Internal notes (seller-only) - deprecated, use notes relation
   internalNotes?: string;
 
   // Stage 2: Auto-calculated priority
@@ -342,6 +349,14 @@ export interface SellerInboxRFQ extends ItemRFQ {
 
   // Event history (optional, loaded on detail)
   events?: RFQEvent[];
+
+  // Gmail-style fields
+  isRead: boolean;
+  isArchived: boolean;
+  archivedAt?: string;
+  labels?: RFQLabelAssignment[];
+  noteCount?: number;
+  snooze?: RFQSnoozeInfo | null;
 }
 
 /**
@@ -357,6 +372,11 @@ export interface InboxFilters {
   limit?: number;
   sortBy?: 'createdAt' | 'priorityScore' | 'requiredDeliveryDate';
   sortOrder?: 'asc' | 'desc';
+  // Gmail-style filters
+  labelId?: string;
+  isRead?: boolean;
+  isArchived?: boolean;
+  isSnoozed?: boolean;
 }
 
 /**
@@ -521,6 +541,66 @@ export function getTimeSinceReceived(createdAt: string): {
     isOverdue: diffHours > 24,
     hours: diffHours,
   };
+}
+
+/**
+ * RFQ State Labels (user-friendly)
+ * Maps internal status to display labels
+ */
+export function getRFQStateLabel(status: RFQStatus | Stage2RFQStatus): string {
+  const labels: Record<string, string> = {
+    // Stage 1 statuses
+    new: 'Waiting for quote',
+    pending: 'Pending',
+    quoted: 'Awaiting buyer response',
+    accepted: 'Accepted - Convert to Order',
+    rejected: 'Declined',
+    expired: 'Expired',
+    // Stage 2 statuses
+    viewed: 'Viewed',
+    under_review: 'Under review',
+    ignored: 'Declined',
+  };
+  return labels[status] || status;
+}
+
+/**
+ * Check if RFQ is in a read-only state
+ * Read-only states: ignored, expired, rejected, accepted
+ */
+export function isRFQReadOnly(rfq: Pick<SellerInboxRFQ, 'status'>): boolean {
+  const readOnlyStatuses = ['ignored', 'expired', 'rejected', 'accepted'];
+  return readOnlyStatuses.includes(rfq.status);
+}
+
+/**
+ * Check if RFQ needs seller action
+ */
+export function rfqNeedsAction(rfq: Pick<SellerInboxRFQ, 'status'>): boolean {
+  const actionNeededStatuses: string[] = ['new', 'viewed'];
+  return actionNeededStatuses.includes(rfq.status);
+}
+
+/**
+ * Get RFQ urgency level based on required delivery date
+ */
+export function getRFQUrgency(requiredDeliveryDate?: string): {
+  label: string;
+  isExpiring: boolean;
+  daysRemaining: number;
+} | null {
+  if (!requiredDeliveryDate) return null;
+
+  const deadline = new Date(requiredDeliveryDate).getTime();
+  const now = Date.now();
+  const daysRemaining = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+
+  if (daysRemaining <= 0) {
+    return { label: 'Expired', isExpiring: true, daysRemaining: 0 };
+  } else if (daysRemaining <= 3) {
+    return { label: 'Expiring Soon', isExpiring: true, daysRemaining };
+  }
+  return null; // Normal urgency
 }
 
 // =============================================================================
@@ -1479,8 +1559,8 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
 } {
   const configs: Record<MarketplaceOrderStatus, ReturnType<typeof getOrderStatusConfig>> = {
     pending_confirmation: {
-      label: 'Awaiting Confirmation',
-      labelKey: 'orders.statusPending',
+      label: 'Pending Confirmation',
+      labelKey: 'buyer.orders.pendingConfirmation',
       color: 'warning',
       bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
       textColor: 'text-yellow-700 dark:text-yellow-400',
@@ -1488,15 +1568,15 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     confirmed: {
       label: 'Confirmed',
-      labelKey: 'orders.statusConfirmed',
+      labelKey: 'buyer.orders.confirmed',
       color: 'info',
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
       textColor: 'text-blue-700 dark:text-blue-400',
       icon: 'check',
     },
     processing: {
-      label: 'In Progress',
-      labelKey: 'orders.statusProcessing',
+      label: 'Processing',
+      labelKey: 'buyer.orders.processing',
       color: 'info',
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
       textColor: 'text-purple-700 dark:text-purple-400',
@@ -1504,7 +1584,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     shipped: {
       label: 'In Transit',
-      labelKey: 'orders.statusShipped',
+      labelKey: 'buyer.orders.inTransit',
       color: 'info',
       bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
       textColor: 'text-indigo-700 dark:text-indigo-400',
@@ -1512,7 +1592,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     delivered: {
       label: 'Delivered',
-      labelKey: 'orders.statusDelivered',
+      labelKey: 'buyer.orders.delivered',
       color: 'success',
       bgColor: 'bg-green-100 dark:bg-green-900/30',
       textColor: 'text-green-700 dark:text-green-400',
@@ -1520,7 +1600,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     closed: {
       label: 'Closed',
-      labelKey: 'orders.statusClosed',
+      labelKey: 'buyer.orders.closed',
       color: 'success',
       bgColor: 'bg-gray-100 dark:bg-gray-900/30',
       textColor: 'text-gray-700 dark:text-gray-400',
@@ -1528,7 +1608,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     cancelled: {
       label: 'Cancelled',
-      labelKey: 'orders.statusCancelled',
+      labelKey: 'buyer.orders.cancelled',
       color: 'error',
       bgColor: 'bg-red-100 dark:bg-red-900/30',
       textColor: 'text-red-700 dark:text-red-400',
@@ -1536,7 +1616,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     failed: {
       label: 'Failed',
-      labelKey: 'orders.statusFailed',
+      labelKey: 'buyer.orders.failed',
       color: 'error',
       bgColor: 'bg-red-100 dark:bg-red-900/30',
       textColor: 'text-red-700 dark:text-red-400',
@@ -1544,7 +1624,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
     },
     refunded: {
       label: 'Refunded',
-      labelKey: 'orders.statusRefunded',
+      labelKey: 'buyer.orders.refunded',
       color: 'warning',
       bgColor: 'bg-gray-100 dark:bg-gray-900/30',
       textColor: 'text-gray-700 dark:text-gray-400',
@@ -1662,4 +1742,540 @@ export function getDaysSinceCreated(createdAt: string): number {
   const now = new Date();
   const diffMs = now.getTime() - created.getTime();
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+// =============================================================================
+// Counter-Offer Types (RFQ → Quote Negotiation)
+// =============================================================================
+
+/**
+ * Counter-offer status - lifecycle states
+ * PENDING → ACCEPTED (creates revised quote) | REJECTED | EXPIRED
+ */
+export type CounterOfferStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+/**
+ * Counter-offer event types for audit trail
+ */
+export type CounterOfferEventType =
+  | 'COUNTER_CREATED'
+  | 'COUNTER_ACCEPTED'
+  | 'COUNTER_REJECTED'
+  | 'COUNTER_EXPIRED';
+
+/**
+ * Counter-offer - buyer's negotiation response to a quote
+ */
+export interface CounterOffer {
+  id: string;
+  quoteId: string;
+  buyerId: string;
+
+  // Proposed terms
+  proposedPrice: number;
+  proposedQuantity?: number;
+  proposedDeliveryDays?: number;
+  message?: string;
+
+  // Status
+  status: CounterOfferStatus;
+
+  // Seller response
+  sellerResponse?: string;
+
+  // Timestamps
+  createdAt: string;
+  respondedAt?: string;
+  expiresAt?: string;
+
+  // Relations (populated when fetched)
+  quote?: Quote;
+}
+
+/**
+ * Create counter-offer request data
+ */
+export interface CreateCounterOfferData {
+  proposedPrice: number;
+  proposedQuantity?: number;
+  proposedDeliveryDays?: number;
+  message?: string;
+}
+
+/**
+ * Accept counter-offer request data
+ */
+export interface AcceptCounterOfferData {
+  response?: string;
+}
+
+/**
+ * Reject counter-offer request data
+ */
+export interface RejectCounterOfferData {
+  response: string;
+}
+
+/**
+ * Counter-offer with quote details
+ */
+export interface CounterOfferWithQuote extends CounterOffer {
+  quote: Quote;
+  originalPrice: number;
+  priceDifference: number;
+  priceDifferencePercent: number;
+}
+
+/**
+ * Get counter-offer status display configuration
+ */
+export function getCounterOfferStatusConfig(status: CounterOfferStatus): {
+  label: string;
+  labelKey: string;
+  color: 'warning' | 'success' | 'error' | 'info';
+  bgColor: string;
+  textColor: string;
+  icon: 'clock' | 'check-circle' | 'x-circle' | 'timer';
+} {
+  const configs: Record<CounterOfferStatus, ReturnType<typeof getCounterOfferStatusConfig>> = {
+    pending: {
+      label: 'Pending',
+      labelKey: 'quotes.counterPending',
+      color: 'warning',
+      bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+      textColor: 'text-yellow-700 dark:text-yellow-400',
+      icon: 'clock',
+    },
+    accepted: {
+      label: 'Accepted',
+      labelKey: 'quotes.counterAccepted',
+      color: 'success',
+      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      textColor: 'text-green-700 dark:text-green-400',
+      icon: 'check-circle',
+    },
+    rejected: {
+      label: 'Rejected',
+      labelKey: 'quotes.counterRejected',
+      color: 'error',
+      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      textColor: 'text-red-700 dark:text-red-400',
+      icon: 'x-circle',
+    },
+    expired: {
+      label: 'Expired',
+      labelKey: 'quotes.counterExpired',
+      color: 'info',
+      bgColor: 'bg-gray-100 dark:bg-gray-900/30',
+      textColor: 'text-gray-700 dark:text-gray-400',
+      icon: 'timer',
+    },
+  };
+  return configs[status];
+}
+
+/**
+ * Check if counter-offer can be submitted for a quote
+ */
+export function canSubmitCounterOffer(quote: Pick<Quote, 'status' | 'validUntil'>): {
+  canSubmit: boolean;
+  reason?: string;
+} {
+  if (quote.status !== 'sent' && quote.status !== 'revised') {
+    return { canSubmit: false, reason: 'Can only counter-offer on sent or revised quotes' };
+  }
+  if (new Date(quote.validUntil) < new Date()) {
+    return { canSubmit: false, reason: 'Quote has expired' };
+  }
+  return { canSubmit: true };
+}
+
+/**
+ * Check if seller can respond to counter-offer
+ */
+export function canRespondToCounterOffer(counter: Pick<CounterOffer, 'status'>): {
+  canRespond: boolean;
+  reason?: string;
+} {
+  if (counter.status !== 'pending') {
+    return { canRespond: false, reason: 'Counter-offer is no longer pending' };
+  }
+  return { canRespond: true };
+}
+
+// =============================================================================
+// Quote Attachment Types
+// =============================================================================
+
+/**
+ * Quote attachment types
+ */
+export type QuoteAttachmentType = 'spec_sheet' | 'certificate' | 'terms' | 'warranty' | 'other';
+
+/**
+ * Quote attachment - files attached to quotes
+ */
+export interface QuoteAttachment {
+  id: string;
+  quoteId: string;
+  name: string;
+  type: QuoteAttachmentType;
+  url: string;
+  size?: number;
+  mimeType?: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+/**
+ * Upload attachment request data
+ */
+export interface UploadAttachmentData {
+  name: string;
+  type: QuoteAttachmentType;
+  file: File;
+}
+
+/**
+ * Get attachment type display configuration
+ */
+export function getAttachmentTypeConfig(type: QuoteAttachmentType): {
+  label: string;
+  labelKey: string;
+  icon: 'file-text' | 'certificate' | 'scroll' | 'shield-check' | 'file';
+} {
+  const configs: Record<QuoteAttachmentType, ReturnType<typeof getAttachmentTypeConfig>> = {
+    spec_sheet: {
+      label: 'Spec Sheet',
+      labelKey: 'quotes.attachSpecSheet',
+      icon: 'file-text',
+    },
+    certificate: {
+      label: 'Certificate',
+      labelKey: 'quotes.attachCertificate',
+      icon: 'certificate',
+    },
+    terms: {
+      label: 'Terms & Conditions',
+      labelKey: 'quotes.attachTerms',
+      icon: 'scroll',
+    },
+    warranty: {
+      label: 'Warranty',
+      labelKey: 'quotes.attachWarranty',
+      icon: 'shield-check',
+    },
+    other: {
+      label: 'Other',
+      labelKey: 'quotes.attachOther',
+      icon: 'file',
+    },
+  };
+  return configs[type];
+}
+
+// =============================================================================
+// Extended Quote Types (with negotiation support)
+// =============================================================================
+
+/**
+ * Quote with full negotiation history
+ */
+export interface QuoteWithNegotiation extends Quote {
+  counterOffers: CounterOffer[];
+  attachments: QuoteAttachment[];
+  hasActiveCounterOffer: boolean;
+  latestCounterOffer?: CounterOffer;
+}
+
+/**
+ * Quote summary for buyer view
+ */
+export interface BuyerQuoteSummary {
+  id: string;
+  quoteNumber?: string;
+  rfqId: string;
+  rfqNumber?: string;
+
+  // Item info
+  itemName: string;
+  itemSku?: string;
+
+  // Seller info
+  sellerId: string;
+  sellerName: string;
+  sellerCompany?: string;
+
+  // Quote details
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  currency: string;
+  discount?: number;
+  deliveryDays: number;
+  deliveryTerms?: string;
+
+  // Validity
+  validUntil: string;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+  daysRemaining: number;
+
+  // Status
+  status: QuoteStatus;
+  version: number;
+
+  // Negotiation
+  hasCounterOffer: boolean;
+  counterOfferStatus?: CounterOfferStatus;
+
+  // Attachments
+  attachmentCount: number;
+
+  // Notes
+  notes?: string;
+
+  // Timestamps
+  createdAt: string;
+  sentAt?: string;
+}
+
+// =============================================================================
+// Gmail-Style RFQ Inbox Types
+// =============================================================================
+
+/**
+ * RFQ Label - for categorizing RFQs (like Gmail labels)
+ */
+export interface RFQLabel {
+  id: string;
+  sellerId: string;
+  name: string;
+  color: string;
+  icon?: string;
+  isSystem: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Default system labels
+ */
+export const SYSTEM_LABELS: Array<{ name: string; color: string }> = [
+  { name: 'New', color: '#3b82f6' },
+  { name: 'Pending', color: '#f59e0b' },
+  { name: 'Negotiation', color: '#8b5cf6' },
+  { name: 'Expiring', color: '#ef4444' },
+  { name: 'Won', color: '#22c55e' },
+  { name: 'Lost', color: '#6b7280' },
+];
+
+/**
+ * Label assignment (junction between RFQ and Label)
+ */
+export interface RFQLabelAssignment {
+  id: string;
+  rfqId: string;
+  labelId: string;
+  label: RFQLabel;
+  createdAt: string;
+}
+
+/**
+ * Create label request data
+ */
+export interface CreateLabelData {
+  name: string;
+  color: string;
+  icon?: string;
+}
+
+/**
+ * Update label request data
+ */
+export interface UpdateLabelData {
+  name?: string;
+  color?: string;
+  icon?: string;
+}
+
+/**
+ * RFQ Note - threaded internal notes
+ */
+export interface RFQNote {
+  id: string;
+  rfqId: string;
+  sellerId: string;
+  content: string;
+  parentId?: string;
+  replies?: RFQNote[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create note request data
+ */
+export interface CreateNoteData {
+  content: string;
+  parentId?: string;
+}
+
+/**
+ * Saved Reply - template for quick responses
+ */
+export interface SavedReply {
+  id: string;
+  sellerId: string;
+  name: string;
+  content: string;
+  category?: 'decline' | 'followup' | 'general' | 'quote';
+  shortcut?: string;
+  useCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create saved reply request data
+ */
+export interface CreateSavedReplyData {
+  name: string;
+  content: string;
+  category?: 'decline' | 'followup' | 'general' | 'quote';
+  shortcut?: string;
+}
+
+/**
+ * Update saved reply request data
+ */
+export interface UpdateSavedReplyData {
+  name?: string;
+  content?: string;
+  category?: 'decline' | 'followup' | 'general' | 'quote';
+  shortcut?: string;
+}
+
+/**
+ * Template placeholders for saved replies
+ */
+export const REPLY_PLACEHOLDERS = [
+  { key: '{{buyer_name}}', label: 'Buyer Name' },
+  { key: '{{company_name}}', label: 'Company Name' },
+  { key: '{{item_name}}', label: 'Item Name' },
+  { key: '{{quantity}}', label: 'Quantity' },
+  { key: '{{rfq_number}}', label: 'RFQ Number' },
+  { key: '{{delivery_date}}', label: 'Delivery Date' },
+] as const;
+
+/**
+ * Snooze options
+ */
+export type SnoozeOption = '2h' | '4h' | 'tomorrow' | 'next_week';
+
+/**
+ * RFQ Snooze info
+ */
+export interface RFQSnoozeInfo {
+  snoozedUntil: string;
+  reason?: string;
+}
+
+/**
+ * Snooze request data
+ */
+export interface SnoozeData {
+  until: string; // ISO datetime
+  reason?: string;
+}
+
+/**
+ * Bulk operation request data
+ */
+export interface BulkIdsData {
+  rfqIds: string[];
+}
+
+/**
+ * Bulk label operation request data
+ */
+export interface BulkLabelData {
+  rfqIds: string[];
+  labelId: string;
+  action: 'add' | 'remove';
+}
+
+/**
+ * Bulk snooze operation request data
+ */
+export interface BulkSnoozeData {
+  rfqIds: string[];
+  until: string;
+  reason?: string;
+}
+
+/**
+ * Get snooze display text
+ */
+export function getSnoozeDisplayText(snoozedUntil: string): string {
+  const snoozeDate = new Date(snoozedUntil);
+  const now = new Date();
+  const diffMs = snoozeDate.getTime() - now.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMs <= 0) return 'Snooze expired';
+  if (diffHours < 1) return 'Snoozing for less than 1h';
+  if (diffHours < 24) return `Snoozed for ${diffHours}h`;
+  if (diffDays === 1) return 'Snoozed until tomorrow';
+  return `Snoozed for ${diffDays} days`;
+}
+
+/**
+ * Calculate snooze until time from option
+ */
+export function getSnoozeUntilFromOption(option: SnoozeOption): Date {
+  const now = new Date();
+  switch (option) {
+    case '2h':
+      return new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    case '4h':
+      return new Date(now.getTime() + 4 * 60 * 60 * 1000);
+    case 'tomorrow': {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+      return tomorrow;
+    }
+    case 'next_week': {
+      const nextWeek = new Date(now);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      nextWeek.setHours(9, 0, 0, 0);
+      return nextWeek;
+    }
+    default:
+      return new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  }
+}
+
+/**
+ * Get label color configuration
+ */
+export function getLabelColorConfig(color: string): {
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+} {
+  // Map hex colors to Tailwind classes
+  const colorMap: Record<string, { bgColor: string; textColor: string; borderColor: string }> = {
+    '#3b82f6': { bgColor: 'bg-blue-100', textColor: 'text-blue-700', borderColor: 'border-blue-200' },
+    '#f59e0b': { bgColor: 'bg-amber-100', textColor: 'text-amber-700', borderColor: 'border-amber-200' },
+    '#8b5cf6': { bgColor: 'bg-violet-100', textColor: 'text-violet-700', borderColor: 'border-violet-200' },
+    '#ef4444': { bgColor: 'bg-red-100', textColor: 'text-red-700', borderColor: 'border-red-200' },
+    '#22c55e': { bgColor: 'bg-green-100', textColor: 'text-green-700', borderColor: 'border-green-200' },
+    '#6b7280': { bgColor: 'bg-gray-100', textColor: 'text-gray-700', borderColor: 'border-gray-200' },
+  };
+
+  return colorMap[color] || { bgColor: 'bg-gray-100', textColor: 'text-gray-700', borderColor: 'border-gray-200' };
 }

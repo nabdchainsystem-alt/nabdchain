@@ -1,6 +1,7 @@
 export { BuyerHome } from './BuyerHome';
 export { Marketplace } from './Marketplace';
 export { ItemDetails } from './ItemDetails';
+export { Cart } from './Cart';
 export { RequestQuote } from './RequestQuote';
 export { MyRFQs } from './MyRFQs';
 export { MyOrders } from './MyOrders';
@@ -10,5 +11,5 @@ export { BuyerWorkspace } from './BuyerWorkspace';
 export { BuyerAnalytics } from './BuyerAnalytics';
 export { BuyerExpenses } from './BuyerExpenses';
 export { BuyerSuppliers } from './BuyerSuppliers';
-export { Tests } from './Tests';
 export { DisputeCenter } from './DisputeCenter';
+export { OrderTracking } from './OrderTracking';

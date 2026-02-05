@@ -475,16 +475,11 @@ export const itemService = {
         orderBy: { updatedAt: 'desc' },
       });
 
-      // Return mock data if database is empty (demo mode)
-      if (items.length === 0) {
-        console.log('Database empty, using mock data for seller items');
-        return MOCK_ITEMS;
-      }
-
+      // Return actual data (empty array if no items - production mode)
       return items;
     } catch (error) {
-      console.log('Using mock data for seller items:', error);
-      return MOCK_ITEMS;
+      console.error('Error fetching seller items:', error);
+      return []; // Return empty array on error - frontend handles empty state
     }
   },
 
@@ -993,8 +988,16 @@ export const itemService = {
         successfulOrders: successfulOrders._sum.successfulOrders || 0,
       };
     } catch (error) {
-      console.log('Using mock data for seller stats:', error);
-      return MOCK_SELLER_STATS;
+      console.error('Error fetching seller stats:', error);
+      // Return empty stats on error - frontend handles empty state
+      return {
+        totalItems: 0,
+        activeItems: 0,
+        draftItems: 0,
+        outOfStockItems: 0,
+        totalQuotes: 0,
+        successfulOrders: 0,
+      };
     }
   },
 

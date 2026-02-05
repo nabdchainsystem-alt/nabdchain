@@ -9,24 +9,38 @@ export interface PublicSellerProfile {
   displayName: string;
   slug: string;
   shortDescription?: string;
+  tagline?: string;
   logoUrl?: string;
   coverUrl?: string;
   verified: boolean;
   vatRegistered: boolean;
+  topSeller?: boolean;
+  fastResponder?: boolean;
   location?: {
     city: string;
     country: string;
+    coverage?: string[];
   };
   memberSince: string;
+  yearsActive?: number;
+  industriesServed?: string[];
   statistics: SellerStatistics;
+  rating?: {
+    average: number;
+    count: number;
+  };
+  isSaved?: boolean;
 }
 
 export interface SellerStatistics {
   totalProducts: number;
+  activeListings?: number;
   totalOrders: number;
   responseRate: number;
   responseTime: string;
   fulfillmentRate: number;
+  onTimeDeliveryRate?: number;
+  disputeRate?: number;
   rfqWinRate: number;
 }
 
@@ -159,6 +173,45 @@ export const publicSellerService = {
 
     if (!response.ok) {
       throw new Error('Failed to fetch seller reviews');
+    }
+
+    return response.json();
+  },
+
+  // Save/unsave seller
+  async toggleSaveSeller(sellerId: string, token?: string): Promise<{ saved: boolean }> {
+    const response = await fetch(`${API_BASE}/api/buyer/saved-sellers/${sellerId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save seller');
+    }
+
+    return response.json();
+  },
+
+  // Contact seller (send message)
+  async contactSeller(
+    sellerId: string,
+    message: string,
+    token?: string
+  ): Promise<{ success: boolean; messageId: string }> {
+    const response = await fetch(`${API_BASE}/api/buyer/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ sellerId, message }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send message');
     }
 
     return response.json();

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, CountryConfig, CurrencyConfig } from '../config/currency';
-import { translations, type Language } from '../locales';
+import { getTranslation, type Language } from '../locales';
 
 type Theme = 'light' | 'dark';
 
@@ -82,8 +82,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLanguage(prev => prev === 'en' ? 'ar' : 'en');
   }, []);
 
+  // Use getTranslation with safe fallback for missing keys
   const t = useCallback((key: string) => {
-    return translations[language]?.[key] || key;
+    return getTranslation(language, key);
   }, [language]);
 
   const updateUserDisplayName = useCallback((name: string) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDropdownClose } from '../../hooks';
 import {
   MagnifyingGlass,
   GridFour,
@@ -17,6 +18,18 @@ import {
   CheckCircle,
   Scales,
   Factory,
+  FilePdf,
+  FileXls,
+  Plus,
+  Minus,
+  Trash,
+  UploadSimple,
+  ClipboardText,
+  Warning,
+  Crown,
+  TrendUp,
+  TrendDown,
+  Info,
 } from 'phosphor-react';
 import { Container, PageHeader, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
@@ -32,6 +45,23 @@ import {
   isOutOfStockRFQOnly,
 } from '../../types/item.types';
 import { RFQFormPanel } from '../components/RFQFormPanel';
+import { AddToCartButton } from '../components/AddToCartButton';
+import {
+  exportComparisonToPDF,
+  exportComparisonToExcel,
+  exportManualCompareToPDF,
+  exportManualCompareToExcel,
+  parseCSVToCompare,
+  getSampleCSVTemplate,
+  ComparisonExportItem,
+  ManualCompareColumn,
+  ManualCompareRow,
+} from '../../services/comparisonExportService';
+import {
+  calculateRecommendation,
+  scoreManualCompare,
+  ProductScoreInput,
+} from '../../services/compareScoringService';
 
 // =============================================================================
 // Smart Discovery Intelligence Types
@@ -125,6 +155,12 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
   const [selectedItemForRFQ, setSelectedItemForRFQ] = useState<Item | null>(null);
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
+
+  // Close sort dropdown on click outside or escape key
+  const sortDropdownRef = useDropdownClose<HTMLDivElement>(
+    () => setShowFilters(false),
+    showFilters
+  );
 
   // Toggle item for comparison (max 3)
   const toggleCompareItem = useCallback((item: Item, e?: React.MouseEvent) => {
@@ -252,7 +288,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
           </div>
 
           {/* Sort Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={sortDropdownRef}>
             <button
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors min-w-[180px]"
               style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
@@ -344,7 +380,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
         {/* Preloader Animation */}
         {showPreloader && (
           <div className="py-8">
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {[...Array(10)].map((_, i) => (
                 <div
                   key={i}
@@ -415,7 +451,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
           />
         )}
 
-        {/* Comparison Modal */}
+        {/* Comparison Modal (Products) */}
         {showComparePanel && selectedForCompare.length >= 2 && (
           <ComparisonModal
             items={selectedForCompare}
@@ -427,7 +463,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
 
         {/* Product Grid */}
         {!showPreloader && !loading && !error && smartSortedItems.length > 0 && viewMode === 'grid' && (
-          <div className="grid gap-4 pb-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-3 pb-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {smartSortedItems.map((item) => (
               <ProductCard
                 key={item.id}
@@ -843,7 +879,7 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ intel, compact = false }) => 
             </div>
             {/* Tooltip */}
             <div
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+              className="absolute bottom-full right-0 mb-1 px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
               style={{ backgroundColor: styles.textPrimary, color: styles.bgPrimary }}
             >
               {badge.tooltip}
@@ -938,28 +974,26 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
   const firstImage = images?.[0];
 
-  // Grid view - reduced size by 25%
+  // Grid view - compact cards with flex layout for alignment
   return (
     <div
       onClick={onClick}
-      className={`rounded-lg border overflow-hidden transition-all cursor-pointer group relative ${isSelectedForCompare ? 'ring-2' : ''}`}
+      className={`rounded-lg border overflow-hidden transition-all cursor-pointer group relative flex flex-col h-full ${isSelectedForCompare ? 'ring-2' : ''}`}
       style={{
         borderColor: isSelectedForCompare ? styles.info : styles.border,
         backgroundColor: styles.bgCard,
         ringColor: styles.info,
       }}
-      onMouseEnter={(e) => {
+      onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
         if (!isSelectedForCompare) {
           e.currentTarget.style.borderColor = styles.textMuted;
         }
-        e.currentTarget.style.transform = 'translateY(-2px)';
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
       }}
-      onMouseLeave={(e) => {
+      onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
         if (!isSelectedForCompare) {
           e.currentTarget.style.borderColor = styles.border;
         }
-        e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
@@ -1021,8 +1055,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* Content - reduced padding */}
-      <div className="p-3">
+      {/* Content - reduced padding, flex layout for alignment */}
+      <div className="p-3 flex flex-col flex-1">
         {/* Trust Badges Row */}
         <div className="flex items-center justify-between mb-1">
           <span className="text-[10px]" style={{ color: styles.textMuted }}>
@@ -1033,18 +1067,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Name */}
         <h3
-          className="font-medium text-xs mt-0.5 line-clamp-2 min-h-[2rem]"
+          className="font-medium text-xs mt-0.5 line-clamp-2 min-h-[2.5rem]"
           style={{ color: styles.textPrimary }}
         >
           {displayName}
         </h3>
 
-        {/* Manufacturer */}
-        {item.manufacturer && (
-          <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: styles.textMuted }}>
-            {item.manufacturer}
-          </p>
-        )}
+        {/* Manufacturer - fixed height slot */}
+        <p
+          className="text-[10px] mt-0.5 line-clamp-1 min-h-[1rem]"
+          style={{ color: styles.textMuted }}
+        >
+          {item.manufacturer || '\u00A0'}
+        </p>
+
+        {/* Spacer to push content below to bottom */}
+        <div className="flex-1" />
 
         {/* Price */}
         <div className="mt-2 flex items-center justify-between">
@@ -1065,6 +1103,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Supply Status Badge */}
           <SupplyBadge item={item} compact />
         </div>
+
+        {/* Add to Cart Button (for non-RFQ items) */}
+        {!isRfqOnly && (
+          <div className="mt-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <AddToCartButton
+              itemId={item.id}
+              size="sm"
+              variant="primary"
+              minOrderQty={item.minOrderQty}
+              maxOrderQty={item.maxOrderQty}
+              disabled={item.stock === 0}
+            />
+          </div>
+        )}
 
         {/* Meta */}
         <div className="mt-1.5 flex items-center gap-2 text-[10px]" style={{ color: styles.textMuted }}>
@@ -1104,12 +1156,19 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
   onCompare,
   isRTL,
 }) => {
-  const { styles, t, language } = usePortal();
+  const { styles, t, language, sidebarWidth, sidebarCollapsed } = usePortal();
+  const collapsedWidth = 64;
+  // Add 1px for border
+  const currentSidebarWidth = (sidebarCollapsed ? collapsedWidth : sidebarWidth) + 1;
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 border-t shadow-lg"
-      style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+      className="fixed bottom-0 z-40 shadow-lg"
+      style={{
+        backgroundColor: styles.bgCard,
+        left: isRTL ? 0 : currentSidebarWidth,
+        right: isRTL ? currentSidebarWidth : 0,
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -1182,13 +1241,16 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
 };
 
 // =============================================================================
-// Comparison Modal
+// Comparison Modal (Pro Version with Tabs, Recommendations, Manual Compare)
 // =============================================================================
+type CompareTab = 'products' | 'manual' | 'import';
+
 interface ComparisonModalProps {
   items: Item[];
   onClose: () => void;
   formatPrice: (price: number, currency: string) => string;
   isRTL: boolean;
+  defaultTab?: CompareTab;
 }
 
 const ComparisonModal: React.FC<ComparisonModalProps> = ({
@@ -1196,8 +1258,25 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   onClose,
   formatPrice,
   isRTL,
+  defaultTab = 'products',
 }) => {
   const { styles, t, language } = usePortal();
+  const [activeTab, setActiveTab] = useState<CompareTab>(defaultTab);
+
+  // Manual compare state
+  const [manualColumns, setManualColumns] = useState<ManualCompareColumn[]>([
+    { id: 'col-0', name: 'Option A' },
+    { id: 'col-1', name: 'Option B' },
+  ]);
+  const [manualRows, setManualRows] = useState<ManualCompareRow[]>([
+    { id: 'row-0', metric: 'Price', values: {} },
+    { id: 'row-1', metric: 'Quality', values: {} },
+  ]);
+
+  // Import state
+  const [importText, setImportText] = useState('');
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Comparison attributes
   const attributes = [
@@ -1225,7 +1304,82 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
       case 'reliability':
         return `${intel.rfqSuccessRate}%`;
       default:
-        return '-';
+        return '—';
+    }
+  };
+
+  // Convert items to scoring input
+  const getScoreInputs = (): ProductScoreInput[] => {
+    return items.map(item => {
+      const intel = getSupplierIntelligence(item);
+      const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
+      return {
+        id: item.id,
+        name: displayName,
+        price: requiresRFQ(item) ? null : item.price,
+        leadTimeDays: item.leadTimeDays || null,
+        stock: item.stock,
+        minOrderQty: item.minOrderQty,
+        responseSpeed: intel.responseSpeed,
+        reliabilityPercent: intel.rfqSuccessRate,
+        isVerified: intel.verified,
+        isFastResponder: intel.responseSpeed === 'fast',
+      };
+    });
+  };
+
+  // Calculate recommendation
+  const recommendation = useMemo(() => {
+    if (items.length < 2) return null;
+    return calculateRecommendation(getScoreInputs());
+  }, [items, language]);
+
+  // Prepare export data
+  const getExportData = (): ComparisonExportItem[] => {
+    return items.map(item => {
+      const intel = getSupplierIntelligence(item);
+      const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
+      return {
+        name: displayName,
+        price: getValue(item, 'price'),
+        leadTime: getValue(item, 'leadTime'),
+        availability: getValue(item, 'stock'),
+        minOrder: getValue(item, 'moq'),
+        responseSpeed: getValue(item, 'responseSpeed'),
+        reliability: getValue(item, 'reliability'),
+        isVerified: intel.verified,
+        isFastResponder: intel.responseSpeed === 'fast',
+      };
+    });
+  };
+
+  const handleExportPDF = () => {
+    if (activeTab === 'products') {
+      exportComparisonToPDF({
+        items: getExportData(),
+        exportDate: new Date().toISOString(),
+      });
+    } else {
+      exportManualCompareToPDF({
+        columns: manualColumns,
+        rows: manualRows,
+        exportDate: new Date().toISOString(),
+      });
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (activeTab === 'products') {
+      exportComparisonToExcel({
+        items: getExportData(),
+        exportDate: new Date().toISOString(),
+      });
+    } else {
+      exportManualCompareToExcel({
+        columns: manualColumns,
+        rows: manualRows,
+        exportDate: new Date().toISOString(),
+      });
     }
   };
 
@@ -1243,8 +1397,19 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
       return fastest.id;
     }
     if (key === 'stock') {
-      const inStock = items.filter(i => i.stock > 10);
-      if (inStock.length > 0) return inStock[0].id;
+      const bestStock = items.reduce((a, b) => (a.stock || 0) > (b.stock || 0) ? a : b);
+      if ((bestStock.stock || 0) > 0) return bestStock.id;
+      return null;
+    }
+    if (key === 'moq') {
+      const lowest = items.reduce((a, b) => a.minOrderQty < b.minOrderQty ? a : b);
+      return lowest.id;
+    }
+    if (key === 'responseSpeed') {
+      const fast = items.find(i => getSupplierIntelligence(i).responseSpeed === 'fast');
+      if (fast) return fast.id;
+      const moderate = items.find(i => getSupplierIntelligence(i).responseSpeed === 'moderate');
+      if (moderate) return moderate.id;
       return null;
     }
     if (key === 'reliability') {
@@ -1256,106 +1421,655 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
     return null;
   };
 
+  // Manual compare functions
+  const addManualColumn = () => {
+    if (manualColumns.length >= 4) return;
+    const newId = `col-${Date.now()}`;
+    setManualColumns([...manualColumns, { id: newId, name: `Option ${String.fromCharCode(65 + manualColumns.length)}` }]);
+  };
+
+  const removeManualColumn = (colId: string) => {
+    if (manualColumns.length <= 2) return;
+    setManualColumns(manualColumns.filter(c => c.id !== colId));
+    setManualRows(manualRows.map(row => {
+      const newValues = { ...row.values };
+      delete newValues[colId];
+      return { ...row, values: newValues };
+    }));
+  };
+
+  const updateColumnName = (colId: string, name: string) => {
+    setManualColumns(manualColumns.map(c => c.id === colId ? { ...c, name } : c));
+  };
+
+  const addManualRow = () => {
+    const newId = `row-${Date.now()}`;
+    setManualRows([...manualRows, { id: newId, metric: '', values: {} }]);
+  };
+
+  const removeManualRow = (rowId: string) => {
+    if (manualRows.length <= 1) return;
+    setManualRows(manualRows.filter(r => r.id !== rowId));
+  };
+
+  const updateRowMetric = (rowId: string, metric: string) => {
+    setManualRows(manualRows.map(r => r.id === rowId ? { ...r, metric } : r));
+  };
+
+  const updateRowValue = (rowId: string, colId: string, value: string) => {
+    setManualRows(manualRows.map(r => r.id === rowId ? { ...r, values: { ...r.values, [colId]: value } } : r));
+  };
+
+  const clearManualData = () => {
+    setManualColumns([
+      { id: 'col-0', name: 'Option A' },
+      { id: 'col-1', name: 'Option B' },
+    ]);
+    setManualRows([
+      { id: 'row-0', metric: 'Price', values: {} },
+      { id: 'row-1', metric: 'Quality', values: {} },
+    ]);
+  };
+
+  // Import functions
+  const handleImportPaste = () => {
+    const result = parseCSVToCompare(importText);
+    setImportErrors(result.errors);
+    if (result.columns.length > 0 && result.rows.length > 0) {
+      setManualColumns(result.columns);
+      setManualRows(result.rows);
+      if (result.errors.length === 0) {
+        setActiveTab('manual');
+        setImportText('');
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const result = parseCSVToCompare(text);
+      setImportErrors(result.errors);
+      if (result.columns.length > 0 && result.rows.length > 0) {
+        setManualColumns(result.columns);
+        setManualRows(result.rows);
+        if (result.errors.length === 0) {
+          setActiveTab('manual');
+        }
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const loadSampleTemplate = () => {
+    setImportText(getSampleCSVTemplate());
+  };
+
+  // Manual compare scoring
+  const manualScoring = useMemo(() => {
+    if (manualRows.length === 0) return { columnScores: {}, bestColumnId: null };
+    return scoreManualCompare({ columns: manualColumns, rows: manualRows });
+  }, [manualColumns, manualRows]);
+
+  // Get best value for manual row
+  const getManualBestValue = (row: ManualCompareRow): string | null => {
+    const metricLower = row.metric.toLowerCase();
+    const isLowerBetter = metricLower.includes('price') || metricLower.includes('cost') ||
+                          metricLower.includes('lead') || metricLower.includes('time');
+
+    const numericValues: { colId: string; value: number }[] = [];
+    manualColumns.forEach(col => {
+      const rawValue = row.values[col.id] || '';
+      const numValue = parseFloat(rawValue.replace(/[^0-9.-]/g, ''));
+      if (!isNaN(numValue)) {
+        numericValues.push({ colId: col.id, value: numValue });
+      }
+    });
+
+    if (numericValues.length < 2) return null;
+
+    if (isLowerBetter) {
+      const minVal = Math.min(...numericValues.map(v => v.value));
+      return numericValues.find(v => v.value === minVal)?.colId || null;
+    } else {
+      const maxVal = Math.max(...numericValues.map(v => v.value));
+      return numericValues.find(v => v.value === maxVal)?.colId || null;
+    }
+  };
+
+  // Tab button component
+  const TabButton = ({ tab, label }: { tab: CompareTab; label: string }) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+        activeTab === tab ? '' : 'hover:opacity-80'
+      }`}
+      style={{
+        backgroundColor: activeTab === tab ? styles.info : 'transparent',
+        color: activeTab === tab ? '#fff' : styles.textSecondary,
+      }}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div
-        className="w-full max-w-4xl max-h-[80vh] overflow-auto rounded-xl border shadow-xl"
+        className="w-full max-w-5xl max-h-[85vh] overflow-hidden rounded-xl border shadow-xl flex flex-col"
         style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
       >
         {/* Header */}
         <div
-          className="sticky top-0 flex items-center justify-between p-4 border-b"
-          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          className="flex items-center justify-between p-4 border-b flex-shrink-0"
+          style={{ borderColor: styles.border }}
         >
-          <div className="flex items-center gap-2">
-            <Scales size={20} style={{ color: styles.info }} />
-            <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-              Compare Products
-            </h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Scales size={20} style={{ color: styles.info }} />
+              <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                Compare
+              </h2>
+            </div>
+            {/* Tabs */}
+            <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
+              <TabButton tab="products" label={`Products (${items.length})`} />
+              <TabButton tab="manual" label="Manual" />
+              <TabButton tab="import" label="Import" />
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: styles.textMuted }}
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Export Buttons - show for products and manual tabs */}
+            {(activeTab === 'products' || activeTab === 'manual') && (
+              <>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
+                  style={{ borderColor: styles.border, color: styles.textSecondary }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgSecondary;
+                    e.currentTarget.style.color = styles.textPrimary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textSecondary;
+                  }}
+                  title="Export as PDF"
+                >
+                  <FilePdf size={16} weight="fill" />
+                  PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
+                  style={{ borderColor: styles.border, color: styles.textSecondary }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.bgSecondary;
+                    e.currentTarget.style.color = styles.textPrimary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textSecondary;
+                  }}
+                  title="Export as Excel"
+                >
+                  <FileXls size={16} weight="fill" />
+                  Excel
+                </button>
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: styles.textMuted }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* Comparison Table */}
-        <div className="p-4">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="p-3 text-left" style={{ color: styles.textMuted, width: '20%' }}></th>
-                {items.map(item => {
-                  const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
-                  const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-                  const firstImage = images?.[0];
-                  const intel = getSupplierIntelligence(item);
-                  return (
-                    <th
-                      key={item.id}
-                      className="p-3 text-center"
-                      style={{ width: `${80 / items.length}%` }}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <div
-                          className="w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden"
-                          style={{ backgroundColor: styles.bgSecondary }}
-                        >
-                          {firstImage ? (
-                            <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package size={24} style={{ color: styles.textMuted }} />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium text-center line-clamp-2" style={{ color: styles.textPrimary }}>
-                          {displayName}
-                        </span>
-                        <TrustBadges intel={intel} />
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {attributes.map((attr, idx) => {
-                const bestId = getBestValue(attr.key);
-                return (
-                  <tr
-                    key={attr.key}
-                    style={{ backgroundColor: idx % 2 === 0 ? styles.bgSecondary : 'transparent' }}
-                  >
-                    <td className="p-3 text-sm font-medium" style={{ color: styles.textSecondary }}>
-                      {attr.label}
-                    </td>
-                    {items.map(item => {
-                      const isBest = bestId === item.id;
-                      return (
-                        <td key={item.id} className="p-3 text-center">
-                          <span
-                            className={`text-sm ${isBest ? 'font-semibold' : ''}`}
-                            style={{ color: isBest ? styles.success : styles.textPrimary }}
+        {/* Content Area - Scrollable */}
+        <div className="flex-1 overflow-auto">
+          {/* ===== PRODUCTS TAB ===== */}
+          {activeTab === 'products' && (
+            <div className="p-4 space-y-6">
+              {/* Comparison Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="p-3 text-left" style={{ color: styles.textMuted, width: '18%' }}></th>
+                      {items.map(item => {
+                        const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
+                        const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+                        const firstImage = images?.[0];
+                        const intel = getSupplierIntelligence(item);
+                        const isBestPick = recommendation?.bestPickId === item.id;
+                        return (
+                          <th
+                            key={item.id}
+                            className="p-3 text-center relative"
+                            style={{ width: `${82 / items.length}%` }}
                           >
-                            {getValue(item, attr.key)}
-                            {isBest && ' ✓'}
-                          </span>
-                        </td>
+                            {/* Best Pick Badge */}
+                            {isBestPick && (
+                              <div
+                                className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                style={{ backgroundColor: styles.success, color: '#fff' }}
+                              >
+                                <Crown size={12} weight="fill" />
+                                Best Pick
+                              </div>
+                            )}
+                            <div className={`flex flex-col items-center gap-2 ${isBestPick ? 'mt-4' : ''}`}>
+                              <div
+                                className={`w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden ${isBestPick ? 'ring-2' : ''}`}
+                                style={{ backgroundColor: styles.bgSecondary, ...(isBestPick ? { ringColor: styles.success } : {}) }}
+                              >
+                                {firstImage ? (
+                                  <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Package size={24} style={{ color: styles.textMuted }} />
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-center line-clamp-2" style={{ color: styles.textPrimary }}>
+                                {displayName}
+                              </span>
+                              <TrustBadges intel={intel} />
+                            </div>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attributes.map((attr, idx) => {
+                      const bestId = getBestValue(attr.key);
+                      return (
+                        <tr
+                          key={attr.key}
+                          style={{ backgroundColor: idx % 2 === 0 ? styles.bgSecondary : 'transparent' }}
+                        >
+                          <td className="p-3 text-sm font-medium" style={{ color: styles.textSecondary }}>
+                            {attr.label}
+                          </td>
+                          {items.map(item => {
+                            const isBest = bestId === item.id;
+                            const value = getValue(item, attr.key);
+                            const isMissing = value === '—' || value === 'Contact';
+                            return (
+                              <td key={item.id} className="p-3 text-center">
+                                <span
+                                  className={`text-sm ${isBest ? 'font-semibold' : ''} ${isMissing ? 'italic' : ''}`}
+                                  style={{ color: isMissing ? styles.textMuted : (isBest ? styles.success : styles.textPrimary) }}
+                                >
+                                  {value}
+                                  {isBest && !isMissing && ' ✓'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                        </tr>
                       );
                     })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Recommendation Summary */}
+              {recommendation && recommendation.scores.length >= 2 && (
+                <div
+                  className="rounded-lg border p-4 space-y-4"
+                  style={{ borderColor: styles.border, backgroundColor: styles.bgSecondary }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Trophy size={18} style={{ color: styles.info }} />
+                    <h3 className="font-semibold" style={{ color: styles.textPrimary }}>
+                      Recommendation
+                    </h3>
+                  </div>
+
+                  {/* Score Bars */}
+                  <div className="grid gap-3">
+                    {recommendation.scores.map(score => {
+                      const displayName = items.find(i => i.id === score.id)?.name || score.name;
+                      return (
+                        <div key={score.id} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium flex items-center gap-2" style={{ color: styles.textPrimary }}>
+                              {displayName}
+                              {score.isBestPick && (
+                                <Crown size={14} weight="fill" style={{ color: styles.success }} />
+                              )}
+                            </span>
+                            <span className="text-sm font-semibold" style={{ color: score.isBestPick ? styles.success : styles.textSecondary }}>
+                              {score.totalScore}/100
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgHover }}>
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${score.totalScore}%`,
+                                backgroundColor: score.isBestPick ? styles.success : styles.info,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Best Pick Reasons */}
+                  {recommendation.bestPickReasons.length > 0 && (
+                    <div className="pt-2 border-t" style={{ borderColor: styles.border }}>
+                      <p className="text-xs font-medium mb-2" style={{ color: styles.textMuted }}>
+                        Why this is the best pick:
+                      </p>
+                      <ul className="space-y-1">
+                        {recommendation.bestPickReasons.map((reason, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm" style={{ color: styles.textSecondary }}>
+                            <CheckCircle size={14} weight="fill" style={{ color: styles.success, marginTop: 2, flexShrink: 0 }} />
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Pros/Cons per Product */}
+                  <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
+                    {recommendation.scores.map(score => (
+                      <div key={score.id} className="space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: styles.textPrimary }}>
+                          {score.name}
+                        </p>
+                        {score.pros.length > 0 && (
+                          <div className="space-y-1">
+                            {score.pros.map((pro, idx) => (
+                              <div key={idx} className="flex items-start gap-1.5 text-xs" style={{ color: styles.success }}>
+                                <TrendUp size={12} style={{ marginTop: 1, flexShrink: 0 }} />
+                                {pro}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {score.cons.length > 0 && (
+                          <div className="space-y-1">
+                            {score.cons.map((con, idx) => (
+                              <div key={idx} className="flex items-start gap-1.5 text-xs" style={{ color: styles.error }}>
+                                <TrendDown size={12} style={{ marginTop: 1, flexShrink: 0 }} />
+                                {con}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== MANUAL TAB ===== */}
+          {activeTab === 'manual' && (
+            <div className="p-4 space-y-4">
+              {/* Column Management */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm" style={{ color: styles.textSecondary }}>
+                  Create a custom comparison with {manualColumns.length} columns
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={addManualColumn}
+                    disabled={manualColumns.length >= 4}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    style={{
+                      backgroundColor: manualColumns.length >= 4 ? styles.bgSecondary : styles.info,
+                      color: manualColumns.length >= 4 ? styles.textMuted : '#fff',
+                      cursor: manualColumns.length >= 4 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <Plus size={12} />
+                    Add Column
+                  </button>
+                  <button
+                    onClick={clearManualData}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
+                    style={{ borderColor: styles.border, color: styles.textSecondary }}
+                  >
+                    <Trash size={12} />
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* Manual Comparison Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="p-2 text-left" style={{ width: '20%' }}>
+                        <span className="text-xs font-medium" style={{ color: styles.textMuted }}>Metric</span>
+                      </th>
+                      {manualColumns.map((col, idx) => {
+                        const isBest = manualScoring.bestColumnId === col.id;
+                        return (
+                          <th key={col.id} className="p-2 text-center relative" style={{ width: `${80 / manualColumns.length}%` }}>
+                            {isBest && (
+                              <div
+                                className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                style={{ backgroundColor: styles.success, color: '#fff' }}
+                              >
+                                <Crown size={10} weight="fill" />
+                                Best
+                              </div>
+                            )}
+                            <div className={`flex items-center justify-center gap-1 ${isBest ? 'mt-3' : ''}`}>
+                              <input
+                                type="text"
+                                value={col.name}
+                                onChange={(e) => updateColumnName(col.id, e.target.value)}
+                                className="w-full text-center text-sm font-medium bg-transparent border-b outline-none"
+                                style={{ borderColor: styles.border, color: styles.textPrimary }}
+                                placeholder={`Option ${idx + 1}`}
+                              />
+                              {manualColumns.length > 2 && (
+                                <button
+                                  onClick={() => removeManualColumn(col.id)}
+                                  className="p-1 rounded hover:opacity-70"
+                                  style={{ color: styles.textMuted }}
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th style={{ width: '40px' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {manualRows.map((row, idx) => {
+                      const bestColId = getManualBestValue(row);
+                      return (
+                        <tr
+                          key={row.id}
+                          style={{ backgroundColor: idx % 2 === 0 ? styles.bgSecondary : 'transparent' }}
+                        >
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              value={row.metric}
+                              onChange={(e) => updateRowMetric(row.id, e.target.value)}
+                              className="w-full text-sm bg-transparent border-b outline-none"
+                              style={{ borderColor: styles.border, color: styles.textPrimary }}
+                              placeholder="Metric name"
+                            />
+                          </td>
+                          {manualColumns.map(col => {
+                            const isBest = bestColId === col.id;
+                            return (
+                              <td key={col.id} className="p-2">
+                                <input
+                                  type="text"
+                                  value={row.values[col.id] || ''}
+                                  onChange={(e) => updateRowValue(row.id, col.id, e.target.value)}
+                                  className={`w-full text-center text-sm bg-transparent border rounded px-2 py-1 outline-none ${isBest ? 'font-semibold' : ''}`}
+                                  style={{
+                                    borderColor: isBest ? styles.success : styles.border,
+                                    color: isBest ? styles.success : styles.textPrimary,
+                                    backgroundColor: isBest ? `${styles.success}10` : 'transparent',
+                                  }}
+                                  placeholder="—"
+                                />
+                              </td>
+                            );
+                          })}
+                          <td className="p-2">
+                            {manualRows.length > 1 && (
+                              <button
+                                onClick={() => removeManualRow(row.id)}
+                                className="p-1 rounded hover:opacity-70"
+                                style={{ color: styles.textMuted }}
+                              >
+                                <Minus size={14} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Add Row Button */}
+              <button
+                onClick={addManualRow}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed transition-colors"
+                style={{ borderColor: styles.border, color: styles.textMuted }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = styles.info}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = styles.border}
+              >
+                <Plus size={14} />
+                Add Row
+              </button>
+            </div>
+          )}
+
+          {/* ===== IMPORT TAB ===== */}
+          {activeTab === 'import' && (
+            <div className="p-4 space-y-4">
+              <div className="flex items-start gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.info}10` }}>
+                <Info size={16} style={{ color: styles.info, marginTop: 2 }} />
+                <div className="text-sm" style={{ color: styles.textSecondary }}>
+                  <p className="font-medium" style={{ color: styles.textPrimary }}>Import comparison data</p>
+                  <p>Paste CSV data or upload a file. First row = headers, first column = metric names.</p>
+                </div>
+              </div>
+
+              {/* Paste Area */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                    Paste CSV data
+                  </label>
+                  <button
+                    onClick={loadSampleTemplate}
+                    className="text-xs"
+                    style={{ color: styles.info }}
+                  >
+                    Load sample template
+                  </button>
+                </div>
+                <textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  rows={6}
+                  className="w-full p-3 text-sm rounded-lg border outline-none resize-none font-mono"
+                  style={{
+                    backgroundColor: styles.bgPrimary,
+                    borderColor: styles.border,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder={`Metric,Option A,Option B,Option C\nPrice,$100,$120,$95\nLead Time,5 days,3 days,7 days`}
+                />
+                <button
+                  onClick={handleImportPaste}
+                  disabled={!importText.trim()}
+                  className="mt-2 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: importText.trim() ? styles.info : styles.bgSecondary,
+                    color: importText.trim() ? '#fff' : styles.textMuted,
+                    cursor: importText.trim() ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  <ClipboardText size={16} />
+                  Import Pasted Data
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px" style={{ backgroundColor: styles.border }} />
+                <span className="text-xs" style={{ color: styles.textMuted }}>or</span>
+                <div className="flex-1 h-px" style={{ backgroundColor: styles.border }} />
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed transition-colors"
+                  style={{ borderColor: styles.border, color: styles.textMuted }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = styles.info}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = styles.border}
+                >
+                  <UploadSimple size={24} />
+                  <span className="text-sm font-medium">Click to upload CSV file</span>
+                  <span className="text-xs">Supports .csv and .txt files</span>
+                </button>
+              </div>
+
+              {/* Import Errors */}
+              {importErrors.length > 0 && (
+                <div className="p-3 rounded-lg" style={{ backgroundColor: `${styles.error}10` }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Warning size={16} style={{ color: styles.error }} />
+                    <span className="text-sm font-medium" style={{ color: styles.error }}>Import Issues</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {importErrors.map((err, idx) => (
+                      <li key={idx} className="text-xs" style={{ color: styles.error }}>
+                        {err}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div
-          className="sticky bottom-0 flex items-center justify-end gap-3 p-4 border-t"
-          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          className="flex items-center justify-end gap-3 p-4 border-t flex-shrink-0"
+          style={{ borderColor: styles.border }}
         >
           <button
             onClick={onClose}

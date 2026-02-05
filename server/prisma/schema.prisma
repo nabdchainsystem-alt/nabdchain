@@ -18,6 +18,14 @@ model User {
   updatedAt                DateTime                  @updatedAt
   workspaceId              String?
   role                     String                    @default("member")
+
+  // Portal authentication fields
+  portalRole               String?                   // 'buyer' | 'seller' | null
+  emailVerified            Boolean                   @default(false)
+  phoneNumber              String?
+  companyName              String?                   // For buyers (simple company info)
+  passwordHash             String?                   // Hashed password for portal auth
+
   activities               Activity[]
   assignmentsSent          Assignment[]              @relation("AssignmentFrom")
   assignmentsReceived      Assignment[]              @relation("AssignmentTo")
@@ -41,9 +49,11 @@ model User {
   gtdItems                 GTDItem[]
   quickNotes               QuickNote[]
   items                    Item[]
+  buyerProfile             BuyerProfile?
 
   @@index([workspaceId])
   @@index([lastActiveAt])
+  @@index([portalRole])
 }
 
 model Activity {
@@ -620,7 +630,7 @@ model Notification {
   type        String   // 'mention', 'assignment', 'comment', 'status_change', etc.
   title       String
   body        String?
-  entityType  String?  // 'board', 'task', 'comment', 'workspace'
+  entityType  String?  // 'board', 'task', 'comment', 'workspace', 'rfq', 'order', 'invoice', 'dispute', 'payout'
   entityId    String?
   entityName  String?
   boardId     String?
@@ -634,10 +644,19 @@ model Notification {
   actionUrl   String?
   metadata    String?  // JSON
   createdAt   DateTime @default(now())
+  // Portal-specific fields
+  portalType  String?  // 'seller' | 'buyer' | null (for board notifications)
+  priority    String   @default("normal") // 'critical' | 'high' | 'normal' | 'low'
+  category    String?  // 'rfq' | 'order' | 'invoice' | 'dispute' | 'payout' | 'system'
+  expiresAt   DateTime? // Auto-expire low priority notifications
+  groupKey    String?  // For grouping similar notifications
 
   @@index([userId])
   @@index([userId, read])
   @@index([createdAt])
+  @@index([userId, portalType, read])
+  @@index([expiresAt])
+  @@index([groupKey])
 }
 
 model NotificationPreference {
@@ -745,6 +764,10 @@ model Item {
   visibility   String   @default("public") // public, rfq_only, hidden
   status       String   @default("draft")  // draft, active, out_of_stock, archived
 
+  // Buy Now Eligibility (Dual Purchase Flow)
+  allowDirectPurchase Boolean @default(true)  // Seller allows direct purchase without RFQ
+  isFixedPrice        Boolean @default(true)  // Price is fixed (not negotiable)
+
   // Pricing
   price        Float
   currency     String   @default("SAR")
@@ -833,6 +856,25 @@ model MarketplaceRFQ {
   negotiationRound Int   @default(0)
   maxNegotiationRounds Int @default(3)
 
+  // === RFQ SCORING & INTELLIGENCE ===
+  score             Int?      @default(0)    // 0-100 composite score
+  urgencyScore      Int?      @default(0)    // Based on deadline proximity
+  quantityScore     Int?      @default(0)    // Based on order value
+  buyerScore        Int?      @default(0)    // Based on buyer history
+  marginScore       Int?      @default(0)    // Estimated margin potential
+  priorityTier      String?   @default("medium") // critical, high, medium, low
+
+  // Response Assistant
+  suggestedPrice      Float?
+  suggestedLeadTime   Int?
+  pricingConfidence   Int?     @default(0)  // 0-100
+
+  // Buyer Intelligence (denormalized for performance)
+  buyerTotalOrders    Int      @default(0)
+  buyerTotalSpend     Float    @default(0)
+  buyerAvgOrderValue  Float    @default(0)
+  buyerLastOrderDate  DateTime?
+
   // Timestamps
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -858,6 +900,8 @@ model MarketplaceRFQ {
   @@index([sellerId, status])
   @@index([buyerId, status])
   @@index([lastActionAt])
+  @@index([sellerId, priorityTier])
+  @@index([sellerId, score])
 }
 
 model MarketplaceRFQMessage {
@@ -895,28 +939,319 @@ model MarketplaceRFQEvent {
   @@index([eventType])
 }
 
-// Legacy ItemRFQ
+// =============================================================================
+// =============================================================================
+// RFQ SYSTEM (Stage 1 + Stage 2)
+// =============================================================================
+// RFQ is a first-class business object, not a message.
+// Supports three entry points: item, profile, listing
+// Stage 1: Creation (new)
+// Stage 2: Inbox & Evaluation (new -> viewed -> under_review | ignored)
+// Stage 3+: Quotation (quoted -> accepted/rejected/expired)
+
 model ItemRFQ {
   id           String   @id @default(uuid())
-  itemId       String
+  rfqNumber    String?  // Human-readable: RFQ-2024-0001
+  itemId       String?  // Nullable for profile-level RFQs (general inquiry)
   buyerId      String
   sellerId     String
   quantity     Int
   message      String?
-  quotedPrice  Float?
-  quotedLeadTime Int?
-  responseMessage String?
-  respondedAt  DateTime?
-  status       String   @default("pending")
+
+  // Delivery Information (Stage 1)
+  deliveryLocation     String?   // Required: delivery address or city
+  deliveryCity         String?   // Parsed city name for filtering
+  deliveryCountry      String    @default("SA")
+  requiredDeliveryDate DateTime? // Buyer's requested delivery date
+
+  // RFQ Metadata (Stage 1)
+  priority     String   @default("normal") // normal, urgent, critical (buyer-set)
+  source       String   @default("item")   // item, profile, listing
+
+  // Stage 2: View tracking
+  viewedAt     DateTime?   // When seller first opened the RFQ
+  viewedBy     String?     // userId who first viewed
+
+  // Stage 2: Under Review tracking
+  underReviewAt DateTime?
+  underReviewBy String?
+
+  // Stage 2: Ignored tracking
+  ignoredAt     DateTime?
+  ignoredBy     String?
+  ignoredReason String?    // Required when marking as ignored
+
+  // Stage 2: Internal notes (seller-only)
+  internalNotes String?
+
+  // Stage 2: Priority (auto-calculated by system)
+  priorityLevel String   @default("medium") // high, medium, low (system-calculated)
+  priorityScore Int?     @default(50)       // 0-100 computed score
+
+  // Quote Response (Seller fills these - Stage 3)
+  quotedPrice       Float?
+  quotedLeadTime    Int?
+  responseMessage   String?
+  respondedAt       DateTime?
+
+  // Lifecycle
+  status       String   @default("new")  // new, viewed, under_review, ignored, quoted, accepted, rejected, expired
   expiresAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  // Gmail-style inbox features (Stage 2 Enhancement)
+  isRead       Boolean   @default(false)  // Explicit read state
+  isArchived   Boolean   @default(false)  // Archived state
+  archivedAt   DateTime?
+
+  // Relations
+  item         Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  events       ItemRFQEvent[]
+  quotes       Quote[]
+  labels       RFQLabelAssignment[]
+  notes        RFQNote[]
+  snooze       RFQSnooze?
 
   @@index([itemId])
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
+  @@index([sellerId, status])
+  @@index([sellerId, priorityLevel])
+  @@index([source])
+  @@index([priority])
+  @@index([viewedAt])
+  @@index([sellerId, isRead])
+  @@index([sellerId, isArchived])
+}
+
+// =============================================================================
+// RFQ EVENT LOG (Stage 2 - Audit Trail)
+// =============================================================================
+// Tracks all status changes and actions for audit and history display
+
+model ItemRFQEvent {
+  id          String   @id @default(uuid())
+  rfqId       String
+  actorId     String   // userId who performed the action
+  actorType   String   // seller, buyer, system
+  eventType   String   // RFQ_CREATED, RFQ_VIEWED, RFQ_UNDER_REVIEW, RFQ_IGNORED, NOTE_ADDED, PRIORITY_CALCULATED
+  fromStatus  String?  // Previous status
+  toStatus    String?  // New status
+  metadata    String?  // JSON: { reason, notes, priorityChange, etc. }
+  createdAt   DateTime @default(now())
+
+  rfq         ItemRFQ  @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+  @@index([rfqId, createdAt])
+  @@index([eventType])
+}
+
+// =============================================================================
+// QUOTATION SYSTEM (Stage 3)
+// =============================================================================
+// Quote is a first-class business document, not a field on RFQ.
+// Every update creates a new version; old versions are immutable.
+// Status flow: DRAFT -> SENT -> REVISED | EXPIRED
+
+model Quote {
+  id           String   @id @default(uuid())
+  quoteNumber  String?  // Human-readable: QT-2024-0001
+  rfqId        String
+  sellerId     String
+  buyerId      String
+
+  // Pricing
+  unitPrice    Float
+  quantity     Int
+  totalPrice   Float
+  currency     String   @default("SAR")
+  discount     Float?   // Optional explicit discount amount
+  discountPercent Float? // Optional discount percentage
+
+  // Delivery
+  deliveryDays Int      // Lead time in days
+  deliveryTerms String? // FOB, CIF, etc.
+
+  // Validity
+  validUntil   DateTime // Quote expiration date
+
+  // Notes
+  notes        String?  // Terms and conditions
+  internalNotes String? // Seller-only notes
+
+  // Versioning
+  version      Int      @default(1)
+  isLatest     Boolean  @default(true) // True for the latest version
+
+  // Status: draft, sent, revised, expired, accepted, rejected
+  status       String   @default("draft")
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sentAt       DateTime? // When quote was sent to buyer
+  expiredAt    DateTime? // When auto-expired by system
+  acceptedAt   DateTime? // When buyer accepted (Stage 4)
+  rejectedAt   DateTime? // When buyer rejected (Stage 4)
+
+  // Stage 4: Acceptance/Rejection tracking
+  acceptedBy       String?   // Buyer who accepted
+  rejectedBy       String?   // Buyer who rejected
+  rejectionReason  String?   // Why quote was rejected
+  orderId          String?   // Link to created order (if accepted)
+
+  // Relations
+  rfq          ItemRFQ  @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  versions     QuoteVersion[]
+  events       QuoteEvent[]
+  counterOffers CounterOffer[]
+  attachments  QuoteAttachment[]
+
+  @@index([rfqId])
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([status])
+  @@index([sellerId, status])
+  @@index([rfqId, isLatest])
+  @@index([validUntil])
+}
+
+// Immutable version history for quotes
+model QuoteVersion {
+  id           String   @id @default(uuid())
+  quoteId      String
+  version      Int
+
+  // Snapshot of quote data at this version
+  unitPrice    Float
+  quantity     Int
+  totalPrice   Float
+  currency     String
+  discount     Float?
+  discountPercent Float?
+  deliveryDays Int
+  deliveryTerms String?
+  validUntil   DateTime
+  notes        String?
+  status       String   // Status at the time of versioning
+
+  // Who created this version
+  createdBy    String
+  createdAt    DateTime @default(now())
+
+  // Change tracking
+  changeReason String?  // Why this version was created
+
+  quote        Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@unique([quoteId, version])
+  @@index([quoteId])
+  @@index([quoteId, version])
+}
+
+// Quote events for audit trail
+model QuoteEvent {
+  id          String   @id @default(uuid())
+  quoteId     String
+  actorId     String
+  actorType   String   // seller, buyer, system
+  eventType   String   // QUOTE_CREATED, QUOTE_UPDATED, QUOTE_SENT, QUOTE_REVISED, QUOTE_EXPIRED, QUOTE_ACCEPTED, QUOTE_REJECTED
+  fromStatus  String?
+  toStatus    String?
+  version     Int?     // Which version this event relates to
+  metadata    String?  // JSON for additional context
+  createdAt   DateTime @default(now())
+
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([quoteId, createdAt])
+  @@index([eventType])
+}
+
+// =============================================================================
+// COUNTER-OFFER SYSTEM (RFQ → Quote Negotiation)
+// =============================================================================
+
+// Counter-offer from buyer to negotiate quote terms
+model CounterOffer {
+  id                   String   @id @default(uuid())
+  quoteId              String
+  buyerId              String
+
+  // Proposed terms
+  proposedPrice        Float
+  proposedQuantity     Int?     // Optional: different quantity
+  proposedDeliveryDays Int?     // Optional: different lead time
+  message              String?  // Buyer's negotiation message
+
+  // Status: pending, accepted, rejected, expired
+  status               String   @default("pending")
+
+  // Seller response
+  sellerResponse       String?  // Seller's response message
+  respondedBy          String?  // Seller who responded
+
+  // Timestamps
+  createdAt            DateTime @default(now())
+  respondedAt          DateTime?
+  expiresAt            DateTime? // Auto-expire if no response
+
+  // If accepted, link to the revised quote created
+  revisedQuoteId       String?
+
+  // Relation
+  quote                Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([buyerId])
+  @@index([status])
+  @@index([quoteId, status])
+  @@index([expiresAt])
+}
+
+// Counter-offer events for audit trail
+model CounterOfferEvent {
+  id             String   @id @default(uuid())
+  counterOfferId String
+  actorId        String
+  actorType      String   // buyer, seller, system
+  eventType      String   // COUNTER_CREATED, COUNTER_ACCEPTED, COUNTER_REJECTED, COUNTER_EXPIRED
+  metadata       String?  // JSON for additional context
+  createdAt      DateTime @default(now())
+
+  @@index([counterOfferId])
+  @@index([counterOfferId, createdAt])
+}
+
+// =============================================================================
+// QUOTE ATTACHMENTS SYSTEM
+// =============================================================================
+
+// Files attached to quotes (spec sheets, certificates, etc.)
+model QuoteAttachment {
+  id         String   @id @default(uuid())
+  quoteId    String
+
+  // File info
+  name       String   // Display name
+  type       String   // spec_sheet, certificate, terms, warranty, other
+  url        String   // Storage URL
+  size       Int?     // File size in bytes
+  mimeType   String?  // MIME type
+
+  // Tracking
+  uploadedBy String   // Seller who uploaded
+  uploadedAt DateTime @default(now())
+
+  // Relation
+  quote      Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([quoteId, type])
 }
 
 // Legacy model - keeping for backward compatibility during migration
@@ -970,16 +1305,23 @@ model MarketplaceOrder {
   rfqId        String?
   rfqNumber    String?  // Denormalized for display
 
+  // Quote Reference (Stage 4 - if created from accepted quote)
+  quoteId      String?  @unique  // One order per quote
+  quoteNumber  String?  // Denormalized for display
+  quoteVersion Int?     // Version of quote that was accepted
+
   // Order Details
   quantity     Int
   unitPrice    Float
   totalPrice   Float
   currency     String   @default("SAR")
 
-  // Status State Machine
-  status       String   @default("pending_confirmation") // pending_confirmation, confirmed, in_progress, shipped, delivered, cancelled, failed, refunded
+  // Status State Machine (Stage 5 Fulfillment Lifecycle)
+  // pending_confirmation → confirmed → processing → shipped → delivered → closed
+  // Can be cancelled at various stages (with rejectionReason)
+  status       String   @default("pending_confirmation") // pending_confirmation, confirmed, processing, shipped, delivered, closed, cancelled, failed, refunded
   paymentStatus String  @default("unpaid") // unpaid, authorized, paid, refunded
-  fulfillmentStatus String @default("not_started") // not_started, packing, out_for_delivery, delivered
+  fulfillmentStatus String @default("not_started") // not_started, picking, packing, ready_to_ship, shipped, delivered
 
   // Source
   source       String   @default("direct_buy") // rfq, direct_buy
@@ -1000,12 +1342,56 @@ model MarketplaceOrder {
   buyerEmail   String?
   buyerCompany String?
 
+  // === ORDER HEALTH INDICATORS ===
+  healthStatus       String    @default("on_track")  // on_track, at_risk, delayed, critical
+  healthScore        Int?      @default(100)         // 0-100
+  healthLastChecked  DateTime?
+
+  // Exception tracking
+  hasException       Boolean   @default(false)
+  exceptionType      String?   // late_confirmation, shipping_delay, payment_overdue, partial_fulfillment
+  exceptionSeverity  String?   // warning, error, critical
+  exceptionMessage   String?
+  exceptionCreatedAt DateTime?
+  exceptionResolvedAt DateTime?
+
+  // SLA tracking
+  confirmationDeadline  DateTime?
+  shippingDeadline      DateTime?
+  deliveryDeadline      DateTime?
+
+  // Days calculations
+  daysToConfirm      Int?
+  daysToShip         Int?
+  daysToDeliver      Int?
+
+  // === BUYER PURCHASE INTELLIGENCE ===
+  // Price comparison (populated on order creation)
+  historicalAvgPrice    Float?    // Avg price buyer paid for same SKU
+  priceVariance         Float?    // % difference from historical avg
+  priceTrend            String?   // "up" | "down" | "stable"
+
+  // Supplier performance snapshot (captured at order time)
+  supplierOnTimeRate    Float?    // Supplier's on-time rate at purchase
+  supplierQualityScore  Float?    // Supplier's quality score (1-5)
+  supplierTotalOrders   Int?      // Total orders buyer has with this supplier
+
+  // Buyer urgency
+  buyerUrgencyScore     Int?      // 0-100 based on SLA proximity
+
+  // Stage 5: Fulfillment tracking
+  rejectionReason    String?    // If seller rejects order
+  shipmentDate       DateTime?  // When shipment was dispatched
+  deliveryConfirmedBy String?   // buyer, system (auto-confirmed)
+
   // Timestamps
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   confirmedAt  DateTime?
+  processingAt DateTime?  // Stage 5: When seller started processing
   shippedAt    DateTime?
   deliveredAt  DateTime?
+  closedAt     DateTime?  // Stage 5: When order was closed
   cancelledAt  DateTime?
 
   @@index([buyerId])
@@ -1016,12 +1402,21 @@ model MarketplaceOrder {
   @@index([orderNumber])
   @@index([itemId])
   @@index([rfqId])
+  @@index([quoteId])
+  @@index([sellerId, healthStatus])
+  @@index([sellerId, hasException])
+  // Buyer purchase intelligence indexes
+  @@index([buyerId, itemSku])
+  @@index([buyerId, createdAt])
+  @@index([buyerId, sellerId, createdAt])
+  @@index([buyerId, healthStatus])
 }
 
 model MarketplaceOrderAudit {
   id           String   @id @default(uuid())
   orderId      String
-  action       String   // created, confirmed, status_changed, payment_updated, shipped, delivered, cancelled, refunded, note_added, tracking_added
+  // Stage 5: Full fulfillment actions
+  action       String   // created, confirmed, rejected, processing_started, shipped, delivered, closed, cancelled, refunded, note_added, tracking_added, status_changed, payment_updated
   actor        String   // buyer, seller, system
   actorId      String?
   previousValue String?
@@ -1031,4 +1426,2027 @@ model MarketplaceOrderAudit {
 
   @@index([orderId])
   @@index([orderId, createdAt])
+}
+
+// =============================================================================
+// MARKETPLACE INVOICE & PAYMENT SYSTEM (Stage 6)
+// =============================================================================
+// Invoice is an immutable legal document generated from delivered orders.
+// Lifecycle: DRAFT -> ISSUED -> PAID | OVERDUE | CANCELLED
+// Once ISSUED, content is frozen; only status can change.
+// =============================================================================
+
+model MarketplaceInvoice {
+  id              String    @id @default(uuid())
+  invoiceNumber   String    @unique  // Human-readable: INV-2024-0001
+
+  // Reference - One invoice per order
+  orderId         String    @unique
+  orderNumber     String
+
+  // Parties
+  sellerId        String
+  buyerId         String
+
+  // Seller Snapshot (immutable after issue)
+  sellerName      String
+  sellerCompany   String?
+  sellerVatNumber String?
+  sellerAddress   String?   // JSON
+
+  // Buyer Snapshot
+  buyerName       String
+  buyerCompany    String?
+  buyerAddress    String?   // JSON (shipping address from order)
+
+  // Line Items (JSON - immutable snapshot from order)
+  lineItems       String    // JSON: [{sku, name, quantity, unitPrice, total}]
+
+  // Amounts (SAR)
+  subtotal        Float
+  vatRate         Float     @default(15)   // Saudi Arabia: 15%
+  vatAmount       Float
+  totalAmount     Float
+  currency        String    @default("SAR")
+
+  // Platform Fee Tracking
+  platformFeeRate     Float?    @default(0)    // Percentage (e.g., 2.5)
+  platformFeeAmount   Float?    @default(0)
+  netToSeller         Float?                    // totalAmount - platformFeeAmount
+
+  // Status: draft -> issued -> paid | overdue | cancelled
+  status          String    @default("draft")
+
+  // Payment Terms
+  paymentTerms    String?   @default("NET_30")  // NET_0, NET_7, NET_14, NET_30
+  dueDate         DateTime?
+
+  // Notes
+  notes           String?
+  termsAndConditions String?
+
+  // Immutability tracking
+  issuedAt        DateTime?   // When invoice was finalized (immutable after this)
+  issuedBy        String?     // User ID who issued
+
+  // Status timestamps
+  paidAt          DateTime?
+  overdueAt       DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  payments        MarketplacePayment[]
+  events          MarketplaceInvoiceEvent[]
+
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  @@index([orderId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([invoiceNumber])
+}
+
+model MarketplacePayment {
+  id              String    @id @default(uuid())
+  paymentNumber   String    @unique  // Human-readable: PAY-2024-0001
+
+  // References
+  invoiceId       String
+  orderId         String              // Denormalized for queries
+  buyerId         String
+  sellerId        String
+
+  // Payment Details
+  amount          Float
+  currency        String    @default("SAR")
+
+  // Payment Method
+  paymentMethod   String    @default("bank_transfer")  // bank_transfer, card, wallet, cod
+  bankReference   String?   // Bank transfer reference number
+  bankName        String?
+
+  // Status: pending -> confirmed | failed
+  status          String    @default("pending")
+
+  // Confirmation
+  confirmedAt     DateTime?
+  confirmedBy     String?   // User who confirmed (seller or system)
+  confirmationNote String?
+
+  // Failure tracking
+  failedAt        DateTime?
+  failureReason   String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  invoice         MarketplaceInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([orderId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  // Prevent duplicate bank reference for same invoice (anti-duplication)
+  @@unique([invoiceId, bankReference])
+}
+
+model MarketplaceInvoiceEvent {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  actorId       String?
+  actorType     String   // buyer, seller, system
+  eventType     String   // INVOICE_CREATED, INVOICE_ISSUED, INVOICE_PAID, INVOICE_OVERDUE, INVOICE_CANCELLED, PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_FAILED
+  fromStatus    String?
+  toStatus      String?
+  metadata      String?  // JSON
+  createdAt     DateTime @default(now())
+
+  invoice       MarketplaceInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([invoiceId, createdAt])
+  @@index([eventType])
+}
+
+// =============================================================================
+// DISPUTE SYSTEM (Stage 7)
+// =============================================================================
+// Dispute is a first-class business object representing a buyer complaint.
+// Lifecycle: OPEN -> UNDER_REVIEW -> SELLER_RESPONDED -> RESOLVED | REJECTED | ESCALATED
+// Platform remains neutral; resolution requires mutual agreement or escalation.
+// =============================================================================
+
+model MarketplaceDispute {
+  id                String    @id @default(uuid())
+  disputeNumber     String    @unique  // Human-readable: DSP-2024-0001
+
+  // References
+  orderId           String
+  orderNumber       String    // Denormalized for display
+  invoiceId         String?   // Link to invoice if exists
+  invoiceNumber     String?
+
+  // Parties (snapshot - immutable after creation)
+  buyerId           String
+  sellerId          String
+  buyerName         String
+  buyerEmail        String?
+  buyerCompany      String?
+  sellerName        String
+  sellerCompany     String?
+
+  // Item snapshot (immutable)
+  itemId            String
+  itemName          String
+  itemSku           String
+  quantity          Int
+  unitPrice         Float
+  totalPrice        Float
+  currency          String    @default("SAR")
+
+  // Dispute Details
+  reason            String    // wrong_item, damaged_goods, missing_quantity, late_delivery, quality_issue, other
+  description       String    @db.Text
+  requestedResolution String? // full_refund, partial_refund, replacement, other
+  requestedAmount   Float?    // If partial refund requested
+
+  // Evidence (JSON array of file metadata)
+  evidence          String?   @db.Text // JSON: [{ id, name, type, url, uploadedAt }]
+
+  // Status State Machine
+  // OPEN -> UNDER_REVIEW -> SELLER_RESPONDED -> RESOLVED | REJECTED | ESCALATED -> CLOSED
+  status            String    @default("open")
+  priorityLevel     String    @default("medium") // low, medium, high, urgent
+
+  // SLA Deadlines
+  responseDeadline  DateTime? // When seller must respond
+  resolutionDeadline DateTime? // When dispute must be resolved
+
+  // Seller Response
+  sellerResponseType String?  // accept_responsibility, reject, propose_resolution
+  sellerResponse    String?   @db.Text
+  sellerProposedResolution String? // If propose_resolution: full_refund, partial_refund, replacement
+  sellerProposedAmount Float? // If partial resolution proposed
+  respondedAt       DateTime?
+
+  // Resolution (Final outcome)
+  resolution        String?   // full_refund, partial_refund, replacement, no_action, other
+  resolutionAmount  Float?    // Final amount if refund
+  resolvedBy        String?   // buyer_accepted, seller_accepted, platform, auto_closed
+  resolutionNotes   String?   @db.Text
+
+  // Escalation
+  isEscalated       Boolean   @default(false)
+  escalatedAt       DateTime?
+  escalationReason  String?   @db.Text
+
+  // Internal Notes (platform only - not visible to parties)
+  internalNotes     String?   @db.Text
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  closedAt          DateTime?
+
+  // Relations
+  returnRequest     MarketplaceReturn?
+  events            MarketplaceDisputeEvent[]
+
+  @@index([orderId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([disputeNumber])
+  @@index([reason])
+  @@index([priorityLevel])
+  @@index([responseDeadline])
+}
+
+model MarketplaceDisputeEvent {
+  id            String    @id @default(uuid())
+  disputeId     String
+  actorId       String?
+  actorType     String    // buyer, seller, system, platform
+  eventType     String    // DISPUTE_CREATED, DISPUTE_VIEWED, SELLER_RESPONDED, RESOLUTION_PROPOSED, BUYER_ACCEPTED, BUYER_REJECTED, ESCALATED, RESOLVED, CLOSED, EVIDENCE_ADDED, NOTE_ADDED
+  fromStatus    String?
+  toStatus      String?
+  metadata      String?   @db.Text // JSON
+  createdAt     DateTime  @default(now())
+
+  dispute       MarketplaceDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+  @@index([disputeId, createdAt])
+  @@index([eventType])
+}
+
+// =============================================================================
+// RETURN REQUEST SYSTEM (Sub-flow of Disputes)
+// =============================================================================
+// Return is created when dispute resolution requires physical goods return.
+// Lifecycle: REQUESTED -> APPROVED | REJECTED
+//            APPROVED -> IN_TRANSIT -> RECEIVED -> REFUND_PROCESSED -> CLOSED
+// =============================================================================
+
+model MarketplaceReturn {
+  id                String    @id @default(uuid())
+  returnNumber      String    @unique  // Human-readable: RET-2024-0001
+
+  // References
+  disputeId         String    @unique  // One return per dispute
+  orderId           String
+  orderNumber       String
+
+  // Parties
+  buyerId           String
+  sellerId          String
+
+  // Return Details
+  returnType        String    // full_return, partial_return, replacement_only
+  returnReason      String    // Copy from dispute reason
+
+  // Items to return (JSON - subset of order if partial)
+  returnItems       String    @db.Text // JSON: [{ itemId, itemName, sku, quantity, unitPrice }]
+
+  // Status State Machine
+  // REQUESTED -> APPROVED | REJECTED
+  // APPROVED -> IN_TRANSIT -> RECEIVED -> REFUND_PROCESSED -> CLOSED
+  status            String    @default("requested")
+
+  // Shipping Info (Buyer fills when shipping)
+  returnTrackingNumber String?
+  returnCarrier     String?
+  shippedAt         DateTime?
+
+  // Return Address (Seller provides on approval)
+  returnAddress     String?   @db.Text // JSON: { name, company, street1, street2, city, state, postalCode, country, phone }
+
+  // Approval
+  approvedAt        DateTime?
+  approvedBy        String?
+  approvalNotes     String?   @db.Text
+
+  // Rejection
+  rejectedAt        DateTime?
+  rejectedBy        String?
+  rejectionReason   String?   @db.Text
+
+  // Receipt Confirmation (Seller confirms receipt)
+  receivedAt        DateTime?
+  receivedBy        String?
+  receivedCondition String?   // as_expected, damaged_in_transit, partial_received, other
+  receivedNotes     String?   @db.Text
+
+  // Refund Processing
+  refundAmount      Float?
+  refundStatus      String?   // pending, processed, failed
+  refundProcessedAt DateTime?
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  closedAt          DateTime?
+
+  // Relations
+  dispute           MarketplaceDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  events            MarketplaceReturnEvent[]
+
+  @@index([disputeId])
+  @@index([orderId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([returnNumber])
+}
+
+model MarketplaceReturnEvent {
+  id            String    @id @default(uuid())
+  returnId      String
+  actorId       String?
+  actorType     String    // buyer, seller, system
+  eventType     String    // RETURN_REQUESTED, RETURN_APPROVED, RETURN_REJECTED, RETURN_SHIPPED, RETURN_RECEIVED, REFUND_PROCESSED, RETURN_CLOSED
+  fromStatus    String?
+  toStatus      String?
+  metadata      String?   @db.Text // JSON
+  createdAt     DateTime  @default(now())
+
+  return        MarketplaceReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@index([returnId])
+  @@index([returnId, createdAt])
+  @@index([eventType])
+}
+
+// =============================================================================
+// SLA TRACKING SYSTEM (Stage 7)
+// =============================================================================
+// Tracks SLA performance for analytics and trust scoring.
+// No auto-penalties - data collection for seller performance metrics.
+// =============================================================================
+
+model SLARecord {
+  id              String    @id @default(uuid())
+
+  // Context
+  entityType      String    // order, dispute, return
+  entityId        String
+  entityNumber    String?   // Human-readable number for display
+
+  // Parties
+  sellerId        String
+  buyerId         String?
+
+  // SLA Type
+  slaType         String    // order_confirmation, shipping, delivery, dispute_response, return_approval
+
+  // Timing
+  expectedAt      DateTime  // When SLA required completion
+  actualAt        DateTime? // When actually completed (null if not yet)
+
+  // Breach Status
+  isBreach        Boolean   @default(false)
+  breachDuration  Int?      // Minutes past deadline (if breach)
+
+  // Context
+  slaHours        Int?      // Original SLA in hours
+  slaDays         Int?      // Original SLA in days
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([sellerId])
+  @@index([sellerId, slaType])
+  @@index([sellerId, isBreach])
+  @@index([slaType])
+  @@index([isBreach])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// BUYER PURCHASE INTELLIGENCE
+// =============================================================================
+
+// Track historical prices for price comparison
+model BuyerPriceHistory {
+  id          String   @id @default(uuid())
+  buyerId     String
+  itemSku     String
+  itemName    String
+  sellerId    String
+  sellerName  String
+  unitPrice   Float
+  quantity    Int
+  currency    String   @default("SAR")
+  orderId     String
+  orderDate   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([buyerId, itemSku])
+  @@index([buyerId, itemSku, orderDate])
+  @@index([buyerId, sellerId])
+}
+
+// Aggregated supplier performance metrics per buyer-seller relationship
+model BuyerSupplierMetrics {
+  id                  String    @id @default(uuid())
+  buyerId             String
+  sellerId            String
+  sellerName          String
+
+  // Order metrics
+  totalOrders         Int       @default(0)
+  completedOrders     Int       @default(0)
+  cancelledOrders     Int       @default(0)
+  totalSpend          Float     @default(0)
+
+  // Performance metrics
+  onTimeDeliveryRate  Float     @default(0)   // Percentage 0-100
+  avgDeliveryDays     Float?                   // Average days to deliver
+  qualityScore        Float     @default(0)   // 1-5 stars
+  issueCount          Int       @default(0)
+  avgResponseTime     Float?                   // Hours to respond to RFQs
+
+  // Calculated
+  lastOrderDate       DateTime?
+  firstOrderDate      DateTime?
+  avgOrderValue       Float     @default(0)
+
+  // Timestamps
+  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime  @default(now())
+
+  @@unique([buyerId, sellerId])
+  @@index([buyerId])
+  @@index([buyerId, onTimeDeliveryRate])
+  @@index([buyerId, totalSpend])
+}
+
+// =============================================================================
+// Buyer Workspace Models
+// =============================================================================
+
+model BuyerPurchaseOrder {
+  id              String    @id @default(uuid())
+  poNumber        String    @unique // Human-readable: PO-2024-0001
+  buyerId         String
+  supplierId      String?
+  supplierName    String    // Denormalized for display
+
+  // Order Details
+  totalAmount     Float
+  currency        String    @default("SAR")
+
+  // Status: draft, sent, approved, delivered, cancelled
+  status          String    @default("draft")
+
+  // Dates
+  orderDate       DateTime  @default(now())
+  expectedDelivery DateTime?
+  deliveredAt     DateTime?
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  supplier        BuyerSupplier? @relation(fields: [supplierId], references: [id])
+  items           BuyerPurchaseOrderItem[]
+
+  @@index([buyerId])
+  @@index([buyerId, status])
+  @@index([supplierId])
+  @@index([orderDate])
+}
+
+model BuyerPurchaseOrderItem {
+  id              String    @id @default(uuid())
+  purchaseOrderId String
+  productName     String
+  sku             String?
+  quantity        Int
+  unitPrice       Float
+  totalPrice      Float
+
+  purchaseOrder   BuyerPurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+}
+
+model BuyerSupplier {
+  id              String    @id @default(uuid())
+  buyerId         String
+  name            String
+  country         String?
+  email           String?
+  phone           String?
+  address         String?
+  rating          Float?    @default(0)
+
+  // Aggregated stats (updated on order changes)
+  totalOrders     Int       @default(0)
+  totalSpend      Float     @default(0)
+  lastOrderDate   DateTime?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  purchaseOrders  BuyerPurchaseOrder[]
+
+  @@unique([buyerId, name])
+  @@index([buyerId])
+}
+
+model BuyerInventory {
+  id              String    @id @default(uuid())
+  buyerId         String
+  productName     String
+  sku             String
+
+  // Stock levels
+  quantity        Int       @default(0)
+  reorderLevel    Int       @default(10)
+
+  // Status: ok, low, critical
+  status          String    @default("ok")
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([buyerId, sku])
+  @@index([buyerId])
+  @@index([buyerId, status])
+}
+
+model BuyerExpense {
+  id              String    @id @default(uuid())
+  buyerId         String
+
+  // Category: shipping, customs, storage, other
+  category        String
+  amount          Float
+  currency        String    @default("SAR")
+  date            DateTime  @default(now())
+  notes           String?
+
+  // Reference to related purchase order (optional)
+  purchaseOrderId String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([buyerId])
+  @@index([buyerId, category])
+  @@index([buyerId, date])
+}
+
+// =============================================================================
+// SELLER SETTINGS & PROFILE SYSTEM
+// =============================================================================
+
+model SellerProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+
+  // Public Profile
+  displayName     String
+  slug            String    @unique  // URL-friendly username
+  shortDescription String?  // Max 160 chars
+  logoUrl         String?
+  coverUrl        String?
+
+  // Profile Status: incomplete, pending_review, approved, suspended
+  status          String    @default("incomplete")
+  approvedAt      DateTime?
+  suspendedAt     DateTime?
+  suspensionReason String?
+
+  // Verification flags
+  profileComplete     Boolean @default(false)
+  companyVerified     Boolean @default(false)
+  bankVerified        Boolean @default(false)
+  documentsVerified   Boolean @default(false)
+
+  // Can publish products only when all verified
+  canPublish      Boolean   @default(false)
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  company         SellerCompany?
+  address         SellerAddress?
+  bank            SellerBank?
+  contact         SellerContact?
+  documents       SellerDocument[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([slug])
+}
+
+model SellerCompany {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // Legal Information
+  legalName           String
+  crNumber            String?   // Commercial Registration Number
+  vatNumber           String?   // VAT Certificate Number
+  vatDocumentUrl      String?   // Uploaded VAT certificate
+  companyType         String?   // LLC, Establishment, Corporation, Partnership, etc.
+  dateOfEstablishment DateTime?
+
+  // Verification
+  verificationStatus  String    @default("pending") // pending, approved, rejected
+  verifiedAt          DateTime?
+  rejectionReason     String?
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller              SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([verificationStatus])
+}
+
+model SellerAddress {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // National Address (Saudi style, extensible)
+  country             String    @default("SA")
+  city                String
+  district            String?
+  street              String?
+  buildingNumber      String?
+  postalCode          String?
+  additionalInfo      String?
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller              SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model SellerBank {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // Banking Information
+  bankName            String
+  accountHolderName   String
+  iban                String    // Should be encrypted in production
+  ibanMasked          String?   // e.g., "SA** **** **** 1234"
+  currency            String    @default("SAR")
+  bankCountry         String    @default("SA")
+
+  // Verification
+  verificationStatus  String    @default("pending") // pending, verified, rejected
+  verifiedAt          DateTime?
+  rejectionReason     String?
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller              SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([verificationStatus])
+}
+
+model SellerContact {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // Business Contact
+  businessEmail       String
+  phoneNumber         String
+  whatsapp            String?
+  supportContactName  String?
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller              SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model SellerDocument {
+  id                  String    @id @default(uuid())
+  sellerId            String
+
+  // Document Info
+  documentType        String    // vat_certificate, cr_document, bank_statement, other
+  fileName            String
+  fileUrl             String
+  fileSize            Int?
+  mimeType            String?
+
+  // Verification
+  verificationStatus  String    @default("pending") // pending, approved, rejected
+  verifiedAt          DateTime?
+  verifiedBy          String?
+  rejectionReason     String?
+
+  // Timestamps
+  uploadedAt          DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  seller              SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([documentType])
+  @@index([verificationStatus])
+}
+
+model SellerAuditLog {
+  id                  String    @id @default(uuid())
+  sellerId            String
+  userId              String    // Who made the change
+
+  // Change Info
+  action              String    // create, update, delete
+  entityType          String    // profile, company, bank, address, contact, document
+  entityId            String?
+  previousValue       String?   // JSON
+  newValue            String?   // JSON
+  ipAddress           String?
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+
+  @@index([sellerId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// =============================================================================
+// BUYER PROFILE SYSTEM
+// =============================================================================
+
+model BuyerProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+
+  // Basic Info
+  fullName        String
+  companyName     String
+  phoneNumber     String?
+  country         String?
+  city            String?
+
+  // Profile Status: active, suspended
+  status          String    @default("active")
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+// =============================================================================
+// SELLER WORKSPACE - EXECUTION LAYER
+// =============================================================================
+
+// Manual Invoice for offline/custom orders
+model SellerInvoice {
+  id              String    @id @default(uuid())
+  sellerId        String
+  invoiceNumber   String
+
+  // Customer (may not be in system)
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  customerCompany String?
+
+  // Line items (JSON array)
+  lineItems       String    // JSON: [{id, name, sku, quantity, unitPrice, total}]
+
+  // Totals
+  subtotal        Float
+  vatRate         Float     @default(15)
+  vatAmount       Float
+  total           Float
+  currency        String    @default("SAR")
+
+  // Status: draft, sent, paid, cancelled, overdue
+  status          String    @default("draft")
+
+  // Dates
+  issueDate       DateTime  @default(now())
+  dueDate         DateTime?
+  paidAt          DateTime?
+
+  // Notes
+  notes           String?
+  termsAndConditions String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([sellerId, invoiceNumber])
+  @@index([sellerId])
+  @@index([sellerId, status])
+  @@index([issueDate])
+}
+
+// Stock Adjustment Log
+model StockAdjustment {
+  id              String    @id @default(uuid())
+  sellerId        String
+  itemId          String
+
+  // Adjustment details
+  previousQty     Int
+  newQty          Int
+  adjustmentQty   Int       // Can be negative
+  reason          String    // received, sold, damaged, returned, correction, reserved, released, other
+  notes           String?
+
+  // Reference (optional)
+  referenceType   String?   // order, invoice, purchase, transfer
+  referenceId     String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  createdBy       String?
+
+  @@index([sellerId])
+  @@index([itemId])
+  @@index([sellerId, createdAt])
+  @@index([reason])
+}
+
+// Cost Tag for expense/COGS tracking
+model ItemCostTag {
+  id              String    @id @default(uuid())
+  sellerId        String
+  itemId          String
+
+  // Cost details
+  costType        String    // purchase, shipping, customs, storage, marketing, platform_fee, other
+  amount          Float
+  currency        String    @default("SAR")
+  date            DateTime  @default(now())
+
+  // Reference
+  vendor          String?
+  invoiceRef      String?
+  notes           String?
+
+  // For margin calculation
+  quantityAffected Int?     // How many units this cost affects
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+
+  @@index([sellerId])
+  @@index([itemId])
+  @@index([sellerId, costType])
+  @@index([sellerId, date])
+}
+
+// Buyer Profile (seller's CRM view)
+model SellerBuyerProfile {
+  id              String    @id @default(uuid())
+  sellerId        String
+  buyerId         String?   // Null if manual entry (non-platform buyer)
+
+  // Contact info
+  name            String
+  company         String?
+  email           String?
+  phone           String?
+  whatsapp        String?
+  address         String?
+
+  // Tags and notes
+  tags            String?   // JSON array
+  notes           String?
+
+  // Computed stats (updated on order changes)
+  totalOrders     Int       @default(0)
+  totalSpend      Float     @default(0)
+  avgOrderValue   Float     @default(0)
+  lastOrderDate   DateTime?
+
+  // Rating (seller's internal rating)
+  rating          Int?      // 1-5
+  paymentRating   Int?      // 1-5 (how reliably they pay)
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([sellerId, buyerId])
+  @@index([sellerId])
+  @@index([sellerId, name])
+  @@index([sellerId, totalSpend])
+}
+
+// Order Health Rules (per seller configuration)
+model OrderHealthRules {
+  id                   String    @id @default(uuid())
+  sellerId             String    @unique
+
+  // SLA thresholds (hours for confirmation, days for shipping)
+  confirmationSlaHours Int       @default(24)
+  shippingSlaDays      Int       @default(3)
+  deliverySlaDays      Int       @default(7)
+
+  // Risk thresholds (percentage of SLA time elapsed)
+  atRiskThreshold      Int       @default(70)   // When 70% of SLA time elapsed
+  delayedThreshold     Int       @default(100)  // When 100% of SLA time elapsed
+
+  // Timestamps
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([sellerId])
+}
+
+// RFQ Scoring Configuration (per seller)
+model RFQScoringConfig {
+  id              String    @id @default(uuid())
+  sellerId        String    @unique
+
+  // Weight configuration (should sum to 100)
+  urgencyWeight   Int       @default(25)
+  quantityWeight  Int       @default(25)
+  buyerWeight     Int       @default(25)
+  marginWeight    Int       @default(25)
+
+  // Thresholds for priority tiers
+  criticalScoreMin Int      @default(80)
+  highScoreMin     Int      @default(60)
+  mediumScoreMin   Int      @default(40)
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([sellerId])
+}
+
+// =============================================================================
+// CROSS-INTELLIGENCE LAYER
+// =============================================================================
+
+// Buyer Intelligence Profile - computed metrics for smart matching
+model BuyerIntelligenceProfile {
+  id                    String   @id @default(uuid())
+  buyerId               String   @unique
+
+  // Segment classification
+  segment               String   @default("smb") // enterprise, mid_market, smb, occasional
+
+  // Computed purchase metrics (updated by background job)
+  avgOrderValue         Float    @default(0)
+  avgOrderFrequency     Float    @default(0)    // Days between orders
+  priceElasticity       Float    @default(0.5)  // 0-1: How price-sensitive
+  qualityThreshold      Float    @default(0.7)  // Minimum acceptable quality
+  loyaltyIndex          Float    @default(0.5)  // Tendency to repeat with same sellers
+  explorationRate       Float    @default(0.5)  // Tendency to try new sellers
+
+  // Behavior profile
+  urgencyProfile        String   @default("standard") // patient, standard, urgent, critical
+  negotiationStyle      String   @default("flexible") // firm, flexible, aggressive
+
+  // Risk metrics
+  paymentReliability    Float    @default(1.0)
+  disputeRate           Float    @default(0)
+  cancellationRate      Float    @default(0)
+
+  // Category affinities (JSON map: category -> affinity score 0-100)
+  categoryAffinities    String   @default("{}")
+
+  // Preferred price range (derived from history)
+  preferredPriceMin     Float    @default(0)
+  preferredPriceMax     Float    @default(100000)
+
+  lastComputed          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([buyerId])
+  @@index([segment])
+}
+
+// Seller Intelligence Profile - computed metrics for matching & ranking
+model SellerIntelligenceProfile {
+  id                    String   @id @default(uuid())
+  sellerId              String   @unique
+
+  // Tier classification
+  tier                  String   @default("new") // platinum, gold, silver, bronze, new
+
+  // Performance metrics
+  onTimeDeliveryRate    Float    @default(1.0)
+  qualityScore          Float    @default(0.8)
+  avgResponseTime       Float    @default(24)   // Hours to respond to RFQ
+  quoteAcceptanceRate   Float    @default(0.5)
+
+  // Capacity metrics
+  capacityUtilization   Float    @default(0.5)
+  maxWeeklyOrders       Int      @default(50)
+
+  // Relationship metrics
+  repeatCustomerRate    Float    @default(0)
+  customerSatisfaction  Float    @default(0.8)
+  disputeResolution     Float    @default(0.8)
+
+  // Business health
+  orderGrowthTrend      Float    @default(0)    // % change month-over-month
+  inventoryTurnover     Float    @default(0)
+  listingFreshness      Float    @default(1.0)  // How recently listings updated
+
+  // Category strengths (JSON map: category -> strength score 0-100)
+  categoryStrengths     String   @default("{}")
+
+  // Price competitiveness (JSON map: category -> percentile 0-100)
+  priceCompetitiveness  String   @default("{}")
+
+  lastComputed          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([tier])
+}
+
+// Trust Events - individual trust-building or trust-damaging events
+model TrustEvent {
+  id          String   @id @default(uuid())
+  userId      String
+
+  // Event details
+  eventType   String   // order_completed, on_time_delivery, late_delivery, dispute_filed, etc.
+  impact      Float    // Positive or negative impact value
+  decay       Float    // How fast this event's impact fades (0-1)
+
+  // Context (JSON for flexibility)
+  context     String   @default("{}")
+
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, timestamp])
+  @@index([eventType])
+}
+
+// Cached Trust Score - computed from TrustEvents
+model TrustScore {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  role        String   // "buyer" or "seller"
+  score       Float    // 0-100
+  level       String   // unverified, emerging, established, trusted, premium, at_risk, suspended
+  trend       String   // rising, stable, falling
+  confidence  Float    // How reliable is this score (based on data volume)
+
+  lastUpdated DateTime @default(now())
+
+  @@index([userId])
+  @@index([level])
+}
+
+// Relationship Trust - buyer-seller specific trust
+model RelationshipTrust {
+  id                    String    @id @default(uuid())
+  buyerId               String
+  sellerId              String
+
+  // Computed trust score for this relationship
+  trustScore            Float     @default(50)
+
+  // Transaction history aggregates
+  transactionCount      Int       @default(0)
+  totalValue            Float     @default(0)
+  lastTransaction       DateTime?
+
+  // Relationship quality metrics
+  repeatRate            Float     @default(0)
+  avgNegotiationRounds  Float     @default(1)
+  disputeCount          Int       @default(0)
+  avgRating             Float     @default(0)
+
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([trustScore])
+}
+
+// Price Fairness Snapshots - market price tracking for fairness analysis
+model PriceFairnessSnapshot {
+  id              String   @id @default(uuid())
+  itemId          String
+  sellerId        String
+  category        String
+
+  // Market data at snapshot time
+  marketMedian    Float
+  marketP10       Float
+  marketP25       Float
+  marketP75       Float
+  marketP90       Float
+
+  // Sample size
+  sampleCount     Int      @default(0)
+
+  snapshotDate    DateTime @default(now())
+
+  @@index([itemId])
+  @@index([category])
+  @@index([snapshotDate])
+  @@index([itemId, snapshotDate])
+}
+
+// Matching Weights Configuration - A/B testable ranking weights
+model MatchingWeightsConfig {
+  id                    String   @id @default(uuid())
+  name                  String   @unique // "default", "high_trust", "price_sensitive", etc.
+  isActive              Boolean  @default(false)
+
+  // Weights (should sum to 1.0)
+  textRelevanceWeight   Float    @default(0.25)
+  filterMatchWeight     Float    @default(0.15)
+  affinityScoreWeight   Float    @default(0.15)
+  trustBoostWeight      Float    @default(0.10)
+  fairnessBoostWeight   Float    @default(0.10)
+  conversionWeight      Float    @default(0.08)
+  marginWeight          Float    @default(0.05)
+  retentionWeight       Float    @default(0.07)
+  freshnessWeight       Float    @default(0.03)
+  activityWeight        Float    @default(0.02)
+
+  // A/B test info
+  testStartDate         DateTime?
+  testEndDate           DateTime?
+  trafficPercentage     Float    @default(0)  // % of traffic for this config
+
+  // Performance metrics (updated by analytics job)
+  avgConversionRate     Float?
+  avgOrderValue         Float?
+  avgRetentionRate      Float?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// Trust Feature Gates - which features require which trust level
+model TrustFeatureGate {
+  id              String   @id @default(uuid())
+  featureKey      String   @unique // instant_buy, net_30_payment, bulk_rfq, etc.
+  description     String?
+
+  // Required trust levels (JSON array)
+  requiredLevels  String   // ["established", "trusted", "premium"]
+
+  // Override rules (JSON for complex logic)
+  overrideRules   String?  // Optional custom rules
+
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([featureKey])
+  @@index([isActive])
+}
+
+// =============================================================================
+// STAGE 8: AUTOMATION, PAYOUTS & SCALE
+// =============================================================================
+
+// Automation Rules Engine - Seller-configurable automation
+model AutomationRule {
+  id                String    @id @default(uuid())
+  sellerId          String
+
+  // Rule metadata
+  name              String
+  description       String?
+  ruleType          String    // rfq_rule, order_rule, inventory_rule, dispute_rule
+
+  // Status
+  isEnabled         Boolean   @default(true)
+  priority          Int       @default(100)  // Lower = higher priority
+
+  // Trigger configuration
+  triggerType       String    // rfq_received, order_delayed, stock_low, sla_warning, dispute_opened
+  triggerConditions String    // JSON: { marginBelow: 10, daysOverdue: 2, stockBelow: 5 }
+
+  // Action configuration
+  actionType        String    // auto_ignore, auto_flag, auto_remind, auto_respond, auto_escalate
+  actionConfig      String    // JSON: { setStatus: "flagged", sendNotification: true, template: "..." }
+
+  // Execution tracking
+  lastTriggeredAt   DateTime?
+  triggerCount      Int       @default(0)
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  executions        AutomationExecution[]
+
+  @@index([sellerId])
+  @@index([sellerId, isEnabled])
+  @@index([triggerType])
+}
+
+// Audit log for automation executions
+model AutomationExecution {
+  id              String    @id @default(uuid())
+  ruleId          String
+  sellerId        String
+
+  // What triggered it
+  entityType      String    // rfq, order, item, dispute
+  entityId        String
+  entityNumber    String?
+
+  // Trigger details
+  triggerData     String    // JSON: snapshot of conditions at trigger time
+
+  // Action taken
+  actionTaken     String    // Description of what was done
+  actionResult    String    @default("success")  // success, failed, skipped
+  errorMessage    String?
+
+  // Timing
+  executedAt      DateTime  @default(now())
+
+  rule            AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([sellerId])
+  @@index([sellerId, executedAt])
+  @@index([entityType, entityId])
+}
+
+// Seller Payout - Batch payments to sellers
+model SellerPayout {
+  id              String    @id @default(uuid())
+  payoutNumber    String    @unique  // PAY-OUT-2024-0001
+  sellerId        String
+
+  // Period covered
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  // Financial summary
+  grossAmount     Float     // Sum of all invoice totals
+  platformFeeTotal Float    // Sum of platform fees
+  adjustments     Float     @default(0)  // Refunds, credits, etc.
+  netAmount       Float     // Final amount to pay seller
+  currency        String    @default("SAR")
+
+  // Status: pending -> processing -> settled | on_hold | failed
+  status          String    @default("pending")
+
+  // Hold tracking
+  holdReason      String?   // dispute_pending, verification_required, manual_review
+  holdUntil       DateTime?
+
+  // Bank details snapshot (from SellerBank at payout time)
+  bankName        String
+  accountHolder   String
+  ibanMasked      String    // Masked IBAN for display
+
+  // Processing
+  initiatedAt     DateTime?
+  initiatedBy     String?   // admin userId
+  settledAt       DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+
+  // Bank reference
+  bankReference   String?
+  bankConfirmationDate DateTime?
+
+  // Notes
+  internalNotes   String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  lineItems       PayoutLineItem[]
+  events          PayoutEvent[]
+
+  @@index([sellerId])
+  @@index([sellerId, status])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+}
+
+// Payout line items - Individual invoices included in a payout
+model PayoutLineItem {
+  id              String    @id @default(uuid())
+  payoutId        String
+
+  // Reference
+  invoiceId       String
+  invoiceNumber   String
+  orderId         String
+  orderNumber     String
+
+  // Amounts
+  invoiceTotal    Float
+  platformFee     Float
+  netAmount       Float
+  currency        String    @default("SAR")
+
+  // Status at inclusion time
+  invoiceStatus   String
+  paidAt          DateTime?
+
+  payout          SellerPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([payoutId])
+  @@index([invoiceId])
+}
+
+// Payout event log
+model PayoutEvent {
+  id              String    @id @default(uuid())
+  payoutId        String
+  actorId         String?
+  actorType       String    // seller, system, admin
+  eventType       String    // PAYOUT_CREATED, PAYOUT_APPROVED, PAYOUT_PROCESSING, PAYOUT_SETTLED, PAYOUT_FAILED, PAYOUT_ON_HOLD
+  fromStatus      String?
+  toStatus        String?
+  metadata        String?   // JSON
+  createdAt       DateTime  @default(now())
+
+  payout          SellerPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([payoutId])
+  @@index([payoutId, createdAt])
+}
+
+// Payout settings per seller
+model SellerPayoutSettings {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // Payout frequency
+  payoutFrequency     String    @default("weekly")  // daily, weekly, biweekly, monthly
+  payoutDay           Int?      // Day of week (1-7) or month (1-28)
+
+  // Thresholds
+  minPayoutAmount     Float     @default(100)  // Minimum amount to trigger payout
+
+  // Hold settings
+  disputeHoldEnabled  Boolean   @default(true)  // Hold if open disputes
+  holdPeriodDays      Int       @default(7)     // Days after order close before eligible
+
+  // Automatic vs manual
+  autoPayoutEnabled   Boolean   @default(false)  // Initially manual approval
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+// Rate limit tracking per seller
+model SellerRateLimit {
+  id              String    @id @default(uuid())
+  sellerId        String
+
+  // Rate limit type
+  limitType       String    // rfq_daily, order_daily, listing_daily
+
+  // Current window
+  windowStart     DateTime
+  windowEnd       DateTime
+  currentCount    Int       @default(0)
+  maxAllowed      Int
+
+  // Breach tracking
+  isThrottled     Boolean   @default(false)
+  throttledAt     DateTime?
+  throttleReason  String?
+
+  // Timestamps
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([sellerId, limitType])
+  @@index([sellerId])
+  @@index([isThrottled])
+}
+
+// Seller health score for throttling decisions
+model SellerHealthScore {
+  id                  String    @id @default(uuid())
+  sellerId            String    @unique
+
+  // Computed scores (0-100)
+  overallScore        Float     @default(80)
+  fulfillmentScore    Float     @default(80)
+  responseScore       Float     @default(80)
+  disputeScore        Float     @default(80)
+  paymentScore        Float     @default(80)
+
+  // Risk flags
+  isAtRisk            Boolean   @default(false)
+  riskLevel           String    @default("none")  // none, low, medium, high, critical
+  riskReasons         String?   // JSON array of reasons
+
+  // Soft caps
+  softCapActive       Boolean   @default(false)
+  softCapReason       String?
+  softCapUntil        DateTime?
+
+  // Restrictions
+  restrictedFeatures  String?   // JSON: ["bulk_rfq", "instant_buy"]
+
+  // Last computation
+  lastComputedAt      DateTime  @default(now())
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+// Audit alerts for abnormal behavior
+model AuditAlert {
+  id              String    @id @default(uuid())
+  sellerId        String?
+  buyerId         String?
+
+  // Alert details
+  alertType       String    // volume_spike, price_anomaly, dispute_surge, payment_pattern
+  severity        String    @default("info")  // info, warning, critical
+  title           String
+  description     String
+
+  // Detection data
+  detectedValue   Float?
+  expectedValue   Float?
+  deviationPercent Float?
+
+  // Context
+  metadata        String?   // JSON
+
+  // Status
+  status          String    @default("new")  // new, acknowledged, resolved, false_positive
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolution      String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// IDEMPOTENCY SYSTEM (Production Hardening)
+// =============================================================================
+// Prevents duplicate operations on critical endpoints
+// Stores Idempotency-Key header + response to replay on retries
+// =============================================================================
+
+model IdempotencyKey {
+  id              String    @id @default(uuid())
+  key             String    // Client-provided Idempotency-Key header
+  endpoint        String    // API endpoint path
+  method          String    // HTTP method (POST, PUT)
+  userId          String?   // User making the request
+
+  // Request fingerprint (hash of key + endpoint + userId)
+  fingerprint     String    @unique
+
+  // Response caching for replay
+  responseStatus  Int?      // HTTP status code of original response
+  responseBody    String?   // JSON response body
+
+  // State: pending -> completed | failed
+  status          String    @default("pending")
+
+  // Created entity reference (for linking)
+  createdEntityId   String?   // ID of entity created (order, payment, etc.)
+  createdEntityType String?   // Type: order, payment, dispute, payout
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+  expiresAt       DateTime  // Keys expire after 24 hours
+
+  @@unique([key, endpoint, userId])
+  @@index([fingerprint])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([status])
+}
+
+// =============================================================================
+// BUYER CART SYSTEM
+// =============================================================================
+// RFQ aggregation tool - NOT a traditional checkout cart
+// Buyers collect items from multiple sellers and request quotes in bulk
+// =============================================================================
+
+model BuyerCart {
+  id           String          @id @default(uuid())
+  buyerId      String          @unique
+
+  // Cart locking (when RFQ is sent)
+  isLocked     Boolean         @default(false)
+  lockedAt     DateTime?
+  lockedReason String?         // "rfq_sent", "manual_lock"
+
+  // Timestamps
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  items        BuyerCartItem[]
+
+  @@index([buyerId])
+  @@index([isLocked])
+}
+
+model BuyerCartItem {
+  id          String    @id @default(uuid())
+  cartId      String
+  itemId      String
+  sellerId    String
+
+  // Item snapshot at time of addition
+  quantity    Int       @default(1)
+  priceAtAdd  Float?    // Price when added (for reference, not binding)
+  itemName    String?   // Snapshot of item name
+  itemSku     String?   // Snapshot of SKU
+
+  // Timestamps
+  addedAt     DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cart        BuyerCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, itemId])
+  @@index([cartId])
+  @@index([sellerId])
+  @@index([itemId])
+}
+
+// =============================================================================
+// RFQ INBOX GMAIL-STYLE FEATURES (Stage 2 Enhancement)
+// =============================================================================
+// Labels, threaded notes, saved replies, and snooze functionality
+// for Gmail-style RFQ inbox management
+// =============================================================================
+
+// Labels for categorizing RFQs (like Gmail labels)
+model RFQLabel {
+  id          String   @id @default(uuid())
+  sellerId    String
+  name        String   // "New", "Pending", "Negotiation", "Expiring", "Won", "Lost"
+  color       String   // Hex color code (e.g., "#3b82f6")
+  icon        String?  // Optional Phosphor icon name
+  isSystem    Boolean  @default(false) // System labels cannot be deleted
+  position    Int      @default(0)     // For ordering in UI
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments RFQLabelAssignment[]
+
+  @@unique([sellerId, name])
+  @@index([sellerId])
+  @@index([sellerId, position])
+}
+
+// Many-to-many junction: RFQ <-> Label
+model RFQLabelAssignment {
+  id        String   @id @default(uuid())
+  rfqId     String
+  labelId   String
+  createdAt DateTime @default(now())
+
+  rfq       ItemRFQ  @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  label     RFQLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([rfqId, labelId])
+  @@index([rfqId])
+  @@index([labelId])
+}
+
+// Threaded internal notes (replaces single internalNotes field)
+model RFQNote {
+  id        String    @id @default(uuid())
+  rfqId     String
+  sellerId  String    // Author of the note
+  content   String
+  parentId  String?   // For threading/replies
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  rfq       ItemRFQ   @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  parent    RFQNote?  @relation("NoteThread", fields: [parentId], references: [id], onDelete: SetNull)
+  replies   RFQNote[] @relation("NoteThread")
+
+  @@index([rfqId])
+  @@index([rfqId, createdAt])
+  @@index([parentId])
+}
+
+// Saved reply templates for quick responses
+model SavedReply {
+  id        String   @id @default(uuid())
+  sellerId  String
+  name      String   // Template name (e.g., "Polite Decline")
+  content   String   // Template body with optional placeholders
+  category  String?  // "decline", "followup", "general", "quote"
+  shortcut  String?  // Keyboard shortcut like "/thanks" or "/decline"
+  useCount  Int      @default(0) // Track usage for sorting by popularity
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sellerId, shortcut])
+  @@index([sellerId])
+  @@index([sellerId, category])
+}
+
+// Snooze tracking for temporarily hiding RFQs
+model RFQSnooze {
+  id           String   @id @default(uuid())
+  rfqId        String   @unique
+  sellerId     String
+  snoozedUntil DateTime // When to resurface the RFQ
+  reason       String?  // "2h", "4h", "tomorrow", "next_week", or custom note
+  createdAt    DateTime @default(now())
+
+  rfq          ItemRFQ  @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([snoozedUntil])
+  @@index([sellerId, snoozedUntil])
+}
+
+// =============================================================================
+// RBAC SYSTEM - Role-Based Access Control
+// =============================================================================
+// Enterprise-grade permission system with 4 marketplace roles:
+// - Buyer: View/create orders, RFQs, view invoices
+// - Approver: Buyer capabilities + approve high-value orders, view analytics
+// - Finance: View all financial data (invoices, payments, payouts), generate reports
+// - Seller: Manage listings, respond to RFQs, fulfill orders, view payouts
+// =============================================================================
+
+// Permission Registry - Static enumeration of all permissions
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique  // e.g., "orders:view_own", "orders:approve"
+  name        String             // Human-readable name
+  description String?
+  resource    String             // orders, rfqs, invoices, payouts, items, analytics, disputes
+  action      String             // view_own, view_all, create, update, delete, approve, export
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@index([resource])
+  @@index([code])
+}
+
+// Role Definition - Defines marketplace roles
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique  // buyer, approver, finance, seller
+  name        String             // Display name
+  description String?
+  isSystem    Boolean  @default(false)  // System roles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([code])
+}
+
+// Role-Permission Junction - Many-to-many relationship
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// User-Role Assignment - Links users to roles
+model UserRole {
+  id          String    @id @default(uuid())
+  userId      String
+  roleId      String
+  assignedBy  String?            // Who assigned this role
+  assignedAt  DateTime  @default(now())
+  expiresAt   DateTime?          // Optional expiration
+  isActive    Boolean   @default(true)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([userId, isActive])
+}
+
+// =============================================================================
+// IMMUTABLE AUDIT LOG SYSTEM
+// =============================================================================
+// Centralized audit trail for all marketplace actions.
+// APPEND-ONLY: No UPDATE or DELETE operations allowed.
+// Use database triggers to enforce immutability at the DB level.
+// =============================================================================
+
+model AuditLog {
+  id            String   @id @default(uuid())
+
+  // Entity Context
+  entityType    String   // order, rfq, quote, invoice, payout, item, dispute, user, role
+  entityId      String
+  entityNumber  String?  // Human-readable: ORD-2024-0001, RFQ-2024-0001
+
+  // Action Details
+  action        String   // create, read, update, delete, approve, reject, export, login, logout
+  actionCategory String  // crud, workflow, auth, admin, financial
+
+  // Actor Information
+  actorId       String   // userId who performed action
+  actorRole     String   // Role at time of action (buyer, approver, finance, seller)
+  actorType     String   // buyer, seller, approver, finance, system, admin
+
+  // Data Changes (for update actions)
+  previousValue String?  @db.Text  // JSON snapshot before change
+  newValue      String?  @db.Text  // JSON snapshot after change
+  changedFields String?            // JSON array of changed field names
+
+  // Request Context
+  ipAddress     String?
+  userAgent     String?
+  sessionId     String?
+  requestId     String?            // Correlation ID for distributed tracing
+
+  // Result
+  status        String   @default("success")  // success, failure, denied
+  errorMessage  String?
+  metadata      String?  @db.Text  // JSON for additional context
+
+  // Immutable timestamp (server-generated, cannot be overwritten)
+  createdAt     DateTime @default(now())
+
+  // Indexes for efficient querying
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([actorId, createdAt])
+  @@index([entityType, createdAt])
+  @@index([action])
+  @@index([actionCategory])
+  @@index([createdAt])
+  @@index([status])
+  @@index([requestId])
+}
+
+// =============================================================================
+// EVENT OUTBOX (Guaranteed Delivery Pattern)
+// =============================================================================
+// Stores events that need to be delivered to external systems (webhooks, email, etc.)
+// Worker polls and processes, retrying with exponential backoff, moving to DLQ after exhausting retries
+// =============================================================================
+
+model EventOutbox {
+  id              String    @id @default(uuid())
+
+  // Event identification
+  eventType       String    // order.created, payment.completed, invoice.sent, etc.
+  aggregateType   String    // order, payment, invoice, dispute, payout
+  aggregateId     String    // ID of the entity this event relates to
+
+  // Event payload
+  payload         String    // JSON: Full event data for external systems
+
+  // Delivery configuration
+  destination     String    // webhook, email, sms, payment_gateway, analytics
+  destinationUrl  String?   // URL for webhooks, email address for email, etc.
+
+  // Processing state
+  status          String    @default("pending") // pending, processing, delivered, failed, dlq
+
+  // Retry tracking
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(5)
+  lastAttemptAt   DateTime?
+  nextAttemptAt   DateTime  @default(now()) // For scheduled retry
+  lastError       String?   // Last error message
+
+  // Timing
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime? // When successfully delivered
+
+  // Correlation
+  correlationId   String?   // For tracing across services
+  causationId     String?   // ID of event that caused this event
+  partitionKey    String?   // Usually aggregateId for ordering guarantee
+
+  @@index([status, nextAttemptAt])
+  @@index([aggregateType, aggregateId])
+  @@index([eventType])
+  @@index([destination])
+  @@index([correlationId])
+  @@index([createdAt])
+}
+
+// Dead Letter Queue for events that exhausted retries
+model EventOutboxDLQ {
+  id              String    @id @default(uuid())
+  originalId      String    // ID from EventOutbox
+
+  eventType       String
+  aggregateType   String
+  aggregateId     String
+  payload         String
+  destination     String
+  destinationUrl  String?
+
+  // Failure details
+  totalAttempts   Int
+  lastError       String
+  failureReason   String    // max_retries_exceeded, permanent_failure, invalid_destination
+
+  // Manual resolution tracking
+  resolvedAt      DateTime?
+  resolvedBy      String?   // User ID who resolved
+  resolution      String?   // manually_sent, skipped, requeued
+
+  // Timestamps
+  failedAt        DateTime  @default(now())
+  createdAt       DateTime  // Original creation time
+
+  @@index([eventType])
+  @@index([aggregateType, aggregateId])
+  @@index([failedAt])
+  @@index([resolvedAt])
+  @@index([failureReason])
+}
+
+// =============================================================================
+// JOB QUEUE (Persistent Background Jobs with Retries)
+// =============================================================================
+// Replaces in-memory cron jobs with persistent, retryable queue
+// Supports delayed execution, priorities, and dead-letter queue
+// =============================================================================
+
+model JobQueue {
+  id              String    @id @default(uuid())
+
+  // Job identification
+  jobType         String    // create_payout, check_sla, send_notification, update_trust_score, etc.
+  jobName         String?   // Human-readable name for logging
+
+  // Job payload
+  payload         String    // JSON: Job-specific input data
+
+  // Scheduling
+  scheduledAt     DateTime  @default(now()) // When to run (supports delayed jobs)
+  priority        Int       @default(5)     // 1-10, lower = higher priority
+
+  // Processing state
+  status          String    @default("pending") // pending, processing, completed, failed, dlq, cancelled
+
+  // Retry tracking
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(3)
+  lastAttemptAt   DateTime?
+  nextAttemptAt   DateTime?
+  lastError       String?
+  errorStack      String?   // Full stack trace for debugging
+
+  // Execution tracking
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?      // Execution time in ms
+
+  // Result storage
+  result          String?   // JSON: Job result on success
+
+  // Locking (prevent duplicate processing)
+  lockedBy        String?   // Worker ID that locked this job
+  lockedAt        DateTime?
+  lockExpiresAt   DateTime?
+
+  // Metadata
+  correlationId   String?   // For tracing related jobs
+  createdBy       String?   // User or system that created the job
+  tags            String?   // JSON array of tags for filtering
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, scheduledAt, priority])
+  @@index([jobType])
+  @@index([jobType, status])
+  @@index([correlationId])
+  @@index([lockedBy])
+  @@index([lockExpiresAt])
+  @@index([createdAt])
+}
+
+// Dead Letter Queue for jobs that exhausted retries
+model JobQueueDLQ {
+  id                String    @id @default(uuid())
+  originalId        String    // ID from JobQueue
+
+  jobType           String
+  jobName           String?
+  payload           String
+
+  // Failure details
+  totalAttempts     Int
+  lastError         String
+  errorStack        String?
+  failureReason     String    // max_retries_exceeded, permanent_failure, timeout
+
+  // Manual resolution tracking
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  resolution        String?   // requeued, skipped, manually_completed
+  notes             String?
+
+  // Original timestamps preserved
+  originalCreatedAt DateTime
+  scheduledAt       DateTime
+  failedAt          DateTime  @default(now())
+
+  // Metadata preserved
+  correlationId     String?
+  createdBy         String?
+
+  @@index([jobType])
+  @@index([failedAt])
+  @@index([resolvedAt])
+  @@index([failureReason])
 }

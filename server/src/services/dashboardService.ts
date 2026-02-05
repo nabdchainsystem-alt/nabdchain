@@ -181,12 +181,7 @@ export const dashboardService = {
     const totalRevenue = currentRevenue._sum.totalPrice ?? 0;
     const prevRevenue = previousRevenue._sum.totalPrice ?? 0;
 
-    // Return mock data if database is empty (demo mode)
-    if (totalRevenue === 0 && currentOrders === 0 && currentListings === 0 && currentRfqs === 0) {
-      console.log('Database empty, using mock data for seller dashboard');
-      return MOCK_SELLER_SUMMARY;
-    }
-
+    // Return actual data (zeros if empty - production mode)
     return {
       totalRevenue,
       revenueChange: calculatePercentChange(totalRevenue, prevRevenue),
@@ -208,9 +203,23 @@ export const dashboardService = {
       },
     };
     } catch (error) {
-      // Return mock data on error (demo mode)
-      console.log('Using mock data for seller dashboard:', error);
-      return MOCK_SELLER_SUMMARY;
+      console.error('Error fetching seller dashboard:', error);
+      // Return empty summary on error - frontend handles empty state
+      const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
+      return {
+        totalRevenue: 0,
+        revenueChange: 0,
+        totalOrders: 0,
+        ordersChange: 0,
+        activeListings: 0,
+        listingsChange: 0,
+        pendingRfqs: 0,
+        rfqsChange: 0,
+        period: {
+          current: { start: currentStart.toISOString(), end: currentEnd.toISOString() },
+          previous: { start: previousStart.toISOString(), end: previousEnd.toISOString() },
+        },
+      };
     }
   },
 
@@ -293,12 +302,7 @@ export const dashboardService = {
     const totalSpend = currentSpend._sum.totalPrice ?? 0;
     const prevSpend = previousSpend._sum.totalPrice ?? 0;
 
-    // Return mock data if database is empty (demo mode)
-    if (totalSpend === 0 && currentOrders === 0 && currentActiveOrders === 0 && currentRfqs === 0) {
-      console.log('Database empty, using mock data for buyer dashboard');
-      return MOCK_BUYER_SUMMARY;
-    }
-
+    // Return actual data (zeros if empty - production mode)
     return {
       totalRevenue: totalSpend, // For buyer, this represents spend
       revenueChange: calculatePercentChange(totalSpend, prevSpend),
@@ -320,9 +324,23 @@ export const dashboardService = {
       },
     };
     } catch (error) {
-      // Return mock data on error (demo mode)
-      console.log('Using mock data for buyer dashboard:', error);
-      return MOCK_BUYER_SUMMARY;
+      console.error('Error fetching buyer dashboard:', error);
+      // Return empty summary on error - frontend handles empty state
+      const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
+      return {
+        totalRevenue: 0,
+        revenueChange: 0,
+        totalOrders: 0,
+        ordersChange: 0,
+        activeListings: 0,
+        listingsChange: 0,
+        pendingRfqs: 0,
+        rfqsChange: 0,
+        period: {
+          current: { start: currentStart.toISOString(), end: currentEnd.toISOString() },
+          previous: { start: previousStart.toISOString(), end: previousEnd.toISOString() },
+        },
+      };
     }
   },
 };

@@ -25,7 +25,7 @@ import {
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { orderService } from '../../services/orderService';
-import { EmptyState, Button } from '../../components';
+import { EmptyState, Button, PortalDatePicker } from '../../components';
 import { Select } from '../../components/ui';
 import {
   Order,
@@ -430,16 +430,10 @@ export const SellerSales: React.FC<SellerSalesProps> = ({ onViewOrder }) => {
           <span className="text-xs" style={{ color: styles.textMuted }}>
             {t('seller.sales.from')}
           </span>
-          <input
-            type="date"
+          <PortalDatePicker
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="h-9 px-3 text-sm rounded-lg border outline-none"
-            style={{
-              backgroundColor: styles.bgPrimary,
-              borderColor: styles.border,
-              color: styles.textPrimary,
-            }}
+            onChange={setDateFrom}
+            maxDate={dateTo || undefined}
           />
         </div>
 
@@ -448,16 +442,10 @@ export const SellerSales: React.FC<SellerSalesProps> = ({ onViewOrder }) => {
           <span className="text-xs" style={{ color: styles.textMuted }}>
             {t('seller.sales.to')}
           </span>
-          <input
-            type="date"
+          <PortalDatePicker
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="h-9 px-3 text-sm rounded-lg border outline-none"
-            style={{
-              backgroundColor: styles.bgPrimary,
-              borderColor: styles.border,
-              color: styles.textPrimary,
-            }}
+            onChange={setDateTo}
+            minDate={dateFrom || undefined}
           />
         </div>
 

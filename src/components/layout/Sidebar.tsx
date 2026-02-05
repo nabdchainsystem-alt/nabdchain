@@ -16,6 +16,7 @@ import { TemplatePicker } from '../../features/board/components/TemplatePicker';
 import { BoardTemplate } from '../../features/board/data/templates';
 import { ConfirmModal } from '../../features/board/components/ConfirmModal';
 import { DeleteBoardModal } from './DeleteBoardModal';
+import { preloadRoute, preloadRoutes } from '../../config/routes';
 
 // Icon mapping for dynamic rendering
 const ICON_MAP: Record<string, any> = {
@@ -811,10 +812,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                             <SidebarTooltip content={t('home')} enabled={isCollapsed}>
                                 <button
                                     onClick={() => onNavigate('dashboard')}
+                                    onMouseEnter={() => preloadRoute('dashboard')}
                                     className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100 cursor-pointer
                                     ${activeView === 'dashboard'
                                             ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
                                     `}
                                 >
                                     <House size={17} weight="light" className="flex-shrink-0" />
@@ -826,10 +828,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 <SidebarTooltip content={t('inbox')} enabled={isCollapsed}>
                                     <button
                                         onClick={() => onNavigate('inbox')}
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100 
+                                        onMouseEnter={() => preloadRoute('inbox')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100
                                         ${activeView === 'inbox'
                                                 ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
                                         `}
                                     >
                                         <Tray size={17} weight="light" className="flex-shrink-0" />
@@ -841,10 +844,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 <SidebarTooltip content={t('teams')} enabled={isCollapsed}>
                                     <button
                                         onClick={() => onNavigate('teams')}
-                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100 
+                                        onMouseEnter={() => preloadRoute('teams')}
+                                        className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100
                                         ${activeView === 'teams'
                                                 ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
-                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'} 
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}
                                         `}
                                     >
                                         <Users size={17} weight="light" className="flex-shrink-0" />
@@ -856,6 +860,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                 <SidebarTooltip content={t('test_tools')} enabled={isCollapsed}>
                                     <button
                                         onClick={() => onNavigate('test')}
+                                        onMouseEnter={() => preloadRoute('test')}
                                         className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100
                                         ${activeView === 'test'
                                                 ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10'
@@ -901,10 +906,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             </SidebarTooltip>
                                             {expandedDepartments.has('mini_overview') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-slate-300 dark:border-slate-600 mt-1 space-y-0.5">
-                                                    <button onClick={() => onNavigate('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('dashboards')} onMouseEnter={() => preloadRoute('dashboards')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'dashboards' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <Layout size={13} weight="light" /> <span>{t('dashboards')}</span>
                                                     </button>
-                                                    <button onClick={() => onNavigate('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                    <button onClick={() => onNavigate('reports')} onMouseEnter={() => preloadRoute('reports')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'reports' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                         <FileText size={13} weight="light" /> <span>{t('reports')}</span>
                                                     </button>
                                                 </div>
@@ -926,17 +931,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             {expandedDepartments.has('mini_operations') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-gray-300 dark:border-gray-600 mt-1 space-y-0.5">
                                                     {pageVisibility['sales'] !== false && (
-                                                        <button onClick={() => onNavigate('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('sales')} onMouseEnter={() => preloadRoute('sales')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <Megaphone size={13} weight="light" /> <span>{t('sales')}</span>
                                                         </button>
                                                     )}
                                                     {pageVisibility['purchases'] !== false && (
-                                                        <button onClick={() => onNavigate('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('purchases')} onMouseEnter={() => preloadRoute('purchases')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'purchases' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <ShoppingCart size={13} weight="light" /> <span>{t('purchases')}</span>
                                                         </button>
                                                     )}
                                                     {pageVisibility['inventory'] !== false && (
-                                                        <button onClick={() => onNavigate('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('inventory')} onMouseEnter={() => preloadRoute('inventory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'inventory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <Package size={13} weight="light" /> <span>{t('stock_inventory')}</span>
                                                         </button>
                                                     )}
@@ -959,7 +964,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             {expandedDepartments.has('mini_finance') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-zinc-300 dark:border-zinc-600 mt-1 space-y-0.5">
                                                     {pageVisibility['expenses'] !== false && (
-                                                        <button onClick={() => onNavigate('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('expenses')} onMouseEnter={() => preloadRoute('expenses')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'expenses' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <Money size={13} weight="light" /> <span>{t('expenses')}</span>
                                                         </button>
                                                     )}
@@ -982,12 +987,12 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             {expandedDepartments.has('mini_people') && !isCollapsed && (
                                                 <div className="ms-2 ps-3 border-s border-neutral-300 dark:border-neutral-600 mt-1 space-y-0.5">
                                                     {pageVisibility['customers'] !== false && (
-                                                        <button onClick={() => onNavigate('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('customers')} onMouseEnter={() => preloadRoute('customers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'customers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <Users size={13} weight="light" /> <span>{t('customers')}</span>
                                                         </button>
                                                     )}
                                                     {pageVisibility['suppliers'] !== false && (
-                                                        <button onClick={() => onNavigate('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                        <button onClick={() => onNavigate('suppliers')} onMouseEnter={() => preloadRoute('suppliers')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'suppliers' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                             <Truck size={13} weight="light" /> <span>{t('suppliers')}</span>
                                                         </button>
                                                     )}
@@ -1011,27 +1016,27 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 {expandedDepartments.has('supply_chain') && !isCollapsed && (
                                                     <div className="ms-2 ps-3 border-s border-stone-300 dark:border-stone-600 mt-1 space-y-0.5">
                                                         {pageVisibility['procurement'] !== false && (
-                                                            <button onClick={() => onNavigate('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('procurement')} onMouseEnter={() => preloadRoute('procurement')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'procurement' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <ShoppingCart size={13} weight="light" /> <span>{t('procurement')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['warehouse'] !== false && (
-                                                            <button onClick={() => onNavigate('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('warehouse')} onMouseEnter={() => preloadRoute('warehouse')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'warehouse' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <House size={13} weight="light" /> <span>{t('warehouse')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['fleet'] !== false && (
-                                                            <button onClick={() => onNavigate('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('fleet')} onMouseEnter={() => preloadRoute('fleet')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'fleet' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Truck size={13} weight="light" /> <span>{t('fleet')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['vendors'] !== false && (
-                                                            <button onClick={() => onNavigate('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('vendors')} onMouseEnter={() => preloadRoute('vendors')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'vendors' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <UsersThree size={13} weight="light" /> <span>{t('vendors')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['planning'] !== false && (
-                                                            <button onClick={() => onNavigate('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('planning')} onMouseEnter={() => preloadRoute('planning')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-stone-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'planning' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Gauge size={13} weight="light" /> <span>{t('planning')}</span>
                                                             </button>
                                                         )}
@@ -1056,17 +1061,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 {expandedDepartments.has('operations') && !isCollapsed && (
                                                     <div className="ms-2 ps-3 border-s border-slate-300 dark:border-slate-600 mt-1 space-y-0.5">
                                                         {pageVisibility['maintenance'] !== false && (
-                                                            <button onClick={() => onNavigate('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('maintenance')} onMouseEnter={() => preloadRoute('maintenance')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'maintenance' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Wrench size={13} /> <span>{t('maintenance')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['production'] !== false && (
-                                                            <button onClick={() => onNavigate('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('production')} onMouseEnter={() => preloadRoute('production')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'production' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Factory size={13} /> <span>{t('production')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['quality'] !== false && (
-                                                            <button onClick={() => onNavigate('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('quality')} onMouseEnter={() => preloadRoute('quality')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'quality' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <ShieldCheck size={13} weight="light" /> <span>{t('quality')}</span>
                                                             </button>
                                                         )}
@@ -1091,12 +1096,12 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 {expandedDepartments.has('business') && !isCollapsed && (
                                                     <div className="ms-2 ps-3 border-s border-zinc-300 dark:border-zinc-600 mt-1 space-y-0.5">
                                                         {pageVisibility['sales_listing'] !== false && (
-                                                            <button onClick={() => onNavigate('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('sales_listing')} onMouseEnter={() => preloadRoute('sales_listing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_listing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Table size={13} weight="light" /> <span>{t('sales_listings')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['sales_factory'] !== false && (
-                                                            <button onClick={() => onNavigate('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('sales_factory')} onMouseEnter={() => preloadRoute('sales_factory')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-zinc-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'sales_factory' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Factory size={13} /> <span>{t('sales_factory')}</span>
                                                             </button>
                                                         )}
@@ -1121,17 +1126,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 {expandedDepartments.has('business_support') && !isCollapsed && (
                                                     <div className="ms-2 ps-3 border-s border-neutral-300 dark:border-neutral-600 mt-1 space-y-0.5">
                                                         {pageVisibility['it_support'] !== false && (
-                                                            <button onClick={() => onNavigate('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('it_support')} onMouseEnter={() => preloadRoute('it_support')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'it_support' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Monitor size={13} /> <span>{t('it')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['hr'] !== false && (
-                                                            <button onClick={() => onNavigate('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('hr')} onMouseEnter={() => preloadRoute('hr')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'hr' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <UsersThree size={13} weight="light" /> <span>{t('hr')}</span>
                                                             </button>
                                                         )}
                                                         {pageVisibility['marketing'] !== false && (
-                                                            <button onClick={() => onNavigate('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
+                                                            <button onClick={() => onNavigate('marketing')} onMouseEnter={() => preloadRoute('marketing')} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-sm text-[11.3px] text-neutral-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-monday-dark-hover ${activeView === 'marketing' ? ACTIVE_SUB_NAV_STYLE : ''}`}>
                                                                 <Megaphone size={13} /> <span>{t('marketing')}</span>
                                                             </button>
                                                         )}
@@ -1156,6 +1161,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                             <div
                                                 key={board.id}
                                                 onClick={() => onNavigate('board', board.id)}
+                                                onMouseEnter={() => preloadRoute('board')}
                                                 className={`flex items-center justify-between px-3 py-1.5 rounded-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-monday-dark-hover text-gray-700 dark:text-monday-dark-text`}
                                             >
                                                 <div className="w-1.5 h-1.5 rounded-full bg-monday-blue"></div>
@@ -1609,6 +1615,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                                 ${isChild ? (dir === 'rtl' ? 'mr-3' : 'ml-3') : ''}
                                             `}
                                                     onClick={() => onNavigate('board', board.id)}
+                                                    onMouseEnter={() => preloadRoute('board')}
                                                     title={board.name}
                                                 >
                                                     {/* Expand Arrow for parents */}
@@ -1700,6 +1707,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <SidebarTooltip content={t('local_marketplace')} enabled={isCollapsed}>
                                             <button
                                                 onClick={() => onNavigate('local_marketplace')}
+                                                onMouseEnter={() => preloadRoute('local_marketplace')}
                                                 className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100 ${activeView === 'local_marketplace' ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
                                             >
                                                 <ShoppingCart size={17} weight="light" className="flex-shrink-0" />
@@ -1711,6 +1719,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                                         <SidebarTooltip content={t('foreign_marketplace')} enabled={isCollapsed}>
                                             <button
                                                 onClick={() => onNavigate('foreign_marketplace')}
+                                                onMouseEnter={() => preloadRoute('foreign_marketplace')}
                                                 className={`flex items-center ${!isCollapsed ? 'gap-3 px-3 w-full' : 'gap-0 px-3 w-fit mx-auto'} py-1.5 rounded-sm transition-colors duration-100 ${activeView === 'foreign_marketplace' ? 'bg-gradient-to-br from-[#e9ecef] to-[#dee2e6] text-[#212529] shadow-sm border border-white/60 dark:from-[#495057] dark:to-[#343a40] dark:text-[#f8f9fa] dark:border-white/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-[#323338] dark:text-[#dcdde2]'}`}
                                             >
                                                 <Globe size={17} weight="light" className="flex-shrink-0" />

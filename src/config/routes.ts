@@ -90,6 +90,84 @@ export const QuickNotesPage = lazyWithRetry(() => import('../features/quick_note
 export const SettingsPage = lazyWithRetry(() => import('../features/settings/SettingsPage'));
 
 // ============================================================================
+// VIEW TO IMPORT MAPPING - For preloading on hover
+// ============================================================================
+const viewImports: Record<string, () => Promise<unknown>> = {
+  dashboard: () => import('../features/dashboard/Dashboard'),
+  my_work: () => import('../features/myWork/MyWorkPage'),
+  inbox: () => import('../features/inbox/InboxView'),
+  teams: () => import('../features/teams/TeamsPage'),
+  vault: () => import('../features/vault/VaultView'),
+  talk: () => import('../features/talk/TalkPage'),
+  board: () => import('../features/board/BoardView'),
+  // Mini Company
+  dashboards: () => import('../features/mini_company/overview/DashboardsPage'),
+  reports: () => import('../features/mini_company/overview/ReportsPage'),
+  sales: () => import('../features/mini_company/operations/SalesPage'),
+  purchases: () => import('../features/mini_company/operations/PurchasesPage'),
+  inventory: () => import('../features/mini_company/operations/InventoryPage'),
+  expenses: () => import('../features/mini_company/finance/ExpensesPage'),
+  customers: () => import('../features/mini_company/customers/CustomersPage'),
+  suppliers: () => import('../features/mini_company/suppliers/SuppliersPage'),
+  // Supply Chain
+  procurement: () => import('../features/supply_chain/procurement/ProcurementPage'),
+  warehouse: () => import('../features/supply_chain/warehouse/WarehousePage'),
+  shipping: () => import('../features/supply_chain/shipping/ShippingPage'),
+  fleet: () => import('../features/supply_chain/fleet/FleetPage'),
+  vendors: () => import('../features/supply_chain/vendors/VendorsPage'),
+  planning: () => import('../features/supply_chain/planning/PlanningPage'),
+  // Operations
+  maintenance: () => import('../features/operations/maintenance/MaintenancePage'),
+  production: () => import('../features/operations/production/ProductionPage'),
+  quality: () => import('../features/operations/quality/QualityPage'),
+  // Business
+  sales_listing: () => import('../features/business/sales/SalesPage'),
+  finance: () => import('../features/business/finance/FinancePage'),
+  // Business Support
+  it_support: () => import('../features/business_support/it/ITPage'),
+  hr: () => import('../features/business_support/hr/HRPage'),
+  marketing: () => import('../features/business_support/marketing/MarketingPage'),
+  // Marketplace
+  local_marketplace: () => import('../features/marketplace/LocalMarketplacePage'),
+  foreign_marketplace: () => import('../features/marketplace/ForeignMarketplacePage'),
+  marketplace: () => import('../features/marketplace/MarketplacePage'),
+  // Tools
+  cornell_notes: () => import('../features/tools/cornell/CornellNotesPage'),
+  quick_notes: () => import('../features/quick_notes/QuickNotesPage'),
+  settings: () => import('../features/settings/SettingsPage'),
+  test: () => import('../features/tools/TestPage'),
+  arcade: () => import('../features/arcade/ArcadePage'),
+  live_session: () => import('../features/collaboration/LiveSessionPage'),
+};
+
+// Track which views are already preloaded to avoid duplicate requests
+const preloadedViews = new Set<string>();
+
+/**
+ * Preload a specific route's chunk on hover to eliminate load time on click.
+ * Safe to call multiple times - will only load each view once.
+ */
+export const preloadRoute = (view: string) => {
+  if (preloadedViews.has(view)) return;
+
+  const importer = viewImports[view];
+  if (importer) {
+    preloadedViews.add(view);
+    importer().catch(() => {
+      // Remove from set so it can retry on next hover
+      preloadedViews.delete(view);
+    });
+  }
+};
+
+/**
+ * Preload multiple routes at once (used for department sections on expand)
+ */
+export const preloadRoutes = (views: string[]) => {
+  views.forEach(preloadRoute);
+};
+
+// ============================================================================
 // PRELOAD CRITICAL ROUTES - Load in background after initial render
 // ============================================================================
 export const preloadCriticalRoutes = () => {
@@ -101,11 +179,22 @@ export const preloadCriticalRoutes = () => {
     }
   };
 
+  // First batch: Core layout and most used pages
   schedulePreload(() => {
     import('../features/dashboard/Dashboard');
     import('../components/layout/Sidebar');
     import('../components/layout/TopBar');
   });
+
+  // Second batch: Common navigation pages (after 500ms idle)
+  setTimeout(() => {
+    schedulePreload(() => {
+      import('../features/myWork/MyWorkPage');
+      import('../features/inbox/InboxView');
+      import('../features/vault/VaultView');
+      import('../features/board/BoardView');
+    });
+  }, 500);
 };
 
 // ============================================================================

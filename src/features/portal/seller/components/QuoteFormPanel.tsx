@@ -1,9 +1,10 @@
 // =============================================================================
 // Quote Form Panel - Stage 3 Quote Creation
 // Reusable component for creating/editing quotes for RFQs
+// Amazon Business RFQ-style UX: fast, calm, frictionless
 // =============================================================================
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
   PaperPlaneTilt,
@@ -19,9 +20,21 @@ import {
   Tag,
   Percent,
   FloppyDisk,
+  Info,
+  Lightning,
+  Timer,
+  Paperclip,
+  File,
+  FilePdf,
+  FileDoc,
+  FileImage,
+  Trash,
+  UploadSimple,
+  DownloadSimple,
 } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
+import { PortalDatePicker } from '../../components';
 import { quoteService } from '../../services/quoteService';
 import {
   SellerInboxRFQ,
@@ -30,6 +43,8 @@ import {
   QuoteFormErrors,
   CreateQuoteData,
   UpdateQuoteData,
+  QuoteAttachment,
+  QuoteAttachmentType,
   calculateQuoteTotalPrice,
   calculateDiscountAmount,
   isQuoteEditable,
@@ -120,6 +135,14 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   const [submitMessage, setSubmitMessage] = useState('');
   const [discountMode, setDiscountMode] = useState<'amount' | 'percent'>('amount');
 
+  // Attachment state
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>(
+    existingQuote?.attachments || []
+  );
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Calculated values
   const subtotal = formData.unitPrice * formData.quantity;
   const totalPrice = calculateQuoteTotalPrice(
@@ -135,8 +158,132 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
       setErrors({});
       setSubmitStatus('idle');
       setSubmitMessage('');
+      setAttachments(existingQuote?.attachments || []);
+      setPendingAttachments([]);
     }
   }, [isOpen, rfq, existingQuote]);
+
+  // Allowed file types for attachments
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+  // Determine attachment type from file
+  const getAttachmentType = (file: File): QuoteAttachmentType => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (file.type === 'application/pdf' || ext === 'pdf') return 'spec_sheet';
+    if (file.type.startsWith('image/')) return 'certificate';
+    if (file.type.includes('word') || ext === 'doc' || ext === 'docx') return 'terms';
+    return 'other';
+  };
+
+  // Get file icon based on type
+  const getFileIcon = (file: File | QuoteAttachment) => {
+    const mimeType = 'type' in file && typeof file.type === 'string' && file.type.includes('/')
+      ? file.type
+      : (file as QuoteAttachment).mimeType || '';
+    const name = 'name' in file ? file.name : '';
+
+    if (mimeType === 'application/pdf' || name.endsWith('.pdf')) {
+      return <FilePdf size={18} style={{ color: '#ef4444' }} />;
+    }
+    if (mimeType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name)) {
+      return <FileImage size={18} style={{ color: '#3b82f6' }} />;
+    }
+    if (mimeType.includes('word') || /\.(doc|docx)$/i.test(name)) {
+      return <FileDoc size={18} style={{ color: '#2563eb' }} />;
+    }
+    return <File size={18} style={{ color: styles.textMuted }} />;
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles: File[] = [];
+    const errorMessages: string[] = [];
+
+    files.forEach((file) => {
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        errorMessages.push(`${file.name}: Unsupported file type`);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        errorMessages.push(`${file.name}: File too large (max 10MB)`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (errorMessages.length > 0) {
+      setSubmitStatus('error');
+      setSubmitMessage(errorMessages.join('. '));
+      setTimeout(() => setSubmitStatus('idle'), 3000);
+    }
+
+    if (validFiles.length > 0) {
+      setPendingAttachments((prev) => [...prev, ...validFiles]);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Remove pending attachment
+  const removePendingAttachment = (index: number) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove uploaded attachment
+  const removeUploadedAttachment = async (attachmentId: string) => {
+    if (!existingQuote) return;
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      await quoteService.removeAttachment(token, existingQuote.id, attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (error) {
+      console.error('Failed to remove attachment:', error);
+      setSubmitStatus('error');
+      setSubmitMessage('Failed to remove attachment');
+      setTimeout(() => setSubmitStatus('idle'), 2000);
+    }
+  };
+
+  // Upload pending attachments after quote is saved
+  const uploadPendingAttachments = async (quoteId: string) => {
+    if (pendingAttachments.length === 0) return;
+
+    const token = await getToken();
+    if (!token) return;
+
+    for (const file of pendingAttachments) {
+      try {
+        const uploaded = await quoteService.addAttachment(
+          token,
+          quoteId,
+          file,
+          getAttachmentType(file)
+        );
+        setAttachments((prev) => [...prev, uploaded]);
+      } catch (error) {
+        console.error('Failed to upload attachment:', error);
+      }
+    }
+    setPendingAttachments([]);
+  };
 
   // Handle input changes
   const handleChange = useCallback(
@@ -217,9 +364,29 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
-  // Submit form (save draft)
+  // Validate form for sending (strict validation)
+  const validateForSend = useCallback((): boolean => {
+    return validateForm();
+  }, [validateForm]);
+
+  // Validate form for saving draft (minimal validation)
+  const validateForDraft = useCallback((): boolean => {
+    // For drafts, we only require basic data - allow incomplete quotes
+    if (formData.unitPrice < 0) {
+      setErrors({ unitPrice: 'Unit price cannot be negative' });
+      return false;
+    }
+    if (formData.quantity < 0) {
+      setErrors({ quantity: 'Quantity cannot be negative' });
+      return false;
+    }
+    return true;
+  }, [formData.unitPrice, formData.quantity]);
+
+  // Submit form (save draft) - No strict validation blocking
   const handleSaveDraft = async () => {
-    if (!validateForm()) {
+    // Minimal validation for draft (allow incomplete)
+    if (!validateForDraft()) {
       return;
     }
 
@@ -237,14 +404,14 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
       if (existingQuote) {
         // Update existing quote
         const updateData: UpdateQuoteData = {
-          unitPrice: formData.unitPrice,
-          quantity: formData.quantity,
+          unitPrice: formData.unitPrice || 0,
+          quantity: formData.quantity || rfq.quantity,
           currency: formData.currency,
           discount: formData.discount || undefined,
           discountPercent: formData.discountPercent || undefined,
-          deliveryDays: formData.deliveryDays,
+          deliveryDays: formData.deliveryDays || 7,
           deliveryTerms: formData.deliveryTerms || undefined,
-          validUntil: new Date(formData.validUntil).toISOString(),
+          validUntil: formData.validUntil ? new Date(formData.validUntil).toISOString() : getDefaultValidUntil(),
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
           changeReason: 'Updated quote',
@@ -259,14 +426,14 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
         // Create new draft
         const createData: CreateQuoteData = {
           rfqId: rfq.id,
-          unitPrice: formData.unitPrice,
-          quantity: formData.quantity,
+          unitPrice: formData.unitPrice || 0,
+          quantity: formData.quantity || rfq.quantity,
           currency: formData.currency,
           discount: formData.discount || undefined,
           discountPercent: formData.discountPercent || undefined,
-          deliveryDays: formData.deliveryDays,
+          deliveryDays: formData.deliveryDays || 7,
           deliveryTerms: formData.deliveryTerms || undefined,
-          validUntil: new Date(formData.validUntil).toISOString(),
+          validUntil: formData.validUntil ? new Date(formData.validUntil).toISOString() : getDefaultValidUntil(),
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
         };
@@ -274,18 +441,23 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
         quote = await quoteService.createDraft(token, createData);
       }
 
-      setSubmitStatus('success');
-      setSubmitMessage('Quote saved as draft');
+      // Upload any pending attachments
+      if (pendingAttachments.length > 0) {
+        await uploadPendingAttachments(quote.id);
+      }
 
-      // Call success callback after a short delay
+      setSubmitStatus('success');
+      setSubmitMessage('Draft saved');
+
+      // Brief feedback, then callback
       setTimeout(() => {
-        onSuccess?.(quote);
-      }, 1000);
+        setSubmitStatus('idle');
+      }, 1500);
     } catch (error) {
       console.error('Failed to save quote:', error);
       setSubmitStatus('error');
       setSubmitMessage(
-        error instanceof Error ? error.message : 'Failed to save quote. Please try again.'
+        error instanceof Error ? error.message : 'Failed to save draft. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -294,7 +466,8 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
   // Send quote to buyer
   const handleSendQuote = async () => {
-    if (!validateForm()) {
+    // Strict validation required for sending
+    if (!validateForSend()) {
       return;
     }
 
@@ -347,6 +520,11 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
         quote = await quoteService.createDraft(token, createData);
       }
 
+      // Upload any pending attachments before sending
+      if (pendingAttachments.length > 0) {
+        await uploadPendingAttachments(quote.id);
+      }
+
       // Now send the quote
       const sentQuote = await quoteService.sendQuote(token, quote.id);
       if (!sentQuote) {
@@ -354,15 +532,13 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
       }
 
       setSubmitStatus('success');
-      setSubmitMessage(
-        `Quote ${sentQuote.quoteNumber || sentQuote.id.slice(0, 8).toUpperCase()} sent to buyer!`
-      );
+      setSubmitMessage('Quote sent · Buyer notified');
 
-      // Call success callback after a short delay
+      // Call success callback after brief feedback
       setTimeout(() => {
         onSuccess?.(sentQuote);
         onClose();
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error('Failed to send quote:', error);
       setSubmitStatus('error');
@@ -386,22 +562,61 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     ? canSendQuote({ status: existingQuote.status, validUntil: formData.validUntil })
     : { canSend: true };
 
-  // Don't render if not open
-  if (!isOpen) return null;
+  // Animation states for smooth enter/exit
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [isAnimating, setIsAnimating] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Don't render if not visible
+  if (!isVisible) return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/50 transition-opacity" onClick={onClose} />
+      {/* Backdrop - transparent, just for click-outside */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ top: '64px' }}
+        onClick={onClose}
+      />
 
       {/* Panel */}
       <div
-        className={`
-          fixed z-50 top-0 ${isRtl ? 'left-0' : 'right-0'} h-full w-full max-w-lg
-          transform transition-transform duration-300 ease-out
-          ${isOpen ? 'translate-x-0' : isRtl ? '-translate-x-full' : 'translate-x-full'}
-        `}
-        style={{ backgroundColor: styles.bgPrimary }}
+        className="fixed z-50 w-full max-w-lg overflow-hidden flex flex-col"
+        style={{
+          top: '64px',
+          bottom: 0,
+          backgroundColor: styles.bgPrimary,
+          borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
+          borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
+          boxShadow: styles.isDark
+            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
+            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          right: isRtl ? 'auto' : 0,
+          left: isRtl ? 0 : 'auto',
+          transform: isAnimating
+            ? 'translateX(0)'
+            : isRtl
+            ? 'translateX(-100%)'
+            : 'translateX(100%)',
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        dir={direction}
       >
         {/* Header */}
         <div
@@ -433,30 +648,57 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto h-[calc(100%-180px)] px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <form className="space-y-5">
-            {/* Item Preview */}
-            {rfq.item && (
-              <div
-                className="flex items-center gap-3 p-3 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
-                <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: styles.bgCard }}
-                >
-                  <Package size={20} style={{ color: styles.textMuted }} />
+            {/* RFQ Summary Header - Always visible context */}
+            <div
+              className="p-4 rounded-xl"
+              style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.border}` }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: styles.bgCard }}
+                  >
+                    <Package size={18} style={{ color: styles.textMuted }} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                      {rfq.item?.name || 'General RFQ'}
+                    </p>
+                    {rfq.item?.sku && (
+                      <p className="text-xs" style={{ color: styles.textMuted }}>
+                        SKU: {rfq.item.sku}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate" style={{ color: styles.textPrimary }}>
-                    {rfq.item.name}
-                  </p>
-                  <p className="text-xs" style={{ color: styles.textMuted }}>
-                    SKU: {rfq.item.sku} | Requested: {rfq.quantity} units
-                  </p>
+                {/* Quick info badges */}
+                <div className="flex flex-col items-end gap-1">
+                  <span
+                    className="px-2 py-0.5 rounded text-xs font-medium tabular-nums"
+                    style={{ backgroundColor: styles.bgCard, color: styles.textPrimary }}
+                  >
+                    {rfq.quantity} units requested
+                  </span>
+                  {rfq.requiredDeliveryDate && (
+                    <span
+                      className="px-2 py-0.5 rounded text-xs flex items-center gap-1"
+                      style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}
+                    >
+                      <Timer size={10} />
+                      {new Date(rfq.requiredDeliveryDate).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+              {/* Buyer info */}
+              <div className="flex items-center gap-2 text-xs" style={{ color: styles.textMuted }}>
+                <span>From:</span>
+                <span style={{ color: styles.textSecondary }}>{rfq.buyerCompanyName || 'Unknown Buyer'}</span>
+              </div>
+            </div>
 
             {/* Unit Price & Currency */}
             <div className="grid grid-cols-3 gap-3">
@@ -739,26 +981,12 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
               >
                 Quote Valid Until <span style={{ color: styles.error }}>*</span>
               </label>
-              <div className="relative">
-                <div
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: styles.textMuted }}
-                >
-                  <Calendar size={18} />
-                </div>
-                <input
-                  type="date"
-                  min={getMinDate()}
-                  value={formData.validUntil}
-                  onChange={(e) => handleChange('validUntil', e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: errors.validUntil ? styles.error : styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
-                />
-              </div>
+              <PortalDatePicker
+                value={formData.validUntil}
+                onChange={(value) => handleChange('validUntil', value)}
+                minDate={getMinDate()}
+                className="w-full"
+              />
               {errors.validUntil && (
                 <p className="text-xs mt-1" style={{ color: styles.error }}>
                   {errors.validUntil}
@@ -829,87 +1057,246 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
               </p>
             </div>
 
-            {/* Submit Status */}
-            {submitStatus !== 'idle' && (
-              <div
-                className={`flex items-center gap-2 p-3 rounded-lg ${
-                  submitStatus === 'success' ? 'bg-green-100' : 'bg-red-100'
-                }`}
+            {/* Attachments Section */}
+            <div>
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: styles.textPrimary }}
               >
-                {submitStatus === 'success' ? (
-                  <CheckCircle
-                    size={20}
-                    weight="fill"
-                    className="text-green-600 flex-shrink-0"
-                  />
-                ) : (
-                  <WarningCircle
-                    size={20}
-                    weight="fill"
-                    className="text-red-600 flex-shrink-0"
-                  />
-                )}
-                <p
-                  className={`text-sm ${
-                    submitStatus === 'success' ? 'text-green-700' : 'text-red-700'
-                  }`}
-                >
-                  {submitMessage}
+                <div className="flex items-center gap-2">
+                  <Paperclip size={16} />
+                  <span>Attachments</span>
+                </div>
+              </label>
+
+              {/* Upload area */}
+              <div
+                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors"
+                style={{
+                  borderColor: styles.borderLight,
+                  backgroundColor: styles.bgSecondary,
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = styles.info;
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.style.borderColor = styles.borderLight;
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = styles.borderLight;
+                  const files = Array.from(e.dataTransfer.files);
+                  const input = fileInputRef.current;
+                  if (input) {
+                    const dataTransfer = new DataTransfer();
+                    files.forEach((f) => dataTransfer.items.add(f));
+                    input.files = dataTransfer.files;
+                    handleFileSelect({ target: input } as React.ChangeEvent<HTMLInputElement>);
+                  }
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <UploadSimple size={24} style={{ color: styles.textMuted, margin: '0 auto' }} />
+                <p className="text-sm mt-2" style={{ color: styles.textSecondary }}>
+                  Click or drag files to upload
+                </p>
+                <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+                  PDF, Word, Excel, Images (max 10MB each)
                 </p>
               </div>
-            )}
+
+              {/* Pending attachments (not yet uploaded) */}
+              {pendingAttachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium" style={{ color: styles.textMuted }}>
+                    PENDING UPLOAD
+                  </p>
+                  {pendingAttachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 rounded-lg"
+                      style={{ backgroundColor: styles.bgSecondary }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getFileIcon(file)}
+                        <span
+                          className="text-sm truncate"
+                          style={{ color: styles.textPrimary }}
+                        >
+                          {file.name}
+                        </span>
+                        <span className="text-xs flex-shrink-0" style={{ color: styles.textMuted }}>
+                          ({(file.size / 1024).toFixed(0)} KB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePendingAttachment(index)}
+                        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        style={{ color: styles.error }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Uploaded attachments */}
+              {attachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium" style={{ color: styles.textMuted }}>
+                    UPLOADED
+                  </p>
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-2 rounded-lg"
+                      style={{ backgroundColor: styles.bgSecondary }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getFileIcon(attachment)}
+                        <span
+                          className="text-sm truncate"
+                          style={{ color: styles.textPrimary }}
+                        >
+                          {attachment.name}
+                        </span>
+                        {attachment.size && (
+                          <span className="text-xs flex-shrink-0" style={{ color: styles.textMuted }}>
+                            ({(attachment.size / 1024).toFixed(0)} KB)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          style={{ color: styles.info }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DownloadSimple size={16} />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => removeUploadedAttachment(attachment.id)}
+                          className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          style={{ color: styles.error }}
+                        >
+                          <Trash size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-xs mt-2" style={{ color: styles.textMuted }}>
+                Attach spec sheets, certificates, or terms. Visible to the buyer.
+              </p>
+            </div>
+
           </form>
         </div>
 
         {/* Footer Actions */}
         <div
-          className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t"
+          className="flex-shrink-0 px-6 py-4 border-t"
           style={{
             borderColor: styles.borderLight,
             backgroundColor: styles.bgPrimary,
           }}
         >
+          {/* Status feedback bar */}
+          {submitStatus !== 'idle' && (
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 transition-all duration-100 ${
+                submitStatus === 'success' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
+              }`}
+            >
+              {submitStatus === 'success' ? (
+                <CheckCircle
+                  size={16}
+                  weight="fill"
+                  className="text-green-600 dark:text-green-400 flex-shrink-0"
+                />
+              ) : (
+                <WarningCircle
+                  size={16}
+                  weight="fill"
+                  className="text-red-600 dark:text-red-400 flex-shrink-0"
+                />
+              )}
+              <p
+                className={`text-sm ${
+                  submitStatus === 'success' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                }`}
+              >
+                {submitMessage}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3">
-            {/* Save Draft Button */}
+            {/* Save Draft Button (Secondary) */}
             <button
               type="button"
               onClick={handleSaveDraft}
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-100 disabled:opacity-50"
               style={{
                 backgroundColor: styles.bgSecondary,
                 color: styles.textPrimary,
-                border: `1px solid ${styles.borderLight}`,
+                border: `1px solid ${styles.border}`,
+                minWidth: '120px',
               }}
             >
               {isSubmitting ? (
-                <Spinner size={20} className="animate-spin" />
+                <Spinner size={18} className="animate-spin" />
               ) : (
-                <FloppyDisk size={20} />
+                <FloppyDisk size={18} />
               )}
               Save Draft
             </button>
 
-            {/* Send Quote Button */}
+            {/* Send Quote Button (Primary) */}
             <button
               type="button"
               onClick={handleSendQuote}
-              disabled={isSubmitting || !sendValidation.canSend}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+              disabled={isSubmitting || !formData.unitPrice || formData.unitPrice <= 0}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-100 disabled:opacity-50"
               style={{
-                backgroundColor: sendValidation.canSend ? styles.success : styles.bgSecondary,
-                color: sendValidation.canSend ? '#fff' : styles.textMuted,
+                backgroundColor: formData.unitPrice > 0 ? styles.success : styles.bgSecondary,
+                color: formData.unitPrice > 0 ? '#fff' : styles.textMuted,
               }}
               title={sendValidation.reason}
             >
               {isSubmitting ? (
-                <Spinner size={20} className="animate-spin" />
+                <Spinner size={18} className="animate-spin" />
               ) : (
-                <PaperPlaneTilt size={20} weight="fill" />
+                <PaperPlaneTilt size={18} weight="fill" />
               )}
               Send Quote
             </button>
           </div>
+
+          {/* Disabled reason hint */}
+          {formData.unitPrice <= 0 && (
+            <p className="text-xs mt-2 text-center" style={{ color: styles.textMuted }}>
+              Enter a unit price to send quote
+            </p>
+          )}
         </div>
       </div>
     </>

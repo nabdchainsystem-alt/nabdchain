@@ -53,7 +53,7 @@ import {
     Export,
     Archive,
 } from 'phosphor-react';
-import { RowDetailPanel } from '../../components/RowDetailPanel';
+import { TaskDetailPanel } from '../../components/TaskDetailPanel';
 import {
     DndContext,
     closestCenter,
@@ -2271,6 +2271,7 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                 }}
                 onNavigate={onNavigate}
                 inputRef={inputRef}
+                onOpenDetail={(r) => setActiveRowDetail(r)}
             />
         );
     };
@@ -3358,11 +3359,14 @@ const RoomTable: React.FC<RoomTableProps> = ({ roomId, viewId, defaultColumns, t
                     type="danger"
                 />
 
-                <RowDetailPanel
+                <TaskDetailPanel
                     isOpen={!!activeRowDetail}
                     onClose={() => setActiveRowDetail(null)}
                     row={activeRowDetail}
+                    columns={columns}
+                    customStatuses={customStatuses}
                     boardId={roomId}
+                    onUpdateRow={handleUpdateRow}
                 />
                 <input
                     type="file"

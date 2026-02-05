@@ -15,6 +15,17 @@ export const initializeSocket = (io: Server) => {
     io.on('connection', (socket: Socket) => {
         socketLogger.info(`Client connected: ${socket.id}`);
 
+        // --- User Notification Room ---
+        socket.on('join-user-room', ({ userId }: { userId: string }) => {
+            socket.join(`user:${userId}`);
+            socketLogger.debug(`User ${userId} joined notification room`);
+        });
+
+        socket.on('leave-user-room', ({ userId }: { userId: string }) => {
+            socket.leave(`user:${userId}`);
+            socketLogger.debug(`User ${userId} left notification room`);
+        });
+
         // --- Room Management ---
         socket.on('join-room', ({ roomId, userId, name, avatarUrl }: { roomId: string, userId: string, name?: string, avatarUrl?: string }) => {
             socket.join(roomId);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 // Types mimicking Clerk's return types roughly
 interface MockUser {
@@ -47,6 +47,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     useEffect(() => {
         const token = localStorage.getItem('mock_auth_token');
+        const portalType = localStorage.getItem('portal_type');
+        const portalUserId = localStorage.getItem('portal_user_id');
+
         if (token === 'master-token') {
             loginAsMaster();
         } else if (token === 'dev-token') {
@@ -59,10 +62,17 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             loginAsBuyer();
         } else if (token === 'seller-portal-token') {
             loginAsSeller();
+        } else if (token && portalType && portalUserId) {
+            // Handle real API tokens - user logged in via portal API
+            if (portalType === 'buyer') {
+                loginAsBuyerWithApiToken(portalUserId);
+            } else if (portalType === 'seller') {
+                loginAsSellerWithApiToken(portalUserId);
+            }
         }
     }, []);
 
-    const loginAsMaster = () => {
+    const loginAsMaster = useCallback(() => {
         setIsSignedIn(true);
         // Check for saved custom name
         const savedName = getSavedUserName();
@@ -79,9 +89,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0D8ABC&color=fff`
         });
         localStorage.setItem('mock_auth_token', 'master-token');
-    };
+    }, []);
 
-    const loginAsDev = () => {
+    const loginAsDev = useCallback(() => {
         setIsSignedIn(true);
         setUserData({
             id: 'user_developer_admin',
@@ -92,9 +102,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Developer+Admin&background=000&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'dev-token');
-    };
+    }, []);
 
-    const loginAsGoogle = () => {
+    const loginAsGoogle = useCallback(() => {
         setIsSignedIn(true);
         // Simulate a realistic Google user found in the system
         setUserData({
@@ -106,9 +116,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'google-token');
-    };
+    }, []);
 
-    const loginAsSam = () => {
+    const loginAsSam = useCallback(() => {
         setIsSignedIn(true);
         setUserData({
             id: 'user_sam_master',
@@ -119,9 +129,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Sam&background=6366F1&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'sam-token');
-    };
+    }, []);
 
-    const loginAsBuyer = () => {
+    const loginAsBuyer = useCallback(() => {
         setIsSignedIn(true);
         setUserData({
             id: 'user_portal_buyer',
@@ -132,9 +142,9 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Portal+Buyer&background=3B82F6&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'buyer-portal-token');
-    };
+    }, []);
 
-    const loginAsSeller = () => {
+    const loginAsSeller = useCallback(() => {
         setIsSignedIn(true);
         setUserData({
             id: 'user_portal_seller',
@@ -145,9 +155,37 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             imageUrl: 'https://ui-avatars.com/api/?name=Portal+Seller&background=10B981&color=fff'
         });
         localStorage.setItem('mock_auth_token', 'seller-portal-token');
-    };
+    }, []);
 
-    const signOut = async () => {
+    const loginAsBuyerWithApiToken = useCallback((userId: string) => {
+        setIsSignedIn(true);
+        const email = localStorage.getItem('portal_user_email') || 'buyer@portal.com';
+        const fullName = localStorage.getItem('portal_user_name') || 'Portal Buyer';
+        setUserData({
+            id: userId,
+            fullName,
+            firstName: fullName.split(' ')[0] || 'Portal',
+            lastName: fullName.split(' ').slice(1).join(' ') || 'Buyer',
+            primaryEmailAddress: { emailAddress: email },
+            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=3B82F6&color=fff`
+        });
+    }, []);
+
+    const loginAsSellerWithApiToken = useCallback((userId: string) => {
+        setIsSignedIn(true);
+        const email = localStorage.getItem('portal_user_email') || 'seller@portal.com';
+        const fullName = localStorage.getItem('portal_user_name') || 'Portal Seller';
+        setUserData({
+            id: userId,
+            fullName,
+            firstName: fullName.split(' ')[0] || 'Portal',
+            lastName: fullName.split(' ').slice(1).join(' ') || 'Seller',
+            primaryEmailAddress: { emailAddress: email },
+            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=10B981&color=fff`
+        });
+    }, []);
+
+    const signOut = useCallback(async () => {
         // Clear ALL user-related data from localStorage
         const keysToRemove = [
             'mock_auth_token',
@@ -189,18 +227,18 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             window.history.pushState({}, '', '/');
             window.dispatchEvent(new PopStateEvent('popstate'));
         }
-    };
+    }, []);
 
-    const getToken = async () => {
+    const getToken = useCallback(async () => {
         return localStorage.getItem('mock_auth_token');
-    };
+    }, []);
 
-    // Construct user object with update method
-    const user: MockUser | null = userData ? {
-        ...userData,
-        update: async (params: { firstName?: string; lastName?: string }) => {
-            const newFirstName = params.firstName ?? userData.firstName;
-            const newLastName = params.lastName ?? userData.lastName;
+    // Memoize the update function
+    const updateUser = useCallback(async (params: { firstName?: string; lastName?: string }) => {
+        setUserData(prev => {
+            if (!prev) return null;
+            const newFirstName = params.firstName ?? prev.firstName;
+            const newLastName = params.lastName ?? prev.lastName;
             const newFullName = [newFirstName, newLastName].filter(Boolean).join(' ');
 
             // Persist name changes to localStorage
@@ -210,16 +248,25 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 fullName: newFullName
             }));
 
-            setUserData(prev => prev ? ({
+            return {
                 ...prev,
                 firstName: newFirstName,
                 lastName: newLastName,
                 fullName: newFullName
-            }) : null);
-        }
-    } : null;
+            };
+        });
+    }, []);
 
-    const value = {
+    // Construct user object with memoized update method
+    const user: MockUser | null = useMemo(() => {
+        if (!userData) return null;
+        return {
+            ...userData,
+            update: updateUser
+        };
+    }, [userData, updateUser]);
+
+    const value = useMemo(() => ({
         isLoaded: true,
         isSignedIn,
         userId: user?.id || null,
@@ -231,7 +278,7 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         loginAsGoogle,
         loginAsMaster,
         loginAsSam
-    };
+    }), [isSignedIn, user, getToken, signOut, loginAsMaster, loginAsGoogle, loginAsSam]);
 
     return (
         <MockAuthContext.Provider value={value}>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { getThemeStyles, ThemeStyles, Theme, Language } from '../../../theme/portalColors';
+import { getTranslation, hasTranslation } from '../../../locales';
 
 type Direction = 'ltr' | 'rtl';
 
@@ -77,19 +78,6 @@ const translations: Record<Language, Record<string, string>> = {
     'seller.nav.logistics': 'Logistics',
     'seller.nav.tracking': 'Live Tracking',
     'seller.nav.settings': 'Settings',
-    'seller.nav.tests': 'Tests',
-
-    // Seller Tests
-    'seller.tests.title': 'Tests',
-    'seller.tests.subtitle': 'Manage and track your certification tests',
-    'seller.tests.testName': 'Test Name',
-    'seller.tests.status': 'Status',
-    'seller.tests.score': 'Score',
-    'seller.tests.duration': 'Duration',
-    'seller.tests.date': 'Date',
-    'seller.tests.passed': 'Passed',
-    'seller.tests.pending': 'Pending',
-    'seller.tests.failed': 'Failed',
 
     // Seller Settings
     'seller.settings.title': 'Seller Settings',
@@ -833,19 +821,31 @@ const translations: Record<Language, Record<string, string>> = {
     'buyer.nav.purchases': 'Purchases',
     'buyer.nav.suppliers': 'Suppliers',
     'buyer.nav.workspace': 'Workspace',
-    'buyer.nav.tests': 'Tests',
 
-    // Buyer Tests
-    'buyer.tests.title': 'Tests',
-    'buyer.tests.subtitle': 'View and track your quality tests',
-    'buyer.tests.testName': 'Test Name',
-    'buyer.tests.status': 'Status',
-    'buyer.tests.score': 'Score',
-    'buyer.tests.duration': 'Duration',
-    'buyer.tests.date': 'Date',
-    'buyer.tests.passed': 'Passed',
-    'buyer.tests.pending': 'Pending',
-    'buyer.tests.failed': 'Failed',
+    // Buyer Cart
+    'cart.title': 'Your Cart',
+    'cart.items': 'items',
+    'cart.item': 'item',
+    'cart.empty.title': 'Your cart is empty',
+    'cart.empty.description': 'Browse the marketplace to find parts and products. Add items to your cart to request quotes from sellers.',
+    'cart.empty.browse': 'Browse Marketplace',
+    'cart.viewAll': 'View Full Cart',
+    'cart.summary.title': 'Order Summary',
+    'cart.summary.items': 'Items',
+    'cart.summary.sellers': 'Sellers',
+    'cart.summary.estimatedTotal': 'Estimated Total',
+    'cart.summary.subjectToQuote': 'Subject to quote',
+    'cart.summary.noPaymentNow': 'No payment required now. Prices confirmed via quote.',
+    'cart.summary.modifyLater': 'You can modify quantities after receiving quotes.',
+    'cart.summary.requestAllRFQ': 'Request RFQ for All',
+    'cart.summary.continueBrowsing': 'Continue Browsing',
+    'cart.summary.locked': 'Cart is locked. Clear to add new items.',
+    'cart.requestRFQ': 'Request RFQ',
+    'cart.sellerSubtotal': 'Seller Subtotal',
+    'cart.addToCart': 'Add to Cart',
+    'cart.inCart': 'In Cart',
+    'cart.adding': 'Adding...',
+    'cart.added': 'Added!',
 
     // Buyer Home
     'buyer.home.title': 'Industrial Marketplace',
@@ -1293,19 +1293,6 @@ const translations: Record<Language, Record<string, string>> = {
     'seller.nav.logistics': 'اللوجستيات',
     'seller.nav.tracking': 'التتبع المباشر',
     'seller.nav.settings': 'الإعدادات',
-    'seller.nav.tests': 'الاختبارات',
-
-    // Seller Tests
-    'seller.tests.title': 'الاختبارات',
-    'seller.tests.subtitle': 'إدارة وتتبع اختبارات الشهادات',
-    'seller.tests.testName': 'اسم الاختبار',
-    'seller.tests.status': 'الحالة',
-    'seller.tests.score': 'الدرجة',
-    'seller.tests.duration': 'المدة',
-    'seller.tests.date': 'التاريخ',
-    'seller.tests.passed': 'ناجح',
-    'seller.tests.pending': 'قيد الانتظار',
-    'seller.tests.failed': 'راسب',
 
     // Seller Settings
     'seller.settings.title': 'إعدادات البائع',
@@ -2049,19 +2036,31 @@ const translations: Record<Language, Record<string, string>> = {
     'buyer.nav.purchases': 'المشتريات',
     'buyer.nav.suppliers': 'الموردين',
     'buyer.nav.workspace': 'مساحة العمل',
-    'buyer.nav.tests': 'الاختبارات',
 
-    // Buyer Tests
-    'buyer.tests.title': 'الاختبارات',
-    'buyer.tests.subtitle': 'عرض وتتبع اختبارات الجودة',
-    'buyer.tests.testName': 'اسم الاختبار',
-    'buyer.tests.status': 'الحالة',
-    'buyer.tests.score': 'الدرجة',
-    'buyer.tests.duration': 'المدة',
-    'buyer.tests.date': 'التاريخ',
-    'buyer.tests.passed': 'ناجح',
-    'buyer.tests.pending': 'قيد الانتظار',
-    'buyer.tests.failed': 'راسب',
+    // Buyer Cart
+    'cart.title': 'سلة التسوق',
+    'cart.items': 'عناصر',
+    'cart.item': 'عنصر',
+    'cart.empty.title': 'سلة التسوق فارغة',
+    'cart.empty.description': 'تصفح السوق للعثور على القطع والمنتجات. أضف العناصر إلى سلتك لطلب عروض أسعار من البائعين.',
+    'cart.empty.browse': 'تصفح السوق',
+    'cart.viewAll': 'عرض السلة كاملة',
+    'cart.summary.title': 'ملخص الطلب',
+    'cart.summary.items': 'العناصر',
+    'cart.summary.sellers': 'البائعون',
+    'cart.summary.estimatedTotal': 'الإجمالي التقديري',
+    'cart.summary.subjectToQuote': 'خاضع لعرض السعر',
+    'cart.summary.noPaymentNow': 'لا يلزم الدفع الآن. يتم تأكيد الأسعار عبر عرض السعر.',
+    'cart.summary.modifyLater': 'يمكنك تعديل الكميات بعد استلام عروض الأسعار.',
+    'cart.summary.requestAllRFQ': 'طلب عرض سعر للكل',
+    'cart.summary.continueBrowsing': 'متابعة التصفح',
+    'cart.summary.locked': 'السلة مقفلة. امسحها لإضافة عناصر جديدة.',
+    'cart.requestRFQ': 'طلب عرض سعر',
+    'cart.sellerSubtotal': 'المجموع الفرعي للبائع',
+    'cart.addToCart': 'أضف للسلة',
+    'cart.inCart': 'في السلة',
+    'cart.adding': 'جاري الإضافة...',
+    'cart.added': 'تمت الإضافة!',
 
     // Buyer Home
     'buyer.home.title': 'السوق الصناعي',
@@ -2520,8 +2519,14 @@ export const PortalProvider: React.FC<PortalProviderProps> = ({ children }) => {
     });
   }, []);
 
+  // Use main translation system with portal-local fallback
   const t = useCallback((key: string): string => {
-    return translations[language][key] || key;
+    // First check main translation system (src/locales/en.json)
+    if (hasTranslation(language, key)) {
+      return getTranslation(language, key);
+    }
+    // Fallback to portal-local translations, then to main system's readable fallback
+    return translations[language]?.[key] || getTranslation(language, key);
   }, [language]);
 
   // Compute styles based on theme and language using smart theme getter

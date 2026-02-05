@@ -37,8 +37,15 @@ import {
   Gear,
   ProhibitInset,
   LockSimple,
+  Timer,
+  ArrowRight,
+  CalendarBlank,
+  ListChecks,
+  Export,
+  Receipt,
+  MapTrifold,
 } from 'phosphor-react';
-import { Button, EmptyState } from '../../components';
+import { Button, EmptyState, PortalDatePicker, SkeletonKPICard, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import {
   MarketplaceOrder as Order,
@@ -59,11 +66,25 @@ import { OrderDetailsPanel } from '../components/OrderDetailsPanel';
 
 const ORDERS_STORAGE_KEY = 'portal-seller-orders';
 
-type SortOption = 'newest' | 'oldest' | 'total_high' | 'total_low';
+type SortOption = 'newest' | 'oldest' | 'total_high' | 'total_low' | 'sla_urgent';
+type HealthFilterOption = OrderHealthStatus | 'needs_action' | '';
 
 interface SellerOrdersProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: Record<string, unknown>) => void;
 }
+
+// =============================================================================
+// SLA Configuration
+// =============================================================================
+const SLA_CONFIG = {
+  confirmation: { hours: 24, label: 'Confirm' },
+  shipping: { hours: 72, label: 'Ship' },
+  delivery: { days: 7, label: 'Deliver' },
+};
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
 
 const formatRelativeTime = (dateStr: string): string => {
   const date = new Date(dateStr);
@@ -84,9 +105,586 @@ const formatCurrency = (amount: number, currency: string): string => {
   return `${currency} ${amount.toLocaleString()}`;
 };
 
+const formatTimestamp = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+// SLA Microcopy labels
+const SLA_MICROCOPY = {
+  ok: 'On track',
+  warning: 'Needs attention',
+  critical: 'SLA breached',
+  waiting: 'Waiting for buyer',
+};
+
+// Calculate time remaining for SLA with 80% threshold for at-risk
+const calculateSLARemaining = (order: Order): {
+  hours: number;
+  text: string;
+  statusText: string;
+  timeText: string;
+  isOverdue: boolean;
+  urgency: 'ok' | 'warning' | 'critical';
+  percentUsed: number;
+} | null => {
+  const now = new Date();
+  let deadline: Date | null = null;
+  let startTime: Date;
+  let slaType = '';
+
+  // Determine which SLA applies based on order status
+  if (order.status === 'pending_confirmation') {
+    startTime = new Date(order.createdAt);
+    deadline = new Date(startTime.getTime() + SLA_CONFIG.confirmation.hours * 60 * 60 * 1000);
+    slaType = SLA_CONFIG.confirmation.label;
+  } else if (order.status === 'confirmed' || order.status === 'processing') {
+    startTime = order.confirmedAt ? new Date(order.confirmedAt) : new Date(order.createdAt);
+    deadline = new Date(startTime.getTime() + SLA_CONFIG.shipping.hours * 60 * 60 * 1000);
+    slaType = SLA_CONFIG.shipping.label;
+  } else if (order.status === 'shipped') {
+    startTime = order.shippedAt ? new Date(order.shippedAt) : new Date(order.createdAt);
+    deadline = new Date(startTime.getTime() + SLA_CONFIG.delivery.days * 24 * 60 * 60 * 1000);
+    slaType = SLA_CONFIG.delivery.label;
+  } else {
+    return null;
+  }
+
+  if (!deadline) return null;
+
+  const totalMs = deadline.getTime() - startTime.getTime();
+  const elapsedMs = now.getTime() - startTime.getTime();
+  const diffMs = deadline.getTime() - now.getTime();
+  const hours = Math.floor(Math.abs(diffMs) / (60 * 60 * 1000));
+  const minutes = Math.floor((Math.abs(diffMs) % (60 * 60 * 1000)) / (60 * 1000));
+  const isOverdue = diffMs < 0;
+  const percentUsed = Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100)));
+
+  // Time text for display
+  let timeText = '';
+  if (isOverdue) {
+    const overdueHours = hours;
+    timeText = overdueHours > 24 ? `${Math.floor(overdueHours / 24)}d overdue` : `${overdueHours}h overdue`;
+  } else if (hours < 24) {
+    timeText = `${hours}h ${minutes}m remaining`;
+  } else {
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    timeText = remainingHours > 0 ? `${days}d ${remainingHours}h remaining` : `${days}d remaining`;
+  }
+
+  // Determine urgency based on 80% threshold
+  let urgency: 'ok' | 'warning' | 'critical';
+  let statusText: string;
+
+  if (isOverdue) {
+    urgency = 'critical';
+    statusText = SLA_MICROCOPY.critical;
+  } else if (percentUsed >= 80) {
+    urgency = 'warning';
+    statusText = SLA_MICROCOPY.warning;
+  } else {
+    urgency = 'ok';
+    statusText = SLA_MICROCOPY.ok;
+  }
+
+  // Combined text for backward compatibility
+  const text = isOverdue
+    ? timeText
+    : `${slaType} in ${hours < 24 ? `${hours}h` : `${Math.floor(hours / 24)}d`}`;
+
+  return { hours, text, statusText, timeText, isOverdue, urgency, percentUsed };
+};
+
+// Check if order needs action today
+const needsActionToday = (order: Order): boolean => {
+  if (['delivered', 'closed', 'cancelled', 'failed', 'refunded'].includes(order.status)) {
+    return false;
+  }
+  const sla = calculateSLARemaining(order);
+  if (!sla) return false;
+  return sla.hours <= 24 || sla.isOverdue;
+};
+
 // Health statuses and exception types for demo
 const healthStatuses: OrderHealthStatus[] = ['on_track', 'at_risk', 'delayed', 'critical'];
 const exceptionTypes: ExceptionType[] = ['late_confirmation', 'shipping_delay', 'payment_overdue'];
+
+// =============================================================================
+// Timeline Steps Configuration
+// =============================================================================
+type TimelineStep = {
+  key: string;
+  label: string;
+  icon: React.ElementType;
+  activeStatuses: OrderStatus[];
+  completedStatuses: OrderStatus[];
+  timestampKey: keyof Order;
+  slaType?: 'confirmation' | 'shipping' | 'delivery';
+};
+
+const TIMELINE_STEPS: TimelineStep[] = [
+  {
+    key: 'created',
+    label: 'Order Created',
+    icon: Package,
+    activeStatuses: [],
+    completedStatuses: ['pending_confirmation', 'confirmed', 'processing', 'shipped', 'delivered', 'closed'],
+    timestampKey: 'createdAt',
+  },
+  {
+    key: 'accepted',
+    label: 'Seller Accepted',
+    icon: CheckCircle,
+    activeStatuses: ['pending_confirmation'],
+    completedStatuses: ['confirmed', 'processing', 'shipped', 'delivered', 'closed'],
+    timestampKey: 'confirmedAt',
+    slaType: 'confirmation',
+  },
+  {
+    key: 'preparation',
+    label: 'In Preparation',
+    icon: Gear,
+    activeStatuses: ['confirmed'],
+    completedStatuses: ['processing', 'shipped', 'delivered', 'closed'],
+    timestampKey: 'processingAt',
+  },
+  {
+    key: 'ready_to_ship',
+    label: 'Ready to Ship',
+    icon: Export,
+    activeStatuses: ['processing'],
+    completedStatuses: ['shipped', 'delivered', 'closed'],
+    timestampKey: 'readyToShipAt' as keyof Order,
+    slaType: 'shipping',
+  },
+  {
+    key: 'shipped',
+    label: 'Shipped',
+    icon: Truck,
+    activeStatuses: [],
+    completedStatuses: ['shipped', 'delivered', 'closed'],
+    timestampKey: 'shippedAt',
+  },
+  {
+    key: 'delivered',
+    label: 'Delivered',
+    icon: Package,
+    activeStatuses: ['shipped'],
+    completedStatuses: ['delivered', 'closed'],
+    timestampKey: 'deliveredAt',
+    slaType: 'delivery',
+  },
+  {
+    key: 'completed',
+    label: 'Completed',
+    icon: CheckCircle,
+    activeStatuses: ['delivered'],
+    completedStatuses: ['closed'],
+    timestampKey: 'closedAt',
+  },
+];
+
+// =============================================================================
+// OrderTimeline Component - Compact inline timeline
+// =============================================================================
+const OrderTimeline: React.FC<{
+  order: Order;
+  styles: ReturnType<typeof usePortal>['styles'];
+  compact?: boolean;
+}> = ({ order, styles, compact = true }) => {
+  // Skip timeline for terminal/cancelled states
+  if (['cancelled', 'failed', 'refunded'].includes(order.status)) {
+    return (
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded" style={{ backgroundColor: `${styles.error}10` }}>
+        <XCircle size={12} weight="fill" style={{ color: styles.error }} />
+        <span className="text-[10px] font-medium" style={{ color: styles.error }}>
+          {order.status === 'cancelled' ? 'Cancelled' : order.status === 'failed' ? 'Failed' : 'Refunded'}
+        </span>
+      </div>
+    );
+  }
+
+  const getStepState = (step: TimelineStep): 'completed' | 'active' | 'pending' => {
+    if (step.completedStatuses.includes(order.status)) return 'completed';
+    if (step.activeStatuses.includes(order.status)) return 'active';
+    return 'pending';
+  };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-0.5">
+        {TIMELINE_STEPS.map((step, index) => {
+          const state = getStepState(step);
+          const Icon = step.icon;
+          const timestamp = order[step.timestampKey] as string | undefined;
+
+          return (
+            <React.Fragment key={step.key}>
+              <div
+                className="relative group"
+                title={`${step.label}${timestamp ? `: ${formatTimestamp(timestamp)}` : ''}`}
+              >
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                    state === 'active' ? 'ring-2 ring-offset-1' : ''
+                  }`}
+                  style={{
+                    backgroundColor:
+                      state === 'completed' ? `${styles.success}20` :
+                      state === 'active' ? `${styles.info}20` :
+                      styles.bgSecondary,
+                    ringColor: state === 'active' ? styles.info : undefined,
+                  }}
+                >
+                  <Icon
+                    size={12}
+                    weight={state === 'completed' ? 'fill' : state === 'active' ? 'bold' : 'regular'}
+                    style={{
+                      color:
+                        state === 'completed' ? styles.success :
+                        state === 'active' ? styles.info :
+                        styles.textMuted,
+                    }}
+                  />
+                </div>
+                {/* Tooltip on hover */}
+                <div
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+                  style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, color: styles.textPrimary }}
+                >
+                  {step.label}
+                  {timestamp && (
+                    <span className="block" style={{ color: styles.textMuted }}>
+                      {formatTimestamp(timestamp)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {index < TIMELINE_STEPS.length - 1 && (
+                <div
+                  className="w-3 h-0.5"
+                  style={{
+                    backgroundColor:
+                      state === 'completed' ? styles.success :
+                      styles.border,
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Expanded timeline (for details panel)
+  return (
+    <div className="flex flex-col gap-2">
+      {TIMELINE_STEPS.map((step, index) => {
+        const state = getStepState(step);
+        const Icon = step.icon;
+        const timestamp = order[step.timestampKey] as string | undefined;
+
+        return (
+          <div key={step.key} className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  state === 'active' ? 'ring-2 ring-offset-2' : ''
+                }`}
+                style={{
+                  backgroundColor:
+                    state === 'completed' ? `${styles.success}20` :
+                    state === 'active' ? `${styles.info}20` :
+                    styles.bgSecondary,
+                  ringColor: state === 'active' ? styles.info : undefined,
+                }}
+              >
+                <Icon
+                  size={16}
+                  weight={state === 'completed' ? 'fill' : state === 'active' ? 'bold' : 'regular'}
+                  style={{
+                    color:
+                      state === 'completed' ? styles.success :
+                      state === 'active' ? styles.info :
+                      styles.textMuted,
+                  }}
+                />
+              </div>
+              {index < TIMELINE_STEPS.length - 1 && (
+                <div
+                  className="w-0.5 h-6 mt-1"
+                  style={{
+                    backgroundColor: state === 'completed' ? styles.success : styles.border,
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex-1 pt-1">
+              <p
+                className="text-sm font-medium"
+                style={{
+                  color:
+                    state === 'completed' ? styles.textPrimary :
+                    state === 'active' ? styles.info :
+                    styles.textMuted,
+                }}
+              >
+                {step.label}
+              </p>
+              {timestamp && (
+                <p className="text-xs" style={{ color: styles.textMuted }}>
+                  {formatTimestamp(timestamp)}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// =============================================================================
+// SLAIndicator Component - Countdown with urgency styling and microcopy
+// =============================================================================
+const SLAIndicator: React.FC<{
+  order: Order;
+  styles: ReturnType<typeof usePortal>['styles'];
+  showTimeRemaining?: boolean;
+}> = ({ order, styles, showTimeRemaining = true }) => {
+  const sla = calculateSLARemaining(order);
+
+  if (!sla) {
+    // Terminal state - no SLA applies
+    if (['delivered', 'closed'].includes(order.status)) {
+      return (
+        <div className="flex items-center gap-1">
+          <CheckCircle size={12} weight="fill" style={{ color: styles.success }} />
+          <span className="text-[10px] font-medium" style={{ color: styles.success }}>
+            Complete
+          </span>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // Special case: shipped orders waiting for buyer delivery confirmation
+  const isWaitingForBuyer = order.status === 'shipped' && !sla.isOverdue;
+  const displayStatus = isWaitingForBuyer ? SLA_MICROCOPY.waiting : sla.statusText;
+
+  const urgencyColors = {
+    ok: { bg: `${styles.success}15`, text: styles.success, icon: styles.success },
+    warning: { bg: `${styles.warning}15`, text: styles.warning, icon: styles.warning },
+    critical: { bg: `${styles.error}15`, text: styles.error, icon: styles.error },
+  };
+
+  // Use 'ok' color for "Waiting for buyer"
+  const colorKey = isWaitingForBuyer ? 'ok' : sla.urgency;
+  const colors = urgencyColors[colorKey];
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* Status badge */}
+      <div
+        className="flex items-center gap-1.5 px-2 py-1 rounded"
+        style={{ backgroundColor: colors.bg }}
+      >
+        <Timer
+          size={12}
+          weight={sla.urgency === 'critical' ? 'fill' : 'bold'}
+          style={{ color: colors.icon }}
+          className={sla.urgency === 'critical' && !sla.isOverdue ? 'animate-pulse' : ''}
+        />
+        <span
+          className="text-[10px] font-semibold whitespace-nowrap"
+          style={{ color: colors.text }}
+        >
+          {displayStatus}
+        </span>
+      </div>
+      {/* Time remaining text */}
+      {showTimeRemaining && !isWaitingForBuyer && (
+        <span
+          className="text-[9px] whitespace-nowrap px-2"
+          style={{ color: styles.textMuted }}
+        >
+          {sla.timeText}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// =============================================================================
+// OrderHealthBadge Component - Green/Amber/Red badge
+// =============================================================================
+const OrderHealthBadge: React.FC<{
+  order: Order;
+  styles: ReturnType<typeof usePortal>['styles'];
+  showLabel?: boolean;
+}> = ({ order, styles, showLabel = false }) => {
+  const healthStatus = order.healthStatus || 'on_track';
+  const config = getHealthStatusConfig(healthStatus);
+
+  const healthColors: Record<OrderHealthStatus, { bg: string; dot: string; text: string }> = {
+    on_track: { bg: `${styles.success}15`, dot: styles.success, text: styles.success },
+    at_risk: { bg: `${styles.warning}15`, dot: styles.warning, text: styles.warning },
+    delayed: { bg: '#F59E0B15', dot: '#F59E0B', text: '#F59E0B' },
+    critical: { bg: `${styles.error}15`, dot: styles.error, text: styles.error },
+  };
+
+  const colors = healthColors[healthStatus];
+
+  if (!showLabel) {
+    // Just the dot indicator
+    return (
+      <div
+        className="w-3 h-3 rounded-full"
+        style={{ backgroundColor: colors.dot }}
+        title={config.label}
+      />
+    );
+  }
+
+  const IconComponent = healthStatus === 'on_track' ? ShieldCheck :
+                       healthStatus === 'at_risk' ? Clock :
+                       healthStatus === 'delayed' ? Warning :
+                       WarningCircle;
+
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded"
+      style={{ backgroundColor: colors.bg }}
+    >
+      <IconComponent size={12} weight="bold" style={{ color: colors.dot }} />
+      <span className="text-[10px] font-semibold uppercase" style={{ color: colors.text }}>
+        {config.label}
+      </span>
+    </div>
+  );
+};
+
+// =============================================================================
+// SmartActions Component - Context-aware action buttons
+// =============================================================================
+const SmartActions: React.FC<{
+  order: Order;
+  styles: ReturnType<typeof usePortal>['styles'];
+  onConfirm: (order: Order) => void;
+  onProcess: (order: Order) => void;
+  onShip: (order: Order) => void;
+  onDeliver: (order: Order) => void;
+  onView: (order: Order) => void;
+  onTrack?: (order: Order) => void;
+  onAddTracking?: (order: Order) => void;
+  onUploadInvoice?: (order: Order) => void;
+  t: (key: string) => string;
+}> = ({ order, styles, onConfirm, onProcess, onShip, onDeliver, onView, onTrack, onAddTracking, onUploadInvoice, t }) => {
+  // Determine primary action based on order state
+  const getPrimaryAction = (): { label: string; icon: React.ElementType; color: string; onClick: () => void } | null => {
+    if (order.status === 'pending_confirmation') {
+      return { label: 'Confirm', icon: CheckCircle, color: styles.success, onClick: () => onConfirm(order) };
+    }
+    if (order.status === 'confirmed') {
+      return { label: 'Process', icon: Gear, color: '#8B5CF6', onClick: () => onProcess(order) };
+    }
+    if (order.status === 'processing') {
+      return { label: 'Ship', icon: Truck, color: styles.info, onClick: () => onShip(order) };
+    }
+    if (order.status === 'shipped') {
+      return { label: 'Delivered', icon: Package, color: styles.success, onClick: () => onDeliver(order) };
+    }
+    return null;
+  };
+
+  // Get secondary actions for shipped orders
+  const getSecondaryActions = (): { label: string; icon: React.ElementType; color: string; onClick: () => void }[] => {
+    const actions: { label: string; icon: React.ElementType; color: string; onClick: () => void }[] = [];
+
+    if (order.status === 'shipped') {
+      // Add tracking if not present
+      if (!order.trackingNumber && onAddTracking) {
+        actions.push({
+          label: 'Tracking',
+          icon: MapTrifold,
+          color: styles.info,
+          onClick: () => onAddTracking(order),
+        });
+      }
+      // Upload invoice
+      if (onUploadInvoice) {
+        actions.push({
+          label: 'Invoice',
+          icon: Receipt,
+          color: '#8B5CF6',
+          onClick: () => onUploadInvoice(order),
+        });
+      }
+    }
+
+    return actions;
+  };
+
+  const primaryAction = getPrimaryAction();
+  const secondaryActions = getSecondaryActions();
+
+  return (
+    <div className="flex items-center gap-1">
+      {primaryAction && (
+        <button
+          onClick={primaryAction.onClick}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all hover:opacity-80"
+          style={{ backgroundColor: `${primaryAction.color}15`, color: primaryAction.color }}
+        >
+          <primaryAction.icon size={12} weight="bold" />
+          {primaryAction.label}
+        </button>
+      )}
+      {secondaryActions.map((action) => (
+        <button
+          key={action.label}
+          onClick={action.onClick}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all hover:opacity-80"
+          style={{ backgroundColor: `${action.color}15`, color: action.color }}
+          title={action.label}
+        >
+          <action.icon size={12} weight="bold" />
+        </button>
+      ))}
+      {onTrack && !['cancelled', 'failed', 'refunded'].includes(order.status) && (
+        <button
+          onClick={() => onTrack(order)}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-all hover:opacity-80"
+          style={{ backgroundColor: `${styles.info}15`, color: styles.info }}
+          title={t('seller.orders.trackOrder') || 'Track Order'}
+        >
+          <MapTrifold size={12} weight="bold" />
+          Track
+        </button>
+      )}
+      <button
+        onClick={() => onView(order)}
+        className="p-1.5 rounded transition-colors"
+        style={{ color: styles.textMuted }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = styles.bgHover;
+          e.currentTarget.style.color = styles.info;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = styles.textMuted;
+        }}
+        title={t('seller.orders.viewDetails')}
+      >
+        <Eye size={14} />
+      </button>
+    </div>
+  );
+};
 
 // =============================================================================
 // Stage 5: Helper functions for action availability
@@ -145,23 +743,43 @@ const generateSampleOrders = (): Order[] => {
     const item = items[i % items.length];
     const status = statuses[i % statuses.length];
     const quantity = Math.floor(Math.random() * 10) + 1;
-    const daysAgo = Math.floor(Math.random() * 30);
-    const createdAt = new Date(Date.now() - daysAgo * 86400000).toISOString();
+    const hoursAgo = Math.floor(Math.random() * 72) + 1; // 1-72 hours ago for more realistic SLA demo
+    const createdAt = new Date(Date.now() - hoursAgo * 3600000).toISOString();
 
-    // Determine health status based on order status
+    // Calculate timestamps based on status
+    const confirmedAt = ['confirmed', 'processing', 'shipped', 'delivered', 'closed'].includes(status)
+      ? new Date(Date.now() - (hoursAgo - 2) * 3600000).toISOString()
+      : undefined;
+    const processingAt = ['processing', 'shipped', 'delivered', 'closed'].includes(status)
+      ? new Date(Date.now() - (hoursAgo - 4) * 3600000).toISOString()
+      : undefined;
+    const shippedAt = ['shipped', 'delivered', 'closed'].includes(status)
+      ? new Date(Date.now() - (hoursAgo - 12) * 3600000).toISOString()
+      : undefined;
+    const deliveredAt = ['delivered', 'closed'].includes(status)
+      ? new Date(Date.now() - (hoursAgo - 24) * 3600000).toISOString()
+      : undefined;
+
+    // Determine health status based on order status and time
     let healthStatus: OrderHealthStatus = 'on_track';
     let healthScore = 100;
     let hasException = false;
     let exceptionType: ExceptionType | undefined;
     let exceptionMessage: string | undefined;
 
-    if (status === 'pending_confirmation' && daysAgo > 2) {
+    if (status === 'pending_confirmation' && hoursAgo > 20) {
       healthStatus = 'at_risk';
       healthScore = 70;
       hasException = true;
       exceptionType = 'late_confirmation';
-      exceptionMessage = 'Order awaiting confirmation for over 48 hours';
-    } else if (status === 'confirmed' && daysAgo > 5) {
+      exceptionMessage = 'Order awaiting confirmation for over 20 hours';
+    } else if (status === 'pending_confirmation' && hoursAgo > 24) {
+      healthStatus = 'delayed';
+      healthScore = 40;
+      hasException = true;
+      exceptionType = 'late_confirmation';
+      exceptionMessage = 'Confirmation SLA breached';
+    } else if ((status === 'confirmed' || status === 'processing') && hoursAgo > 60) {
       healthStatus = 'delayed';
       healthScore = 40;
       hasException = true;
@@ -204,11 +822,11 @@ const generateSampleOrders = (): Order[] => {
       fulfillmentStatus: ['delivered', 'closed'].includes(status) ? 'delivered' : fulfillmentStatuses[Math.min(statuses.indexOf(status), fulfillmentStatuses.length - 1)],
       source: i % 3 === 0 ? 'rfq' : 'direct',
       createdAt,
-      confirmedAt: ['confirmed', 'processing', 'shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
-      processingAt: ['processing', 'shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
-      shippedAt: ['shipped', 'delivered', 'closed'].includes(status) ? createdAt : undefined,
-      deliveredAt: ['delivered', 'closed'].includes(status) ? createdAt : undefined,
-      closedAt: status === 'closed' ? createdAt : undefined,
+      confirmedAt,
+      processingAt,
+      shippedAt,
+      deliveredAt,
+      closedAt: status === 'closed' ? deliveredAt : undefined,
       updatedAt: createdAt,
       // Seller/Buyer metadata for display
       buyerName: buyer.name,
@@ -237,7 +855,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('');
-  const [healthFilter, setHealthFilter] = useState<OrderHealthStatus | ''>('');
+  const [healthFilter, setHealthFilter] = useState<HealthFilterOption>('');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -253,11 +871,15 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
   const [cancelDialogOrder, setCancelDialogOrder] = useState<Order | null>(null);
   const [confirmDialogOrder, setConfirmDialogOrder] = useState<Order | null>(null);
   const [processingDialogOrder, setProcessingDialogOrder] = useState<Order | null>(null);
+  const [trackingDialogOrder, setTrackingDialogOrder] = useState<Order | null>(null);
+  const [invoiceDialogOrder, setInvoiceDialogOrder] = useState<Order | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   const [shipTrackingNumber, setShipTrackingNumber] = useState('');
   const [shipCarrier, setShipCarrier] = useState('');
   const [shipEstimatedDelivery, setShipEstimatedDelivery] = useState('');
+  const [updateTrackingNumber, setUpdateTrackingNumber] = useState('');
+  const [updateCarrier, setUpdateCarrier] = useState('');
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -338,9 +960,13 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
       result = result.filter((o) => o.paymentStatus === paymentFilter);
     }
 
-    // Health filter
+    // Health filter (including 'needs_action')
     if (healthFilter) {
-      result = result.filter((o) => o.healthStatus === healthFilter);
+      if (healthFilter === 'needs_action') {
+        result = result.filter((o) => needsActionToday(o));
+      } else {
+        result = result.filter((o) => o.healthStatus === healthFilter);
+      }
     }
 
     // Sort
@@ -354,6 +980,14 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           return b.totalPrice - a.totalPrice;
         case 'total_low':
           return a.totalPrice - b.totalPrice;
+        case 'sla_urgent':
+          // Sort by SLA urgency (most urgent first)
+          const slaA = calculateSLARemaining(a);
+          const slaB = calculateSLARemaining(b);
+          if (!slaA && !slaB) return 0;
+          if (!slaA) return 1;
+          if (!slaB) return -1;
+          return slaA.hours - slaB.hours;
         default:
           return 0;
       }
@@ -381,6 +1015,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
     const delayed = orders.filter((o) => (o as any).healthStatus === 'delayed').length;
     const critical = orders.filter((o) => (o as any).healthStatus === 'critical').length;
     const withExceptions = orders.filter((o) => (o as any).hasException).length;
+    const needsAction = orders.filter((o) => needsActionToday(o)).length;
 
     return {
       total: orders.length,
@@ -398,6 +1033,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
       delayed,
       critical,
       withExceptions,
+      needsAction,
     };
   }, [orders]);
 
@@ -632,13 +1268,16 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           const order = row.original;
           return (
             <div className="min-w-0">
-              <button
-                onClick={() => handleViewDetails(order)}
-                className="font-medium hover:underline cursor-pointer"
-                style={{ color: styles.info, fontSize: '0.79rem' }}
-              >
-                {order.orderNumber}
-              </button>
+              <div className="flex items-center gap-2">
+                <OrderHealthBadge order={order} styles={styles} />
+                <button
+                  onClick={() => handleViewDetails(order)}
+                  className="font-medium hover:underline cursor-pointer"
+                  style={{ color: styles.info, fontSize: '0.79rem' }}
+                >
+                  {order.orderNumber}
+                </button>
+              </div>
               {order.rfqNumber && (
                 <p className="mt-0.5" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
                   {t('seller.orders.fromRfq')}: {order.rfqNumber}
@@ -667,7 +1306,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
             </div>
           );
         },
-        size: 180,
+        size: 160,
       }),
       columnHelper.accessor('itemName', {
         meta: { align: 'start' as const },
@@ -675,29 +1314,29 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
         cell: ({ row }) => {
           const order = row.original;
           return (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div
-                className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden border flex items-center justify-center"
+                className="w-8 h-8 rounded-lg flex-shrink-0 overflow-hidden border flex items-center justify-center"
                 style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
               >
                 {order.itemImage ? (
                   <img src={order.itemImage} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Cube size={18} style={{ color: styles.textMuted }} />
+                  <Cube size={14} style={{ color: styles.textMuted }} />
                 )}
               </div>
               <div className="min-w-0">
-                <p className="font-medium truncate leading-tight" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+                <p className="font-medium truncate leading-tight" style={{ color: styles.textPrimary, fontSize: '0.75rem' }}>
                   {order.itemName}
                 </p>
-                <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-                  {order.itemSku} &middot; {t('seller.orders.quantity')}: {order.quantity}
+                <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.65rem' }}>
+                  {order.itemSku} · Qty: {order.quantity}
                 </p>
               </div>
             </div>
           );
         },
-        size: 240,
+        size: 200,
       }),
       columnHelper.accessor('totalPrice', {
         meta: { align: 'center' as const },
@@ -705,17 +1344,34 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
         cell: ({ row }) => {
           const order = row.original;
           return (
-            <div className="min-w-0">
-              <p className="font-semibold" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-                {formatCurrency(order.totalPrice, order.currency)}
-              </p>
-              <p style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-                {order.quantity} x {formatCurrency(order.unitPrice, order.currency)}
-              </p>
-            </div>
+            <p className="font-semibold" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+              {formatCurrency(order.totalPrice, order.currency)}
+            </p>
           );
         },
-        size: 120,
+        size: 100,
+      }),
+      // New: Timeline column
+      columnHelper.display({
+        id: 'timeline',
+        meta: { align: 'center' as const },
+        header: 'Timeline',
+        cell: ({ row }) => {
+          const order = row.original;
+          return <OrderTimeline order={order} styles={styles} compact={true} />;
+        },
+        size: 140,
+      }),
+      // New: SLA column
+      columnHelper.display({
+        id: 'sla',
+        meta: { align: 'center' as const },
+        header: 'SLA',
+        cell: ({ row }) => {
+          const order = row.original;
+          return <SLAIndicator order={order} styles={styles} />;
+        },
+        size: 110,
       }),
       columnHelper.accessor('status', {
         meta: { align: 'center' as const },
@@ -742,7 +1398,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
 
           return (
             <span
-              className="inline-flex px-2 py-0.5 rounded text-xs font-medium"
+              className="inline-flex px-2 py-0.5 rounded text-[10px] font-medium"
               style={{
                 backgroundColor: bgColorMap[config.color],
                 color: colorMap[config.color],
@@ -750,46 +1406,6 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
             >
               {t(config.labelKey)}
             </span>
-          );
-        },
-        size: 110,
-      }),
-      columnHelper.accessor('healthStatus', {
-        meta: { align: 'center' as const },
-        header: t('seller.orders.health'),
-        cell: ({ row }) => {
-          const order = row.original;
-          const healthStatus = order.healthStatus || 'on_track';
-          const config = getHealthStatusConfig(healthStatus);
-
-          const IconComponent = healthStatus === 'on_track' ? ShieldCheck :
-                               healthStatus === 'at_risk' ? Clock :
-                               healthStatus === 'delayed' ? Warning :
-                               WarningCircle;
-
-          return (
-            <div className="flex flex-col items-center gap-0.5">
-              <div
-                className="flex items-center gap-1 px-2 py-0.5 rounded"
-                style={{
-                  backgroundColor: config.bgColor,
-                  color: config.color,
-                }}
-              >
-                <IconComponent size={12} weight="bold" />
-                <span className="text-[10px] font-semibold uppercase">
-                  {t(config.labelKey)}
-                </span>
-              </div>
-              {order.hasException && (
-                <span
-                  className="text-[9px] font-medium px-1 rounded"
-                  style={{ backgroundColor: `${styles.error}20`, color: styles.error }}
-                >
-                  {t('seller.orders.exception')}
-                </span>
-              )}
-            </div>
           );
         },
         size: 100,
@@ -808,173 +1424,42 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           };
 
           return (
-            <span className="text-xs font-medium flex items-center gap-1" style={{ color: colorMap[config.color] }}>
-              <CurrencyDollar size={12} />
+            <span className="text-[10px] font-medium flex items-center gap-1" style={{ color: colorMap[config.color] }}>
+              <CurrencyDollar size={10} />
               {t(config.labelKey)}
             </span>
           );
         },
-        size: 90,
+        size: 80,
       }),
-      columnHelper.accessor('createdAt', {
-        meta: { align: 'center' as const },
-        header: t('seller.orders.created'),
-        cell: ({ row }) => (
-          <span style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-            {formatRelativeTime(row.original.createdAt)}
-          </span>
-        ),
-        size: 90,
-      }),
+      // New: Smart Actions column
       columnHelper.display({
         id: 'actions',
         meta: { align: 'center' as const },
         header: t('common.actions'),
         cell: ({ row }) => {
           const order = row.original;
-
           return (
-            <div className="flex items-center gap-1">
-              {/* Confirm Order - pending_confirmation -> confirmed */}
-              {canConfirmOrder(order) && (
-                <button
-                  onClick={() => setConfirmDialogOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.success }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.confirmOrder')}
-                >
-                  <CheckCircle size={16} />
-                </button>
-              )}
-              {/* Reject Order - pending_confirmation -> cancelled (with reason) */}
-              {canRejectOrder(order) && (
-                <button
-                  onClick={() => setRejectDialogOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.error }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.rejectOrder')}
-                >
-                  <ProhibitInset size={16} />
-                </button>
-              )}
-              {/* Start Processing - confirmed -> processing */}
-              {canStartProcessing(order) && (
-                <button
-                  onClick={() => setProcessingDialogOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: '#8B5CF6' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.startProcessing')}
-                >
-                  <Gear size={16} />
-                </button>
-              )}
-              {/* Ship Order - processing/confirmed -> shipped */}
-              {canShipOrder(order) && (
-                <button
-                  onClick={() => setShipDialogOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.info }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.shipOrder')}
-                >
-                  <Truck size={16} />
-                </button>
-              )}
-              {/* Mark Delivered - shipped -> delivered */}
-              {canMarkDelivered(order) && (
-                <button
-                  onClick={() => handleMarkDelivered(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.success }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.markDelivered')}
-                >
-                  <CheckCircle size={16} weight="fill" />
-                </button>
-              )}
-              {/* Close Order - delivered -> closed */}
-              {canCloseOrder(order) && (
-                <button
-                  onClick={() => handleCloseOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.textMuted }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.closeOrder')}
-                >
-                  <LockSimple size={16} />
-                </button>
-              )}
-              {/* Cancel Order - before shipping */}
-              {canCancelOrder(order) && (
-                <button
-                  onClick={() => setCancelDialogOrder(order)}
-                  className="p-1.5 rounded transition-colors"
-                  style={{ color: styles.error }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = styles.bgHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={t('seller.orders.cancelOrder')}
-                >
-                  <XCircle size={16} />
-                </button>
-              )}
-              {/* View Details */}
-              <button
-                onClick={() => handleViewDetails(order)}
-                className="p-1.5 rounded transition-colors"
-                style={{ color: styles.textMuted }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = styles.bgHover;
-                  e.currentTarget.style.color = styles.info;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = styles.textMuted;
-                }}
-                title={t('seller.orders.viewDetails')}
-              >
-                <Eye size={16} />
-              </button>
-            </div>
+            <SmartActions
+              order={order}
+              styles={styles}
+              onConfirm={(o) => setConfirmDialogOrder(o)}
+              onProcess={(o) => setProcessingDialogOrder(o)}
+              onShip={(o) => setShipDialogOrder(o)}
+              onDeliver={handleMarkDelivered}
+              onView={handleViewDetails}
+              onTrack={(o) => onNavigate('order-tracking', { orderId: o.id })}
+              onAddTracking={(o) => {
+                setUpdateTrackingNumber(o.trackingNumber || '');
+                setUpdateCarrier(o.carrier || '');
+                setTrackingDialogOrder(o);
+              }}
+              onUploadInvoice={(o) => setInvoiceDialogOrder(o)}
+              t={t}
+            />
           );
         },
-        size: 180,
+        size: 130,
       }),
     ],
     [styles, t, isRtl]
@@ -997,6 +1482,77 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
   });
 
   const selectedCount = Object.keys(rowSelection).length;
+
+  // Loading State with Shimmer
+  if (isLoading && orders.length === 0) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
+        <div className="px-6 py-6">
+          {/* Header Skeleton */}
+          <div className="mb-6">
+            <div className="shimmer h-7 w-48 rounded mb-2" />
+            <div className="shimmer h-4 w-64 rounded" />
+          </div>
+
+          {/* Quick Filter Tabs Skeleton */}
+          <div className="flex items-center gap-4 mb-6">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="px-4 py-2 rounded-lg"
+                style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+              >
+                <div className="shimmer h-4 w-16 rounded mb-1" style={{ animationDelay: `${i * 30}ms` }} />
+                <div className="shimmer h-5 w-8 rounded" style={{ animationDelay: `${i * 30 + 15}ms` }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Health Summary Skeleton */}
+          <div
+            className="rounded-xl border p-4 mb-4"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="shimmer h-5 w-32 rounded mb-3" />
+            <div className="grid grid-cols-5 gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="shimmer w-8 h-8 rounded-full" style={{ animationDelay: `${i * 40}ms` }} />
+                  <div>
+                    <div className="shimmer h-3 w-12 rounded mb-1" style={{ animationDelay: `${i * 40}ms` }} />
+                    <div className="shimmer h-4 w-6 rounded" style={{ animationDelay: `${i * 40 + 20}ms` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${styles.border}` }}>
+                  {['', 'Order', 'Buyer', 'Item', 'Status', 'SLA', 'Total', ''].map((_, i) => (
+                    <th key={i} className="px-4 py-3">
+                      <div className="shimmer h-3 w-16 rounded" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(8)].map((_, i) => (
+                  <SkeletonTableRow key={i} columns={8} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
@@ -1081,7 +1637,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           />
         </div>
 
-        {/* Health Summary */}
+        {/* Health Summary with Needs Action Today */}
         <div
           className="rounded-xl border p-4 mb-4"
           style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
@@ -1103,7 +1659,18 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-3">
+            {/* Needs Action Today - New prominent filter */}
+            <HealthStatCard
+              label="Needs Action Today"
+              value={stats.needsAction}
+              color={styles.error}
+              icon={ListChecks}
+              isActive={healthFilter === 'needs_action'}
+              onClick={() => setHealthFilter(healthFilter === 'needs_action' ? '' : 'needs_action')}
+              styles={styles}
+              highlight={stats.needsAction > 0}
+            />
             <HealthStatCard
               label={t('seller.orders.onTrack')}
               value={stats.onTrack}
@@ -1243,6 +1810,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                 options={[
                   { value: 'newest', label: t('seller.orders.newest') },
                   { value: 'oldest', label: t('seller.orders.oldest') },
+                  { value: 'sla_urgent', label: 'SLA Urgent First' },
                   { value: 'total_high', label: t('seller.orders.totalHighLow') },
                   { value: 'total_low', label: t('seller.orders.totalLowHigh') },
                 ]}
@@ -1415,7 +1983,7 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                         return (
                         <th
                           key={header.id}
-                          className="px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
+                          className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
                           style={{
                             color: styles.textMuted,
                             width: header.getSize(),
@@ -1433,13 +2001,13 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                               {header.column.getCanSort() && (
                                 <span className="flex flex-col -space-y-1 ml-0.5">
                                   {header.column.getIsSorted() === 'asc' ? (
-                                    <CaretUp size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    <CaretUp size={10} weight="bold" style={{ color: styles.textPrimary }} />
                                   ) : header.column.getIsSorted() === 'desc' ? (
-                                    <CaretDown size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    <CaretDown size={10} weight="bold" style={{ color: styles.textPrimary }} />
                                   ) : (
                                     <>
-                                      <CaretUp size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
-                                      <CaretDown size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                      <CaretUp size={8} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                      <CaretDown size={8} style={{ color: styles.textMuted, opacity: 0.4 }} />
                                     </>
                                   )}
                                 </span>
@@ -1453,7 +2021,17 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                   ))}
                 </thead>
                 <tbody>
-                  {table.getRowModel().rows.map((row, index) => (
+                  {table.getRowModel().rows.map((row, index) => {
+                    const orderData = row.original as Order;
+                    const isAtRisk = ['at_risk', 'delayed', 'critical'].includes(orderData.healthStatus || '');
+                    const slaData = calculateSLARemaining(orderData);
+                    const isSlaAtRisk = slaData && (slaData.urgency === 'warning' || slaData.urgency === 'critical');
+                    const shouldHighlight = isAtRisk || isSlaAtRisk;
+
+                    // Background color for at-risk highlighting
+                    const atRiskBg = styles.isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)';
+
+                    return (
                     <tr
                       key={row.id}
                       className="group transition-colors"
@@ -1466,7 +2044,10 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                           ? styles.isDark
                             ? 'rgba(59,130,246,0.1)'
                             : 'rgba(59,130,246,0.05)'
-                          : 'transparent',
+                          : shouldHighlight
+                            ? atRiskBg
+                            : 'transparent',
+                        borderLeft: shouldHighlight ? `3px solid ${styles.warning}` : undefined,
                       }}
                       onMouseEnter={(e) => {
                         if (!row.getIsSelected()) {
@@ -1475,20 +2056,21 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                       }}
                       onMouseLeave={(e) => {
                         if (!row.getIsSelected()) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.backgroundColor = shouldHighlight ? atRiskBg : 'transparent';
                         }
                       }}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const align = (cell.column.columnDef.meta as { align?: 'start' | 'center' })?.align || 'start';
                         return (
-                        <td key={cell.id} className="px-4 py-3" style={{ width: cell.column.getSize(), verticalAlign: 'middle', textAlign: align }}>
+                        <td key={cell.id} className="px-3 py-2.5" style={{ width: cell.column.getSize(), verticalAlign: 'middle', textAlign: align }}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1730,16 +2312,10 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
                 <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                   {t('seller.orders.estimatedDelivery')}
                 </label>
-                <input
-                  type="date"
+                <PortalDatePicker
                   value={shipEstimatedDelivery}
-                  onChange={(e) => setShipEstimatedDelivery(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
+                  onChange={setShipEstimatedDelivery}
+                  className="w-full"
                 />
               </div>
               {actionError && (
@@ -1950,6 +2526,16 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
               <p className="text-sm" style={{ color: styles.textSecondary }}>
                 By confirming, you commit to preparing and shipping this order within the agreed timeframe.
               </p>
+              {/* SLA Warning */}
+              <div
+                className="flex items-center gap-2 p-3 rounded-lg"
+                style={{ backgroundColor: `${styles.info}10` }}
+              >
+                <Timer size={18} weight="duotone" style={{ color: styles.info }} />
+                <span className="text-sm" style={{ color: styles.info }}>
+                  You'll have <strong>72 hours</strong> to ship this order after confirmation.
+                </span>
+              </div>
               <div
                 className="p-4 rounded-lg border"
                 style={{ borderColor: styles.borderLight, backgroundColor: styles.bgSecondary }}
@@ -2128,6 +2714,250 @@ export const SellerOrders: React.FC<SellerOrdersProps> = ({ onNavigate }) => {
           </div>
         </>
       )}
+
+      {/* ========================================================================== */}
+      {/* Add/Update Tracking Dialog */}
+      {/* ========================================================================== */}
+      {trackingDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setTrackingDialogOrder(null);
+              setUpdateTrackingNumber('');
+              setUpdateCarrier('');
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.info}15` }}>
+                  <MapTrifold size={20} weight="fill" style={{ color: styles.info }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    Add Tracking Info
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(trackingDialogOrder as any).orderNumber || trackingDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setTrackingDialogOrder(null);
+                  setUpdateTrackingNumber('');
+                  setUpdateCarrier('');
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                  Tracking Number *
+                </label>
+                <input
+                  type="text"
+                  value={updateTrackingNumber}
+                  onChange={(e) => setUpdateTrackingNumber(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder="Enter tracking number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                  Carrier
+                </label>
+                <input
+                  type="text"
+                  value={updateCarrier}
+                  onChange={(e) => setUpdateCarrier(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder="e.g. Aramex, DHL, SMSA"
+                />
+              </div>
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setTrackingDialogOrder(null);
+                  setUpdateTrackingNumber('');
+                  setUpdateCarrier('');
+                  setActionError(null);
+                }}
+                disabled={isActionLoading}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  // TODO: Implement tracking update API call
+                  // For now, just update local state
+                  updateOrderInState({
+                    ...trackingDialogOrder,
+                    trackingNumber: updateTrackingNumber,
+                    carrier: updateCarrier,
+                  });
+                  setTrackingDialogOrder(null);
+                  setUpdateTrackingNumber('');
+                  setUpdateCarrier('');
+                }}
+                disabled={isActionLoading || !updateTrackingNumber.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.info, color: '#fff' }}
+              >
+                {isActionLoading ? (
+                  <Spinner size={20} className="animate-spin" />
+                ) : (
+                  <MapTrifold size={20} weight="fill" />
+                )}
+                {isActionLoading ? 'Saving...' : 'Save Tracking'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================== */}
+      {/* Upload Invoice Dialog (Placeholder) */}
+      {/* ========================================================================== */}
+      {invoiceDialogOrder && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => {
+              setInvoiceDialogOrder(null);
+              setActionError(null);
+            }}
+          />
+          <div
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl"
+            style={{ backgroundColor: styles.bgPrimary }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#8B5CF615' }}>
+                  <Receipt size={20} weight="fill" style={{ color: '#8B5CF6' }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                    Upload Invoice
+                  </h2>
+                  <p className="text-xs" style={{ color: styles.textMuted }}>
+                    {(invoiceDialogOrder as any).orderNumber || invoiceDialogOrder.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setInvoiceDialogOrder(null);
+                  setActionError(null);
+                }}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* File upload area */}
+              <div
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-opacity-70"
+                style={{ borderColor: styles.border }}
+              >
+                <Receipt size={40} style={{ color: styles.textMuted }} className="mx-auto mb-3" />
+                <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+                  PDF, PNG, JPG (max 10MB)
+                </p>
+              </div>
+
+              <div
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: `${styles.info}10` }}
+              >
+                <p className="text-xs" style={{ color: styles.info }}>
+                  Invoice upload feature coming soon. For now, you can attach invoices via email to the buyer.
+                </p>
+              </div>
+
+              {actionError && (
+                <div
+                  className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{ backgroundColor: `${styles.error}15` }}
+                >
+                  <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
+                  <span className="text-sm" style={{ color: styles.error }}>
+                    {actionError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex gap-3 px-6 py-4 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
+              <button
+                onClick={() => {
+                  setInvoiceDialogOrder(null);
+                  setActionError(null);
+                }}
+                className="flex-1 py-3 rounded-lg font-medium transition-colors"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -2246,26 +3076,39 @@ const HealthStatCard: React.FC<{
   isActive: boolean;
   onClick: () => void;
   styles: ReturnType<typeof usePortal>['styles'];
-}> = ({ label, value, color, icon: Icon, isActive, onClick, styles }) => (
+  highlight?: boolean;
+}> = ({ label, value, color, icon: Icon, isActive, onClick, styles, highlight }) => (
   <button
     onClick={onClick}
-    className="flex items-center gap-3 p-3 rounded-lg transition-all"
+    className="flex items-center gap-2 p-2.5 rounded-lg transition-all"
     style={{
       backgroundColor: isActive ? `${color}15` : styles.bgSecondary,
       border: isActive ? `2px solid ${color}` : '2px solid transparent',
     }}
   >
     <div
-      className="p-2 rounded-lg"
+      className="p-1.5 rounded-lg relative"
       style={{ backgroundColor: `${color}15` }}
     >
-      <Icon size={18} weight={isActive ? 'fill' : 'duotone'} style={{ color }} />
+      <Icon size={16} weight={isActive ? 'fill' : 'duotone'} style={{ color }} />
+      {highlight && value > 0 && (
+        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+          <span
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            style={{ backgroundColor: color }}
+          />
+          <span
+            className="relative inline-flex rounded-full h-2 w-2"
+            style={{ backgroundColor: color }}
+          />
+        </span>
+      )}
     </div>
     <div className="text-left">
-      <p className="text-xl font-bold tabular-nums" style={{ color: styles.textPrimary }}>
+      <p className="text-lg font-bold tabular-nums" style={{ color: styles.textPrimary }}>
         {value}
       </p>
-      <p className="text-xs" style={{ color: styles.textMuted }}>
+      <p className="text-[10px] leading-tight" style={{ color: styles.textMuted }}>
         {label}
       </p>
     </div>

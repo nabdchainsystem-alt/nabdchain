@@ -43,7 +43,7 @@ import {
   Graph,
   CaretRight,
 } from 'phosphor-react';
-import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
+import { Container, PageHeader, Button, EmptyState, Select, SkeletonKPICard, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 
@@ -539,23 +539,32 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
         const item = row.original;
         const config = pricingActionConfig[item.suggestedAction];
         const Icon = config.icon;
-        const [showTooltip, setShowTooltip] = useState(false);
+        const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+        const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+        const handleMouseEnter = () => {
+          if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setTooltip({ show: true, x: rect.left, y: rect.bottom + 4 });
+          }
+        };
 
         return (
           <div className="relative">
             <button
+              ref={buttonRef}
               className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors"
               style={{ backgroundColor: `${config.color}15`, color: config.color }}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={() => setTooltip(prev => ({ ...prev, show: false }))}
             >
               <Icon size={12} />
               {config.label}
             </button>
-            {showTooltip && (
+            {tooltip.show && (
               <div
-                className="absolute z-50 top-full mt-1 p-3 rounded-lg shadow-lg text-xs w-56"
-                style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: 0 }}
+                className="fixed z-50 p-3 rounded-lg shadow-lg text-xs w-56"
+                style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: tooltip.x, top: tooltip.y }}
               >
                 <div className="font-semibold mb-1" style={{ color: styles.textPrimary }}>
                   Recommendation
@@ -591,23 +600,38 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
       id: 'actions',
       cell: ({ row }) => {
         const item = row.original;
-        const [showMenu, setShowMenu] = useState(false);
+        const [menu, setMenu] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+        const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+        const handleToggleMenu = () => {
+          if (menu.show) {
+            setMenu(prev => ({ ...prev, show: false }));
+          } else if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMenu({
+              show: true,
+              x: isRtl ? rect.left : rect.right - 160,
+              y: rect.bottom + 4,
+            });
+          }
+        };
 
         return (
           <div className="relative">
             <button
-              onClick={() => setShowMenu(!showMenu)}
+              ref={buttonRef}
+              onClick={handleToggleMenu}
               className="p-1.5 rounded transition-colors"
               style={{ color: styles.textMuted }}
             >
               <DotsThreeVertical size={16} weight="bold" />
             </button>
-            {showMenu && (
+            {menu.show && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="fixed inset-0 z-30" onClick={() => setMenu(prev => ({ ...prev, show: false }))} />
                 <div
-                  className="absolute top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[160px]"
-                  style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, [isRtl ? 'left' : 'right']: 0 }}
+                  className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[160px]"
+                  style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: menu.x, top: menu.y }}
                 >
                   <MenuItem icon={PencilSimple} label="Edit Item" styles={styles} onClick={() => {}} />
                   <MenuItem icon={ChartLine} label="View Analytics" styles={styles} onClick={() => {}} />
@@ -649,8 +673,56 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: styles.bgPrimary }}>
-        <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: styles.border, borderTopColor: 'transparent' }} />
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
+        <Container variant="full">
+          {/* Header Skeleton */}
+          <div className="mb-6">
+            <div className="shimmer h-7 w-48 rounded mb-2" />
+            <div className="shimmer h-4 w-64 rounded" />
+          </div>
+
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonKPICard key={i} />
+            ))}
+          </div>
+
+          {/* Filter Bar Skeleton */}
+          <div
+            className="rounded-xl border mb-4 p-4"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="shimmer h-9 w-64 rounded-lg" />
+              <div className="shimmer h-9 w-32 rounded-lg" />
+              <div className="shimmer h-9 w-32 rounded-lg" />
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${styles.border}` }}>
+                  {['', 'Product', 'Stock Health', 'Stock', 'Demand', 'Value', 'Action', 'Risk', ''].map((_, i) => (
+                    <th key={i} className="px-4 py-3">
+                      <div className="shimmer h-3 w-16 rounded" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(8)].map((_, i) => (
+                  <SkeletonTableRow key={i} columns={9} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Container>
       </div>
     );
   }

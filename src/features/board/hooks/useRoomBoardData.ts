@@ -655,11 +655,24 @@ export const useRoomBoardData = (storageKey: string, initialBoardData?: IBoard |
                     .filter(t => {
                         // If the task explicitly has a groupId matching this group
                         if (t.groupId === g.id) return true;
-                        // If it doesn't have a groupId, but was originally in this group
+
+                        // If task has a status property, use it to determine placement
+                        // This handles status changes from Table view which don't set groupId
+                        if (t.status && !t.groupId) {
+                            // Normalize status matching (case-insensitive, handle spaces vs underscores)
+                            const normalizedStatus = String(t.status).toLowerCase().replace(/[\s_-]/g, '');
+                            const normalizedGroupId = String(g.id).toLowerCase().replace(/[\s_-]/g, '');
+                            if (normalizedStatus === normalizedGroupId) return true;
+                            // Also check against group title for flexibility
+                            const normalizedGroupTitle = String(g.title || g.id).toLowerCase().replace(/[\s_-]/g, '');
+                            if (normalizedStatus === normalizedGroupTitle) return true;
+                            // Task has a status but it doesn't match this group - don't include
+                            return false;
+                        }
+
+                        // If it doesn't have a groupId OR status, but was originally in this group
                         const originalIndex = g.tasks.findIndex(ot => ot.id === t.id);
-                        if (originalIndex !== -1 && !t.groupId) return true;
-                        // Special check: If we are not using groupId, rely on status matching if available?
-                        // No, let's trust the current filter logic for now but ensure we map correctly.
+                        if (originalIndex !== -1 && !t.groupId && !t.status) return true;
                         return false;
                     })
                     .map(t => {

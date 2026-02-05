@@ -1,10 +1,10 @@
 export { SellerHome } from './SellerHome';
 export { Listings } from './Listings';
 export { RFQsInbox } from './RFQsInbox';
+export { RFQMarketplace } from './RFQMarketplace';
 export { SellerOrders } from './SellerOrders';
 export { Analytics } from './Analytics';
 export { SellerWorkspace } from './SellerWorkspace';
-export { Tests } from './Tests';
 export { SellerPublicProfile } from './SellerPublicProfile';
 export { SellerSettings } from './SellerSettings';
 export { SellerDashboard } from './SellerDashboard';
@@ -12,3 +12,6 @@ export { SellerInventory } from './SellerInventory';
 export { DisputeInbox } from './DisputeInbox';
 export { SellerPayouts } from './SellerPayouts';
 export { SellerAutomation } from './SellerAutomation';
+export { SellerOnboarding } from './SellerOnboarding';
+export { Tracking } from './Tracking';
+export { OrderTracking } from './OrderTracking';

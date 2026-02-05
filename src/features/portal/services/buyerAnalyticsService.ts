@@ -24,7 +24,7 @@ export const buyerAnalyticsService = {
     token: string,
     filters?: AnalyticsFilters
   ): Promise<BuyerAnalyticsSummary> {
-    const url = new URL(`${API_URL}/buyer/analytics/summary`);
+    const url = new URL(`${API_URL}/analytics/buyer/summary`);
     if (filters?.period) url.searchParams.append('period', filters.period);
     if (filters?.category) url.searchParams.append('category', filters.category);
     if (filters?.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
@@ -45,7 +45,7 @@ export const buyerAnalyticsService = {
    * Get KPI metrics only
    */
   async getKPIs(token: string, period?: string): Promise<BuyerAnalyticsKPI> {
-    const url = new URL(`${API_URL}/buyer/analytics/kpis`);
+    const url = new URL(`${API_URL}/analytics/buyer/kpis`);
     if (period) url.searchParams.append('period', period);
 
     const response = await fetch(url.toString(), {
@@ -66,7 +66,7 @@ export const buyerAnalyticsService = {
     token: string,
     period?: string
   ): Promise<SpendByCategory[]> {
-    const url = new URL(`${API_URL}/buyer/analytics/spend-by-category`);
+    const url = new URL(`${API_URL}/analytics/buyer/spend-by-category`);
     if (period) url.searchParams.append('period', period);
 
     const response = await fetch(url.toString(), {
@@ -87,7 +87,7 @@ export const buyerAnalyticsService = {
     token: string,
     limit?: number
   ): Promise<SupplierPerformance[]> {
-    const url = new URL(`${API_URL}/buyer/analytics/supplier-performance`);
+    const url = new URL(`${API_URL}/analytics/buyer/supplier-performance`);
     if (limit) url.searchParams.append('limit', limit.toString());
 
     const response = await fetch(url.toString(), {
@@ -105,7 +105,7 @@ export const buyerAnalyticsService = {
    * Get RFQ funnel conversion metrics
    */
   async getRFQFunnel(token: string, period?: string): Promise<RFQFunnel> {
-    const url = new URL(`${API_URL}/buyer/analytics/rfq-funnel`);
+    const url = new URL(`${API_URL}/analytics/buyer/rfq-funnel`);
     if (period) url.searchParams.append('period', period);
 
     const response = await fetch(url.toString(), {

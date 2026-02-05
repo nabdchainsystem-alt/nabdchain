@@ -1832,8 +1832,14 @@ const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain:
     localStorage.removeItem('portal_type');
     localStorage.removeItem('mock_auth_token');
     localStorage.removeItem('nabd_dev_mode');
-    // Redirect to main domain instead of reloading to avoid Clerk loading delay
-    window.location.href = 'https://nabdchain.com';
+    // On localhost, just reload; on production, redirect to main domain
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (isLocal) {
+      window.location.reload();
+    } else {
+      window.location.href = 'https://nabdchain.com';
+    }
   };
 
   // If just signed out on main domain, show loading while signOut completes
@@ -2026,7 +2032,12 @@ const AppRoutes: React.FC = () => {
                 localStorage.removeItem('portal_type');
                 localStorage.removeItem('mock_auth_token');
                 localStorage.removeItem('nabd_dev_mode');
-                window.location.href = 'https://nabdchain.com';
+                // On localhost, just reload; on production, redirect to main domain
+                if (isLocalhost) {
+                  window.location.reload();
+                } else {
+                  window.location.href = 'https://nabdchain.com';
+                }
               }}
             />
           </Suspense>

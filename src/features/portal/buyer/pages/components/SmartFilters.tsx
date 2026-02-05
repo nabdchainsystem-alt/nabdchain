@@ -16,6 +16,7 @@ import {
   WarningCircle,
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
+import { Select } from '../../../components';
 import {
   SmartFilters as SmartFiltersType,
   UrgencyLevel,
@@ -185,22 +186,11 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
         </div>
 
         {/* Status dropdown */}
-        <select
+        <Select
           value={filters.status}
-          onChange={(e) => handleStatusChange(e.target.value)}
-          className="px-3 py-1.5 rounded-lg border text-sm outline-none"
-          style={{
-            borderColor: styles.border,
-            backgroundColor: styles.bgPrimary,
-            color: styles.textPrimary,
-          }}
-        >
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          onChange={handleStatusChange}
+          options={statusOptions}
+        />
 
         {/* Clear all */}
         {hasActiveFilters && (

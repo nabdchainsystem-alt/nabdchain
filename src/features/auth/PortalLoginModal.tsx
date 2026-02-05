@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeSlash, Spinner, ShoppingCart, Storefront } from 'phosphor-react';
+import { portalAuthService } from '../portal/services/portalAuthService';
 
 type PortalType = 'buyer' | 'seller';
 
@@ -8,9 +9,10 @@ interface PortalLoginModalProps {
     isOpen: boolean;
     onClose: () => void;
     defaultTab?: PortalType;
+    onSwitchToSignup?: () => void;
 }
 
-export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onClose, defaultTab = 'buyer' }) => {
+export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onClose, defaultTab = 'buyer', onSwitchToSignup }) => {
     const [activeTab, setActiveTab] = useState<PortalType>(defaultTab);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -28,36 +30,57 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onCl
         }
     }, [isOpen, defaultTab]);
 
-    // Portal credentials
-    const portalCredentials = {
-        buyer: { email: 'buy@nabdchain.com', password: '2450', token: 'buyer-portal-token' },
-        seller: { email: 'sell@nabdchain.com', password: '2450', token: 'seller-portal-token' },
-    };
+    // PRODUCTION MODE: Demo credentials removed for security
+    // All authentication goes through real API
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const expectedCreds = portalCredentials[activeTab];
-
-        if (email === expectedCreds.email && password === expectedCreds.password) {
-            localStorage.setItem('nabd_dev_mode', 'true');
-            localStorage.setItem('mock_auth_token', expectedCreds.token);
-            localStorage.setItem('portal_type', activeTab);
-
-            // Redirect to marketplace subdomain if on main domain
-            const hostname = window.location.hostname;
-            if (hostname.includes('nabdchain.com') && !hostname.startsWith('marketplace.')) {
-                window.location.href = `https://marketplace.nabdchain.com?dev_auth=${expectedCreds.token}&portal=${activeTab}`;
-            } else {
-                window.location.reload();
+        try {
+            // Validate input
+            if (!email.trim() || !password.trim()) {
+                setError('Please enter your email and password.');
+                setLoading(false);
+                return;
             }
-        } else {
-            setError('Invalid credentials. Please check your email and password.');
+
+            // API login only (production mode)
+            const result = await portalAuthService.login({
+                email,
+                password,
+                portalType: activeTab,
+            });
+
+            if (!result.success) {
+                setError(result.error?.message || 'Invalid credentials. Please check your email and password.');
+                setLoading(false);
+                return;
+            }
+
+            // Store auth tokens
+            if (result.accessToken && result.refreshToken && result.user) {
+                portalAuthService.storeAuthTokens(
+                    { accessToken: result.accessToken, refreshToken: result.refreshToken },
+                    activeTab,
+                    result.user.id,
+                    result.user.email,
+                    result.user.fullName
+                );
+            }
+
+            // Set seller status for onboarding redirect
+            if (activeTab === 'seller' && result.seller?.status === 'incomplete') {
+                localStorage.setItem('seller_status', 'incomplete');
+            } else {
+                localStorage.removeItem('seller_status');
+            }
+
+            // Reload to show portal
+            window.location.reload();
+        } catch (err) {
+            setError('Network error. Please try again.');
             setLoading(false);
         }
     };
@@ -162,7 +185,21 @@ export const PortalLoginModal: React.FC<PortalLoginModalProps> = ({ isOpen, onCl
                             </div>
 
                             {/* Footer */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-100 dark:border-zinc-800 p-4 text-center">
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-100 dark:border-zinc-800 p-4 text-center space-y-2">
+                                {onSwitchToSignup && (
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                        Don't have an account?{' '}
+                                        <button
+                                            onClick={() => {
+                                                onClose();
+                                                onSwitchToSignup();
+                                            }}
+                                            className="text-black dark:text-white hover:underline font-medium"
+                                        >
+                                            Sign up
+                                        </button>
+                                    </p>
+                                )}
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                     Need help? <a href="#" className="text-black dark:text-white hover:underline font-medium">Contact Support</a>
                                 </p>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -32,9 +32,19 @@ import {
   CalendarBlank,
   ShieldCheck,
   CurrencyDollar,
+  Spinner,
 } from 'phosphor-react';
-import { Container, PageHeader, Button, EmptyState } from '../../components';
+import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { useAuth } from '../../../../auth-adapter';
+import { itemService } from '../../services/itemService';
+import { quoteService } from '../../services/quoteService';
+import { counterOfferService } from '../../services/counterOfferService';
+import { QuoteDetailPanel } from '../components/QuoteDetailPanel';
+import { CounterOfferDialog } from '../components/CounterOfferDialog';
+import { ValidityCountdown } from '../../components/ValidityCountdown';
+import { ItemRFQ, Quote, QuoteWithRFQ, CreateCounterOfferData } from '../../types/item.types';
+import { HybridCompareModal } from '../../components/HybridCompareModal';
 
 interface MyRFQsProps {
   onNavigate: (page: string) => void;
@@ -45,6 +55,7 @@ type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'n
 // Extended RFQ with intelligence data
 interface RFQ {
   id: string;
+  rfqId?: string; // Real database ID
   itemName: string;
   itemSku: string;
   sellerName: string;
@@ -64,6 +75,9 @@ interface RFQ {
   hasMultipleQuotes?: boolean;
   relatedQuotes?: SupplierQuote[];
   timeline?: TimelineEvent[];
+  // Real data from API
+  quote?: Quote;
+  rawRfq?: ItemRFQ;
 }
 
 interface SupplierQuote {
@@ -283,13 +297,185 @@ const ResponseSpeedIndicator: React.FC<{ speed?: 'fast' | 'moderate' | 'slow' }>
 
 export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
-  const [rfqs] = useState<RFQ[]>(MOCK_RFQS);
+  const { getToken } = useAuth();
+
+  // Data state
+  const [rfqs, setRfqs] = useState<RFQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Table state
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Modal state
   const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailTab, setDetailTab] = useState<'overview' | 'compare' | 'timeline'>('overview');
+
+  // Quote detail panel state
+  const [selectedQuote, setSelectedQuote] = useState<QuoteWithRFQ | null>(null);
+  const [showQuotePanel, setShowQuotePanel] = useState(false);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+
+  // Counter-offer dialog state
+  const [showCounterOfferDialog, setShowCounterOfferDialog] = useState(false);
+  const [quoteForCounterOffer, setQuoteForCounterOffer] = useState<Quote | null>(null);
+  const [isSubmittingCounterOffer, setIsSubmittingCounterOffer] = useState(false);
+
+  // Hybrid comparison modal state
+  const [showHybridModal, setShowHybridModal] = useState(false);
+  const [rfqForHybrid, setRfqForHybrid] = useState<RFQ | null>(null);
+
+  // Fetch RFQs on mount
+  useEffect(() => {
+    fetchRfqs();
+  }, []);
+
+  const fetchRfqs = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const apiRfqs = await itemService.getBuyerRFQs(token);
+
+      // Transform API RFQs to our RFQ type with additional computed fields
+      const transformedRfqs: RFQ[] = apiRfqs.map((rfq: ItemRFQ) => ({
+        id: rfq.rfqNumber || rfq.id.slice(0, 8).toUpperCase(),
+        rfqId: rfq.id,
+        itemName: rfq.item?.name || 'General RFQ',
+        itemSku: rfq.item?.sku || '',
+        sellerName: rfq.sellerCompanyName || 'Unknown Seller',
+        quantity: rfq.quantity || 1,
+        status: mapApiStatusToRfqStatus(rfq.status),
+        quotedPrice: rfq.quote?.totalPrice,
+        currency: rfq.quote?.currency || 'SAR',
+        message: rfq.message,
+        createdAt: rfq.createdAt,
+        respondedAt: rfq.quote?.sentAt,
+        expiresAt: rfq.quote?.validUntil,
+        leadTimeDays: rfq.quote?.deliveryDays,
+        supplierReliability: 90, // TODO: Get from seller profile
+        supplierResponseSpeed: 'moderate' as const,
+        hasMultipleQuotes: false, // TODO: Implement multiple quotes logic
+        quote: rfq.quote,
+        rawRfq: rfq,
+      }));
+
+      setRfqs(transformedRfqs);
+    } catch (err) {
+      console.error('Failed to fetch RFQs:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load RFQs');
+      // Fall back to mock data in development
+      setRfqs(MOCK_RFQS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Map API status to RFQ status
+  const mapApiStatusToRfqStatus = (status: string): RFQStatus => {
+    const statusMap: Record<string, RFQStatus> = {
+      PENDING: 'pending',
+      UNDER_REVIEW: 'pending',
+      QUOTED: 'quoted',
+      ACCEPTED: 'accepted',
+      REJECTED: 'rejected',
+      EXPIRED: 'expired',
+      CANCELLED: 'expired',
+    };
+    return statusMap[status] || 'pending';
+  };
+
+  // View quote details
+  const handleViewQuote = async (rfq: RFQ) => {
+    if (!rfq.quote?.id && !rfq.rawRfq) {
+      openDetail(rfq);
+      return;
+    }
+
+    try {
+      setIsLoadingQuote(true);
+      const token = await getToken();
+      if (!token) return;
+
+      // If we have a quote ID, fetch the full quote details
+      if (rfq.quote?.id) {
+        const quoteDetails = await quoteService.getQuote(token, rfq.quote.id);
+        if (quoteDetails) {
+          setSelectedQuote(quoteDetails);
+          setShowQuotePanel(true);
+          return;
+        }
+      }
+
+      // Otherwise show the regular detail modal
+      openDetail(rfq);
+    } catch (err) {
+      console.error('Failed to load quote:', err);
+      openDetail(rfq);
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  };
+
+  // Handle quote actions from panel
+  const handleAcceptQuote = async (quoteId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      await itemService.acceptRFQ(token, selectedQuote?.rfqId || '');
+      setShowQuotePanel(false);
+      fetchRfqs(); // Refresh list
+    } catch (err) {
+      console.error('Failed to accept quote:', err);
+    }
+  };
+
+  const handleRejectQuote = async (quoteId: string, reason: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      await itemService.rejectRFQ(token, selectedQuote?.rfqId || '');
+      setShowQuotePanel(false);
+      fetchRfqs();
+    } catch (err) {
+      console.error('Failed to reject quote:', err);
+    }
+  };
+
+  const handleCounterOffer = (quote: Quote) => {
+    setQuoteForCounterOffer(quote);
+    setShowCounterOfferDialog(true);
+  };
+
+  const handleSubmitCounterOffer = async (data: CreateCounterOfferData) => {
+    if (!quoteForCounterOffer) return;
+
+    try {
+      setIsSubmittingCounterOffer(true);
+      const token = await getToken();
+      if (!token) return;
+
+      await counterOfferService.createCounterOffer(token, quoteForCounterOffer.id, data);
+      setShowCounterOfferDialog(false);
+      setQuoteForCounterOffer(null);
+      setShowQuotePanel(false);
+      fetchRfqs();
+    } catch (err) {
+      console.error('Failed to submit counter offer:', err);
+      throw err;
+    } finally {
+      setIsSubmittingCounterOffer(false);
+    }
+  };
 
   // Open RFQ detail modal
   const openDetail = useCallback((rfq: RFQ) => {
@@ -362,10 +548,23 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       header: t('buyer.myRfqs.quotedPrice'),
       cell: info => {
         const price = info.getValue();
+        const rfq = info.row.original;
         return price ? (
-          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-            {formatCurrency(price, info.row.original.currency)}
-          </span>
+          <div>
+            <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {formatCurrency(price, rfq.currency)}
+            </span>
+            {rfq.expiresAt && (
+              <div className="mt-1">
+                <ValidityCountdown
+                  validUntil={rfq.expiresAt}
+                  size="xs"
+                  variant="badge"
+                  showIcon={true}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <span className="text-xs" style={{ color: styles.textMuted }}>
             {t('buyer.myRfqs.awaitingQuote')}
@@ -390,7 +589,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
       cell: info => {
         const rfq = info.row.original;
-        const canRespond = rfq.status === 'quoted';
+        const hasQuote = rfq.status === 'quoted' || rfq.quote;
         const hasComparison = rfq.hasMultipleQuotes;
 
         return (
@@ -409,15 +608,19 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
                 <Scales size={16} />
               </button>
             )}
-            {canRespond && (
+            {hasQuote && (
               <button
-                className="px-2 py-1 rounded text-xs font-medium transition-colors"
+                onClick={() => handleViewQuote(rfq)}
+                disabled={isLoadingQuote}
+                className="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1"
                 style={{
-                  backgroundColor: styles.isDark ? '#14532d' : '#dcfce7',
-                  color: styles.success,
+                  backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',
+                  color: styles.info,
                 }}
+                title="View Quote"
               >
-                {t('buyer.myRfqs.accept')}
+                {isLoadingQuote ? <Spinner size={12} className="animate-spin" /> : <CurrencyDollar size={12} />}
+                View Quote
               </button>
             )}
             <button
@@ -434,7 +637,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
         );
       },
     }),
-  ], [columnHelper, styles, t, openDetail]);
+  ], [columnHelper, styles, t, openDetail, handleViewQuote, isLoadingQuote]);
 
   // Table instance
   const table = useReactTable({
@@ -534,33 +737,27 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           </div>
 
           {/* Status Filter */}
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-md border text-sm outline-none"
-            style={{
-              borderColor: styles.border,
-              backgroundColor: styles.bgPrimary,
-              color: styles.textPrimary,
-            }}
-          >
-            <option value="all">{t('buyer.myRfqs.allStatus')}</option>
-            <option value="pending">{t('buyer.myRfqs.pending') || 'Waiting'}</option>
-            <option value="quoted">{t('buyer.myRfqs.quoted') || 'Responded'}</option>
-            <option value="negotiating">Negotiating</option>
-            <option value="accepted">{t('buyer.myRfqs.accepted')}</option>
-            <option value="rejected">{t('buyer.myRfqs.rejected')}</option>
-            <option value="expired">{t('buyer.myRfqs.expired')}</option>
-          </select>
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: t('buyer.myRfqs.allStatus') || 'All Status' },
+              { value: 'pending', label: t('buyer.myRfqs.pending') || 'Waiting' },
+              { value: 'quoted', label: t('buyer.myRfqs.quoted') || 'Responded' },
+              { value: 'negotiating', label: 'Negotiating' },
+              { value: 'accepted', label: t('buyer.myRfqs.accepted') || 'Accepted' },
+              { value: 'rejected', label: t('buyer.myRfqs.rejected') || 'Rejected' },
+              { value: 'expired', label: t('buyer.myRfqs.expired') || 'Expired' },
+            ]}
+            placeholder={t('buyer.myRfqs.allStatus') || 'All Status'}
+          />
 
           {/* Clear Filters */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
               style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <X size={14} />
               {t('common.clearFilters')}
@@ -568,8 +765,38 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           )}
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div
+            className="flex items-center justify-center p-12 rounded-lg border"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="text-center">
+              <Spinner size={32} className="animate-spin mx-auto mb-3" style={{ color: styles.info }} />
+              <p className="text-sm" style={{ color: styles.textMuted }}>Loading your RFQs...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div
+            className="p-4 rounded-lg border mb-4"
+            style={{ backgroundColor: styles.isDark ? '#7f1d1d' : '#fef2f2', borderColor: '#ef4444' }}
+          >
+            <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>
+            <button
+              onClick={fetchRfqs}
+              className="mt-2 text-sm underline"
+              style={{ color: '#ef4444' }}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {/* Table */}
-        {filteredData.length === 0 ? (
+        {!isLoading && filteredData.length === 0 && (
           <EmptyState
             icon={FileText}
             title={t('buyer.myRfqs.noRfqs')}
@@ -580,7 +807,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
               </Button>
             }
           />
-        ) : (
+        )}
+        {!isLoading && filteredData.length > 0 && (
           <div>
             <div
               className="overflow-hidden rounded-lg border"
@@ -614,12 +842,10 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
                   {table.getRowModel().rows.map((row, idx) => (
                     <tr
                       key={row.id}
-                      className="transition-colors"
+                      className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                       style={{
                         borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id} className="px-4 py-3">
@@ -677,6 +903,57 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           onTabChange={setDetailTab}
           formatCurrency={formatCurrency}
           formatDate={formatDate}
+          onCustomize={() => {
+            setRfqForHybrid(selectedRFQ);
+            setShowHybridModal(true);
+          }}
+        />
+      )}
+
+      {/* Quote Detail Panel */}
+      {selectedQuote && (
+        <QuoteDetailPanel
+          quote={selectedQuote}
+          isOpen={showQuotePanel}
+          onClose={() => {
+            setShowQuotePanel(false);
+            setSelectedQuote(null);
+          }}
+          onAccept={handleAcceptQuote}
+          onReject={handleRejectQuote}
+          onCounterOffer={handleCounterOffer}
+        />
+      )}
+
+      {/* Counter Offer Dialog */}
+      {quoteForCounterOffer && (
+        <CounterOfferDialog
+          quote={quoteForCounterOffer}
+          isOpen={showCounterOfferDialog}
+          onClose={() => {
+            setShowCounterOfferDialog(false);
+            setQuoteForCounterOffer(null);
+          }}
+          onSubmit={handleSubmitCounterOffer}
+          isSubmitting={isSubmittingCounterOffer}
+        />
+      )}
+
+      {/* Hybrid Comparison Modal */}
+      {rfqForHybrid && rfqForHybrid.relatedQuotes && (
+        <HybridCompareModal
+          isOpen={showHybridModal}
+          onClose={() => {
+            setShowHybridModal(false);
+            setRfqForHybrid(null);
+          }}
+          quotes={rfqForHybrid.relatedQuotes}
+          currency={rfqForHybrid.currency}
+          rfqInfo={{
+            rfqId: rfqForHybrid.id,
+            rfqNumber: rfqForHybrid.id,
+            itemName: rfqForHybrid.itemName,
+          }}
         />
       )}
     </div>
@@ -722,6 +999,7 @@ interface RFQDetailModalProps {
   onTabChange: (tab: 'overview' | 'compare' | 'timeline') => void;
   formatCurrency: (amount: number, currency: string) => string;
   formatDate: (date: string) => string;
+  onCustomize?: () => void;
 }
 
 const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
@@ -731,6 +1009,7 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
   onTabChange,
   formatCurrency,
   formatDate,
+  onCustomize,
 }) => {
   const { styles } = usePortal();
 
@@ -796,7 +1075,7 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
             <OverviewTab rfq={rfq} formatCurrency={formatCurrency} formatDate={formatDate} styles={styles} />
           )}
           {activeTab === 'compare' && rfq.relatedQuotes && (
-            <CompareTab quotes={rfq.relatedQuotes} currency={rfq.currency} formatCurrency={formatCurrency} styles={styles} />
+            <CompareTab quotes={rfq.relatedQuotes} currency={rfq.currency} formatCurrency={formatCurrency} styles={styles} onCustomize={onCustomize} />
           )}
           {activeTab === 'timeline' && rfq.timeline && (
             <TimelineTab timeline={rfq.timeline} formatDate={formatDate} styles={styles} />
@@ -880,16 +1159,29 @@ const CompareTab: React.FC<{
   currency: string;
   formatCurrency: (amount: number, currency: string) => string;
   styles: ReturnType<typeof usePortal>['styles'];
-}> = ({ quotes, currency, formatCurrency, styles }) => {
+  onCustomize?: () => void;
+}> = ({ quotes, currency, formatCurrency, styles, onCustomize }) => {
   const lowestPrice = Math.min(...quotes.map(q => q.quotedPrice));
   const fastestDelivery = Math.min(...quotes.map(q => q.leadTimeDays));
   const highestReliability = Math.max(...quotes.map(q => q.reliability));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm" style={{ color: styles.textSecondary }}>
-        <Scales size={16} />
-        <span>Comparing {quotes.length} quotes</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm" style={{ color: styles.textSecondary }}>
+          <Scales size={16} />
+          <span>Comparing {quotes.length} quotes</span>
+        </div>
+        {onCustomize && (
+          <button
+            onClick={onCustomize}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={{ backgroundColor: `${styles.accent}15`, color: styles.accent }}
+          >
+            <Plus size={14} weight="bold" />
+            Customize Comparison
+          </button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>

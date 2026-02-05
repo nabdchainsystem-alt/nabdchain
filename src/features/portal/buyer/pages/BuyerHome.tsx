@@ -1,6 +1,6 @@
 import React from 'react';
 import { MagnifyingGlass, FileText, Package, ClockCounterClockwise } from 'phosphor-react';
-import { Container } from '../../components';
+import { Container, QuickActionCard } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 
 interface BuyerHomeProps {
@@ -56,20 +56,23 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
 
           {/* Quick Actions */}
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <QuickAction
+            <QuickActionCard
               icon={FileText}
-              label={t('buyer.home.requestQuote')}
+              title={t('buyer.home.requestQuote')}
               onClick={() => onNavigate('rfq')}
+              variant="button"
             />
-            <QuickAction
+            <QuickActionCard
               icon={Package}
-              label={t('buyer.home.browseCatalog')}
+              title={t('buyer.home.browseCatalog')}
               onClick={() => onNavigate('marketplace')}
+              variant="button"
             />
-            <QuickAction
+            <QuickActionCard
               icon={ClockCounterClockwise}
-              label={t('buyer.home.viewOrders')}
+              title={t('buyer.home.viewOrders')}
               onClick={() => onNavigate('orders')}
+              variant="button"
             />
           </div>
 
@@ -84,36 +87,6 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
         </div>
       </Container>
     </div>
-  );
-};
-
-const QuickAction: React.FC<{
-  icon: React.ComponentType<{ size: number; style?: React.CSSProperties }>;
-  label: string;
-  onClick: () => void;
-}> = ({ icon: Icon, label, onClick }) => {
-  const { styles } = usePortal();
-
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2.5 px-5 py-3 rounded-md border transition-all"
-      style={{
-        borderColor: styles.border,
-        backgroundColor: styles.bgCard,
-        color: styles.textPrimary,
-        fontFamily: styles.fontBody,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = styles.borderHover;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = styles.border;
-      }}
-    >
-      <Icon size={18} style={{ color: styles.textSecondary }} />
-      <span className="text-sm font-medium">{label}</span>
-    </button>
   );
 };
 

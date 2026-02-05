@@ -28,6 +28,8 @@
     "framer-motion": "^12.23.26",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
     "phosphor-react": "^1.4.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

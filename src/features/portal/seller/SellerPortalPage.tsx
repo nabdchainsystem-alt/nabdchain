@@ -1,57 +1,87 @@
-import React, { useState } from 'react';
-import { Sidebar, ContentTopBar } from '../components';
+import React, { useState, useEffect } from 'react';
+import { Sidebar, ContentTopBar, ToastProvider } from '../components';
 import { PortalProvider, usePortal } from '../context/PortalContext';
+import { NotificationProvider } from '../context/NotificationContext';
 
 // Existing pages
 import {
   SellerHome,
   Listings,
   RFQsInbox,
+  RFQMarketplace,
   SellerOrders,
   Analytics,
   SellerWorkspace,
-  Tests,
   DisputeInbox,
   SellerPayouts,
   SellerAutomation,
+  SellerOnboarding,
+  Tracking,
+  OrderTracking,
 } from './pages';
 import { SellerSettings } from './pages/SellerSettings';
 import { SellerInvoices } from './pages/SellerInvoices';
 
-type SellerPage = 'home' | 'listings' | 'rfqs' | 'orders' | 'invoices' | 'disputes' | 'payouts' | 'automation' | 'analytics' | 'workspace' | 'tests' | 'settings' | 'profile';
+type SellerPage = 'home' | 'listings' | 'rfqs' | 'rfq-marketplace' | 'orders' | 'tracking' | 'order-tracking' | 'invoices' | 'disputes' | 'payouts' | 'automation' | 'analytics' | 'workspace' | 'settings' | 'profile' | 'onboarding';
 
 interface SellerPortalPageProps {
   onLogout: () => void;
   onRoleSwitch?: () => void;
 }
 
+const VALID_SELLER_PAGES: SellerPage[] = ['home', 'listings', 'rfqs', 'rfq-marketplace', 'orders', 'tracking', 'order-tracking', 'invoices', 'disputes', 'payouts', 'automation', 'analytics', 'workspace', 'settings', 'profile', 'onboarding'];
+
 const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
   onLogout,
   onRoleSwitch,
 }) => {
   const [currentPage, setCurrentPage] = useState<SellerPage>(() => {
-    const saved = localStorage.getItem('seller-portal-page');
-    return (saved as SellerPage) || 'home';
+    // Check if we should show onboarding
+    const sellerStatus = localStorage.getItem('seller_status');
+    if (sellerStatus === 'incomplete') {
+      return 'onboarding';
+    }
+    const saved = localStorage.getItem('seller-portal-page') as SellerPage;
+    // Validate saved page exists
+    return saved && VALID_SELLER_PAGES.includes(saved) ? saved : 'home';
   });
+  const [selectedOrderId, setSelectedOrderId] = useState<string | undefined>();
   const { t, direction, styles } = usePortal();
+
+  // Check onboarding status on mount
+  useEffect(() => {
+    const checkOnboardingStatus = () => {
+      const sellerStatus = localStorage.getItem('seller_status');
+      if (sellerStatus === 'incomplete' && currentPage !== 'onboarding') {
+        setCurrentPage('onboarding');
+      }
+    };
+    checkOnboardingStatus();
+  }, []);
 
   const navItems = [
     { id: 'home', label: t('seller.nav.home') },
     { id: 'listings', label: t('seller.nav.listings') },
+    { id: 'rfq-marketplace', label: t('seller.nav.rfqMarketplace') || 'RFQ Marketplace' },
     { id: 'rfqs', label: t('seller.nav.rfqs') },
     { id: 'orders', label: t('seller.nav.orders') },
+    { id: 'tracking', label: t('seller.nav.tracking') || 'Tracking' },
     { id: 'invoices', label: t('seller.nav.invoices') },
+    { id: 'payouts', label: t('seller.nav.payouts') || 'Payouts' },
     { id: 'disputes', label: t('seller.nav.disputes') },
-    { id: 'payouts', label: 'Payouts' },
-    { id: 'automation', label: 'Automation' },
+    { id: 'automation', label: t('seller.nav.automation') || 'Automation' },
     { id: 'analytics', label: t('seller.nav.analytics') },
     { id: 'workspace', label: t('seller.nav.workspace') },
-    { id: 'tests', label: t('seller.nav.tests') },
   ];
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, data?: Record<string, unknown>) => {
     setCurrentPage(page as SellerPage);
     localStorage.setItem('seller-portal-page', page);
+
+    // Handle order tracking navigation
+    if (page === 'order-tracking' && data?.orderId) {
+      setSelectedOrderId(data.orderId as string);
+    }
   };
 
   const renderPage = () => {
@@ -62,8 +92,18 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
         return <Listings onNavigate={handleNavigate} />;
       case 'rfqs':
         return <RFQsInbox onNavigate={handleNavigate} />;
+      case 'rfq-marketplace':
+        return <RFQMarketplace onNavigate={handleNavigate} />;
       case 'orders':
         return <SellerOrders onNavigate={handleNavigate} />;
+      case 'tracking':
+        return <Tracking onNavigate={handleNavigate} />;
+      case 'order-tracking':
+        return selectedOrderId ? (
+          <OrderTracking orderId={selectedOrderId} onNavigate={handleNavigate} />
+        ) : (
+          <Tracking onNavigate={handleNavigate} />
+        );
       case 'invoices':
         return <SellerInvoices onNavigate={handleNavigate} />;
       case 'disputes':
@@ -74,17 +114,30 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
         return <SellerAutomation onNavigate={handleNavigate} />;
       case 'analytics':
         return <Analytics onNavigate={handleNavigate} />;
-      case 'tests':
-        return <Tests onNavigate={handleNavigate} />;
       case 'workspace':
         return <SellerWorkspace onNavigate={handleNavigate} />;
       case 'settings':
       case 'profile':
         return <SellerSettings />;
+      case 'onboarding':
+        return <SellerOnboarding />;
       default:
         return <SellerHome onNavigate={handleNavigate} />;
     }
   };
+
+  // If on onboarding page, render it without sidebar
+  if (currentPage === 'onboarding') {
+    return (
+      <div
+        className="min-h-screen transition-colors"
+        style={{ fontFamily: styles.fontBody, backgroundColor: styles.bgPrimary }}
+        dir={direction}
+      >
+        <SellerOnboarding />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -101,7 +154,12 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
         onRoleSwitch={onRoleSwitch}
       />
       <div className="portal-content-area flex flex-col h-screen overflow-hidden">
-        <ContentTopBar />
+        <ContentTopBar
+          role="seller"
+          onNavigate={handleNavigate}
+          onRoleSwitch={onRoleSwitch}
+          onLogout={onLogout}
+        />
         <main className="flex-1 overflow-y-auto pb-8">
           {renderPage()}
         </main>
@@ -113,7 +171,11 @@ const SellerPortalContent: React.FC<SellerPortalPageProps> = ({
 export const SellerPortalPage: React.FC<SellerPortalPageProps> = (props) => {
   return (
     <PortalProvider>
-      <SellerPortalContent {...props} />
+      <ToastProvider position="bottom-right">
+        <NotificationProvider portalType="seller">
+          <SellerPortalContent {...props} />
+        </NotificationProvider>
+      </ToastProvider>
     </PortalProvider>
   );
 };

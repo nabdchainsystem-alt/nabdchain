@@ -34,11 +34,45 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import customerRoutes from './routes/customerRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import expenseRoutes from './routes/expenseRoutes';
+import buyerWorkspaceRoutes from './routes/buyerWorkspaceRoutes';
+import sellerSettingsRoutes from './routes/sellerSettingsRoutes';
+import publicSellerRoutes from './routes/publicSellerRoutes';
+import sellerWorkspaceRoutes from './routes/sellerWorkspaceRoutes';
+import buyerPurchasesRoutes from './routes/buyerPurchasesRoutes';
+import invoiceRoutes from './routes/invoiceRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import disputeRoutes from './routes/disputeRoutes';
+import returnRoutes from './routes/returnRoutes';
+import payoutRoutes from './routes/payoutRoutes';
+import automationRoutes from './routes/automationRoutes';
+import trustRoutes from './routes/trustRoutes';
+import portalAuthRoutes from './routes/portalAuthRoutes';
+import featureGatingRoutes from './routes/featureGatingRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import sellerHomeRoutes from './routes/sellerHomeRoutes';
+import buyerCartRoutes from './routes/buyerCartRoutes';
+import orderTimelineRoutes from './routes/orderTimelineRoutes';
+import permissionRoutes from './routes/permissionRoutes';
+import { initializeScheduler } from './jobs/scheduler';
 import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
 import { prisma } from './lib/prisma';
 import { initializeSocket } from './socket/index';
+import { portalNotificationService } from './services/portalNotificationService';
 import { serverLogger, authLogger, dbLogger } from './utils/logger';
+
+// API versioning
+import { apiVersionMiddleware, getApiVersionInfo } from './middleware/apiVersion';
+import v1Routes from './routes/v1';
+
+// Background workers
+import { eventOutboxWorker } from './workers/eventOutboxWorker';
+import { jobQueueWorker } from './workers/jobQueueWorker';
+
+// Observability imports
+import { initializeObservability, appLogger } from './services/observability';
+import { observabilityMiddleware, errorTrackingMiddleware } from './middleware/observabilityMiddleware';
+import monitoringRoutes from './routes/monitoringRoutes';
 
 // Validate environment variables at startup
 validateEnv();
@@ -94,9 +128,18 @@ const corsOptions: cors.CorsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'X-User-Id', 'Idempotency-Key'],
 };
 app.use(cors(corsOptions));
+
+// Observability middleware (must be early in the chain)
+app.use(observabilityMiddleware({
+    excludePaths: ['/health', '/health/live', '/health/ready', '/metrics'],
+    slowRequestThresholdMs: 1000,
+}));
+
+// Monitoring routes (no auth required)
+app.use('/', monitoringRoutes);
 
 app.use(express.json({ limit: '10mb' })); // Reduced from 50mb for security
 
@@ -107,7 +150,10 @@ app.use(async (req: any, res, next) => {
 
     if (req.path === '/health' ||
         req.path.startsWith('/api/auth/google/callback') ||
-        req.path.startsWith('/api/auth/outlook/callback')) {
+        req.path.startsWith('/api/auth/outlook/callback') ||
+        req.path.startsWith('/api/auth/portal/') ||
+        req.path.startsWith('/api/gating/') ||
+        req.path.startsWith('/api/public/')) {
         return next();
     }
 
@@ -193,7 +239,19 @@ function handleError(res: express.Response, error: unknown) {
     res.status(500).json({ error: message });
 }
 
+// --- API Versioning ---
+// Apply version middleware to all /api routes
+app.use('/api', apiVersionMiddleware());
+
+// Version info endpoint
+app.get('/api/version', getApiVersionInfo);
+
+// Mount versioned routes (explicit v1 prefix)
+app.use('/api/v1', v1Routes);
+
+// --- Legacy routes (backward compatibility, aliased to v1) ---
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/portal', portalAuthRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/invite', inviteRoutes);
 app.use('/api/team', teamRoutes);
@@ -217,10 +275,28 @@ app.use('/api/templates', templatesRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/orders', orderTimelineRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/buyer', buyerWorkspaceRoutes);
+app.use('/api/seller', sellerSettingsRoutes);
+app.use('/api/seller', sellerWorkspaceRoutes);
+app.use('/api/seller', sellerHomeRoutes);
+app.use('/api/public', publicSellerRoutes);
+app.use('/api/purchases', buyerPurchasesRoutes);
+app.use('/api/buyer-cart', buyerCartRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/payouts', payoutRoutes);
+app.use('/api/automation', automationRoutes);
+app.use('/api/trust', trustRoutes);
+app.use('/api/gating', featureGatingRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/portal/permissions', permissionRoutes);
 
 // --- Workspace Routes ---
 app.get('/api/workspaces', requireAuth, async (req: any, res) => {
@@ -438,8 +514,64 @@ const io = new SocketIOServer(httpServer, {
 // Initialize socket event handlers
 initializeSocket(io);
 
+// Initialize portal notification service with Socket.IO
+portalNotificationService.initialize(io);
+
+// Initialize background job scheduler (cron-based)
+initializeScheduler();
+
+// Initialize background workers (database-backed queues)
+eventOutboxWorker.start();
+jobQueueWorker.start();
+appLogger.info('Background workers initialized (EventOutbox, JobQueue)');
+
+// Initialize observability services
+initializeObservability(prisma);
+
+// Error tracking middleware (must be after all routes)
+app.use(errorTrackingMiddleware());
+
 httpServer.listen(PORT, () => {
-    serverLogger.info(`NABD API running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-    serverLogger.info('WebSocket server enabled');
+    appLogger.info(`NABD API running on port ${PORT}`, {
+        environment: isProduction ? 'production' : 'development',
+        nodeVersion: process.version,
+    });
+    appLogger.info('WebSocket server enabled');
+    appLogger.info('Background job scheduler initialized');
+    appLogger.info('Observability services initialized');
 });
+
+// Graceful shutdown
+const gracefulShutdown = async (signal: string) => {
+    appLogger.info(`Received ${signal}, starting graceful shutdown...`);
+
+    // Stop accepting new connections
+    httpServer.close(() => {
+        appLogger.info('HTTP server closed');
+    });
+
+    // Stop background workers
+    try {
+        await Promise.all([
+            eventOutboxWorker.stop(),
+            jobQueueWorker.stop(),
+        ]);
+        appLogger.info('Background workers stopped');
+    } catch (error) {
+        appLogger.error('Error stopping workers:', error);
+    }
+
+    // Disconnect from database
+    try {
+        await prisma.$disconnect();
+        appLogger.info('Database connection closed');
+    } catch (error) {
+        appLogger.error('Error disconnecting database:', error);
+    }
+
+    process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 

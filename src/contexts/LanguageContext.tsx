@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
 import { useAppContext } from './AppContext';
-import { translations, type Language, type TranslationMap } from '../locales';
+import { getTranslation, type Language, type TranslationMap } from '../locales';
 
 interface LanguageContextType {
     language: Language;
@@ -27,7 +27,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         }
     }, [language, toggleLanguage]);
 
-    const t = useCallback((key: string): string => translations[language]?.[key] || key, [language]);
+    // Use getTranslation with safe fallback for missing keys
+    const t = useCallback((key: string): string => getTranslation(language, key), [language]);
 
     // Note: Document direction is already handled by AppContext, no need to duplicate here
 

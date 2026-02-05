@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useDropdownClose } from '../../hooks';
 import {
   CurrencyCircleDollar,
   FileText,
@@ -15,7 +16,14 @@ import {
   Percent,
   ArrowRight,
 } from 'phosphor-react';
-import { Container, PageHeader } from '../../components';
+import {
+  Container,
+  PageHeader,
+  SkeletonKPICard,
+  SkeletonBarChart,
+  SkeletonListSkeleton,
+  SkeletonFunnelChart,
+} from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import { buyerAnalyticsService } from '../../services/buyerAnalyticsService';
@@ -44,27 +52,33 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [analytics, setAnalytics] = useState<BuyerAnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { styles, t, direction, language } = usePortal();
   const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
+  // Close dropdown on click outside or escape key
+  const periodDropdownRef = useDropdownClose<HTMLDivElement>(
+    () => setShowPeriodDropdown(false),
+    showPeriodDropdown
+  );
+
   const fetchAnalytics = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const token = await getToken();
-      if (!token) return;
-
-      // Try API first, fallback to mock data
-      try {
-        const data = await buyerAnalyticsService.getAnalyticsSummary(token, { period });
-        setAnalytics(data);
-      } catch {
-        // Use mock data on error
-        setAnalytics(buyerAnalyticsService.getMockAnalyticsSummary(period));
+      if (!token) {
+        setError('Authentication required');
+        return;
       }
+
+      const data = await buyerAnalyticsService.getAnalyticsSummary(token, { period });
+      setAnalytics(data);
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
-      setAnalytics(buyerAnalyticsService.getMockAnalyticsSummary(period));
+      setError(err instanceof Error ? err.message : 'Failed to load analytics');
+      setAnalytics(null);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +104,7 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
           />
 
           {/* Period Selector */}
-          <div className="relative">
+          <div className="relative" ref={periodDropdownRef}>
             <button
               onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -133,21 +147,25 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading State with Shimmer Effect */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="p-5 rounded-lg border animate-pulse"
-                style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-              >
-                <div className="h-4 w-24 rounded mb-3" style={{ backgroundColor: styles.bgSecondary }} />
-                <div className="h-8 w-32 rounded mb-2" style={{ backgroundColor: styles.bgSecondary }} />
-                <div className="h-3 w-20 rounded" style={{ backgroundColor: styles.bgSecondary }} />
-              </div>
-            ))}
-          </div>
+          <>
+            {/* KPI Skeleton Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <SkeletonKPICard key={i} />
+              ))}
+            </div>
+
+            {/* Charts Row Skeletons */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <SkeletonBarChart title="Spend by Category" height="h-72" showLegend={false} />
+              <SkeletonListSkeleton title="Supplier Performance" rows={5} />
+            </div>
+
+            {/* RFQ Funnel Skeleton */}
+            <SkeletonFunnelChart title="RFQ Funnel" height="h-64" />
+          </>
         )}
 
         {/* Analytics Content */}

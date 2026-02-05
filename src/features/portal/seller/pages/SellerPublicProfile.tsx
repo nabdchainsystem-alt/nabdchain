@@ -8,36 +8,36 @@ import {
   Package,
   Trophy,
   Star,
-  StarHalf,
-  Chat,
-  Clock,
   Storefront,
-  CaretDown,
-  SquaresFour,
-  List,
-  MagnifyingGlass,
-  Funnel,
-  ShoppingCart,
-  ArrowRight,
+  CaretRight,
+  Heart,
+  EnvelopeSimple,
   FileText,
-  X,
   SpinnerGap,
   Warning,
+  Buildings,
+  Globe,
+  Handshake,
+  TrendUp,
+  Percent,
+  Timer,
+  Scales,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { publicSellerService, PublicSellerProfile, SellerProduct } from '../../services/publicSellerService';
-import { Select } from '../../components/ui/Select';
 import { RFQFormPanel } from '../../buyer/components/RFQFormPanel';
 
 interface SellerPublicProfileProps {
   slug: string;
   onNavigateToProduct?: (productId: string) => void;
+  onNavigateToProducts?: (sellerId: string) => void;
   onRequestRFQ?: (sellerId: string) => void;
 }
 
 export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
   slug,
   onNavigateToProduct,
+  onNavigateToProducts,
   onRequestRFQ,
 }) => {
   const { t, direction, styles } = usePortal();
@@ -48,13 +48,9 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [productView, setProductView] = useState<'grid' | 'list'>('grid');
-  const [productSort, setProductSort] = useState<'newest' | 'price_low' | 'price_high' | 'popular'>('newest');
-  const [productSearch, setProductSearch] = useState('');
-  const [productPage, setProductPage] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [showRFQModal, setShowRFQModal] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   // Fetch seller profile
   useEffect(() => {
@@ -64,8 +60,10 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
         setError(null);
         const profile = await publicSellerService.getProfile(slug);
         setSeller(profile);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load seller profile');
+        setIsSaved(profile.isSaved || false);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load seller profile';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -74,45 +72,43 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
     fetchSeller();
   }, [slug]);
 
-  // Fetch products
+  // Fetch top 6 products for preview
   useEffect(() => {
     const fetchProducts = async () => {
       if (!seller) return;
       try {
         const response = await publicSellerService.getProducts(slug, {
-          page: productPage,
-          limit: 12,
-          sort: productSort,
+          page: 1,
+          limit: 6,
+          sort: 'popular',
         });
         setProducts(response.products);
-        setTotalProducts(response.pagination.total);
-        setTotalPages(response.pagination.totalPages);
       } catch (err) {
         console.error('Failed to fetch products:', err);
       }
     };
 
     fetchProducts();
-  }, [slug, seller, productPage, productSort]);
+  }, [slug, seller]);
 
-  // Filter products by search
-  const filteredProducts = products.filter((product) => {
-    if (!productSearch) return true;
-    const searchLower = productSearch.toLowerCase();
-    return (
-      product.name.toLowerCase().includes(searchLower) ||
-      product.nameAr?.toLowerCase().includes(searchLower) ||
-      product.category.toLowerCase().includes(searchLower)
-    );
-  });
+  // Calculate years active from memberSince
+  const getYearsActive = () => {
+    if (seller?.yearsActive) return seller.yearsActive;
+    if (!seller?.memberSince) return 0;
+    const since = new Date(seller.memberSince);
+    const now = new Date();
+    return Math.floor((now.getTime() - since.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  };
 
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(isRtl ? 'ar-SA' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-    });
+  // Handle save seller
+  const handleSaveSeller = async () => {
+    if (!seller) return;
+    try {
+      const result = await publicSellerService.toggleSaveSeller(seller.id);
+      setIsSaved(result.saved);
+    } catch (err) {
+      console.error('Failed to save seller:', err);
+    }
   };
 
   // Loading state
@@ -146,59 +142,66 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
 
   return (
     <div className="min-h-screen overflow-y-auto" style={{ backgroundColor: styles.bgPrimary }} dir={direction}>
-      {/* Hero Section */}
-      <HeroSection seller={seller} styles={styles} isRtl={isRtl} t={t} formatDate={formatDate} />
+      {/* Seller Header - Clean, Centered */}
+      <SellerHeader
+        seller={seller}
+        styles={styles}
+        isRtl={isRtl}
+        t={t}
+      />
 
-      {/* Trust Indicators */}
-      <TrustIndicators seller={seller} styles={styles} t={t} />
+      {/* Trust Signals Row */}
+      <TrustSignalsRow
+        seller={seller}
+        styles={styles}
+        t={t}
+      />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - About & Stats */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* About Section */}
-            <AboutSection seller={seller} styles={styles} t={t} />
+      {/* Main Content - Max Width Centered */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Seller Overview */}
+        <SellerOverview
+          seller={seller}
+          yearsActive={getYearsActive()}
+          styles={styles}
+          t={t}
+          isRtl={isRtl}
+        />
 
-            {/* Statistics */}
-            <StatisticsSection seller={seller} styles={styles} t={t} />
+        {/* Performance Snapshot */}
+        <PerformanceSnapshot
+          seller={seller}
+          styles={styles}
+          t={t}
+        />
 
-            {/* RFQ Entry Point */}
-            <RFQEntrySection
-              seller={seller}
-              styles={styles}
-              t={t}
-              onRequestRFQ={() => {
-                if (onRequestRFQ) {
-                  onRequestRFQ(seller.id);
-                } else {
-                  setShowRFQModal(true);
-                }
-              }}
-            />
-          </div>
+        {/* Listings Preview */}
+        <ListingsPreview
+          products={products}
+          seller={seller}
+          onNavigateToProduct={onNavigateToProduct}
+          onNavigateToProducts={onNavigateToProducts}
+          styles={styles}
+          t={t}
+          isRtl={isRtl}
+        />
 
-          {/* Right Column - Products */}
-          <div className="lg:col-span-2">
-            <ProductListings
-              products={filteredProducts}
-              totalProducts={totalProducts}
-              view={productView}
-              onViewChange={setProductView}
-              sort={productSort}
-              onSortChange={setProductSort}
-              search={productSearch}
-              onSearchChange={setProductSearch}
-              page={productPage}
-              totalPages={totalPages}
-              onPageChange={setProductPage}
-              onNavigateToProduct={onNavigateToProduct}
-              styles={styles}
-              t={t}
-              isRtl={isRtl}
-            />
-          </div>
-        </div>
+        {/* Buyer Actions */}
+        <BuyerActions
+          seller={seller}
+          isSaved={isSaved}
+          onRequestRFQ={() => {
+            if (onRequestRFQ) {
+              onRequestRFQ(seller.id);
+            } else {
+              setShowRFQModal(true);
+            }
+          }}
+          onContactSeller={() => setShowContactModal(true)}
+          onSaveSeller={handleSaveSeller}
+          styles={styles}
+          t={t}
+        />
       </div>
 
       {/* RFQ Form Panel */}
@@ -209,189 +212,210 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
         sellerId={seller.id}
         sellerName={seller.displayName}
         source="profile"
-        onSuccess={(rfq) => {
-          console.log('RFQ created for seller:', rfq.id);
+        onSuccess={() => {
           setShowRFQModal(false);
         }}
       />
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <ContactSellerModal
+          seller={seller}
+          onClose={() => setShowContactModal(false)}
+          styles={styles}
+          t={t}
+          isRtl={isRtl}
+        />
+      )}
     </div>
   );
 };
 
 // =============================================================================
-// Hero Section
+// Seller Header - Clean, Centered
 // =============================================================================
-interface HeroSectionProps {
+interface SellerHeaderProps {
   seller: PublicSellerProfile;
-  styles: any;
+  styles: Record<string, unknown>;
   isRtl: boolean;
   t: (key: string) => string;
-  formatDate: (date: string) => string;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ seller, styles, isRtl, t, formatDate }) => {
-  const defaultCover = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1200&h=300&fit=crop';
+const SellerHeader: React.FC<SellerHeaderProps> = ({ seller, styles, isRtl, t }) => {
+  const badges = [];
+
+  if (seller.verified) {
+    badges.push({
+      icon: ShieldCheck,
+      label: t('seller.public.verified') || 'Verified',
+      color: '#22c55e',
+      bgColor: '#22c55e15',
+    });
+  }
+
+  if (seller.topSeller) {
+    badges.push({
+      icon: Trophy,
+      label: t('seller.public.topSeller') || 'Top Seller',
+      color: '#f59e0b',
+      bgColor: '#f59e0b15',
+    });
+  }
+
+  if (seller.fastResponder) {
+    badges.push({
+      icon: Lightning,
+      label: t('seller.public.fastResponse') || 'Fast Response',
+      color: '#3b82f6',
+      bgColor: '#3b82f615',
+    });
+  }
 
   return (
-    <div className="relative">
-      {/* Cover with Gradient Overlay */}
-      <div
-        className="h-48 sm:h-56 bg-cover bg-center relative"
-        style={{
-          backgroundImage: `url(${seller.coverUrl || defaultCover})`,
-        }}
-      >
-        {/* Gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/70 to-black/50" />
-
-        {/* Content overlaid on cover */}
-        <div className="absolute inset-0 flex items-center">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="flex items-center gap-5">
-              {/* Logo */}
-              <div
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 shadow-xl"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  border: '2px solid rgba(255,255,255,0.25)'
-                }}
-              >
-                {seller.logoUrl ? (
-                  <img
-                    src={seller.logoUrl}
-                    alt={seller.displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Storefront size={40} style={{ color: 'rgba(255,255,255,0.8)' }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1
-                    className="text-2xl sm:text-3xl font-bold text-white"
-                    style={{ fontFamily: styles.fontHeading, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
-                  >
-                    {seller.displayName}
-                  </h1>
-                  {seller.verified && (
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 backdrop-blur-sm">
-                      <CheckCircle size={14} weight="fill" />
-                      <span>{t('seller.public.verified') || 'Verified'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {seller.shortDescription && (
-                  <p className="mt-2 text-sm text-white/85 max-w-2xl line-clamp-2">
-                    {seller.shortDescription}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-5 mt-3 flex-wrap text-sm text-white/75">
-                  {seller.location && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin size={15} />
-                      <span>{seller.location.city}, {seller.location.country}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={15} />
-                    <span>{t('seller.public.memberSince') || 'Member since'} {formatDate(seller.memberSince)}</span>
-                  </div>
-                </div>
-              </div>
+    <div
+      className="py-10 text-center"
+      style={{
+        backgroundColor: styles.bgSecondary as string,
+        borderBottom: `1px solid ${styles.border}`,
+      }}
+    >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <div
+          className="w-24 h-24 mx-auto rounded-2xl overflow-hidden shadow-lg mb-5"
+          style={{
+            backgroundColor: styles.bgCard as string,
+            border: `2px solid ${styles.border}`,
+          }}
+        >
+          {seller.logoUrl ? (
+            <img
+              src={seller.logoUrl}
+              alt={seller.displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center"
+              style={{ backgroundColor: styles.bgSecondary as string }}
+            >
+              <Storefront size={40} style={{ color: styles.textMuted as string }} />
             </div>
-          </div>
+          )}
         </div>
+
+        {/* Seller Name */}
+        <h1
+          className="text-2xl sm:text-3xl font-bold mb-3"
+          style={{
+            color: styles.textPrimary as string,
+            fontFamily: styles.fontHeading as string,
+          }}
+        >
+          {seller.displayName}
+        </h1>
+
+        {/* Verification Badges */}
+        {badges.length > 0 && (
+          <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
+            {badges.map((badge, index) => {
+              const Icon = badge.icon;
+              return (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+                  style={{ backgroundColor: badge.bgColor, color: badge.color }}
+                >
+                  <Icon size={16} weight="fill" />
+                  {badge.label}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Tagline */}
+        {(seller.tagline || seller.shortDescription) && (
+          <p
+            className="text-base max-w-xl mx-auto line-clamp-1"
+            style={{ color: styles.textSecondary as string }}
+          >
+            {seller.tagline || seller.shortDescription}
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
 // =============================================================================
-// Trust Indicators
+// Trust Signals Row
 // =============================================================================
-interface TrustIndicatorsProps {
+interface TrustSignalsRowProps {
   seller: PublicSellerProfile;
-  styles: any;
+  styles: Record<string, unknown>;
   t: (key: string) => string;
 }
 
-const TrustIndicators: React.FC<TrustIndicatorsProps> = ({ seller, styles, t }) => {
-  const indicators = [
+const TrustSignalsRow: React.FC<TrustSignalsRowProps> = ({ seller, styles, t }) => {
+  const signals = [
     {
-      icon: ShieldCheck,
-      label: t('seller.public.verifiedSeller') || 'Verified Seller',
-      value: seller.verified,
+      icon: Percent,
+      label: t('seller.public.responseRate') || 'Response Rate',
+      value: `${seller.statistics.responseRate}%`,
       color: '#22c55e',
     },
     {
-      icon: FileText,
-      label: t('seller.public.vatRegistered') || 'VAT Registered',
-      value: seller.vatRegistered,
+      icon: Timer,
+      label: t('seller.public.avgResponseTime') || 'Avg Response Time',
+      value: seller.statistics.responseTime,
       color: '#3b82f6',
     },
     {
-      icon: Lightning,
-      label: t('seller.public.fastResponse') || 'Fast Response',
-      value: `${seller.statistics.responseRate}%`,
-      sublabel: seller.statistics.responseTime,
-      color: '#f59e0b',
-    },
-    {
       icon: Package,
-      label: t('seller.public.ordersFulfilled') || 'Orders Fulfilled',
-      value: seller.statistics.totalOrders,
-      sublabel: `${seller.statistics.fulfillmentRate}% ${t('seller.public.onTime') || 'on time'}`,
+      label: t('seller.public.fulfillmentRate') || 'Order Fulfillment',
+      value: `${seller.statistics.fulfillmentRate}%`,
       color: '#8b5cf6',
     },
     {
-      icon: Trophy,
-      label: t('seller.public.rfqWinRate') || 'RFQ Win Rate',
-      value: `${seller.statistics.rfqWinRate}%`,
-      color: '#ec4899',
+      icon: Scales,
+      label: t('seller.public.disputeRate') || 'Dispute Rate',
+      value: `${seller.statistics.disputeRate ?? 0}%`,
+      color: seller.statistics.disputeRate && seller.statistics.disputeRate > 5 ? '#ef4444' : '#22c55e',
     },
   ];
 
   return (
-    <div style={{ backgroundColor: styles.bgPrimary, borderBottom: `1px solid ${styles.border}` }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center gap-6 overflow-x-auto pb-2 scrollbar-hide">
-          {indicators.map((indicator, index) => {
-            const Icon = indicator.icon;
-            const displayValue = typeof indicator.value === 'boolean'
-              ? (indicator.value ? t('common.yes') || 'Yes' : t('common.no') || 'No')
-              : indicator.value;
-
+    <div
+      className="py-4"
+      style={{
+        backgroundColor: styles.bgPrimary as string,
+        borderBottom: `1px solid ${styles.border}`,
+      }}
+    >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {signals.map((signal, index) => {
+            const Icon = signal.icon;
             return (
               <div
                 key={index}
-                className="flex items-center gap-3 flex-shrink-0 px-4 py-2 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
+                className="flex items-center gap-3 p-3 rounded-lg"
+                style={{ backgroundColor: styles.bgSecondary as string }}
               >
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${indicator.color}15` }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${signal.color}15` }}
                 >
-                  <Icon size={20} weight="fill" style={{ color: indicator.color }} />
+                  <Icon size={20} weight="fill" style={{ color: signal.color }} />
                 </div>
-                <div>
-                  <div className="text-xs" style={{ color: styles.textMuted }}>
-                    {indicator.label}
+                <div className="min-w-0">
+                  <div className="text-xs truncate" style={{ color: styles.textMuted as string }}>
+                    {signal.label}
                   </div>
-                  <div className="font-semibold" style={{ color: styles.textPrimary }}>
-                    {displayValue}
+                  <div className="font-semibold" style={{ color: styles.textPrimary as string }}>
+                    {signal.value}
                   </div>
-                  {indicator.sublabel && (
-                    <div className="text-xs" style={{ color: styles.textMuted }}>
-                      {indicator.sublabel}
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -403,93 +427,219 @@ const TrustIndicators: React.FC<TrustIndicatorsProps> = ({ seller, styles, t }) 
 };
 
 // =============================================================================
-// About Section
+// Seller Overview Section
 // =============================================================================
-interface AboutSectionProps {
+interface SellerOverviewProps {
   seller: PublicSellerProfile;
-  styles: any;
+  yearsActive: number;
+  styles: Record<string, unknown>;
   t: (key: string) => string;
+  isRtl: boolean;
 }
 
-const AboutSection: React.FC<AboutSectionProps> = ({ seller, styles, t }) => {
+const SellerOverview: React.FC<SellerOverviewProps> = ({ seller, yearsActive, styles, t, isRtl }) => {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(isRtl ? 'ar-SA' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+    });
+  };
+
   return (
     <div
-      className="rounded-xl p-6"
-      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+      className="rounded-xl p-6 mb-6"
+      style={{
+        backgroundColor: styles.bgCard as string,
+        border: `1px solid ${styles.border}`,
+      }}
     >
       <h2
         className="text-lg font-semibold mb-4"
-        style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+        style={{
+          color: styles.textPrimary as string,
+          fontFamily: styles.fontHeading as string,
+        }}
       >
-        {t('seller.public.about') || 'About'}
+        {t('seller.public.aboutSeller') || 'About the Seller'}
       </h2>
-      <p className="text-sm leading-relaxed" style={{ color: styles.textSecondary }}>
+
+      {/* About paragraph */}
+      <p
+        className="text-sm leading-relaxed mb-6"
+        style={{ color: styles.textSecondary as string }}
+      >
         {seller.shortDescription || t('seller.public.noDescription') || 'No description provided.'}
       </p>
+
+      {/* Details grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Years Active */}
+        <div className="flex items-start gap-3">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: styles.bgSecondary as string }}
+          >
+            <Calendar size={18} style={{ color: styles.info as string }} />
+          </div>
+          <div>
+            <div className="text-xs" style={{ color: styles.textMuted as string }}>
+              {t('seller.public.yearsActive') || 'Years Active'}
+            </div>
+            <div className="font-medium" style={{ color: styles.textPrimary as string }}>
+              {yearsActive > 0 ? `${yearsActive} ${t('common.years') || 'years'}` : t('seller.public.newSeller') || 'New Seller'}
+            </div>
+          </div>
+        </div>
+
+        {/* Location */}
+        {seller.location && (
+          <div className="flex items-start gap-3">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: styles.bgSecondary as string }}
+            >
+              <MapPin size={18} style={{ color: styles.info as string }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                {t('seller.public.location') || 'Location'}
+              </div>
+              <div className="font-medium" style={{ color: styles.textPrimary as string }}>
+                {seller.location.city}, {seller.location.country}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Coverage */}
+        {seller.location?.coverage && seller.location.coverage.length > 0 && (
+          <div className="flex items-start gap-3">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: styles.bgSecondary as string }}
+            >
+              <Globe size={18} style={{ color: styles.info as string }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                {t('seller.public.coverage') || 'Coverage'}
+              </div>
+              <div className="font-medium truncate" style={{ color: styles.textPrimary as string }}>
+                {seller.location.coverage.slice(0, 2).join(', ')}
+                {seller.location.coverage.length > 2 && ` +${seller.location.coverage.length - 2}`}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Industries */}
+        {seller.industriesServed && seller.industriesServed.length > 0 && (
+          <div className="flex items-start gap-3">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: styles.bgSecondary as string }}
+            >
+              <Buildings size={18} style={{ color: styles.info as string }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                {t('seller.public.industries') || 'Industries'}
+              </div>
+              <div className="font-medium truncate" style={{ color: styles.textPrimary as string }}>
+                {seller.industriesServed.slice(0, 2).join(', ')}
+                {seller.industriesServed.length > 2 && ` +${seller.industriesServed.length - 2}`}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 // =============================================================================
-// Statistics Section
+// Performance Snapshot
 // =============================================================================
-interface StatisticsSectionProps {
+interface PerformanceSnapshotProps {
   seller: PublicSellerProfile;
-  styles: any;
+  styles: Record<string, unknown>;
   t: (key: string) => string;
 }
 
-const StatisticsSection: React.FC<StatisticsSectionProps> = ({ seller, styles, t }) => {
-  const stats = [
+const PerformanceSnapshot: React.FC<PerformanceSnapshotProps> = ({ seller, styles, t }) => {
+  const metrics = [
     {
-      label: t('seller.public.totalProducts') || 'Total Products',
-      value: seller.statistics.totalProducts,
+      label: t('seller.public.ordersCompleted') || 'Orders Completed',
+      value: seller.statistics.totalOrders.toLocaleString(),
+      icon: Handshake,
+      color: '#22c55e',
+    },
+    {
+      label: t('seller.public.activeListings') || 'Active Listings',
+      value: (seller.statistics.activeListings ?? seller.statistics.totalProducts).toLocaleString(),
       icon: Package,
+      color: '#3b82f6',
     },
     {
-      label: t('seller.public.totalOrders') || 'Orders Completed',
-      value: seller.statistics.totalOrders,
-      icon: ShoppingCart,
-    },
-    {
-      label: t('seller.public.responseRate') || 'Response Rate',
-      value: `${seller.statistics.responseRate}%`,
-      icon: Chat,
-    },
-    {
-      label: t('seller.public.avgResponseTime') || 'Avg. Response Time',
-      value: seller.statistics.responseTime,
-      icon: Clock,
+      label: t('seller.public.onTimeDelivery') || 'On-Time Delivery',
+      value: `${seller.statistics.onTimeDeliveryRate ?? seller.statistics.fulfillmentRate}%`,
+      icon: TrendUp,
+      color: '#8b5cf6',
     },
   ];
 
+  // Add rating if exists
+  if (seller.rating && seller.rating.count > 0) {
+    metrics.push({
+      label: t('seller.public.rating') || 'Rating',
+      value: `${seller.rating.average.toFixed(1)} (${seller.rating.count})`,
+      icon: Star,
+      color: '#f59e0b',
+    });
+  }
+
   return (
     <div
-      className="rounded-xl p-6"
-      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+      className="rounded-xl p-6 mb-6"
+      style={{
+        backgroundColor: styles.bgCard as string,
+        border: `1px solid ${styles.border}`,
+      }}
     >
       <h2
         className="text-lg font-semibold mb-4"
-        style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+        style={{
+          color: styles.textPrimary as string,
+          fontFamily: styles.fontHeading as string,
+        }}
       >
-        {t('seller.public.statistics') || 'Statistics'}
+        {t('seller.public.performance') || 'Performance Snapshot'}
       </h2>
-      <div className="grid grid-cols-2 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
+
+      <div className={`grid gap-4 ${seller.rating && seller.rating.count > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon;
           return (
-            <div key={index} className="text-center">
+            <div
+              key={index}
+              className="text-center p-4 rounded-lg"
+              style={{ backgroundColor: styles.bgSecondary as string }}
+            >
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2"
-                style={{ backgroundColor: styles.bgSecondary }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+                style={{ backgroundColor: `${metric.color}15` }}
               >
-                <Icon size={20} style={{ color: styles.info }} />
+                <Icon size={24} weight="fill" style={{ color: metric.color }} />
               </div>
-              <div className="text-xl font-bold" style={{ color: styles.textPrimary }}>
-                {stat.value}
+              <div
+                className="text-xl font-bold mb-1"
+                style={{ color: styles.textPrimary as string }}
+              >
+                {metric.value}
               </div>
-              <div className="text-xs" style={{ color: styles.textMuted }}>
-                {stat.label}
+              <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                {metric.label}
               </div>
             </div>
           );
@@ -500,479 +650,347 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ seller, styles, t
 };
 
 // =============================================================================
-// RFQ Entry Section
+// Listings Preview - Top 6 Products
 // =============================================================================
-interface RFQEntrySectionProps {
-  seller: PublicSellerProfile;
-  styles: any;
-  t: (key: string) => string;
-  onRequestRFQ: () => void;
-}
-
-const RFQEntrySection: React.FC<RFQEntrySectionProps> = ({ seller, styles, t, onRequestRFQ }) => {
-  return (
-    <div
-      className="rounded-xl p-6"
-      style={{
-        backgroundColor: styles.info + '10',
-        border: `1px solid ${styles.info}30`,
-      }}
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: styles.info }}
-        >
-          <FileText size={24} weight="fill" className="text-white" />
-        </div>
-        <div className="flex-1">
-          <h3
-            className="font-semibold mb-1"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
-            {t('seller.public.needCustomQuote') || 'Need a Custom Quote?'}
-          </h3>
-          <p className="text-sm mb-4" style={{ color: styles.textSecondary }}>
-            {t('seller.public.rfqDescription') || 'Send a Request for Quotation to get personalized pricing for your specific requirements.'}
-          </p>
-          <button
-            onClick={onRequestRFQ}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
-            style={{ backgroundColor: styles.info, color: '#fff' }}
-          >
-            <span>{t('seller.public.sendRFQ') || 'Send RFQ'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// Product Listings
-// =============================================================================
-interface ProductListingsProps {
+interface ListingsPreviewProps {
   products: SellerProduct[];
-  totalProducts: number;
-  view: 'grid' | 'list';
-  onViewChange: (view: 'grid' | 'list') => void;
-  sort: string;
-  onSortChange: (sort: any) => void;
-  search: string;
-  onSearchChange: (search: string) => void;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  seller: PublicSellerProfile;
   onNavigateToProduct?: (productId: string) => void;
-  styles: any;
+  onNavigateToProducts?: (sellerId: string) => void;
+  styles: Record<string, unknown>;
   t: (key: string) => string;
   isRtl: boolean;
 }
 
-const ProductListings: React.FC<ProductListingsProps> = ({
+const ListingsPreview: React.FC<ListingsPreviewProps> = ({
   products,
-  totalProducts,
-  view,
-  onViewChange,
-  sort,
-  onSortChange,
-  search,
-  onSearchChange,
-  page,
-  totalPages,
-  onPageChange,
+  seller,
   onNavigateToProduct,
+  onNavigateToProducts,
   styles,
   t,
   isRtl,
 }) => {
-  const sortOptions = [
-    { value: 'newest', label: t('seller.public.sortNewest') || 'Newest' },
-    { value: 'price_low', label: t('seller.public.sortPriceLow') || 'Price: Low to High' },
-    { value: 'price_high', label: t('seller.public.sortPriceHigh') || 'Price: High to Low' },
-    { value: 'popular', label: t('seller.public.sortPopular') || 'Most Popular' },
-  ];
+  const defaultImage = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=300&h=200&fit=crop';
+
+  if (products.length === 0) {
+    return null;
+  }
 
   return (
     <div
-      className="rounded-xl"
-      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+      className="rounded-xl p-6 mb-6"
+      style={{
+        backgroundColor: styles.bgCard as string,
+        border: `1px solid ${styles.border}`,
+      }}
     >
       {/* Header */}
-      <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ borderColor: styles.border }}>
+      <div className="flex items-center justify-between mb-4">
         <h2
           className="text-lg font-semibold"
-          style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+          style={{
+            color: styles.textPrimary as string,
+            fontFamily: styles.fontHeading as string,
+          }}
         >
-          {t('seller.public.products') || 'Products'} ({totalProducts})
+          {t('seller.public.topProducts') || 'Top Products'}
         </h2>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Search */}
-          <div className="relative flex-1 sm:flex-initial">
-            <MagnifyingGlass
-              size={18}
-              className="absolute top-1/2 -translate-y-1/2"
-              style={{ [isRtl ? 'right' : 'left']: 12, color: styles.textMuted }}
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={t('common.search') || 'Search...'}
-              className="w-full sm:w-48 py-2 rounded-lg text-sm"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                border: `1px solid ${styles.border}`,
-                color: styles.textPrimary,
-                [isRtl ? 'paddingRight' : 'paddingLeft']: 40,
-                [isRtl ? 'paddingLeft' : 'paddingRight']: 12,
-              }}
-            />
-          </div>
-
-          {/* Sort */}
-          <Select
-            value={sort}
-            onChange={onSortChange}
-            options={sortOptions}
-            placeholder={t('common.sort') || 'Sort'}
-          />
-
-          {/* View Toggle */}
-          <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: styles.border }}>
-            <button
-              onClick={() => onViewChange('grid')}
-              className="p-2 transition-colors"
-              style={{
-                backgroundColor: view === 'grid' ? styles.info : styles.bgSecondary,
-                color: view === 'grid' ? '#fff' : styles.textMuted,
-              }}
-            >
-              <SquaresFour size={18} />
-            </button>
-            <button
-              onClick={() => onViewChange('list')}
-              className="p-2 transition-colors"
-              style={{
-                backgroundColor: view === 'list' ? styles.info : styles.bgSecondary,
-                color: view === 'list' ? '#fff' : styles.textMuted,
-              }}
-            >
-              <List size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Products */}
-      <div className="p-4">
-        {products.length === 0 ? (
-          <div className="text-center py-12">
-            <Package size={48} style={{ color: styles.textMuted }} className="mx-auto mb-4" />
-            <p style={{ color: styles.textMuted }}>
-              {t('seller.public.noProducts') || 'No products available'}
-            </p>
-          </div>
-        ) : view === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={() => onNavigateToProduct?.(product.id)}
-                styles={styles}
-                t={t}
-                isRtl={isRtl}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {products.map((product) => (
-              <ProductListItem
-                key={product.id}
-                product={product}
-                onClick={() => onNavigateToProduct?.(product.id)}
-                styles={styles}
-                t={t}
-                isRtl={isRtl}
-              />
-            ))}
-          </div>
+        {seller.statistics.totalProducts > 6 && (
+          <button
+            onClick={() => onNavigateToProducts?.(seller.id)}
+            className="flex items-center gap-1 text-sm font-medium transition-opacity hover:opacity-80"
+            style={{ color: styles.info as string }}
+          >
+            {t('seller.public.viewAll') || 'View all products'}
+            <CaretRight size={16} weight="bold" />
+          </button>
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="p-4 border-t flex justify-center gap-2" style={{ borderColor: styles.border }}>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => onPageChange(pageNum)}
-              className="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: page === pageNum ? styles.info : styles.bgSecondary,
-                color: page === pageNum ? '#fff' : styles.textSecondary,
-              }}
-            >
-              {pageNum}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// =============================================================================
-// Product Card (Grid View)
-// =============================================================================
-interface ProductCardProps {
-  product: SellerProduct;
-  onClick?: () => void;
-  styles: any;
-  t: (key: string) => string;
-  isRtl: boolean;
-}
-
-const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, styles, t, isRtl }) => {
-  const defaultImage = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=300&h=200&fit=crop';
-
-  return (
-    <div
-      onClick={onClick}
-      className="rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-lg"
-      style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.border}` }}
-    >
-      <div className="aspect-[4/3] overflow-hidden">
-        <img
-          src={product.imageUrl || defaultImage}
-          alt={isRtl && product.nameAr ? product.nameAr : product.name}
-          className="w-full h-full object-cover transition-transform hover:scale-105"
-        />
-      </div>
-      <div className="p-3">
-        <h3
-          className="font-medium text-sm line-clamp-2 mb-1"
-          style={{ color: styles.textPrimary }}
-        >
-          {isRtl && product.nameAr ? product.nameAr : product.name}
-        </h3>
-        <div className="flex items-center justify-between">
-          <div className="font-bold" style={{ color: styles.info }}>
-            {product.currency} {product.price.toLocaleString()}
+      {/* Products Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {products.map((product) => (
+          <div
+            key={product.id}
+            onClick={() => onNavigateToProduct?.(product.id)}
+            className="rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md group"
+            style={{
+              backgroundColor: styles.bgSecondary as string,
+              border: `1px solid ${styles.border}`,
+            }}
+          >
+            {/* Product Image */}
+            <div className="aspect-[4/3] overflow-hidden relative">
+              <img
+                src={product.imageUrl || defaultImage}
+                alt={isRtl && product.nameAr ? product.nameAr : product.name}
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+              />
+              {/* Visibility Badge */}
+              {product.status === 'rfq_only' && (
+                <span
+                  className="absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: '#f59e0b',
+                    color: '#fff',
+                  }}
+                >
+                  RFQ Only
+                </span>
+              )}
+            </div>
+            {/* Product Info */}
+            <div className="p-3">
+              <h3
+                className="font-medium text-sm line-clamp-2 mb-2"
+                style={{ color: styles.textPrimary as string }}
+              >
+                {isRtl && product.nameAr ? product.nameAr : product.name}
+              </h3>
+              <div className="flex items-center justify-between">
+                <div className="font-bold" style={{ color: styles.info as string }}>
+                  {product.currency} {product.price.toLocaleString()}
+                </div>
+                <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                  MOQ: {product.moq}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-xs" style={{ color: styles.textMuted }}>
-            MOQ: {product.moq}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
 };
 
 // =============================================================================
-// Product List Item (List View)
+// Buyer Actions
 // =============================================================================
-interface ProductListItemProps {
-  product: SellerProduct;
-  onClick?: () => void;
-  styles: any;
-  t: (key: string) => string;
-  isRtl: boolean;
-}
-
-const ProductListItem: React.FC<ProductListItemProps> = ({ product, onClick, styles, t, isRtl }) => {
-  const defaultImage = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=100&h=100&fit=crop';
-
-  return (
-    <div
-      onClick={onClick}
-      className="flex items-center gap-4 p-3 rounded-lg cursor-pointer transition-colors"
-      style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.border}` }}
-    >
-      <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-        <img
-          src={product.imageUrl || defaultImage}
-          alt={isRtl && product.nameAr ? product.nameAr : product.name}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3
-          className="font-medium line-clamp-1 mb-1"
-          style={{ color: styles.textPrimary }}
-        >
-          {isRtl && product.nameAr ? product.nameAr : product.name}
-        </h3>
-        <div className="flex items-center gap-4 text-sm" style={{ color: styles.textMuted }}>
-          <span>MOQ: {product.moq}</span>
-          <span>{product.stock > 0 ? `${t('common.inStock') || 'In Stock'}` : t('common.outOfStock') || 'Out of Stock'}</span>
-          {product.leadTime && <span>{product.leadTime}</span>}
-        </div>
-      </div>
-      <div className="text-right flex-shrink-0">
-        <div className="font-bold text-lg" style={{ color: styles.info }}>
-          {product.currency} {product.price.toLocaleString()}
-        </div>
-        <div className="text-xs" style={{ color: styles.textMuted }}>
-          / {product.unit}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// RFQ Modal
-// =============================================================================
-interface RFQModalProps {
+interface BuyerActionsProps {
   seller: PublicSellerProfile;
-  styles: any;
+  isSaved: boolean;
+  onRequestRFQ: () => void;
+  onContactSeller: () => void;
+  onSaveSeller: () => void;
+  styles: Record<string, unknown>;
   t: (key: string) => string;
-  isRtl: boolean;
-  onClose: () => void;
 }
 
-const RFQModal: React.FC<RFQModalProps> = ({ seller, styles, t, isRtl, onClose }) => {
-  const [formData, setFormData] = useState({
-    productName: '',
-    quantity: '',
-    description: '',
-    deliveryDate: '',
-  });
+const BuyerActions: React.FC<BuyerActionsProps> = ({
+  seller,
+  isSaved,
+  onRequestRFQ,
+  onContactSeller,
+  onSaveSeller,
+  styles,
+  t,
+}) => {
+  return (
+    <div
+      className="rounded-xl p-6"
+      style={{
+        backgroundColor: styles.bgCard as string,
+        border: `1px solid ${styles.border}`,
+      }}
+    >
+      <h2
+        className="text-lg font-semibold mb-4"
+        style={{
+          color: styles.textPrimary as string,
+          fontFamily: styles.fontHeading as string,
+        }}
+      >
+        {t('seller.public.getInTouch') || 'Get in Touch'}
+      </h2>
 
-  const handleSubmit = (e: React.FormEvent) => {
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Request RFQ - Primary */}
+        <button
+          onClick={onRequestRFQ}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all hover:opacity-90"
+          style={{ backgroundColor: styles.info as string, color: '#fff' }}
+        >
+          <FileText size={20} weight="fill" />
+          <span>{t('seller.public.requestRFQ') || 'Request RFQ'}</span>
+        </button>
+
+        {/* Contact Seller */}
+        <button
+          onClick={onContactSeller}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all"
+          style={{
+            backgroundColor: styles.bgSecondary as string,
+            color: styles.textPrimary as string,
+            border: `1px solid ${styles.border}`,
+          }}
+        >
+          <EnvelopeSimple size={20} />
+          <span>{t('seller.public.contactSeller') || 'Contact Seller'}</span>
+        </button>
+
+        {/* Save Seller */}
+        <button
+          onClick={onSaveSeller}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all"
+          style={{
+            backgroundColor: isSaved ? '#ef444415' : styles.bgSecondary as string,
+            color: isSaved ? '#ef4444' : styles.textPrimary as string,
+            border: `1px solid ${isSaved ? '#ef444440' : styles.border}`,
+          }}
+        >
+          <Heart size={20} weight={isSaved ? 'fill' : 'regular'} />
+          <span>{isSaved ? (t('seller.public.saved') || 'Saved') : (t('seller.public.saveSeller') || 'Save Seller')}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
+// Contact Seller Modal
+// =============================================================================
+interface ContactSellerModalProps {
+  seller: PublicSellerProfile;
+  onClose: () => void;
+  styles: Record<string, unknown>;
+  t: (key: string) => string;
+  isRtl: boolean;
+}
+
+const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
+  seller,
+  onClose,
+  styles,
+  t,
+  isRtl,
+}) => {
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit RFQ
-    console.log('RFQ submitted:', formData);
-    onClose();
+    if (!message.trim()) return;
+
+    setSending(true);
+    try {
+      await publicSellerService.contactSeller(seller.id, message);
+      setSent(true);
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      setSending(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-lg rounded-xl shadow-xl"
-        style={{ backgroundColor: styles.bgCard }}
+        className="relative w-full max-w-md rounded-xl shadow-xl"
+        style={{ backgroundColor: styles.bgCard as string }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
+          style={{ borderColor: styles.border as string }}
         >
           <h3
             className="text-lg font-semibold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+            style={{
+              color: styles.textPrimary as string,
+              fontFamily: styles.fontHeading as string,
+            }}
           >
-            {t('seller.public.sendRFQTo') || 'Send RFQ to'} {seller.displayName}
+            {t('seller.public.contactTitle') || 'Contact'} {seller.displayName}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: styles.textMuted }}
+            className="p-2 rounded-lg transition-colors hover:bg-gray-100"
+            style={{ color: styles.textMuted as string }}
           >
-            <X size={20} />
+            ×
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textSecondary }}>
-              {t('seller.public.productName') || 'Product / Item Name'}
-            </label>
-            <input
-              type="text"
-              value={formData.productName}
-              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-              required
-              className="w-full px-3 py-2 rounded-lg text-sm"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                border: `1px solid ${styles.border}`,
-                color: styles.textPrimary,
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textSecondary }}>
-              {t('seller.public.quantity') || 'Quantity Required'}
-            </label>
-            <input
-              type="text"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              required
-              className="w-full px-3 py-2 rounded-lg text-sm"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                border: `1px solid ${styles.border}`,
-                color: styles.textPrimary,
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textSecondary }}>
-              {t('seller.public.deliveryDate') || 'Expected Delivery Date'}
-            </label>
-            <input
-              type="date"
-              value={formData.deliveryDate}
-              onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                border: `1px solid ${styles.border}`,
-                color: styles.textPrimary,
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textSecondary }}>
-              {t('seller.public.additionalDetails') || 'Additional Details'}
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={4}
-              className="w-full px-3 py-2 rounded-lg text-sm resize-none"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                border: `1px solid ${styles.border}`,
-                color: styles.textPrimary,
-              }}
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"
-              style={{
-                backgroundColor: styles.bgSecondary,
-                color: styles.textSecondary,
-                border: `1px solid ${styles.border}`,
-              }}
+        {/* Content */}
+        {sent ? (
+          <div className="p-8 text-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: '#22c55e15' }}
             >
-              {t('common.cancel') || 'Cancel'}
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"
-              style={{ backgroundColor: styles.info, color: '#fff' }}
+              <CheckCircle size={32} weight="fill" style={{ color: '#22c55e' }} />
+            </div>
+            <h4
+              className="font-semibold mb-2"
+              style={{ color: styles.textPrimary as string }}
             >
-              {t('seller.public.submitRFQ') || 'Submit RFQ'}
-            </button>
+              {t('seller.public.messageSent') || 'Message Sent!'}
+            </h4>
+            <p className="text-sm" style={{ color: styles.textSecondary as string }}>
+              {t('seller.public.messageSentDesc') || 'The seller will respond to your inquiry soon.'}
+            </p>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-4">
+            <div className="mb-4">
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: styles.textSecondary as string }}
+              >
+                {t('seller.public.yourMessage') || 'Your Message'}
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t('seller.public.messagePlaceholder') || 'Hi, I have a question about your products...'}
+                rows={5}
+                className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                style={{
+                  backgroundColor: styles.bgSecondary as string,
+                  border: `1px solid ${styles.border}`,
+                  color: styles.textPrimary as string,
+                }}
+                required
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"
+                style={{
+                  backgroundColor: styles.bgSecondary as string,
+                  color: styles.textSecondary as string,
+                  border: `1px solid ${styles.border}`,
+                }}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </button>
+              <button
+                type="submit"
+                disabled={sending || !message.trim()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                style={{ backgroundColor: styles.info as string, color: '#fff' }}
+              >
+                {sending ? (
+                  <SpinnerGap size={18} className="animate-spin" />
+                ) : (
+                  <EnvelopeSimple size={18} />
+                )}
+                <span>{t('seller.public.sendMessage') || 'Send Message'}</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

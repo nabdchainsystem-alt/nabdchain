@@ -1,5 +1,5 @@
 // =============================================================================
-// Seller Automation Page - Stage 8: Automation, Payouts & Scale
+// Seller Automation Page - Simplified & Human-Friendly
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -8,44 +8,27 @@ import { automationService } from '../../services/automationService';
 import {
   Lightning,
   Plus,
-  Eye,
   Trash,
-  CheckCircle,
-  XCircle,
-  Clock,
-  CaretRight,
-  Funnel,
-  X,
   Play,
   Pause,
-  Spinner,
-  MagicWand,
-  ListChecks,
-  Package,
+  X,
+  ArrowRight,
   ChatDots,
   ShoppingCart,
-  Warning,
-  DotsThreeVertical,
-  CaretDown,
-  CaretUp,
-  MagnifyingGlass,
+  Package,
+  ListChecks,
+  MagicWand,
+  Clock,
+  CaretRight,
 } from 'phosphor-react';
-import { Button, EmptyState, Select } from '../../components';
+import { Button, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import {
   AutomationRule,
-  AutomationExecution,
   RuleTemplate,
-  CreateRuleInput,
-  RuleFilters,
-  ExecutionStats,
   RuleType,
-  TriggerType,
-  ActionType,
-  RULE_TYPE_LABELS,
   TRIGGER_TYPE_LABELS,
   ACTION_TYPE_LABELS,
-  ACTION_RESULT_COLORS,
 } from '../../types/automation.types';
 
 interface SellerAutomationProps {
@@ -81,6 +64,56 @@ const getRuleTypeIcon = (type: RuleType) => {
   }
 };
 
+// Human-friendly trigger descriptions
+const getTriggerDescription = (triggerType: string): string => {
+  const descriptions: Record<string, string> = {
+    rfq_received: 'When you receive an RFQ',
+    order_delayed: 'When an order is delayed',
+    stock_low: 'When stock runs low',
+    sla_warning: 'When SLA deadline approaches',
+    dispute_opened: 'When a dispute is opened',
+    order_status_change: 'When order status changes',
+  };
+  return descriptions[triggerType] || TRIGGER_TYPE_LABELS[triggerType as keyof typeof TRIGGER_TYPE_LABELS] || triggerType;
+};
+
+// Human-friendly action descriptions
+const getActionDescription = (actionType: string): string => {
+  const descriptions: Record<string, string> = {
+    auto_ignore: 'Automatically ignore it',
+    auto_flag: 'Flag it for review',
+    auto_remind: 'Send a reminder',
+    auto_respond: 'Send automatic response',
+    auto_prioritize: 'Mark as priority',
+    auto_hide: 'Hide from listings',
+    auto_notify: 'Send notification',
+    auto_escalate: 'Escalate immediately',
+  };
+  return descriptions[actionType] || ACTION_TYPE_LABELS[actionType as keyof typeof ACTION_TYPE_LABELS] || actionType;
+};
+
+// Example automations for empty state
+const exampleAutomations = [
+  {
+    title: 'Flag low-margin RFQs',
+    trigger: 'When you receive an RFQ',
+    action: 'Flag it for review',
+    description: 'Never miss RFQs that need your attention',
+  },
+  {
+    title: 'Alert on delayed orders',
+    trigger: 'When an order is delayed',
+    action: 'Send notification',
+    description: 'Stay on top of delivery issues',
+  },
+  {
+    title: 'Low stock warning',
+    trigger: 'When stock runs low',
+    action: 'Send a reminder',
+    description: 'Keep inventory well-stocked',
+  },
+];
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -92,16 +125,8 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
 
   const [loading, setLoading] = useState(true);
   const [rules, setRules] = useState<AutomationRule[]>([]);
-  const [executions, setExecutions] = useState<AutomationExecution[]>([]);
-  const [stats, setStats] = useState<ExecutionStats | null>(null);
   const [templates, setTemplates] = useState<RuleTemplate[]>([]);
-  const [selectedRule, setSelectedRule] = useState<AutomationRule | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [activeTab, setActiveTab] = useState<'rules' | 'history'>('rules');
-  const [filters, setFilters] = useState<RuleFilters>({});
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -110,23 +135,19 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
       const token = await getToken();
       if (!token) return;
 
-      const [rulesRes, executionsRes, statsRes, templatesRes] = await Promise.all([
-        automationService.getRules(token, filters),
-        automationService.getExecutions(token, { limit: 10 }),
-        automationService.getExecutionStats(token, 'week'),
+      const [rulesRes, templatesRes] = await Promise.all([
+        automationService.getRules(token, {}),
         automationService.getTemplates(token),
       ]);
 
       setRules(rulesRes.rules);
-      setExecutions(executionsRes.executions);
-      setStats(statsRes);
       setTemplates(templatesRes);
     } catch (error) {
       console.error('Failed to fetch automation data:', error);
     } finally {
       setLoading(false);
     }
-  }, [getToken, filters]);
+  }, [getToken]);
 
   useEffect(() => {
     fetchData();
@@ -147,7 +168,7 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
 
   // Delete rule handler
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
+    if (!confirm('Delete this automation rule?')) return;
 
     try {
       const token = await getToken();
@@ -174,400 +195,129 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
     }
   };
 
-  // Filtered rules
-  const filteredRules = rules.filter(rule => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!rule.name.toLowerCase().includes(q)) return false;
-    }
-    if (filters.ruleType && rule.ruleType !== filters.ruleType) return false;
-    if (filters.isEnabled !== undefined && rule.isEnabled !== filters.isEnabled) return false;
-    return true;
-  });
+  const activeRulesCount = rules.filter(r => r.isEnabled).length;
 
-  // Check if any filters are active
-  const hasActiveFilters = searchQuery || filters.ruleType || filters.isEnabled !== undefined;
-
-  const clearAllFilters = () => {
-    setSearchQuery('');
-    setFilters({});
-  };
-
-  // Quick stats
-  const quickStats = stats ? {
-    activeRules: rules.filter(r => r.isEnabled).length,
-    totalRules: rules.length,
-    executionsThisWeek: stats.total,
-    successRate: stats.successRate,
-    failed: stats.failed,
-  } : null;
-
+  // Loading state
   if (loading && rules.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="w-8 h-8 animate-spin" style={{ color: styles.info }} />
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
+        <div className="max-w-3xl mx-auto px-6 py-8">
+          <div className="shimmer h-8 w-40 rounded mb-2" />
+          <div className="shimmer h-5 w-64 rounded mb-8" />
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="p-5 rounded-xl border"
+                style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+              >
+                <div className="shimmer h-5 w-48 rounded mb-3" style={{ animationDelay: `${i * 50}ms` }} />
+                <div className="shimmer h-4 w-64 rounded" style={{ animationDelay: `${i * 50 + 25}ms` }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
-      <div className="px-6 py-6">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold" style={{ color: styles.textPrimary }}>
-              Automation
-            </h1>
-            <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
-              Set up rules to automate repetitive tasks
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowTemplates(true)} variant="outline" size="sm">
-              <MagicWand size={16} className={isRtl ? 'ml-2' : 'mr-2'} />
-              Templates
-            </Button>
-            <Button onClick={() => setShowCreateModal(true)} size="sm">
-              <Plus size={16} className={isRtl ? 'ml-2' : 'mr-2'} />
-              Create Rule
-            </Button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: styles.textPrimary }}>
+            Automation
+          </h1>
+          <p className="text-base" style={{ color: styles.textMuted }}>
+            Let repetitive tasks handle themselves. Create rules to save time.
+          </p>
         </div>
 
-        {/* Quick Stats */}
-        {quickStats && (
-          <div className={`flex items-center gap-6 mb-6 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
-            <QuickStat
-              label="Active Rules"
-              value={quickStats.activeRules}
-              total={quickStats.totalRules}
-              color={styles.info}
-              styles={styles}
-            />
-            <QuickStat
-              label="Executions (Week)"
-              value={quickStats.executionsThisWeek}
-              color="#8B5CF6"
-              styles={styles}
-            />
-            <QuickStat
-              label="Success Rate"
-              value={`${quickStats.successRate.toFixed(1)}%`}
-              color={styles.success}
-              styles={styles}
-            />
-            {quickStats.failed > 0 && (
-              <QuickStat
-                label="Failed"
-                value={quickStats.failed}
-                color={styles.error}
-                styles={styles}
-                warning
-              />
-            )}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="flex items-center gap-4 mb-4 border-b" style={{ borderColor: styles.border }}>
-          <button
-            onClick={() => setActiveTab('rules')}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'rules' ? '' : 'border-transparent'
-            }`}
-            style={{
-              borderColor: activeTab === 'rules' ? styles.info : 'transparent',
-              color: activeTab === 'rules' ? styles.info : styles.textMuted,
-            }}
-          >
-            Rules ({rules.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'history' ? '' : 'border-transparent'
-            }`}
-            style={{
-              borderColor: activeTab === 'history' ? styles.info : 'transparent',
-              color: activeTab === 'history' ? styles.info : styles.textMuted,
-            }}
-          >
-            Execution History
-          </button>
-        </div>
-
-        {/* Rules Tab */}
-        {activeTab === 'rules' && (
-          <div className="space-y-4">
-            {/* Filter Bar */}
-            <div
-              className="rounded-xl border"
-              style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-            >
-              {/* Filter Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
-                <button
-                  onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className="flex items-center gap-2 text-sm font-medium"
-                  style={{ color: styles.textPrimary }}
-                >
-                  <Funnel size={16} />
-                  Filters
-                  <CaretRight
-                    size={14}
-                    className={`transition-transform ${filtersExpanded ? 'rotate-90' : ''}`}
-                    style={{ color: styles.textMuted }}
-                  />
-                  {hasActiveFilters && (
-                    <span
-                      className="px-1.5 py-0.5 rounded text-xs"
-                      style={{ backgroundColor: styles.info, color: '#fff' }}
-                    >
-                      Active
-                    </span>
-                  )}
-                </button>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors"
-                    style={{ color: styles.textMuted }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <X size={12} />
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              {/* Filter Controls */}
-              {filtersExpanded && (
-                <div className="px-4 py-3 flex flex-wrap items-center gap-3">
-                  {/* Search */}
-                  <div
-                    className="flex items-center gap-2 px-3 h-9 rounded-lg border flex-1 min-w-[200px] max-w-[300px]"
-                    style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary }}
-                  >
-                    <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
-                    <input
-                      type="text"
-                      placeholder="Search rules..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="outline-none text-sm bg-transparent flex-1"
-                      style={{ color: styles.textPrimary }}
-                    />
-                    {searchQuery && (
-                      <button onClick={() => setSearchQuery('')} style={{ color: styles.textMuted }}>
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Rule Type */}
-                  <Select
-                    value={filters.ruleType || 'all'}
-                    onChange={(v) => setFilters({ ...filters, ruleType: v === 'all' ? undefined : v as RuleType })}
-                    options={[
-                      { value: 'all', label: 'All Types' },
-                      ...Object.entries(RULE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
-                    ]}
-                  />
-
-                  {/* Status */}
-                  <Select
-                    value={filters.isEnabled === undefined ? 'all' : String(filters.isEnabled)}
-                    onChange={(v) => setFilters({
-                      ...filters,
-                      isEnabled: v === 'all' ? undefined : v === 'true'
-                    })}
-                    options={[
-                      { value: 'all', label: 'All Status' },
-                      { value: 'true', label: 'Enabled' },
-                      { value: 'false', label: 'Disabled' },
-                    ]}
-                  />
-                </div>
-              )}
+        {/* Rules exist - show list */}
+        {rules.length > 0 ? (
+          <div className="space-y-6">
+            {/* Simple status line */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm" style={{ color: styles.textMuted }}>
+                {activeRulesCount} of {rules.length} rule{rules.length !== 1 ? 's' : ''} active
+              </p>
+              <Button onClick={() => setShowTemplates(true)} size="sm">
+                <Plus size={16} className={isRtl ? 'ml-2' : 'mr-2'} />
+                Add Rule
+              </Button>
             </div>
 
-            {/* Rules List */}
-            {filteredRules.length === 0 ? (
-              <div
-                className="rounded-lg border p-12"
-                style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-              >
-                <EmptyState
-                  icon={Lightning}
-                  title="No automation rules"
-                  description="Create your first automation rule to streamline your workflow."
-                  action={
-                    <Button onClick={() => setShowTemplates(true)}>
-                      Browse Templates
-                    </Button>
-                  }
+            {/* Rules list */}
+            <div className="space-y-3">
+              {rules.map((rule) => (
+                <SimpleRuleCard
+                  key={rule.id}
+                  rule={rule}
+                  styles={styles}
+                  isRtl={isRtl}
+                  onToggle={() => handleToggleRule(rule)}
+                  onDelete={() => handleDeleteRule(rule.id)}
                 />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredRules.map((rule) => (
-                  <RuleCard
-                    key={rule.id}
-                    rule={rule}
-                    styles={styles}
-                    isRtl={isRtl}
-                    onToggle={() => handleToggleRule(rule)}
-                    onView={() => setSelectedRule(rule)}
-                    onDelete={() => handleDeleteRule(rule.id)}
-                  />
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        )}
-
-        {/* History Tab */}
-        {activeTab === 'history' && (
+        ) : (
+          /* Empty state with examples */
           <div
-            className="rounded-xl border overflow-hidden"
+            className="rounded-2xl border p-8"
             style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
           >
-            <table className="w-full">
-              <thead style={{ backgroundColor: styles.bgSecondary }}>
-                <tr>
-                  <th
-                    className="px-4 py-3 text-xs font-semibold uppercase"
-                    style={{ color: styles.textMuted, textAlign: isRtl ? 'right' : 'left' }}
-                  >
-                    Rule
-                  </th>
-                  <th
-                    className="px-4 py-3 text-xs font-semibold uppercase"
-                    style={{ color: styles.textMuted, textAlign: isRtl ? 'right' : 'left' }}
-                  >
-                    Entity
-                  </th>
-                  <th
-                    className="px-4 py-3 text-xs font-semibold uppercase"
-                    style={{ color: styles.textMuted, textAlign: isRtl ? 'right' : 'left' }}
-                  >
-                    Action
-                  </th>
-                  <th
-                    className="px-4 py-3 text-xs font-semibold uppercase"
-                    style={{ color: styles.textMuted, textAlign: isRtl ? 'right' : 'left' }}
-                  >
-                    Result
-                  </th>
-                  <th
-                    className="px-4 py-3 text-xs font-semibold uppercase"
-                    style={{ color: styles.textMuted, textAlign: isRtl ? 'right' : 'left' }}
-                  >
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {executions.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12">
-                      <EmptyState
-                        icon={Clock}
-                        title="No execution history"
-                        description="Rule executions will appear here as they run."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  executions.map((execution, idx) => (
-                    <tr
-                      key={execution.id}
-                      style={{
-                        borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
-                      }}
-                      className="transition-colors"
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
-                            {execution.rule?.name || 'Unknown Rule'}
-                          </p>
-                          <p className="text-xs" style={{ color: styles.textMuted }}>
-                            {execution.rule?.ruleType && RULE_TYPE_LABELS[execution.rule.ruleType]}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="text-sm capitalize" style={{ color: styles.textPrimary }}>
-                            {execution.entityType}
-                          </p>
-                          {execution.entityNumber && (
-                            <p className="text-xs font-mono" style={{ color: styles.textMuted }}>
-                              {execution.entityNumber}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="text-sm" style={{ color: styles.textPrimary }}>
-                          {execution.actionTaken}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${ACTION_RESULT_COLORS[execution.actionResult]}`}>
-                          {execution.actionResult}
-                        </span>
-                        {execution.errorMessage && (
-                          <p className="text-xs mt-1 truncate max-w-[200px]" style={{ color: styles.error }}>
-                            {execution.errorMessage}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm" style={{ color: styles.textMuted }}>
-                        {formatRelativeTime(execution.executedAt)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <div className="text-center mb-8">
+              <div
+                className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+                style={{ backgroundColor: `${styles.info}10` }}
+              >
+                <MagicWand size={28} style={{ color: styles.info }} />
+              </div>
+              <h2 className="text-xl font-semibold mb-2" style={{ color: styles.textPrimary }}>
+                Automate your workflow
+              </h2>
+              <p className="text-base max-w-md mx-auto" style={{ color: styles.textMuted }}>
+                Set up simple rules to handle routine tasks automatically.
+                Here are some ideas to get you started:
+              </p>
+            </div>
+
+            {/* Example automations */}
+            <div className="space-y-3 mb-8">
+              {exampleAutomations.map((example, idx) => (
+                <ExampleCard
+                  key={idx}
+                  example={example}
+                  styles={styles}
+                  isRtl={isRtl}
+                />
+              ))}
+            </div>
+
+            {/* Action */}
+            <div className="text-center">
+              <Button onClick={() => setShowTemplates(true)} size="md">
+                <Plus size={18} className={isRtl ? 'ml-2' : 'mr-2'} />
+                Create Your First Rule
+              </Button>
+              <p className="text-xs mt-3" style={{ color: styles.textMuted }}>
+                Don't worry — you can always edit or turn off rules later
+              </p>
+            </div>
           </div>
         )}
       </div>
 
       {/* Templates Modal */}
       {showTemplates && (
-        <TemplatesModal
+        <SimpleTemplatesModal
           templates={templates}
           styles={styles}
+          isRtl={isRtl}
           onClose={() => setShowTemplates(false)}
           onSelect={handleCreateFromTemplate}
-        />
-      )}
-
-      {/* Rule Details Modal */}
-      {selectedRule && (
-        <RuleDetailsModal
-          rule={selectedRule}
-          styles={styles}
-          onClose={() => setSelectedRule(null)}
-        />
-      )}
-
-      {/* Create Rule Modal */}
-      {showCreateModal && (
-        <CreateRuleModal
-          styles={styles}
-          onClose={() => setShowCreateModal(false)}
-          onCreated={() => {
-            setShowCreateModal(false);
-            fetchData();
-          }}
         />
       )}
     </div>
@@ -575,138 +325,95 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
 };
 
 // =============================================================================
-// Quick Stat Component
+// Simple Rule Card
 // =============================================================================
 
-const QuickStat: React.FC<{
-  label: string;
-  value: number | string;
-  total?: number;
-  color?: string;
-  styles: ReturnType<typeof usePortal>['styles'];
-  warning?: boolean;
-}> = ({ label, value, total, color, styles, warning }) => (
-  <div className="flex items-center gap-2">
-    <span className="text-sm" style={{ color: styles.textMuted }}>{label}:</span>
-    <span
-      className={`text-sm font-semibold ${warning ? 'flex items-center gap-1' : ''}`}
-      style={{ color: color || styles.textPrimary }}
-    >
-      {warning && <Warning size={12} />}
-      {value}
-      {total !== undefined && (
-        <span className="font-normal" style={{ color: styles.textMuted }}> / {total}</span>
-      )}
-    </span>
-  </div>
-);
-
-// =============================================================================
-// Rule Card Component
-// =============================================================================
-
-const RuleCard: React.FC<{
+const SimpleRuleCard: React.FC<{
   rule: AutomationRule;
   styles: ReturnType<typeof usePortal>['styles'];
   isRtl: boolean;
   onToggle: () => void;
-  onView: () => void;
   onDelete: () => void;
-}> = ({ rule, styles, isRtl, onToggle, onView, onDelete }) => {
+}> = ({ rule, styles, isRtl, onToggle, onDelete }) => {
   const Icon = getRuleTypeIcon(rule.ruleType);
-  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <div
-      className={`rounded-lg border p-4 transition-colors ${rule.isEnabled ? '' : 'opacity-60'}`}
+      className={`rounded-xl border p-5 transition-all ${rule.isEnabled ? '' : 'opacity-60'}`}
       style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Icon */}
           <div
-            className="p-2 rounded-lg"
+            className="shrink-0 p-2.5 rounded-xl"
             style={{
-              backgroundColor: rule.isEnabled ? `${styles.info}15` : styles.bgSecondary,
+              backgroundColor: rule.isEnabled ? `${styles.info}10` : styles.bgSecondary,
               color: rule.isEnabled ? styles.info : styles.textMuted,
             }}
           >
-            <Icon className="w-5 h-5" />
+            <Icon size={20} />
           </div>
-          <div>
-            <h3 className="font-medium" style={{ color: styles.textPrimary }}>{rule.name}</h3>
-            <p className="text-sm" style={{ color: styles.textMuted }}>
-              {TRIGGER_TYPE_LABELS[rule.triggerType]} → {ACTION_TYPE_LABELS[rule.actionType]}
-            </p>
-            {rule.description && (
-              <p className="text-xs mt-1" style={{ color: styles.textMuted }}>{rule.description}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className={`text-${isRtl ? 'left' : 'right'}`}>
-            <p className="text-sm" style={{ color: styles.textMuted }}>
-              {rule.triggerCount} executions
-            </p>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium mb-1 truncate" style={{ color: styles.textPrimary }}>
+              {rule.name}
+            </h3>
+
+            {/* Trigger → Action flow */}
+            <div className={`flex items-center gap-2 text-sm flex-wrap ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <span style={{ color: styles.textMuted }}>
+                {getTriggerDescription(rule.triggerType)}
+              </span>
+              <ArrowRight size={14} style={{ color: styles.textMuted }} className="shrink-0" />
+              <span style={{ color: styles.textSecondary }}>
+                {getActionDescription(rule.actionType)}
+              </span>
+            </div>
+
+            {/* Last run info */}
             {rule.lastTriggeredAt && (
-              <p className="text-xs" style={{ color: styles.textMuted }}>
-                Last: {formatRelativeTime(rule.lastTriggeredAt)}
+              <p className="text-xs mt-2 flex items-center gap-1" style={{ color: styles.textMuted }}>
+                <Clock size={12} />
+                Last ran {formatRelativeTime(rule.lastTriggeredAt)}
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {/* Toggle Button */}
-            <button
-              onClick={onToggle}
-              className="p-2 rounded-lg transition-colors"
-              style={{
-                backgroundColor: rule.isEnabled ? `${styles.success}15` : styles.bgSecondary,
-                color: rule.isEnabled ? styles.success : styles.textMuted,
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-              title={rule.isEnabled ? 'Disable' : 'Enable'}
-            >
-              {rule.isEnabled ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-            </button>
+        </div>
 
-            {/* More Actions */}
-            <div className="relative">
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-2 rounded-lg transition-colors"
-                style={{ color: styles.textMuted }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <DotsThreeVertical className="w-4 h-4" weight="bold" />
-              </button>
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Toggle */}
+          <button
+            onClick={onToggle}
+            className="p-2 rounded-lg transition-colors"
+            style={{
+              backgroundColor: rule.isEnabled ? `${styles.success}15` : styles.bgSecondary,
+              color: rule.isEnabled ? styles.success : styles.textMuted,
+            }}
+            title={rule.isEnabled ? 'Turn off' : 'Turn on'}
+          >
+            {rule.isEnabled ? <Play size={16} weight="fill" /> : <Pause size={16} />}
+          </button>
 
-              {showMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div
-                    className={`absolute top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[140px] ${isRtl ? 'left-0' : 'right-0'}`}
-                    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
-                  >
-                    <MenuButton
-                      icon={Eye}
-                      label="View Details"
-                      styles={styles}
-                      onClick={() => { onView(); setShowMenu(false); }}
-                    />
-                    <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
-                    <MenuButton
-                      icon={Trash}
-                      label="Delete"
-                      styles={styles}
-                      onClick={() => { onDelete(); setShowMenu(false); }}
-                      danger
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          {/* Delete */}
+          <button
+            onClick={onDelete}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: styles.textMuted }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${styles.error}15`;
+              e.currentTarget.style.color = styles.error;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = styles.textMuted;
+            }}
+            title="Delete"
+          >
+            <Trash size={16} />
+          </button>
         </div>
       </div>
     </div>
@@ -714,42 +421,48 @@ const RuleCard: React.FC<{
 };
 
 // =============================================================================
-// Menu Button Component
+// Example Card (for empty state)
 // =============================================================================
 
-const MenuButton: React.FC<{
-  icon: React.ElementType;
-  label: string;
+const ExampleCard: React.FC<{
+  example: { title: string; trigger: string; action: string; description: string };
   styles: ReturnType<typeof usePortal>['styles'];
-  onClick: () => void;
-  danger?: boolean;
-}> = ({ icon: Icon, label, styles, onClick, danger }) => (
-  <button
-    onClick={onClick}
-    className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors"
-    style={{ color: danger ? styles.error : styles.textPrimary }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+  isRtl: boolean;
+}> = ({ example, styles, isRtl }) => (
+  <div
+    className="rounded-lg p-4 border"
+    style={{ backgroundColor: styles.bgPrimary, borderColor: styles.border }}
   >
-    <Icon size={14} />
-    {label}
-  </button>
+    <div className="flex items-center justify-between mb-2">
+      <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+        {example.title}
+      </span>
+    </div>
+    <div className={`flex items-center gap-2 text-sm ${isRtl ? 'flex-row-reverse' : ''}`}>
+      <span style={{ color: styles.textMuted }}>{example.trigger}</span>
+      <ArrowRight size={14} style={{ color: styles.textMuted }} />
+      <span style={{ color: styles.textSecondary }}>{example.action}</span>
+    </div>
+    <p className="text-xs mt-2" style={{ color: styles.textMuted }}>
+      {example.description}
+    </p>
+  </div>
 );
 
 // =============================================================================
-// Templates Modal
+// Simple Templates Modal
 // =============================================================================
 
-interface TemplatesModalProps {
+const SimpleTemplatesModal: React.FC<{
   templates: RuleTemplate[];
   styles: ReturnType<typeof usePortal>['styles'];
+  isRtl: boolean;
   onClose: () => void;
   onSelect: (templateId: string) => void;
-}
-
-const TemplatesModal: React.FC<TemplatesModalProps> = ({ templates, styles, onClose, onSelect }) => {
+}> = ({ templates, styles, isRtl, onClose, onSelect }) => {
+  // Group templates by category
   const groupedTemplates = templates.reduce((acc, template) => {
-    const category = template.category || 'Other';
+    const category = template.category || 'General';
     if (!acc[category]) acc[category] = [];
     acc[category].push(template);
     return acc;
@@ -759,16 +472,22 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ templates, styles, onCl
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-2xl"
+        className="relative w-full max-w-lg max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl"
         style={{ backgroundColor: styles.bgCard }}
       >
+        {/* Header */}
         <div
-          className="flex items-center justify-between p-4 border-b"
+          className="flex items-center justify-between p-5 border-b"
           style={{ borderColor: styles.border }}
         >
-          <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-            Rule Templates
-          </h2>
+          <div>
+            <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+              Add a Rule
+            </h2>
+            <p className="text-sm mt-0.5" style={{ color: styles.textMuted }}>
+              Choose a template to get started quickly
+            </p>
+          </div>
           <button
             onClick={onClose}
             className="p-2 rounded-lg transition-colors"
@@ -776,317 +495,63 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ templates, styles, onCl
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            <X className="w-5 h-5" />
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        {/* Templates */}
+        <div className="p-5 space-y-6 overflow-y-auto max-h-[calc(85vh-100px)]">
           {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
             <div key={category}>
-              <h3 className="font-medium mb-3" style={{ color: styles.textPrimary }}>{category}</h3>
-              <div className="grid gap-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: styles.textMuted }}>
+                {category}
+              </h3>
+              <div className="space-y-2">
                 {categoryTemplates.map((template) => (
-                  <div
+                  <button
                     key={template.id}
-                    className="border rounded-lg p-4 cursor-pointer transition-colors"
-                    style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary }}
                     onClick={() => onSelect(template.id)}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = styles.info)}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = styles.border)}
+                    className="w-full text-left rounded-xl border p-4 transition-all"
+                    style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = styles.info;
+                      e.currentTarget.style.backgroundColor = `${styles.info}05`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = styles.border;
+                      e.currentTarget.style.backgroundColor = styles.bgPrimary;
+                    }}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium" style={{ color: styles.textPrimary }}>{template.name}</h4>
-                        <p className="text-sm" style={{ color: styles.textMuted }}>{template.description}</p>
-                        <p className="text-xs mt-2" style={{ color: styles.textMuted }}>
-                          {TRIGGER_TYPE_LABELS[template.triggerType]} → {ACTION_TYPE_LABELS[template.actionType]}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium mb-1" style={{ color: styles.textPrimary }}>
+                          {template.name}
+                        </h4>
+                        <div className={`flex items-center gap-2 text-sm ${isRtl ? 'flex-row-reverse' : ''}`}>
+                          <span style={{ color: styles.textMuted }}>
+                            {getTriggerDescription(template.triggerType)}
+                          </span>
+                          <ArrowRight size={12} style={{ color: styles.textMuted }} />
+                          <span style={{ color: styles.textSecondary }}>
+                            {getActionDescription(template.actionType)}
+                          </span>
+                        </div>
                       </div>
-                      <CaretRight className="w-5 h-5" style={{ color: styles.textMuted }} />
+                      <CaretRight size={18} style={{ color: styles.textMuted }} className="shrink-0 ml-3" />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
-// =============================================================================
-// Rule Details Modal
-// =============================================================================
-
-interface RuleDetailsModalProps {
-  rule: AutomationRule;
-  styles: ReturnType<typeof usePortal>['styles'];
-  onClose: () => void;
-}
-
-const RuleDetailsModal: React.FC<RuleDetailsModalProps> = ({ rule, styles, onClose }) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div
-        className="relative w-full max-w-lg rounded-xl shadow-2xl"
-        style={{ backgroundColor: styles.bgCard }}
-      >
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
-          <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-            Rule Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: styles.textMuted }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div>
-            <h3 className="text-xl font-bold" style={{ color: styles.textPrimary }}>{rule.name}</h3>
-            {rule.description && (
-              <p className="text-sm mt-1" style={{ color: styles.textMuted }}>{rule.description}</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className="px-2 py-1 text-xs font-medium rounded-full"
-              style={{
-                backgroundColor: rule.isEnabled ? `${styles.success}15` : styles.bgSecondary,
-                color: rule.isEnabled ? styles.success : styles.textMuted,
-              }}
-            >
-              {rule.isEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-            <span
-              className="px-2 py-1 text-xs font-medium rounded-full"
-              style={{ backgroundColor: `${styles.info}15`, color: styles.info }}
-            >
-              {RULE_TYPE_LABELS[rule.ruleType]}
-            </span>
-          </div>
-
-          <div className="rounded-lg p-4 space-y-3" style={{ backgroundColor: styles.bgSecondary }}>
-            <div>
-              <p className="text-xs uppercase" style={{ color: styles.textMuted }}>Trigger</p>
-              <p className="text-sm" style={{ color: styles.textPrimary }}>{TRIGGER_TYPE_LABELS[rule.triggerType]}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase" style={{ color: styles.textMuted }}>Conditions</p>
-              <pre className="text-xs mt-1 overflow-auto" style={{ color: styles.textSecondary }}>
-                {JSON.stringify(rule.triggerConditions, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <p className="text-xs uppercase" style={{ color: styles.textMuted }}>Action</p>
-              <p className="text-sm" style={{ color: styles.textPrimary }}>{ACTION_TYPE_LABELS[rule.actionType]}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase" style={{ color: styles.textMuted }}>Action Config</p>
-              <pre className="text-xs mt-1 overflow-auto" style={{ color: styles.textSecondary }}>
-                {JSON.stringify(rule.actionConfig, null, 2)}
-              </pre>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p style={{ color: styles.textMuted }}>Priority</p>
-              <p style={{ color: styles.textPrimary }}>{rule.priority}</p>
-            </div>
-            <div>
-              <p style={{ color: styles.textMuted }}>Executions</p>
-              <p style={{ color: styles.textPrimary }}>{rule.triggerCount}</p>
-            </div>
-            <div>
-              <p style={{ color: styles.textMuted }}>Created</p>
-              <p style={{ color: styles.textPrimary }}>{new Date(rule.createdAt).toLocaleDateString()}</p>
-            </div>
-            {rule.lastTriggeredAt && (
-              <div>
-                <p style={{ color: styles.textMuted }}>Last Triggered</p>
-                <p style={{ color: styles.textPrimary }}>{formatRelativeTime(rule.lastTriggeredAt)}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div
-          className="flex justify-end gap-2 p-4 border-t"
-          style={{ borderColor: styles.border }}
-        >
-          <Button onClick={onClose} variant="outline">
-            Close
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// Create Rule Modal
-// =============================================================================
-
-interface CreateRuleModalProps {
-  styles: ReturnType<typeof usePortal>['styles'];
-  onClose: () => void;
-  onCreated: () => void;
-}
-
-const CreateRuleModal: React.FC<CreateRuleModalProps> = ({ styles, onClose, onCreated }) => {
-  const { getToken } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [ruleType, setRuleType] = useState<RuleType>('rfq_rule');
-  const [triggerType, setTriggerType] = useState<TriggerType>('rfq_received');
-  const [actionType, setActionType] = useState<ActionType>('auto_flag');
-
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-
-    setLoading(true);
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      const input: CreateRuleInput = {
-        name,
-        description: description || undefined,
-        ruleType,
-        triggerType,
-        triggerConditions: {},
-        actionType,
-        actionConfig: { sendNotification: true },
-      };
-
-      await automationService.createRule(token, input);
-      onCreated();
-    } catch (error) {
-      console.error('Failed to create rule:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div
-        className="relative w-full max-w-md rounded-xl shadow-2xl"
-        style={{ backgroundColor: styles.bgCard }}
-      >
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
-          <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-            Create Rule
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: styles.textMuted }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
-              Name *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Flag High-Value RFQs"
-              className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
-              style={{
-                borderColor: styles.border,
-                backgroundColor: styles.bgPrimary,
-                color: styles.textPrimary,
-              }}
+          {templates.length === 0 && (
+            <EmptyState
+              icon={MagicWand}
+              title="No templates available"
+              description="Templates will appear here once configured."
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what this rule does..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border text-sm outline-none resize-none"
-              style={{
-                borderColor: styles.border,
-                backgroundColor: styles.bgPrimary,
-                color: styles.textPrimary,
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
-              Rule Type
-            </label>
-            <Select
-              value={ruleType}
-              onChange={(v) => setRuleType(v as RuleType)}
-              options={Object.entries(RULE_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
-              Trigger
-            </label>
-            <Select
-              value={triggerType}
-              onChange={(v) => setTriggerType(v as TriggerType)}
-              options={Object.entries(TRIGGER_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
-              Action
-            </label>
-            <Select
-              value={actionType}
-              onChange={(v) => setActionType(v as ActionType)}
-              options={Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-            />
-          </div>
-        </div>
-
-        <div
-          className="flex justify-end gap-2 p-4 border-t"
-          style={{ borderColor: styles.border }}
-        >
-          <Button onClick={onClose} variant="outline" disabled={loading}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} disabled={loading || !name.trim()}>
-            {loading ? <Spinner className="w-4 h-4 animate-spin" /> : 'Create Rule'}
-          </Button>
+          )}
         </div>
       </div>
     </div>

@@ -25,6 +25,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "tsx": "^4.21.0"
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "googleapis": "^170.0.0",
     "helmet": "^8.1.0",
     "isomorphic-fetch": "^3.0.0",
+    "node-cron": "^4.2.1",
     "prisma": "5.22.0",
     "resend": "^6.8.0",
     "simple-oauth2": "^5.1.0",

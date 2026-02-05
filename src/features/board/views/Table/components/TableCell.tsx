@@ -21,6 +21,7 @@ import {
     Pause,
     GitBranch,
     Lightning,
+    ArrowsOutSimple,
 } from 'phosphor-react';
 import { Column, Row, StatusOption, PRIORITY_STYLES, formatDate } from '../types';
 import { SharedDatePicker } from '../../../../../components/ui/SharedDatePicker';
@@ -68,6 +69,7 @@ interface TableCellProps {
     onTextColorChange?: (rowId: string, colId: string, color: string) => void;
     onNavigate?: (view: string) => void;
     inputRef?: React.Ref<HTMLInputElement>;
+    onOpenDetail?: (row: Row) => void; // Open task detail panel
 }
 
 // Helper to get status color classes
@@ -191,6 +193,7 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     onFileUploadRequest,
     onNavigate,
     inputRef,
+    onOpenDetail,
 }) => {
     const value = row[col.id];
     const isActiveCell = activeCell?.rowId === row.id && activeCell?.colId === col.id;
@@ -1465,9 +1468,10 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
     const isCreationRow = row.id === CREATION_ROW_ID;
     const primaryColId = (columns.find(c => c.id === 'name') || columns.find(c => c.id !== 'select'))?.id;
     const placeholder = isCreationRow && col.id === primaryColId ? t('start_typing_to_add') : '';
+    const isNameColumn = col.id === primaryColId || col.id === 'name';
 
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full group/namecell relative">
             <input
                 ref={inputRef}
                 type="text"
@@ -1494,9 +1498,22 @@ export const TableCell: React.FC<TableCellProps> = React.memo(({
                         position: { x: e.clientX, y: e.clientY }
                     });
                 }}
-                style={{ ...cellStyle, textAlign: col.id === primaryColId ? 'start' : 'center' }}
+                style={{ ...cellStyle, textAlign: col.id === primaryColId ? 'start' : 'center', paddingRight: isNameColumn && !isCreationRow ? '32px' : undefined }}
                 className="w-full h-full bg-transparent border-none outline-none px-3 text-sm text-stone-700 dark:text-stone-300 placeholder:text-stone-400 focus:bg-stone-50 dark:focus:bg-stone-800/50 transition-colors"
             />
+            {/* Expand button for name column - opens detail panel */}
+            {isNameColumn && !isCreationRow && onOpenDetail && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetail(row);
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover/namecell:opacity-100 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-all"
+                    title="Open task details"
+                >
+                    <ArrowsOutSimple size={14} />
+                </button>
+            )}
         </div>
     );
 });

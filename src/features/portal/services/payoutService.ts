@@ -12,6 +12,7 @@ import {
   EligiblePayout,
   PayoutsResponse,
   PayoutEvent,
+  FundsTimelineEntry,
 } from '../types/payout.types';
 
 // =============================================================================
@@ -147,6 +148,22 @@ export const payoutService = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to update payout settings');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get funds timeline showing lifecycle of funds from order to payout
+   */
+  async getTimeline(token: string, limit: number = 10): Promise<{ entries: FundsTimelineEntry[] }> {
+    const response = await fetch(`${API_URL}/payouts/seller/timeline?limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch funds timeline');
     }
 
     return response.json();

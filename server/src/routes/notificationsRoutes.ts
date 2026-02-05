@@ -3,6 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
+import { portalNotificationService, PortalType } from '../services/portalNotificationService';
 
 const router = express.Router();
 
@@ -147,6 +148,92 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
     } catch (error) {
         apiLogger.error('[Notifications] Error deleting notification', error);
         return res.status(500).json({ error: 'Failed to delete notification' });
+    }
+});
+
+// =============================================================================
+// Portal-specific notification endpoints
+// =============================================================================
+
+// GET /notifications/portal - Get portal notifications with filtering
+router.get('/portal', requireAuth, async (req, res: Response) => {
+    try {
+        const userId = (req as AuthRequest).auth.userId;
+        const {
+            portalType = 'seller',
+            limit = '50',
+            offset = '0',
+            unreadOnly = 'false',
+            actionRequired = 'false',
+        } = req.query;
+
+        const notifications = await portalNotificationService.getForPortal(
+            userId,
+            portalType as PortalType,
+            {
+                limit: Math.min(parseInt(limit as string), 100),
+                offset: parseInt(offset as string),
+                unreadOnly: unreadOnly === 'true',
+                actionRequired: actionRequired === 'true',
+            }
+        );
+
+        // Transform metadata from JSON string
+        const transformed = notifications.map(n => ({
+            ...n,
+            metadata: n.metadata ? JSON.parse(n.metadata) : null,
+        }));
+
+        apiLogger.debug('[Notifications] Fetched portal notifications', {
+            userId,
+            portalType,
+            count: notifications.length,
+        });
+        return res.json(transformed);
+    } catch (error) {
+        apiLogger.error('[Notifications] Error fetching portal notifications', error);
+        return res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+});
+
+// GET /notifications/portal/count - Get portal unread count
+router.get('/portal/count', requireAuth, async (req, res: Response) => {
+    try {
+        const userId = (req as AuthRequest).auth.userId;
+        const { portalType = 'seller' } = req.query;
+
+        const counts = await portalNotificationService.getUnreadCount(
+            userId,
+            portalType as PortalType
+        );
+
+        return res.json(counts);
+    } catch (error) {
+        apiLogger.error('[Notifications] Error fetching portal count', error);
+        return res.status(500).json({ error: 'Failed to fetch count' });
+    }
+});
+
+// PATCH /notifications/portal/read-all - Mark all portal notifications as read
+router.patch('/portal/read-all', requireAuth, async (req, res: Response) => {
+    try {
+        const userId = (req as AuthRequest).auth.userId;
+        const { portalType = 'seller' } = req.query;
+
+        const updatedCount = await portalNotificationService.markAllAsRead(
+            userId,
+            portalType as PortalType
+        );
+
+        apiLogger.info('[Notifications] Marked all portal notifications as read', {
+            userId,
+            portalType,
+            count: updatedCount,
+        });
+        return res.json({ updatedCount });
+    } catch (error) {
+        apiLogger.error('[Notifications] Error marking all as read', error);
+        return res.status(500).json({ error: 'Failed to mark all as read' });
     }
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { Item } from '../../types/item.types';
@@ -27,7 +27,6 @@ import {
   Lightning,
   X,
   Funnel,
-  SortAscending,
   FileText,
   CaretRight,
   CheckSquare,
@@ -45,6 +44,15 @@ import {
   Percent,
   Info,
   DotsThreeVertical,
+  Export,
+  Package,
+  Image,
+  CurrencyDollar,
+  ArrowUp,
+  ArrowDown,
+  CircleWavyCheck,
+  WarningOctagon,
+  Heartbeat,
 } from 'phosphor-react';
 import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
 import { usePortal } from '../../context/PortalContext';
@@ -169,6 +177,133 @@ const getRowUrgency = (product: Product): 'high' | 'medium' | null => {
   return null;
 };
 
+// =============================================================================
+// Product Health Indicator
+// =============================================================================
+type ProductHealth = 'healthy' | 'needs_attention' | 'at_risk';
+
+const getProductHealth = (product: Product): { status: ProductHealth; reasons: string[] } => {
+  const reasons: string[] = [];
+  const now = new Date();
+  const updatedAt = new Date(product.updatedAt);
+  const daysSinceUpdate = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+
+  // At Risk conditions
+  if (product.stock === 0) reasons.push('Out of stock');
+  if (product.rfqs > 5 && product.orders === 0) reasons.push('High RFQ, no orders');
+  if (daysSinceUpdate > 30) reasons.push('Stale listing');
+
+  if (reasons.length >= 2 || product.stock === 0) {
+    return { status: 'at_risk', reasons };
+  }
+
+  // Needs Attention conditions
+  if (product.stock <= STOCK_LEVELS.LOW && product.stock > 0) reasons.push('Low stock');
+  if (product.visibility === 'hidden' && product.rfqs === 0) reasons.push('Hidden, no exposure');
+  if (daysSinceUpdate > 14 && daysSinceUpdate <= 30) reasons.push('Update recommended');
+  if (product.views > 50 && product.rfqs === 0) reasons.push('Views but no RFQs');
+
+  if (reasons.length > 0) {
+    return { status: 'needs_attention', reasons };
+  }
+
+  return { status: 'healthy', reasons: [] };
+};
+
+// =============================================================================
+// Performance Micro-Insights (text hints)
+// =============================================================================
+const getPerformanceInsight = (product: Product): string => {
+  const rfqs = product.rfqsLast30Days ?? product.rfqs;
+  const conversion = product.rfqs > 0 ? (product.orders / product.rfqs) * 100 : 0;
+
+  // High RFQ, low conversion
+  if (rfqs > 3 && conversion < 20) return 'High interest, low conversion';
+
+  // Strong demand
+  if (rfqs > 5 && conversion > 30) return 'Strong demand';
+
+  // Good momentum
+  if (product.orders > 5 && rfqs > 2) return 'Good momentum';
+
+  // Low visibility
+  if (product.visibility === 'hidden' || product.visibility === 'rfq_only') return 'Limited visibility';
+
+  // New listing
+  if (product.views < 20 && product.rfqs === 0) return 'Building exposure';
+
+  // Dormant
+  if (rfqs === 0 && product.orders === 0) return 'No activity yet';
+
+  // Active
+  if (rfqs > 0) return `${rfqs} inquiries`;
+
+  return 'Stable';
+};
+
+// =============================================================================
+// Smart Warnings & CTAs
+// =============================================================================
+interface SmartCTA {
+  text: string;
+  action: 'restock' | 'make_public' | 'improve' | 'update_price' | null;
+}
+
+const getSmartCTA = (product: Product): SmartCTA | null => {
+  // Low stock with demand
+  if (product.stock > 0 && product.stock <= STOCK_LEVELS.LOW && product.rfqs > 0) {
+    return { text: 'Restock now', action: 'restock' };
+  }
+
+  // RFQ only → suggest making public
+  if (product.visibility === 'rfq_only' && product.rfqs > 3) {
+    return { text: 'Make public', action: 'make_public' };
+  }
+
+  // Hidden with no activity
+  if (product.visibility === 'hidden' && product.views < 10) {
+    return { text: 'Improve visibility', action: 'make_public' };
+  }
+
+  // High views but no RFQs
+  if (product.views > 100 && product.rfqs < 2) {
+    return { text: 'Optimize listing', action: 'improve' };
+  }
+
+  // RFQs but no orders
+  if (product.rfqs > 5 && product.orders === 0) {
+    return { text: 'Review pricing', action: 'update_price' };
+  }
+
+  return null;
+};
+
+// =============================================================================
+// Readiness Score
+// =============================================================================
+interface ReadinessScore {
+  score: number; // 0-100
+  missing: string[];
+}
+
+const getReadinessScore = (product: Product): ReadinessScore => {
+  const missing: string[] = [];
+  let score = 100;
+
+  // Required fields
+  if (!product.image) { missing.push('Image'); score -= 20; }
+  if (!product.price || parseFloat(product.price) === 0) { missing.push('Price'); score -= 20; }
+  if (!product.description || product.description.length < 20) { missing.push('Description'); score -= 15; }
+  if (product.minOrderQty <= 0) { missing.push('MOQ'); score -= 10; }
+  if (product.category === 'category.' || !product.category) { missing.push('Category'); score -= 10; }
+  if (product.manufacturer === '-' || !product.manufacturer) { missing.push('Manufacturer'); score -= 10; }
+  if (product.weight === '-' || !product.weight) { missing.push('Weight'); score -= 5; }
+  if (product.dimensions === '-' || !product.dimensions) { missing.push('Dimensions'); score -= 5; }
+  if (product.partNumber === '-' || !product.partNumber) { missing.push('Part number'); score -= 5; }
+
+  return { score: Math.max(0, score), missing };
+};
+
 interface ListingsProps {
   onNavigate: (page: string) => void;
 }
@@ -209,6 +344,60 @@ const CATEGORIES = [
   { key: 'category.valves', label: 'Valves' },
 ];
 
+// Health Badge component with fixed tooltip positioning
+const HealthBadge: React.FC<{
+  health: { status: 'healthy' | 'needs_attention' | 'at_risk'; reasons: string[] };
+  hc: { icon: React.ElementType; color: string; bg: string; label: string };
+  HealthIcon: React.ElementType;
+  styles: Record<string, string>;
+}> = ({ health, hc, HealthIcon, styles }) => {
+  const [tooltip, setTooltip] = React.useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+  const badgeRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    if (badgeRef.current) {
+      const rect = badgeRef.current.getBoundingClientRect();
+      setTooltip({ show: true, x: rect.left, y: rect.bottom + 4 });
+    }
+  };
+
+  return (
+    <div
+      ref={badgeRef}
+      className="relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setTooltip({ show: false, x: 0, y: 0 })}
+    >
+      <div
+        className="w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
+        style={{ backgroundColor: hc.bg }}
+      >
+        <HealthIcon size={10} weight="fill" style={{ color: hc.color }} />
+      </div>
+      {/* Health Tooltip - Fixed position */}
+      {tooltip.show && (
+        <div
+          className="fixed z-50 w-48 p-2 rounded-lg shadow-lg text-xs"
+          style={{
+            backgroundColor: styles.bgCard,
+            border: `1px solid ${styles.border}`,
+            left: tooltip.x,
+            top: tooltip.y,
+          }}
+        >
+          <div className="flex items-center gap-1.5 mb-1" style={{ color: hc.color }}>
+            <HealthIcon size={12} weight="fill" />
+            <span className="font-medium">{hc.label}</span>
+          </div>
+          {health.reasons.length > 0 && (
+            <p style={{ color: styles.textMuted }}>{health.reasons.join(' · ')}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const columnHelper = createColumnHelper<Product>();
 
 export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
@@ -230,6 +419,14 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
   const [editValue, setEditValue] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+
+  // Bulk price adjustment state
+  const [showPriceAdjust, setShowPriceAdjust] = useState(false);
+  const [priceAdjustPercent, setPriceAdjustPercent] = useState('');
+  const [priceAdjustDirection, setPriceAdjustDirection] = useState<'increase' | 'decrease'>('increase');
+
+  // Refs for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
@@ -682,6 +879,63 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     }
   };
 
+  // ==========================================================================
+  // Keyboard Shortcuts
+  // ==========================================================================
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // / - Focus search
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      const selectedIds = Object.keys(rowSelection);
+      if (selectedIds.length === 0) return;
+
+      // E - Edit first selected product
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        const firstSelectedId = selectedIds[0];
+        const product = products.find(p => p.id === firstSelectedId);
+        if (product) {
+          setEditingProduct(product);
+          setIsAddPanelOpen(true);
+        }
+      }
+
+      // S - Update stock for selected
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        const firstSelectedId = selectedIds[0];
+        setEditingCell({ id: firstSelectedId, field: 'stock' });
+        const product = products.find(p => p.id === firstSelectedId);
+        if (product) setEditValue(product.stock.toString());
+      }
+
+      // V - Toggle visibility for selected
+      if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault();
+        selectedIds.forEach(id => {
+          const product = products.find(p => p.id === id);
+          if (product) {
+            const newVisibility: Visibility = product.visibility === 'public' ? 'hidden' : 'public';
+            handleUpdateProduct(id, { visibility: newVisibility });
+          }
+        });
+        setRowSelection({});
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rowSelection, products, handleUpdateProduct]);
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setIsAddPanelOpen(true);
@@ -796,32 +1050,98 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       header: t('seller.listings.product'),
       cell: ({ row }) => {
         const product = row.original;
-        const categoryLabel = product.category.startsWith('category.')
-          ? t(product.category)
-          : product.category;
-        const demandGaps = detectDemandGaps(product);
-        const [showGapTooltip, setShowGapTooltip] = React.useState(false);
-        const hasCritical = demandGaps.some(g => g.severity === 'critical');
+        const health = getProductHealth(product);
+        const readiness = getReadinessScore(product);
+        const [showHealthTooltip, setShowHealthTooltip] = React.useState(false);
+        const [readinessTooltip, setReadinessTooltip] = React.useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+        const imageRef = React.useRef<HTMLDivElement>(null);
+
+        const healthConfig = {
+          healthy: { icon: CircleWavyCheck, color: styles.success, bg: 'rgba(34,197,94,0.1)', label: 'Healthy' },
+          needs_attention: { icon: Warning, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', label: 'Needs Attention' },
+          at_risk: { icon: WarningOctagon, color: styles.error, bg: 'rgba(239,68,68,0.1)', label: 'At Risk' },
+        };
+        const hc = healthConfig[health.status];
+        const HealthIcon = hc.icon;
+
+        const handleReadinessMouseEnter = () => {
+          if (imageRef.current && readiness.missing.length > 0) {
+            const rect = imageRef.current.getBoundingClientRect();
+            setReadinessTooltip({ show: true, x: rect.left, y: rect.bottom + 4 });
+          }
+        };
 
         return (
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden border relative"
-              style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
-            >
-              {product.image ? (
-                <img src={product.image} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Cube size={18} style={{ color: styles.textMuted }} />
-                </div>
-              )}
-              {product.isPaused && (
+            {/* Product Image with Readiness Ring */}
+            <div className="relative">
+              <div
+                ref={imageRef}
+                className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden border relative"
+                style={{
+                  backgroundColor: styles.bgSecondary,
+                  borderColor: readiness.score < 70 ? '#F59E0B' : styles.border,
+                  borderWidth: readiness.score < 70 ? 2 : 1,
+                }}
+                onMouseEnter={handleReadinessMouseEnter}
+                onMouseLeave={() => setReadinessTooltip({ show: false, x: 0, y: 0 })}
+              >
+                {product.image ? (
+                  <img src={product.image} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Cube size={18} style={{ color: styles.textMuted }} />
+                  </div>
+                )}
+                {product.isPaused && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                  >
+                    <Pause size={14} weight="fill" style={{ color: '#fff' }} />
+                  </div>
+                )}
+                {/* Readiness indicator dot */}
+                {readiness.score < 100 && (
+                  <div
+                    className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 flex items-center justify-center"
+                    style={{
+                      backgroundColor: readiness.score >= 80 ? styles.success : readiness.score >= 50 ? '#F59E0B' : styles.error,
+                      borderColor: styles.bgCard,
+                      fontSize: '6px',
+                      fontWeight: 700,
+                      color: '#fff',
+                    }}
+                  />
+                )}
+              </div>
+              {/* Readiness Tooltip - Fixed position to escape overflow */}
+              {readinessTooltip.show && readiness.missing.length > 0 && (
                 <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                  className="fixed z-50 w-44 p-2 rounded-lg shadow-lg text-xs"
+                  style={{
+                    backgroundColor: styles.bgCard,
+                    border: `1px solid ${styles.border}`,
+                    left: readinessTooltip.x,
+                    top: readinessTooltip.y,
+                  }}
                 >
-                  <Pause size={14} weight="fill" style={{ color: '#fff' }} />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-medium" style={{ color: styles.textPrimary }}>Readiness</span>
+                    <span className="font-semibold" style={{ color: readiness.score >= 80 ? styles.success : readiness.score >= 50 ? '#F59E0B' : styles.error }}>
+                      {readiness.score}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ backgroundColor: styles.bgSecondary }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${readiness.score}%`,
+                        backgroundColor: readiness.score >= 80 ? styles.success : readiness.score >= 50 ? '#F59E0B' : styles.error,
+                      }}
+                    />
+                  </div>
+                  <p style={{ color: styles.textMuted }}>Missing: {readiness.missing.join(', ')}</p>
                 </div>
               )}
             </div>
@@ -830,65 +1150,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                 <p className="font-medium truncate leading-tight" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
                   {product.name}
                 </p>
-                {/* Demand Gap Badge */}
-                {demandGaps.length > 0 && (
-                  <div
-                    className="relative"
-                    onMouseEnter={() => setShowGapTooltip(true)}
-                    onMouseLeave={() => setShowGapTooltip(false)}
-                  >
-                    <div
-                      className="w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
-                      style={{
-                        backgroundColor: hasCritical ? 'rgba(239,68,68,0.15)' : 'rgba(234,179,8,0.15)',
-                      }}
-                    >
-                      <WarningCircle
-                        size={12}
-                        weight="fill"
-                        style={{ color: hasCritical ? styles.error : '#EAB308' }}
-                      />
-                    </div>
-                    {/* Gap Tooltip */}
-                    {showGapTooltip && (
-                      <div
-                        className="absolute z-50 top-full mt-1 w-64 p-3 rounded-lg shadow-lg text-xs"
-                        style={{
-                          backgroundColor: styles.bgCard,
-                          border: `1px solid ${styles.border}`,
-                          left: 0,
-                        }}
-                      >
-                        <div className="font-semibold mb-2 flex items-center gap-1.5" style={{ color: styles.textPrimary }}>
-                          <ChartLine size={12} /> Demand Insights
-                        </div>
-                        <div className="space-y-2">
-                          {demandGaps.map((gap, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-2 p-2 rounded"
-                              style={{
-                                backgroundColor: gap.severity === 'critical'
-                                  ? 'rgba(239,68,68,0.1)'
-                                  : 'rgba(234,179,8,0.1)',
-                              }}
-                            >
-                              <Info
-                                size={12}
-                                style={{
-                                  color: gap.severity === 'critical' ? styles.error : '#EAB308',
-                                  marginTop: 1,
-                                  flexShrink: 0,
-                                }}
-                              />
-                              <span style={{ color: styles.textSecondary }}>{gap.message}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Health Badge */}
+                <HealthBadge health={health} hc={hc} HealthIcon={HealthIcon} styles={styles} />
               </div>
               <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
                 {product.sku}
@@ -969,6 +1232,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       cell: ({ row }) => {
         const product = row.original;
         const level = getStockLevel(product.stock);
+        const isEditing = editingCell?.id === product.id && editingCell?.field === 'stock';
+        const smartCta = getSmartCTA(product);
         const colors = {
           good: styles.success,
           medium: '#F59E0B',
@@ -976,16 +1241,68 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
           out: styles.error,
         };
 
+        if (isEditing) {
+          return (
+            <input
+              type="number"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={() => {
+                const val = parseInt(editValue);
+                if (!isNaN(val) && val !== product.stock) {
+                  handleUpdateProduct(product.id, { stock: val });
+                }
+                setEditingCell(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = parseInt(editValue);
+                  if (!isNaN(val) && val !== product.stock) {
+                    handleUpdateProduct(product.id, { stock: val });
+                  }
+                  setEditingCell(null);
+                }
+                if (e.key === 'Escape') setEditingCell(null);
+              }}
+              className="w-16 px-2 py-1 text-sm rounded border outline-none text-center"
+              style={{ borderColor: styles.info, backgroundColor: styles.bgCard, color: styles.textPrimary }}
+              autoFocus
+              min={0}
+            />
+          );
+        }
+
         return (
-          <div className="flex items-center justify-center gap-1.5">
-            {level === 'low' && <Warning size={12} style={{ color: colors[level] }} />}
-            <span className="font-medium" style={{ color: colors[level], fontSize: '0.79rem' }}>
-              {product.stock}
-            </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <button
+              onClick={() => {
+                setEditingCell({ id: product.id, field: 'stock' });
+                setEditValue(product.stock.toString());
+              }}
+              className="flex items-center justify-center gap-1 hover:underline cursor-pointer"
+            >
+              {level === 'low' && <Warning size={10} style={{ color: colors[level] }} />}
+              <span className="font-medium" style={{ color: colors[level], fontSize: '0.79rem' }}>
+                {product.stock}
+              </span>
+            </button>
+            {/* Smart CTA for stock */}
+            {smartCta?.action === 'restock' && (
+              <button
+                onClick={() => {
+                  setEditingCell({ id: product.id, field: 'stock' });
+                  setEditValue(product.stock.toString());
+                }}
+                className="text-xs transition-colors"
+                style={{ color: styles.info }}
+              >
+                {smartCta.text}
+              </button>
+            )}
           </div>
         );
       },
-      size: 70,
+      size: 80,
     }),
     columnHelper.accessor('status', {
       meta: { align: 'center' as const },
@@ -1014,21 +1331,82 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       meta: { align: 'center' as const },
       header: t('seller.listings.visibility'),
       cell: ({ row }) => {
-        const visibility = row.original.visibility || 'hidden';
+        const product = row.original;
+        const visibility = product.visibility || 'hidden';
+        const smartCta = getSmartCTA(product);
+        const [dropdown, setDropdown] = React.useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+        const buttonRef = React.useRef<HTMLButtonElement>(null);
+
         const config: Record<Visibility, { Icon: React.ElementType; color: string; label: string }> = {
           public: { Icon: Eye, color: styles.success, label: 'Public' },
           hidden: { Icon: EyeSlash, color: styles.textMuted, label: 'Hidden' },
           rfq_only: { Icon: FileText, color: '#8B5CF6', label: 'RFQ Only' },
         };
         const c = config[visibility] || config.hidden;
+
+        const handleToggle = () => {
+          if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdown(prev => prev.show ? { show: false, x: 0, y: 0 } : { show: true, x: rect.left, y: rect.bottom + 4 });
+          }
+        };
+
         return (
-          <div className="flex items-center justify-center gap-1.5" title={c.label}>
-            <c.Icon size={14} style={{ color: c.color }} />
-            <span className="text-xs" style={{ color: c.color }}>{c.label}</span>
+          <div className="relative flex flex-col items-center gap-0.5">
+            <button
+              ref={buttonRef}
+              onClick={handleToggle}
+              className="flex items-center justify-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+              title="Click to change"
+            >
+              <c.Icon size={14} style={{ color: c.color }} />
+              <span className="text-xs" style={{ color: c.color }}>{c.label}</span>
+              <CaretDown size={10} style={{ color: styles.textMuted }} />
+            </button>
+            {/* Quick visibility dropdown - Fixed position */}
+            {dropdown.show && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setDropdown({ show: false, x: 0, y: 0 })} />
+                <div
+                  className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[100px]"
+                  style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: dropdown.x, top: dropdown.y }}
+                >
+                  {(['public', 'rfq_only', 'hidden'] as Visibility[]).map((v) => {
+                    const vc = config[v];
+                    return (
+                      <button
+                        key={v}
+                        onClick={() => {
+                          handleUpdateProduct(product.id, { visibility: v });
+                          setDropdown({ show: false, x: 0, y: 0 });
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors"
+                        style={{ color: visibility === v ? vc.color : styles.textPrimary }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <vc.Icon size={12} style={{ color: vc.color }} />
+                        {vc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {/* Smart CTA for visibility */}
+            {smartCta?.action === 'make_public' && (
+              <button
+                onClick={() => handleUpdateProduct(product.id, { visibility: 'public' })}
+                className="text-xs transition-colors"
+                style={{ color: styles.info }}
+              >
+                {smartCta.text}
+              </button>
+            )}
           </div>
         );
       },
-      size: 90,
+      size: 100,
     }),
     columnHelper.display({
       id: 'performance',
@@ -1037,97 +1415,54 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       cell: ({ row }) => {
         const product = row.original;
         const signal = getPerformanceSignal(product);
-        const [showTooltip, setShowTooltip] = React.useState(false);
+        const insight = getPerformanceInsight(product);
+        const smartCta = getSmartCTA(product);
 
         const signalConfig = {
-          hot: { icon: Fire, color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: 'Hot' },
-          active: { icon: TrendUp, color: styles.success, bg: 'rgba(34,197,94,0.1)', label: 'Active' },
-          dormant: { icon: Bed, color: styles.textMuted, bg: styles.bgSecondary, label: 'Dormant' },
+          hot: { icon: Fire, color: '#EF4444', bg: 'rgba(239,68,68,0.1)' },
+          active: { icon: TrendUp, color: styles.success, bg: 'rgba(34,197,94,0.1)' },
+          dormant: { icon: Bed, color: styles.textMuted, bg: styles.bgSecondary },
         };
 
         const config = signalConfig[signal];
         const Icon = config.icon;
-        const rfqs30d = product.rfqsLast30Days ?? product.rfqs;
-        const avgResponse = product.avgResponseTimeHours ?? 24;
-        const conversion = product.conversionRate ?? (product.rfqs > 0 ? (product.orders / product.rfqs * 100) : 0);
 
         return (
-          <div className="relative flex items-center justify-center">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
-              {/* Signal Badge */}
+          <div className="flex flex-col items-center gap-0.5">
+            {/* Signal Icon + Micro Insight */}
+            <div className="flex items-center gap-1.5">
               <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
-                style={{ backgroundColor: config.bg, color: config.color }}
+                className="inline-flex items-center justify-center w-5 h-5 rounded"
+                style={{ backgroundColor: config.bg }}
               >
-                <Icon size={10} weight="fill" />
-                {config.label}
+                <Icon size={12} weight="fill" style={{ color: config.color }} />
               </span>
-
-              {/* Quick Stats */}
-              <div className="flex items-center gap-2" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-                <span className="flex items-center gap-0.5">
-                  <ShoppingCart size={10} /> {product.orders}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <FileText size={10} /> {product.rfqs}
-                </span>
-              </div>
+              <span className="text-xs" style={{ color: styles.textSecondary }}>
+                {insight}
+              </span>
             </div>
-
-            {/* Tooltip */}
-            {showTooltip && (
-              <div
-                className="absolute z-50 top-full mt-2 w-56 p-3 rounded-lg shadow-lg text-xs"
-                style={{
-                  backgroundColor: styles.bgCard,
-                  border: `1px solid ${styles.border}`,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+            {/* Smart CTA for performance */}
+            {(smartCta?.action === 'improve' || smartCta?.action === 'update_price') && (
+              <button
+                onClick={() => {
+                  if (smartCta.action === 'update_price') {
+                    setEditingCell({ id: product.id, field: 'price' });
+                    setEditValue(product.price);
+                  } else {
+                    setEditingProduct(product);
+                    setIsAddPanelOpen(true);
+                  }
                 }}
+                className="text-xs transition-colors"
+                style={{ color: styles.info }}
               >
-                <div className="font-semibold mb-2 pb-2 border-b" style={{ color: styles.textPrimary, borderColor: styles.border }}>
-                  Performance Insights
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
-                      <FileText size={12} /> RFQs (30 days)
-                    </span>
-                    <span className="font-medium" style={{ color: styles.textPrimary }}>{rfqs30d}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
-                      <ShoppingCart size={12} /> Orders Converted
-                    </span>
-                    <span className="font-medium" style={{ color: styles.textPrimary }}>{product.orders}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
-                      <Percent size={12} /> Conversion Rate
-                    </span>
-                    <span className="font-medium" style={{ color: conversion > 30 ? styles.success : styles.textPrimary }}>
-                      {conversion.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5" style={{ color: styles.textMuted }}>
-                      <Clock size={12} /> Avg Response
-                    </span>
-                    <span className="font-medium" style={{ color: avgResponse < 6 ? styles.success : avgResponse > 12 ? styles.error : styles.textPrimary }}>
-                      {avgResponse.toFixed(1)}h
-                    </span>
-                  </div>
-                </div>
-              </div>
+                {smartCta.text}
+              </button>
             )}
           </div>
         );
       },
-      size: 150,
+      size: 140,
     }),
     columnHelper.accessor('updatedAt', {
       meta: { align: 'center' as const },
@@ -1145,7 +1480,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
       header: t('common.actions'),
       cell: ({ row }) => {
         const product = row.original;
-        const [showMenu, setShowMenu] = React.useState(false);
+        const [menu, setMenu] = React.useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+        const menuBtnRef = React.useRef<HTMLButtonElement>(null);
 
         const handleDuplicate = () => {
           const duplicatedProduct: Product = {
@@ -1162,24 +1498,34 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
             updatedAt: new Date().toISOString(),
           };
           setProducts((prev) => [duplicatedProduct, ...prev]);
-          setShowMenu(false);
+          setMenu({ show: false, x: 0, y: 0 });
         };
 
         const handleToggleVisibility = () => {
           const newVisibility: Visibility = product.visibility === 'public' ? 'hidden' : 'public';
           handleUpdateProduct(product.id, { visibility: newVisibility });
-          setShowMenu(false);
+          setMenu({ show: false, x: 0, y: 0 });
         };
 
         const handleTogglePause = () => {
           handleUpdateProduct(product.id, { isPaused: !product.isPaused } as any);
-          setShowMenu(false);
+          setMenu({ show: false, x: 0, y: 0 });
         };
 
         const handleViewRFQHistory = () => {
           // Navigate to RFQs page filtered by this item
           onNavigate(`rfqs?itemId=${product.id}`);
-          setShowMenu(false);
+          setMenu({ show: false, x: 0, y: 0 });
+        };
+
+        const handleMenuToggle = () => {
+          if (menuBtnRef.current) {
+            const rect = menuBtnRef.current.getBoundingClientRect();
+            setMenu(prev => prev.show
+              ? { show: false, x: 0, y: 0 }
+              : { show: true, x: isRtl ? rect.left : rect.right - 180, y: rect.bottom + 4 }
+            );
+          }
         };
 
         return (
@@ -1205,7 +1551,8 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
             {/* More Actions Menu */}
             <div className="relative">
               <button
-                onClick={() => setShowMenu(!showMenu)}
+                ref={menuBtnRef}
+                onClick={handleMenuToggle}
                 className="p-1.5 rounded transition-colors"
                 style={{ color: styles.textMuted }}
                 onMouseEnter={(e) => {
@@ -1221,12 +1568,12 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                 <DotsThreeVertical size={16} weight="bold" />
               </button>
 
-              {showMenu && (
+              {menu.show && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <div className="fixed inset-0 z-30" onClick={() => setMenu({ show: false, x: 0, y: 0 })} />
                   <div
-                    className={`absolute top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[180px] ${isRtl ? 'left-0' : 'right-0'}`}
-                    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+                    className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[180px]"
+                    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: menu.x, top: menu.y }}
                   >
                     {/* Duplicate with Price Adjustment */}
                     <MenuButton
@@ -1275,7 +1622,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                       styles={styles}
                       onClick={() => {
                         setDeleteConfirm({ id: product.id, name: product.name });
-                        setShowMenu(false);
+                        setMenu({ show: false, x: 0, y: 0 });
                       }}
                       danger
                     />
@@ -1336,6 +1683,98 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     );
     setRowSelection({});
     setShowBulkActions(false);
+  };
+
+  // Bulk price adjustment by percentage
+  const handleBulkPriceAdjust = () => {
+    const percent = parseFloat(priceAdjustPercent);
+    if (isNaN(percent) || percent <= 0) return;
+
+    const multiplier = priceAdjustDirection === 'increase' ? (1 + percent / 100) : (1 - percent / 100);
+    const selectedIds = Object.keys(rowSelection);
+
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (!selectedIds.includes(p.id)) return p;
+        const currentPrice = parseFloat(p.price);
+        const newPrice = Math.max(0, currentPrice * multiplier).toFixed(2);
+        return { ...p, price: newPrice, updatedAt: new Date().toISOString() };
+      })
+    );
+
+    setRowSelection({});
+    setShowBulkActions(false);
+    setShowPriceAdjust(false);
+    setPriceAdjustPercent('');
+  };
+
+  // Bulk pause/activate
+  const handleBulkTogglePause = (pause: boolean) => {
+    const selectedIds = Object.keys(rowSelection);
+    setProducts((prev) =>
+      prev.map((p) =>
+        selectedIds.includes(p.id) ? { ...p, isPaused: pause, updatedAt: new Date().toISOString() } : p
+      )
+    );
+    setRowSelection({});
+    setShowBulkActions(false);
+  };
+
+  // Export selected products to CSV
+  const handleExportCSV = () => {
+    const selectedIds = Object.keys(rowSelection);
+    const toExport = selectedIds.length > 0
+      ? products.filter(p => selectedIds.includes(p.id))
+      : filteredProducts;
+
+    const headers = ['SKU', 'Name', 'Category', 'Price', 'Currency', 'Stock', 'Status', 'Visibility', 'Orders', 'RFQs'];
+    const rows = toExport.map(p => [
+      p.sku,
+      `"${p.name.replace(/"/g, '""')}"`,
+      p.category.replace('category.', ''),
+      p.price,
+      p.currency,
+      p.stock,
+      p.status,
+      p.visibility,
+      p.orders,
+      p.rfqs,
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `products-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    setRowSelection({});
+    setShowBulkActions(false);
+  };
+
+  // Bulk stock update
+  const [showBulkStock, setShowBulkStock] = useState(false);
+  const [bulkStockValue, setBulkStockValue] = useState('');
+
+  const handleBulkStockUpdate = () => {
+    const stockVal = parseInt(bulkStockValue);
+    if (isNaN(stockVal) || stockVal < 0) return;
+
+    const selectedIds = Object.keys(rowSelection);
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (!selectedIds.includes(p.id)) return p;
+        const status = stockVal === 0 ? 'out_of_stock' : (p.status === 'out_of_stock' ? 'active' : p.status);
+        return { ...p, stock: stockVal, status, updatedAt: new Date().toISOString() };
+      })
+    );
+
+    setRowSelection({});
+    setShowBulkActions(false);
+    setShowBulkStock(false);
+    setBulkStockValue('');
   };
 
   return (
@@ -1427,16 +1866,115 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                   </button>
                   {showBulkActions && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowBulkActions(false)} />
+                      <div className="fixed inset-0 z-10" onClick={() => { setShowBulkActions(false); setShowPriceAdjust(false); setShowBulkStock(false); }} />
                       <div
-                        className="absolute right-0 top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[160px]"
+                        className="absolute right-0 top-full mt-1 z-20 py-1 rounded-lg shadow-lg min-w-[200px]"
                         style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
                       >
+                        {/* Price Adjustment */}
+                        <div className="relative">
+                          <MenuButton
+                            icon={Percent}
+                            label="Adjust Price %"
+                            styles={styles}
+                            onClick={() => { setShowPriceAdjust(!showPriceAdjust); setShowBulkStock(false); }}
+                          />
+                          {showPriceAdjust && (
+                            <div className="px-3 pb-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <button
+                                  onClick={() => setPriceAdjustDirection('increase')}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                  style={{
+                                    backgroundColor: priceAdjustDirection === 'increase' ? 'rgba(34,197,94,0.15)' : styles.bgSecondary,
+                                    color: priceAdjustDirection === 'increase' ? styles.success : styles.textMuted,
+                                  }}
+                                >
+                                  <ArrowUp size={10} /> Increase
+                                </button>
+                                <button
+                                  onClick={() => setPriceAdjustDirection('decrease')}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                  style={{
+                                    backgroundColor: priceAdjustDirection === 'decrease' ? 'rgba(239,68,68,0.15)' : styles.bgSecondary,
+                                    color: priceAdjustDirection === 'decrease' ? styles.error : styles.textMuted,
+                                  }}
+                                >
+                                  <ArrowDown size={10} /> Decrease
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  value={priceAdjustPercent}
+                                  onChange={(e) => setPriceAdjustPercent(e.target.value)}
+                                  placeholder="%"
+                                  className="w-16 px-2 py-1 text-xs rounded border outline-none"
+                                  style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary, color: styles.textPrimary }}
+                                  min={0}
+                                  max={100}
+                                />
+                                <button
+                                  onClick={handleBulkPriceAdjust}
+                                  disabled={!priceAdjustPercent}
+                                  className="flex-1 px-2 py-1 text-xs font-medium rounded transition-colors disabled:opacity-50"
+                                  style={{ backgroundColor: styles.info, color: '#fff' }}
+                                >
+                                  Apply
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bulk Stock Update */}
+                        <div className="relative">
+                          <MenuButton
+                            icon={Package}
+                            label="Set Stock"
+                            styles={styles}
+                            onClick={() => { setShowBulkStock(!showBulkStock); setShowPriceAdjust(false); }}
+                          />
+                          {showBulkStock && (
+                            <div className="px-3 pb-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  value={bulkStockValue}
+                                  onChange={(e) => setBulkStockValue(e.target.value)}
+                                  placeholder="Qty"
+                                  className="w-16 px-2 py-1 text-xs rounded border outline-none"
+                                  style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary, color: styles.textPrimary }}
+                                  min={0}
+                                />
+                                <button
+                                  onClick={handleBulkStockUpdate}
+                                  disabled={!bulkStockValue}
+                                  className="flex-1 px-2 py-1 text-xs font-medium rounded transition-colors disabled:opacity-50"
+                                  style={{ backgroundColor: styles.info, color: '#fff' }}
+                                >
+                                  Apply
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
+
                         <MenuButton icon={Lightning} label={t('seller.listings.setActive')} styles={styles} onClick={() => handleBulkStatusChange('active')} />
                         <MenuButton icon={Archive} label={t('seller.listings.setDraft')} styles={styles} onClick={() => handleBulkStatusChange('draft')} />
                         <MenuButton icon={Eye} label={t('seller.listings.makePublic')} styles={styles} onClick={() => handleBulkVisibilityChange('public')} />
                         <MenuButton icon={EyeSlash} label={t('seller.listings.makeHidden')} styles={styles} onClick={() => handleBulkVisibilityChange('hidden')} />
+
                         <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
+
+                        <MenuButton icon={Pause} label="Pause Selected" styles={styles} onClick={() => handleBulkTogglePause(true)} />
+                        <MenuButton icon={Play} label="Activate Selected" styles={styles} onClick={() => handleBulkTogglePause(false)} />
+
+                        <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
+
+                        <MenuButton icon={Export} label="Export CSV" styles={styles} onClick={handleExportCSV} />
                         <MenuButton icon={Trash} label={t('common.delete')} styles={styles} onClick={handleBulkDelete} danger />
                       </div>
                     </>
@@ -1456,8 +1994,9 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
               >
                 <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
                 <input
+                  ref={searchInputRef}
                   type="text"
-                  placeholder={t('seller.listings.searchBySku')}
+                  placeholder={`${t('seller.listings.searchBySku')} (press /)`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="outline-none text-sm bg-transparent flex-1"
@@ -1687,9 +2226,34 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
                 color: styles.textMuted,
               }}
             >
-              <span>
-                {t('seller.listings.showing')} {filteredProducts.length} {t('seller.listings.of')} {products.length} {t('seller.listings.products')}
-              </span>
+              <div className="flex items-center gap-4">
+                <span>
+                  {t('seller.listings.showing')} {filteredProducts.length} {t('seller.listings.of')} {products.length} {t('seller.listings.products')}
+                </span>
+                {/* Keyboard shortcuts hint */}
+                <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: styles.textMuted }}>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 rounded font-mono text-xs" style={{ backgroundColor: styles.bgSecondary }}>/</kbd>
+                    search
+                  </span>
+                  {selectedCount > 0 && (
+                    <>
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 rounded font-mono text-xs" style={{ backgroundColor: styles.bgSecondary }}>E</kbd>
+                        edit
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 rounded font-mono text-xs" style={{ backgroundColor: styles.bgSecondary }}>S</kbd>
+                        stock
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 rounded font-mono text-xs" style={{ backgroundColor: styles.bgSecondary }}>V</kbd>
+                        visibility
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
               {selectedCount > 0 && (
                 <span className="font-medium" style={{ color: styles.textPrimary }}>
                   {selectedCount} {t('seller.listings.selected')}

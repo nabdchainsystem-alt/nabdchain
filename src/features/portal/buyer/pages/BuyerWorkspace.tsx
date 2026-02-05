@@ -1,28 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShoppingCart,
   Users,
   Cube,
   Receipt,
   ChartLineUp,
+  Package,
+  FileText,
 } from 'phosphor-react';
 import { Container, PageHeader } from '../../components';
 import { usePortal } from '../../context/PortalContext';
-import { DashboardTab, PurchasesTab, SuppliersTab, InventoryTab, ExpensesTab } from './workspace';
+import { DashboardTab, PurchasesTab, OrdersTab, InvoicesTab, SuppliersTab, InventoryTab, ExpensesTab } from './workspace';
 
 interface BuyerWorkspaceProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: Record<string, unknown>) => void;
+  initialTab?: WorkspaceTab;
+  initialFilters?: {
+    status?: string;
+    health?: string;
+  };
 }
 
-type WorkspaceTab = 'purchases' | 'suppliers' | 'inventory' | 'expenses' | 'dashboard';
+type WorkspaceTab = 'dashboard' | 'orders' | 'purchases' | 'invoices' | 'suppliers' | 'inventory' | 'expenses';
 
-export const BuyerWorkspace: React.FC<BuyerWorkspaceProps> = ({ onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('dashboard');
+export const BuyerWorkspace: React.FC<BuyerWorkspaceProps> = ({ onNavigate, initialTab, initialFilters }) => {
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab || 'dashboard');
   const { styles, t } = usePortal();
+
+  // Update tab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const tabs: { id: WorkspaceTab; label: string; icon: React.ComponentType<{ size: number }> }[] = [
     { id: 'dashboard', label: t('buyer.workspace.dashboard'), icon: ChartLineUp },
+    { id: 'orders', label: t('buyer.workspace.orders') || 'Orders', icon: Package },
     { id: 'purchases', label: t('buyer.workspace.purchases'), icon: ShoppingCart },
+    { id: 'invoices', label: t('buyer.workspace.invoices') || 'Invoices', icon: FileText },
     { id: 'suppliers', label: t('buyer.workspace.suppliers'), icon: Users },
     { id: 'inventory', label: t('buyer.workspace.inventory'), icon: Cube },
     { id: 'expenses', label: t('buyer.workspace.expenses'), icon: Receipt },
@@ -72,8 +88,25 @@ export const BuyerWorkspace: React.FC<BuyerWorkspaceProps> = ({ onNavigate }) =>
           />
         )}
 
-        {/* Purchases Tab */}
+        {/* Orders Tab (Marketplace Orders) */}
+        {activeTab === 'orders' && (
+          <OrdersTab
+            onNavigate={onNavigate}
+            initialStatusFilter={initialFilters?.status}
+            initialHealthFilter={initialFilters?.health}
+          />
+        )}
+
+        {/* Purchases Tab (Internal POs) */}
         {activeTab === 'purchases' && <PurchasesTab onNavigate={onNavigate} />}
+
+        {/* Invoices Tab */}
+        {activeTab === 'invoices' && (
+          <InvoicesTab
+            onNavigate={onNavigate}
+            initialStatusFilter={initialFilters?.status as 'all' | 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled' | undefined}
+          />
+        )}
 
         {/* Suppliers Tab */}
         {activeTab === 'suppliers' && (

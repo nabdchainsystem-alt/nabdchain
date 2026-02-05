@@ -23,6 +23,7 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { useAuth } from '../../../../../auth-adapter';
+import { PortalDatePicker, Select } from '../../../components';
 import {
   buyerWorkspaceService,
   PurchaseOrder,
@@ -351,30 +352,18 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
           className={`flex items-center gap-4 mb-4 p-4 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}
           style={{ backgroundColor: styles.bgSecondary }}
         >
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none px-3 py-2 pr-8 rounded-lg border text-sm cursor-pointer"
-              style={{
-                borderColor: styles.border,
-                backgroundColor: styles.bgCard,
-                color: styles.textPrimary,
-              }}
-            >
-              <option value="">{t('buyer.workspace.allStatuses')}</option>
-              <option value="draft">{t('buyer.workspace.draft')}</option>
-              <option value="sent">{t('buyer.workspace.sent')}</option>
-              <option value="approved">{t('buyer.workspace.approved')}</option>
-              <option value="delivered">{t('buyer.workspace.delivered')}</option>
-              <option value="cancelled">{t('buyer.workspace.cancelled')}</option>
-            </select>
-            <CaretDown
-              size={14}
-              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: styles.textMuted }}
-            />
-          </div>
+          <Select
+            value={statusFilter || 'all'}
+            onChange={(value) => setStatusFilter(value === 'all' ? '' : value)}
+            options={[
+              { value: 'all', label: t('buyer.workspace.allStatuses') || 'All Statuses' },
+              { value: 'draft', label: t('buyer.workspace.draft') || 'Draft' },
+              { value: 'sent', label: t('buyer.workspace.sent') || 'Sent' },
+              { value: 'approved', label: t('buyer.workspace.approved') || 'Approved' },
+              { value: 'delivered', label: t('buyer.workspace.delivered') || 'Delivered' },
+              { value: 'cancelled', label: t('buyer.workspace.cancelled') || 'Cancelled' },
+            ]}
+          />
         </div>
       )}
 
@@ -543,16 +532,10 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
                 >
                   {t('buyer.workspace.expectedDelivery')}
                 </label>
-                <input
-                  type="date"
+                <PortalDatePicker
                   value={newPO.expectedDelivery}
-                  onChange={(e) => setNewPO({ ...newPO, expectedDelivery: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border text-sm"
-                  style={{
-                    borderColor: styles.border,
-                    backgroundColor: styles.bgSecondary,
-                    color: styles.textPrimary,
-                  }}
+                  onChange={(value) => setNewPO({ ...newPO, expectedDelivery: value })}
+                  className="w-full"
                 />
               </div>
 

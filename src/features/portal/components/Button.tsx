@@ -31,8 +31,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary: {
-      backgroundColor: styles.isDark ? '#E6E8EB' : '#0F1115',
-      color: styles.isDark ? '#0F1115' : '#E6E8EB',
+      backgroundColor: styles.isDark ? styles.textPrimary : styles.bgPrimary,
+      color: styles.isDark ? styles.bgPrimary : styles.textPrimary,
       border: 'none',
     },
     secondary: {

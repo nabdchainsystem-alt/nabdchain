@@ -35,6 +35,7 @@ import {
   Info,
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
+import { Select } from '../../../components';
 import { useAuth } from '../../../../../auth-adapter';
 import {
   buyerWorkspaceService,
@@ -776,28 +777,16 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
           className={`flex items-center gap-4 mb-4 p-4 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}
           style={{ backgroundColor: styles.bgSecondary }}
         >
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none px-3 py-2 pr-8 rounded-lg border text-sm cursor-pointer"
-              style={{
-                borderColor: styles.border,
-                backgroundColor: styles.bgCard,
-                color: styles.textPrimary,
-              }}
-            >
-              <option value="">{t('buyer.workspace.allStatuses')}</option>
-              <option value="ok">{t('buyer.workspace.ok')}</option>
-              <option value="low">{t('buyer.workspace.low')}</option>
-              <option value="critical">{t('buyer.workspace.critical')}</option>
-            </select>
-            <CaretDown
-              size={14}
-              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: styles.textMuted }}
-            />
-          </div>
+          <Select
+            value={statusFilter || 'all'}
+            onChange={(value) => setStatusFilter(value === 'all' ? '' : value)}
+            options={[
+              { value: 'all', label: t('buyer.workspace.allStatuses') || 'All Statuses' },
+              { value: 'ok', label: t('buyer.workspace.ok') || 'OK' },
+              { value: 'low', label: t('buyer.workspace.low') || 'Low' },
+              { value: 'critical', label: t('buyer.workspace.critical') || 'Critical' },
+            ]}
+          />
         </div>
       )}
 

@@ -15,6 +15,8 @@ import {
   UpdateQuoteData,
   QuoteFilters,
   QuotesResponse,
+  QuoteAttachment,
+  QuoteAttachmentType,
 } from '../types/item.types';
 
 // =============================================================================
@@ -217,6 +219,89 @@ export const quoteService = {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.error || 'Failed to delete quote');
+    }
+
+    return true;
+  },
+
+  // =============================================================================
+  // Attachment Methods
+  // =============================================================================
+
+  /**
+   * Add an attachment to a quote
+   */
+  async addAttachment(
+    token: string,
+    quoteId: string,
+    file: File,
+    type: QuoteAttachmentType = 'other'
+  ): Promise<QuoteAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+
+    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to upload attachment');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get all attachments for a quote
+   */
+  async getAttachments(token: string, quoteId: string): Promise<QuoteAttachment[]> {
+    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.status === 404) {
+      return [];
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to fetch attachments');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Remove an attachment from a quote
+   */
+  async removeAttachment(
+    token: string,
+    quoteId: string,
+    attachmentId: string
+  ): Promise<boolean> {
+    const response = await fetch(
+      `${API_URL}/items/quotes/${quoteId}/attachments/${attachmentId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      return false;
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Failed to remove attachment');
     }
 
     return true;

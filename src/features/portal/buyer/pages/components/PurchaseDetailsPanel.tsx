@@ -81,7 +81,28 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
     return `${currency} ${amount.toLocaleString()}`;
   };
 
-  if (!purchase) return null;
+  // Animation states for smooth enter/exit
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  if (!purchase || !isVisible) return null;
 
   const statusConfig = getOrderStatusConfig(purchase.status);
   const healthConfig = getHealthStatusConfig(purchase.healthStatus || 'on_track');
@@ -97,23 +118,35 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-          onClick={onClose}
-        />
-      )}
+      {/* Backdrop - transparent, just for click-outside */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ top: '64px' }}
+        onClick={onClose}
+      />
 
       {/* Panel */}
       <div
-        className={`
-          fixed top-0 bottom-0 z-50 w-full max-w-lg
-          transition-transform duration-300 overflow-hidden flex flex-col
-          ${isRtl ? 'left-0' : 'right-0'}
-          ${isOpen ? 'translate-x-0' : isRtl ? '-translate-x-full' : 'translate-x-full'}
-        `}
-        style={{ backgroundColor: styles.bgCard }}
+        className="fixed z-50 w-full max-w-lg overflow-hidden flex flex-col"
+        dir={direction}
+        style={{
+          top: '64px',
+          bottom: 0,
+          backgroundColor: styles.bgCard,
+          borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
+          borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
+          boxShadow: styles.isDark
+            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
+            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          right: isRtl ? 'auto' : 0,
+          left: isRtl ? 0 : 'auto',
+          transform: isAnimating
+            ? 'translateX(0)'
+            : isRtl
+            ? 'translateX(-100%)'
+            : 'translateX(100%)',
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         {/* Header */}
         <div

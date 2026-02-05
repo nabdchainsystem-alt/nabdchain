@@ -34,9 +34,10 @@ import {
   Scales,
 } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
-import { Container, PageHeader, Button, EmptyState } from '../../components';
+import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { disputeService } from '../../services/disputeService';
+import { formatCurrency } from '../../utils';
 import {
   MarketplaceDispute,
   DisputeStatus,
@@ -63,10 +64,6 @@ const formatDate = (dateStr: string): string => {
     day: 'numeric',
     year: 'numeric',
   });
-};
-
-const formatCurrency = (amount: number, currency: string): string => {
-  return `${currency} ${amount.toLocaleString()}`;
 };
 
 // Status Badge Component
@@ -512,25 +509,20 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
               </div>
 
               {/* Status Filter */}
-              <select
+              <Select
                 value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-md border text-sm outline-none"
-                style={{
-                  borderColor: styles.border,
-                  backgroundColor: styles.bgPrimary,
-                  color: styles.textPrimary,
-                }}
-              >
-                <option value="all">All Status</option>
-                <option value="open">Open</option>
-                <option value="under_review">Under Review</option>
-                <option value="seller_responded">Awaiting Response</option>
-                <option value="resolved">Resolved</option>
-                <option value="rejected">Rejected</option>
-                <option value="escalated">Escalated</option>
-                <option value="closed">Closed</option>
-              </select>
+                onChange={setStatusFilter}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'open', label: 'Open' },
+                  { value: 'under_review', label: 'Under Review' },
+                  { value: 'seller_responded', label: 'Awaiting Response' },
+                  { value: 'resolved', label: 'Resolved' },
+                  { value: 'rejected', label: 'Rejected' },
+                  { value: 'escalated', label: 'Escalated' },
+                  { value: 'closed', label: 'Closed' },
+                ]}
+              />
 
               {/* Clear Filters */}
               {hasActiveFilters && (

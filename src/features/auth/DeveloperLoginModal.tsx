@@ -16,32 +16,23 @@ export const DeveloperLoginModal: React.FC<DeveloperLoginModalProps> = ({ isOpen
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    const performLogin = async () => {
-        setLoading(true);
-        setError('');
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // In dev mode, we accept either the specific credential OR just allow the Google/Bypass button
-        // But for the manual form, we check credentials if provided
-        localStorage.setItem('nabd_dev_mode', 'true');
-        localStorage.setItem('mock_auth_token', 'dev-token');
-
-        // Redirect to app subdomain if on main domain
-        // Pass dev_auth param so app subdomain can set localStorage
-        const hostname = window.location.hostname;
-        if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
-            window.location.href = 'https://app.nabdchain.com?dev_auth=dev-token';
-        } else {
-            window.location.reload();
-        }
-    };
+    // PRODUCTION MODE: Development login only available in dev environment
+    const isDevelopment = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_AUTH === 'true';
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Valid dev credentials
+        if (!isDevelopment) {
+            setError('Development login is only available in development mode');
+            return;
+        }
+
+        if (!email.trim() || !password.trim()) {
+            setError('Please enter your email and password');
+            return;
+        }
+
+        // Development-only credentials (will only work if isDevelopment is true)
         const validCredentials = [
             { email: 'master@nabdchain.com', password: '2450', token: 'dev-token' },
             { email: 'sam@nabdchain.com', password: '123', token: 'sam-token' },
@@ -56,10 +47,9 @@ export const DeveloperLoginModal: React.FC<DeveloperLoginModalProps> = ({ isOpen
             localStorage.setItem('nabd_dev_mode', 'true');
             localStorage.setItem('mock_auth_token', match.token);
 
-            // Redirect to app subdomain if on main domain
-            // Pass dev_auth param so app subdomain can set localStorage
             const hostname = window.location.hostname;
-            if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            if (!isLocalhost && hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
                 window.location.href = `https://app.nabdchain.com?dev_auth=${match.token}`;
             } else {
                 window.location.reload();
@@ -71,17 +61,21 @@ export const DeveloperLoginModal: React.FC<DeveloperLoginModalProps> = ({ isOpen
     };
 
     const handleGoogleBypass = async () => {
-        // Dev convenience: Google button logs you in as a simulated Google user
+        // Development-only: Google button logs you in as a simulated Google user
+        if (!isDevelopment) {
+            setError('Development login is only available in development mode');
+            return;
+        }
+
         setLoading(true);
         await new Promise(resolve => setTimeout(resolve, 800));
 
         localStorage.setItem('nabd_dev_mode', 'true');
         localStorage.setItem('mock_auth_token', 'google-token');
 
-        // Redirect to app subdomain if on main domain
-        // Pass dev_auth param so app subdomain can set localStorage
         const hostname = window.location.hostname;
-        if (hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
+        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+        if (!isLocalhost && hostname.includes('nabdchain.com') && !hostname.startsWith('app.')) {
             window.location.href = 'https://app.nabdchain.com?dev_auth=google-token';
         } else {
             window.location.reload();

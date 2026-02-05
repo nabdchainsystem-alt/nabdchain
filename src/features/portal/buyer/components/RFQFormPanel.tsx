@@ -21,6 +21,7 @@ import {
 } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
+import { PortalDatePicker } from '../../components';
 import { itemService } from '../../services/itemService';
 import {
   Item,
@@ -219,25 +220,61 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
     return tomorrow.toISOString().split('T')[0];
   };
 
-  // Don't render if not open
-  if (!isOpen) return null;
+  // Animation states for smooth enter/exit
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Don't render if not visible
+  if (!isVisible) return null;
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - transparent, just for click-outside */}
       <div
-        className="fixed inset-0 z-40 bg-black/50 transition-opacity"
+        className="fixed inset-0 z-40"
+        style={{ top: '64px' }}
         onClick={onClose}
       />
 
       {/* Panel */}
       <div
-        className={`
-          fixed z-50 top-0 ${isRtl ? 'left-0' : 'right-0'} h-full w-full max-w-md
-          transform transition-transform duration-300 ease-out
-          ${isOpen ? 'translate-x-0' : isRtl ? '-translate-x-full' : 'translate-x-full'}
-        `}
-        style={{ backgroundColor: styles.bgPrimary }}
+        className="fixed z-50 w-full max-w-md overflow-hidden flex flex-col"
+        dir={direction}
+        style={{
+          top: '64px',
+          bottom: 0,
+          backgroundColor: styles.bgPrimary,
+          borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
+          borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
+          boxShadow: styles.isDark
+            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
+            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          right: isRtl ? 'auto' : 0,
+          left: isRtl ? 0 : 'auto',
+          transform: isAnimating
+            ? 'translateX(0)'
+            : isRtl
+            ? 'translateX(-100%)'
+            : 'translateX(100%)',
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         {/* Header */}
         <div
@@ -273,7 +310,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto h-[calc(100%-180px)] px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Item Preview (if item-level RFQ) */}
             {item && (
@@ -416,17 +453,11 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
                   (Optional)
                 </span>
               </label>
-              <input
-                type="date"
+              <PortalDatePicker
                 value={formData.requiredDeliveryDate}
-                onChange={(e) => handleChange('requiredDeliveryDate', e.target.value)}
-                min={getMinDate()}
-                className="w-full px-4 py-3 rounded-lg"
-                style={{
-                  backgroundColor: styles.bgSecondary,
-                  color: styles.textPrimary,
-                  border: errors.requiredDeliveryDate ? `1px solid ${styles.error}` : `1px solid ${styles.borderLight}`,
-                }}
+                onChange={(value) => handleChange('requiredDeliveryDate', value)}
+                minDate={getMinDate()}
+                className="w-full"
               />
               {errors.requiredDeliveryDate && (
                 <p className="text-xs mt-1" style={{ color: styles.error }}>
@@ -577,7 +608,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
 
         {/* Footer */}
         <div
-          className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t"
+          className="flex-shrink-0 px-6 py-4 border-t"
           style={{
             backgroundColor: styles.bgPrimary,
             borderColor: styles.borderLight,

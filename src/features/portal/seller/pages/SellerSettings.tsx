@@ -24,7 +24,7 @@ import {
   FilePdf,
   FileImage,
 } from 'phosphor-react';
-import { Container, PageHeader, Select } from '../../components';
+import { Container, PageHeader, Select, PortalDatePicker } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import {
@@ -859,19 +859,13 @@ export const SellerSettings: React.FC = () => {
                 styles={styles}
                 isRTL={isRTL}
               >
-                <input
-                  type="date"
+                <PortalDatePicker
                   value={companyForm.dateOfEstablishment}
-                  onChange={(e) => {
-                    setCompanyForm({ ...companyForm, dateOfEstablishment: e.target.value });
+                  onChange={(value) => {
+                    setCompanyForm({ ...companyForm, dateOfEstablishment: value });
                     setHasChanges(true);
                   }}
-                  className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                  style={{
-                    backgroundColor: styles.bgCard,
-                    borderColor: styles.border,
-                    color: styles.textPrimary,
-                  }}
+                  className="w-full"
                 />
               </FormField>
             </div>

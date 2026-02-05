@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
   Package,
@@ -12,10 +12,12 @@ import {
   XCircle,
   ArrowRight,
   CaretDown,
+  CaretUp,
   FileText,
   CalendarBlank,
   CopySimple,
   Check,
+  ListBullets,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import {
@@ -28,6 +30,10 @@ import {
   canCancelOrder,
   canMarkDelivered,
 } from '../../types/order.types';
+import { EnhancedOrderTimeline } from './EnhancedOrderTimeline';
+import { DelayReasonModal, DelayReasonData } from './DelayReasonModal';
+import { orderTimelineApiService, generateMockTimeline } from '../../services/orderTimelineService';
+import { OrderTimeline } from '../../types/timeline.types';
 
 interface OrderDetailsPanelProps {
   isOpen: boolean;
@@ -62,10 +68,72 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
   onMarkDelivered,
   onCancel,
 }) => {
-  const { styles, t, direction } = usePortal();
+  const { styles, t, direction, sellerId } = usePortal();
   const isRtl = direction === 'rtl';
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'timeline'>('details');
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showDelayModal, setShowDelayModal] = useState(false);
+  const [timelineData, setTimelineData] = useState<Partial<OrderTimeline> | null>(null);
+  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
+
+  // Load timeline data when order changes or timeline tab is selected
+  useEffect(() => {
+    if (order && activeTab === 'timeline') {
+      loadTimelineData();
+    }
+  }, [order?.id, activeTab]);
+
+  const loadTimelineData = useCallback(async () => {
+    if (!order || !sellerId) {
+      // Generate mock timeline if no seller context
+      if (order) {
+        const mockTimeline = generateMockTimeline({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          createdAt: order.createdAt,
+          confirmedAt: order.confirmedAt,
+          shippedAt: order.shippedAt,
+          deliveredAt: order.deliveredAt,
+        });
+        setTimelineData(mockTimeline);
+      }
+      return;
+    }
+
+    setIsLoadingTimeline(true);
+    try {
+      const data = await orderTimelineApiService.getOrderTimeline(order.id, sellerId);
+      setTimelineData(data);
+    } catch (error) {
+      console.error('Failed to load timeline:', error);
+      // Fall back to mock data
+      const mockTimeline = generateMockTimeline({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        createdAt: order.createdAt,
+        confirmedAt: order.confirmedAt,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+      });
+      setTimelineData(mockTimeline);
+    } finally {
+      setIsLoadingTimeline(false);
+    }
+  }, [order, sellerId]);
+
+  const handleReportDelay = () => {
+    setShowDelayModal(true);
+  };
+
+  const handleSubmitDelay = async (data: DelayReasonData) => {
+    if (!order || !sellerId) return;
+    await orderTimelineApiService.reportOrderDelay(order.id, sellerId, data);
+    // Refresh timeline after reporting delay
+    loadTimelineData();
+  };
 
   if (!order) return null;
 
@@ -123,24 +191,59 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
     return labels[actor] || actor;
   };
 
+  // Animation states for smooth enter/exit
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  if (!isVisible) return null;
+
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - transparent, just for click-outside */}
       <div
-        className={`fixed inset-0 z-40 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+        className="fixed inset-0 z-40"
+        style={{ top: '64px' }}
         onClick={onClose}
       />
 
       {/* Panel */}
       <div
-        className={`fixed top-0 bottom-0 z-50 w-full max-w-lg transition-transform duration-300 overflow-hidden flex flex-col ${
-          isRtl ? 'left-0' : 'right-0'
-        } ${isOpen ? 'translate-x-0' : isRtl ? '-translate-x-full' : 'translate-x-full'}`}
+        className="fixed z-50 w-full max-w-lg overflow-hidden flex flex-col"
+        dir={direction}
         style={{
+          top: '64px',
+          bottom: 0,
           backgroundColor: styles.bgCard,
           borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
           borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
+          boxShadow: styles.isDark
+            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
+            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          right: isRtl ? 'auto' : 0,
+          left: isRtl ? 0 : 'auto',
+          transform: isAnimating
+            ? 'translateX(0)'
+            : isRtl
+            ? 'translateX(-100%)'
+            : 'translateX(100%)',
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Header */}
@@ -358,40 +461,105 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
               )}
             </div>
           ) : (
-            <div className="p-6">
-              {/* Timeline */}
-              <div className="space-y-0">
-                {[...order.auditLog].reverse().map((entry, index) => (
-                  <div key={entry.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: styles.bgSecondary }}
+            <div className="p-0">
+              {/* Enhanced Order Timeline with SLA tracking */}
+              {isLoadingTimeline ? (
+                <div className="p-8 flex items-center justify-center">
+                  <Clock size={24} className="animate-spin" style={{ color: styles.textMuted }} />
+                </div>
+              ) : (
+                <EnhancedOrderTimeline
+                  order={order}
+                  timeline={timelineData ? {
+                    steps: timelineData.steps || [],
+                    riskAssessment: timelineData.riskAssessment || {
+                      overallRisk: 'low',
+                      riskScore: 0,
+                      factors: [],
+                      recommendations: [],
+                      lastAssessedAt: new Date().toISOString(),
+                    },
+                    metrics: {
+                      slasMet: timelineData.metrics?.slasMet || 0,
+                      slasBreached: timelineData.metrics?.slasBreached || 0,
+                      avgSlaUtilization: timelineData.metrics?.avgSlaUtilization || 0,
+                      promisedDeliveryDate: timelineData.metrics?.promisedDeliveryDate?.toString(),
+                      actualDeliveryDate: timelineData.metrics?.actualDeliveryDate?.toString(),
+                      deliveryVariance: timelineData.metrics?.deliveryVariance,
+                    },
+                  } : undefined}
+                  onReportDelay={handleReportDelay}
+                />
+              )}
+
+              {/* Collapsible Audit Log */}
+              {order.auditLog && order.auditLog.length > 0 && (
+                <div className="mx-4 mb-4">
+                  <button
+                    onClick={() => setShowAuditLog(!showAuditLog)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg transition-colors"
+                    style={{ backgroundColor: styles.bgSecondary }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ListBullets size={16} style={{ color: styles.textMuted }} />
+                      <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                        {t('seller.orders.auditLog')}
+                      </span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: styles.bgHover, color: styles.textMuted }}
                       >
-                        {entry.action === 'created' && <Package size={14} style={{ color: styles.info }} />}
-                        {entry.action === 'confirmed' && <CheckCircle size={14} style={{ color: styles.success }} />}
-                        {entry.action === 'shipped' && <Truck size={14} style={{ color: styles.info }} />}
-                        {entry.action === 'delivered' && <CheckCircle size={14} weight="fill" style={{ color: styles.success }} />}
-                        {entry.action === 'cancelled' && <XCircle size={14} style={{ color: styles.error }} />}
-                        {!['created', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(entry.action) && (
-                          <Clock size={14} style={{ color: styles.textMuted }} />
-                        )}
+                        {order.auditLog.length}
+                      </span>
+                    </div>
+                    {showAuditLog ? (
+                      <CaretUp size={16} style={{ color: styles.textMuted }} />
+                    ) : (
+                      <CaretDown size={16} style={{ color: styles.textMuted }} />
+                    )}
+                  </button>
+
+                  {showAuditLog && (
+                    <div
+                      className="mt-2 p-4 rounded-lg border"
+                      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+                    >
+                      <div className="space-y-0">
+                        {[...order.auditLog].reverse().map((entry, index) => (
+                          <div key={entry.id} className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: styles.bgSecondary }}
+                              >
+                                {entry.action === 'created' && <Package size={12} style={{ color: styles.info }} />}
+                                {entry.action === 'confirmed' && <CheckCircle size={12} style={{ color: styles.success }} />}
+                                {entry.action === 'shipped' && <Truck size={12} style={{ color: styles.info }} />}
+                                {entry.action === 'delivered' && <CheckCircle size={12} weight="fill" style={{ color: styles.success }} />}
+                                {entry.action === 'cancelled' && <XCircle size={12} style={{ color: styles.error }} />}
+                                {!['created', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(entry.action) && (
+                                  <Clock size={12} style={{ color: styles.textMuted }} />
+                                )}
+                              </div>
+                              {index < order.auditLog.length - 1 && (
+                                <div className="w-px flex-1 my-1" style={{ backgroundColor: styles.border }} />
+                              )}
+                            </div>
+                            <div className="pb-4 flex-1 min-w-0">
+                              <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                                {getAuditActionLabel(entry.action)}
+                              </p>
+                              <p className="text-xs mt-0.5" style={{ color: styles.textMuted }}>
+                                {formatDate(entry.timestamp)} &middot; {getActorLabel(entry.actor)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      {index < order.auditLog.length - 1 && (
-                        <div className="w-px flex-1 my-1" style={{ backgroundColor: styles.border }} />
-                      )}
                     </div>
-                    <div className="pb-6 flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-                        {getAuditActionLabel(entry.action)}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: styles.textMuted }}>
-                        {formatDate(entry.timestamp)} &middot; {getActorLabel(entry.actor)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -451,6 +619,14 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
           )}
         </div>
       </div>
+
+      {/* Delay Reason Modal */}
+      <DelayReasonModal
+        isOpen={showDelayModal}
+        order={order}
+        onClose={() => setShowDelayModal(false)}
+        onSubmit={handleSubmitDelay}
+      />
     </>
   );
 };

@@ -35,7 +35,7 @@ import {
   XCircle,
 } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
-import { Button, EmptyState, Select } from '../../components';
+import { Button, EmptyState, Select, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { disputeService } from '../../services/disputeService';
 import {
@@ -445,10 +445,41 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
           )}
         </div>
 
-        {/* Loading State */}
+        {/* Loading State with Shimmer */}
         {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size={32} className="animate-spin" style={{ color: styles.textMuted }} />
+          <div>
+            {/* Quick Stats Skeleton */}
+            <div className="flex items-center gap-6 mb-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="shimmer w-3 h-3 rounded" style={{ animationDelay: `${i * 40}ms` }} />
+                  <div className="shimmer h-4 w-12 rounded" style={{ animationDelay: `${i * 40}ms` }} />
+                  <div className="shimmer h-5 w-6 rounded font-semibold" style={{ animationDelay: `${i * 40 + 20}ms` }} />
+                </div>
+              ))}
+            </div>
+            {/* Table Skeleton */}
+            <div
+              className="rounded-xl border overflow-hidden"
+              style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+            >
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${styles.border}` }}>
+                    {['Dispute', 'Order', 'Status', 'Priority', 'Deadline', ''].map((_, i) => (
+                      <th key={i} className="px-4 py-3">
+                        <div className="shimmer h-3 w-16 rounded" />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <SkeletonTableRow key={i} columns={6} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

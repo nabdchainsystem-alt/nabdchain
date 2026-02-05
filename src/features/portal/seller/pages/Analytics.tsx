@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TrendUp, ShoppingCart, Users, Percent } from 'phosphor-react';
-import { Container, PageHeader, StatCard } from '../../components';
+import {
+  Container,
+  PageHeader,
+  StatCard,
+  SkeletonKPICard,
+  SkeletonBarChart,
+  SkeletonPieChart,
+  SkeletonFunnelChart,
+  SkeletonListSkeleton,
+} from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { useAuth } from '../../../../auth-adapter';
+import { sellerAnalyticsService, SellerAnalyticsSummary } from '../../services/sellerAnalyticsService';
 
 interface AnalyticsProps {
   onNavigate: (page: string) => void;
@@ -10,48 +21,62 @@ interface AnalyticsProps {
 
 type TimeRange = '7d' | '30d' | '90d' | '12m';
 
-// Mock data for charts
-const revenueData = [
-  { month: 'Jan', value: 12500 },
-  { month: 'Feb', value: 18200 },
-  { month: 'Mar', value: 15800 },
-  { month: 'Apr', value: 22400 },
-  { month: 'May', value: 19600 },
-  { month: 'Jun', value: 28300 },
-  { month: 'Jul', value: 24100 },
-];
-
-const categoryData = [
-  { name: 'Electronics', value: 35, color: '#3b82f6' },
-  { name: 'Industrial', value: 28, color: '#10b981' },
-  { name: 'Raw Materials', value: 22, color: '#f59e0b' },
-  { name: 'Services', value: 15, color: '#8b5cf6' },
-];
-
-const conversionData = [
-  { stage: 'RFQs Received', value: 156, percent: 100 },
-  { stage: 'Quotes Sent', value: 124, percent: 79 },
-  { stage: 'Negotiating', value: 68, percent: 44 },
-  { stage: 'Orders Won', value: 42, percent: 27 },
-];
-
-const topProducts = [
-  { name: 'Industrial Valves Set', sku: 'VAL-2024', revenue: 24500, orders: 32 },
-  { name: 'Steel Pipes Bundle', sku: 'STP-1890', revenue: 18200, orders: 28 },
-  { name: 'Electrical Panels', sku: 'ELP-4521', revenue: 15800, orders: 21 },
-  { name: 'Safety Equipment Kit', sku: 'SEK-7845', revenue: 12400, orders: 45 },
-];
-
-const regionData = [
-  { region: 'Riyadh', value: 42, orders: 68 },
-  { region: 'Jeddah', value: 28, orders: 45 },
-  { region: 'Dammam', value: 18, orders: 29 },
-  { region: 'Other', value: 12, orders: 19 },
-];
+// Category colors for charts
+const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6b7280'];
 
 export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [analytics, setAnalytics] = useState<SellerAnalyticsSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { styles, t } = usePortal();
+  const { getToken } = useAuth();
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = await getToken();
+      if (!token) return;
+
+      const data = await sellerAnalyticsService.getAnalyticsSummary(token, timeRange);
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+      setAnalytics(null); // Show empty state on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getToken, timeRange]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
+  // Prepare data for charts from analytics
+  const revenueData = analytics?.revenueByCategory?.map((cat, i) => ({
+    month: cat.category.substring(0, 3),
+    value: cat.amount,
+  })) || [];
+
+  const categoryData = analytics?.revenueByCategory?.map((cat, i) => ({
+    name: cat.category,
+    value: cat.percentage,
+    color: categoryColors[i % categoryColors.length],
+  })) || [];
+
+  const conversionData = analytics?.conversionFunnel || [];
+
+  const topProducts = analytics?.topProducts?.map(p => ({
+    name: p.name,
+    sku: p.sku,
+    revenue: p.revenue,
+    orders: p.orders,
+  })) || [];
+
+  const regionData = analytics?.regionDistribution?.map(r => ({
+    region: r.region,
+    value: r.percentage,
+    orders: r.orders,
+  })) || [];
 
   const timeRangeLabels: Record<TimeRange, string> = {
     '7d': t('seller.analytics.7days'),
@@ -89,59 +114,90 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
           }
         />
 
+        {/* Loading State with Shimmer Effect */}
+        {isLoading && (
+          <>
+            {/* KPI Skeleton Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <SkeletonKPICard key={i} />
+              ))}
+            </div>
+
+            {/* Chart Skeletons Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <SkeletonBarChart title="Revenue" height="h-72" />
+              <SkeletonPieChart title="Categories" />
+            </div>
+
+            {/* Bottom Section Skeletons */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <SkeletonFunnelChart title="Conversion" />
+              <SkeletonListSkeleton title="Top Products" rows={5} />
+              <SkeletonBarChart title="Geo Distribution" height="h-56" showLegend={false} />
+            </div>
+          </>
+        )}
+
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            label={t('seller.analytics.revenue')}
-            value="SAR 124,500"
-            icon={TrendUp}
-            change={{ value: `+18% ${t('seller.analytics.vsLastPeriod')}`, positive: true }}
-          />
-          <StatCard
-            label={t('seller.analytics.orders')}
-            value="156"
-            icon={ShoppingCart}
-            change={{ value: '+12%', positive: true }}
-          />
-          <StatCard
-            label={t('seller.analytics.newBuyers')}
-            value="34"
-            icon={Users}
-            change={{ value: '+8%', positive: true }}
-          />
-          <StatCard
-            label={t('seller.analytics.winRate')}
-            value="68%"
-            icon={Percent}
-            change={{ value: '+5%', positive: true }}
-          />
-        </div>
+        {!isLoading && analytics && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard
+              label={t('seller.analytics.revenue')}
+              value={`${analytics.kpis.currency} ${analytics.kpis.revenue.toLocaleString()}`}
+              icon={TrendUp}
+              change={{ value: `${analytics.kpis.trends.revenue >= 0 ? '+' : ''}${analytics.kpis.trends.revenue}% ${t('seller.analytics.vsLastPeriod')}`, positive: analytics.kpis.trends.revenue >= 0 }}
+            />
+            <StatCard
+              label={t('seller.analytics.orders')}
+              value={analytics.kpis.orders.toString()}
+              icon={ShoppingCart}
+              change={{ value: `${analytics.kpis.trends.orders >= 0 ? '+' : ''}${analytics.kpis.trends.orders}%`, positive: analytics.kpis.trends.orders >= 0 }}
+            />
+            <StatCard
+              label={t('seller.analytics.newBuyers')}
+              value={analytics.kpis.newBuyers.toString()}
+              icon={Users}
+              change={{ value: `${analytics.kpis.trends.buyers >= 0 ? '+' : ''}${analytics.kpis.trends.buyers}%`, positive: analytics.kpis.trends.buyers >= 0 }}
+            />
+            <StatCard
+              label={t('seller.analytics.winRate')}
+              value={`${analytics.kpis.winRate}%`}
+              icon={Percent}
+              change={{ value: `${analytics.kpis.trends.winRate >= 0 ? '+' : ''}${analytics.kpis.trends.winRate}%`, positive: analytics.kpis.trends.winRate >= 0 }}
+            />
+          </div>
+        )}
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <ChartCard title={t('seller.analytics.revenueTrend')}>
-            <RevenueBarChart data={revenueData} />
-          </ChartCard>
+        {!isLoading && analytics && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <ChartCard title={t('seller.analytics.revenueTrend')}>
+                <RevenueBarChart data={revenueData} />
+              </ChartCard>
 
-          <ChartCard title={t('seller.analytics.ordersByCategory')}>
-            <CategoryDonutChart data={categoryData} />
-          </ChartCard>
-        </div>
+              <ChartCard title={t('seller.analytics.ordersByCategory')}>
+                <CategoryDonutChart data={categoryData} />
+              </ChartCard>
+            </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ChartCard title={t('seller.analytics.rfqConversion')}>
-            <ConversionFunnel data={conversionData} />
-          </ChartCard>
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <ChartCard title={t('seller.analytics.rfqConversion')}>
+                <ConversionFunnel data={conversionData} />
+              </ChartCard>
 
-          <ChartCard title={t('seller.analytics.topProducts')}>
-            <TopProductsList data={topProducts} />
-          </ChartCard>
+              <ChartCard title={t('seller.analytics.topProducts')}>
+                <TopProductsList data={topProducts} />
+              </ChartCard>
 
-          <ChartCard title={t('seller.analytics.geoDistribution')}>
-            <RegionalDistribution data={regionData} />
-          </ChartCard>
-        </div>
+              <ChartCard title={t('seller.analytics.geoDistribution')}>
+                <RegionalDistribution data={regionData} />
+              </ChartCard>
+            </div>
+          </>
+        )}
       </Container>
     </div>
   );

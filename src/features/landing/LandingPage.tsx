@@ -493,7 +493,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </footer>
 
                 <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
-                <PortalLoginModal isOpen={isPortalLoginOpen} onClose={() => setIsPortalLoginOpen(false)} defaultTab={portalTab} />
+                <PortalLoginModal
+                    isOpen={isPortalLoginOpen}
+                    onClose={() => setIsPortalLoginOpen(false)}
+                    defaultTab={portalTab}
+                    onSwitchToSignup={() => {
+                        setIsPortalLoginOpen(false);
+                        setIsPortalSignupOpen(true);
+                    }}
+                />
                 <PortalSignupModal
                     isOpen={isPortalSignupOpen}
                     onClose={() => setIsPortalSignupOpen(false)}

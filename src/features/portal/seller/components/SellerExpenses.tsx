@@ -28,7 +28,7 @@ import {
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { expenseService, Expense, ExpenseType, ExpenseSummary } from '../../services/expenseService';
-import { EmptyState, Button } from '../../components';
+import { EmptyState, Button, PortalDatePicker } from '../../components';
 import { Select } from '../../components/ui';
 
 // =============================================================================
@@ -291,17 +291,10 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
               <label className="block text-sm font-medium mb-2" style={{ color: styles.textSecondary }}>
                 {t('seller.expenses.date')}
               </label>
-              <input
-                type="date"
+              <PortalDatePicker
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full h-10 px-3 text-sm rounded-lg border outline-none"
-                style={{
-                  backgroundColor: styles.bgPrimary,
-                  borderColor: styles.border,
-                  color: styles.textPrimary,
-                }}
-                required
+                onChange={setDate}
+                className="w-full"
               />
             </div>
 
